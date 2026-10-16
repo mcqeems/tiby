@@ -3,15 +3,13 @@ import { z } from "zod";
 export const HealthSchema = z.object({
   status: z.literal("ok"),
 });
-
 export type Health = z.infer<typeof HealthSchema>;
 
-export const ErrorCodes = ["INTERNAL", "NOT_FOUND", "BAD_REQUEST"] as const;
-export type ErrorCode = (typeof ErrorCodes)[number];
-
-export const ApiErrorSchema = z.object({
-  code: z.enum(ErrorCodes),
-  message: z.string(),
-});
-
-export type ApiError = z.infer<typeof ApiErrorSchema>;
+export * from "./enums.js";
+export * from "./error.js";
+export * from "./push.schema.js";
+export * from "./whatsapp.schema.js";
+export * from "./check-in.schema.js";
+export * from "./onboarding.schema.js";
+export * from "./faskes.schema.js";
+export * from "./tickets.schema.js";

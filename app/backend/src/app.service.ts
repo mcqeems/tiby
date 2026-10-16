@@ -1,8 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable } from "@nestjs/common";
+import { DataSource } from "typeorm";
+import type { Health } from "@tiby/ts-shared";
 
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return 'Hello World!';
+  constructor(private readonly dataSource: DataSource) {}
+
+  async checkHealth(): Promise<Health> {
+    await this.dataSource.query("SELECT 1");
+    return { status: "ok" };
   }
 }

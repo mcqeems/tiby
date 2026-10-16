@@ -1,0 +1,56 @@
+import {
+  Controller,
+  Get,
+  Patch,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+  UnauthorizedException,
+} from "@nestjs/common";
+import { FacilitiesService } from "../services/facilities.service.js";
+import { RolesGuard } from "../../../common/guards/roles.guard.js";
+import { Roles } from "../../../common/decorators/roles.decorator.js";
+import {
+  ListAlertsQuerySchema,
+  type ListAlertsQuery,
+  type FacilityAlertList,
+  type FacilityAlertDto,
+} from "@tiby/ts-shared";
+
+@Controller("faskes/alerts")
+@UseGuards(RolesGuard)
+export class FacilitiesController {
+  constructor(private readonly facilitiesService: FacilitiesService) {}
+
+  private extractUserId(req: any): string {
+    const userId = req.session?.user?.id ?? req.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException({
+        code: "UNAUTHORIZED",
+        message: "Nakes authentication session required",
+      });
+    }
+    return userId;
+  }
+
+  @Get()
+  @Roles(["NAKES"])
+  async listAlerts(
+    @Req() req: any,
+    @Query({ schema: ListAlertsQuerySchema }) query: ListAlertsQuery,
+  ): Promise<FacilityAlertList> {
+    const nakesUserId = this.extractUserId(req);
+    return this.facilitiesService.listAlerts(nakesUserId, query);
+  }
+
+  @Patch(":id/read")
+  @Roles(["NAKES"])
+  async markRead(
+    @Req() req: any,
+    @Param("id") id: string,
+  ): Promise<FacilityAlertDto> {
+    const nakesUserId = this.extractUserId(req);
+    return this.facilitiesService.markAlertRead(id, nakesUserId);
+  }
+}

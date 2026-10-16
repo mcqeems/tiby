@@ -13,6 +13,9 @@
     "build:frontend": "bun --filter @tiby/frontend build",
     "lint": "bun --filter @tiby/backend lint & bun --filter @tiby/frontend lint & wait",
     "lint:backend": "bun --filter @tiby/backend lint",
-    "lint:frontend": "bun --filter @tiby/frontend lint"
+    "lint:frontend": "bun --filter @tiby/frontend lint",
+    "test": "bun --filter @tiby/backend test",
+    "test:backend": "bun --filter @tiby/backend test",
+    "test:e2e": "bun --filter @tiby/backend test:e2e"
   }
 }

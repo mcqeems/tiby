@@ -1,12 +1,15 @@
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service.js';
+import { Controller, Get } from "@nestjs/common";
+import { AllowAnonymous } from "@thallesp/nestjs-better-auth";
+import { AppService } from "./app.service.js";
+import type { Health } from "@tiby/ts-shared";
 
-@Controller()
+@Controller("health")
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  @AllowAnonymous()
+  async getHealth(): Promise<Health> {
+    return this.appService.checkHealth();
   }
 }
