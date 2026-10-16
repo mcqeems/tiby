@@ -1,0 +1,46 @@
+openapi: 3.1.0
+info:
+  title: Tiby AI Extraction API
+  version: 1.0.0
+  description: Extracts reported facts from a patient check-in transcript. It does not diagnose or assign clinical risk.
+servers:
+  - url: http://localhost:8000
+paths:
+  /v1/extractions/check-in:
+    post:
+      operationId: extractCheckIn
+      summary: Extract structured facts from a check-in transcript
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInRequest'
+            example:
+              transcript: Sudah minum obat empat biji. Mual dari siang dan tidak nafsu makan.
+              language: id-ID
+      responses:
+        '200':
+          description: Facts extracted successfully; not a clinical assessment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckInResponse'
+        '422':
+          description: Request validation failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '502':
+          description: Extraction provider failed or returned invalid output.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '504':
+          description: Extraction provider timed out.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
