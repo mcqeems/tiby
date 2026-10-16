@@ -88,3 +88,22 @@ components:
           type: string
           minLength: 1
           description: Supporting phrase quoted from the transcript.
+    Extraction:
+      type: object
+      additionalProperties: false
+      required: [medication, symptoms, possible_red_flags, intent_to_stop]
+      properties:
+        medication:
+          $ref: '#/components/schemas/MedicationReport'
+        symptoms:
+          type: array
+          items:
+            $ref: '#/components/schemas/Symptom'
+        possible_red_flags:
+          type: array
+          items:
+            type: string
+          description: Candidate signals only; backend rules determine action.
+        intent_to_stop:
+          type: [boolean, 'null']
+          description: True only for explicit intent; null if uncertain or unstated.
