@@ -44,3 +44,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
+components:
+  schemas:
+    CheckInRequest:
+      type: object
+      additionalProperties: false
+      required: [transcript]
+      properties:
+        transcript:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          description: Plain text produced by speech-to-text or entered manually. Audio is not accepted here.
+        language:
+          type: string
+          default: id-ID
+          examples: [id-ID]
