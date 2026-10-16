@@ -1,0 +1,18 @@
+{
+  "name": "tiby",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.4.2",
+  "workspaces": ["app/frontend", "app/backend", "shared/*"],
+  "scripts": {
+    "dev": "bun --filter @tiby/backend start:dev & bun --filter @tiby/frontend dev & wait",
+    "dev:backend": "PORT=3001 bun --filter @tiby/backend start:dev",
+    "dev:frontend": "bun --filter @tiby/frontend dev",
+    "build": "bun --filter @tiby/backend build & bun --filter @tiby/frontend build & wait",
+    "build:backend": "bun --filter @tiby/backend build",
+    "build:frontend": "bun --filter @tiby/frontend build",
+    "lint": "bun --filter @tiby/backend lint & bun --filter @tiby/frontend lint & wait",
+    "lint:backend": "bun --filter @tiby/backend lint",
+    "lint:frontend": "bun --filter @tiby/frontend lint"
+  }
+}
