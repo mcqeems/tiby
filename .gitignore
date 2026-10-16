@@ -6,3 +6,7 @@ coverage/
 *.tsbuildinfo
 .env
 .env*.local
+
+.DS_Store
+app/.DS_Store
+app/ai-service/.DS_Store
