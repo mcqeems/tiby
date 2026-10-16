@@ -72,3 +72,19 @@ components:
           type: [integer, 'null']
           minimum: 0
           description: Reported count only; not checked against a prescription.
+    Symptom:
+      type: object
+      additionalProperties: false
+      required: [name, severity, evidence]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Short normalized phrase, not a diagnosis.
+        severity:
+          type: string
+          enum: [mild, moderate, severe, unknown]
+        evidence:
+          type: string
+          minLength: 1
+          description: Supporting phrase quoted from the transcript.
