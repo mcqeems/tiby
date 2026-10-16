@@ -60,3 +60,15 @@ components:
           type: string
           default: id-ID
           examples: [id-ID]
+    MedicationReport:
+      type: object
+      additionalProperties: false
+      required: [taken, dose_count]
+      properties:
+        taken:
+          type: [boolean, 'null']
+          description: True/false only when explicitly reported; otherwise null.
+        dose_count:
+          type: [integer, 'null']
+          minimum: 0
+          description: Reported count only; not checked against a prescription.
