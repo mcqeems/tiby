@@ -7,7 +7,7 @@ import type { Health } from '@tiby/ts-shared';
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @Get(['', 'health'])
+  @Get()
   @AllowAnonymous()
   async getHealth(): Promise<Health> {
     return this.appService.checkHealth();

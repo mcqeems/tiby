@@ -62,9 +62,9 @@ describe("Users & RBAC Password Management (e2e)", () => {
       },
     });
 
-    // 3. Login as Admin
+    // 3. Login as Admin using unified /api/auth/sign-in (with username)
     const adminLogin = await request(app.getHttpServer())
-      .post("/api/auth/sign-in/username")
+      .post("/api/auth/sign-in")
       .send({ username: adminUsername, password: defaultPw });
     expect(adminLogin.status).toBe(200);
     adminCookie = adminLogin.headers["set-cookie"];
@@ -83,10 +83,10 @@ describe("Users & RBAC Password Management (e2e)", () => {
     expect(createNakesRes.status).toBe(201);
     nakesUserId = createNakesRes.body.id;
 
-    // 5. Login as NAKES
+    // 5. Login as NAKES using unified /api/auth/sign-in (with email)
     const nakesLogin = await request(app.getHttpServer())
-      .post("/api/auth/sign-in/username")
-      .send({ username: nakesUsername, password: defaultPw });
+      .post("/api/auth/sign-in")
+      .send({ email: `${nakesUsername}@users.tiby.internal`, password: defaultPw });
     expect(nakesLogin.status).toBe(200);
     nakesCookie = nakesLogin.headers["set-cookie"];
 
@@ -103,10 +103,10 @@ describe("Users & RBAC Password Management (e2e)", () => {
     expect(createPasienRes.status).toBe(201);
     pasienUserId = createPasienRes.body.id;
 
-    // 7. Login as PASIEN
+    // 7. Login as PASIEN using unified /api/auth/sign-in (with identifier)
     const pasienLogin = await request(app.getHttpServer())
-      .post("/api/auth/sign-in/username")
-      .send({ username: pasienUsername, password: defaultPw });
+      .post("/api/auth/sign-in")
+      .send({ identifier: pasienUsername, password: defaultPw });
     expect(pasienLogin.status).toBe(200);
     pasienCookie = pasienLogin.headers["set-cookie"];
   });
@@ -168,7 +168,7 @@ describe("Users & RBAC Password Management (e2e)", () => {
 
       // Verify sign in with new password works
       const loginCheck = await request(app.getHttpServer())
-        .post("/api/auth/sign-in/username")
+        .post("/api/auth/sign-in")
         .send({ username: pasienUsername, password: "new_pw_pasien_123" });
       expect(loginCheck.status).toBe(200);
     });
@@ -193,8 +193,8 @@ describe("Users & RBAC Password Management (e2e)", () => {
 
       // Verify PASIEN can login with newly reset password
       const loginCheck = await request(app.getHttpServer())
-        .post("/api/auth/sign-in/username")
-        .send({ username: pasienUsername, password: "reset_by_nakes_123" });
+        .post("/api/auth/sign-in")
+        .send({ identifier: pasienUsername, password: "reset_by_nakes_123" });
       expect(loginCheck.status).toBe(200);
     });
 
@@ -220,8 +220,8 @@ describe("Users & RBAC Password Management (e2e)", () => {
 
       // Verify NAKES can login with newly reset password
       const loginCheck = await request(app.getHttpServer())
-        .post("/api/auth/sign-in/username")
-        .send({ username: nakesUsername, password: "admin_reset_nakes_123" });
+        .post("/api/auth/sign-in")
+        .send({ email: `${nakesUsername}@users.tiby.internal`, password: "admin_reset_nakes_123" });
       expect(loginCheck.status).toBe(200);
     });
   });

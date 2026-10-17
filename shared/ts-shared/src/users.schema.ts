@@ -34,3 +34,18 @@ export const UserSummarySchema = z.object({
   facilityId: z.string().nullable().optional(),
 });
 export type UserSummary = z.infer<typeof UserSummarySchema>;
+
+export const SignInSchema = z
+  .object({
+    identifier: z.string().min(1).optional(),
+    username: z.string().min(1).optional(),
+    email: z.string().min(1).optional(),
+    password: z.string().min(1, "Password is required"),
+    rememberMe: z.boolean().optional(),
+  })
+  .refine((data) => Boolean(data.identifier || data.username || data.email), {
+    message: "Either identifier, username, or email is required",
+    path: ["identifier"],
+  });
+export type SignInDto = z.infer<typeof SignInSchema>;
+

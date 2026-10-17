@@ -66,9 +66,9 @@ describe("Phase 2: Auth, Consent, and Faskes Onboarding (e2e)", () => {
     });
     nakesUserId = nakesAuth.user.id;
 
-    // 3. Login as Nakes to get session cookie
+    // 3. Login as Nakes to get session cookie via unified sign-in
     const loginRes = await request(app.getHttpServer())
-      .post("/api/auth/sign-in/username")
+      .post("/api/auth/sign-in")
       .send({
         username: nakesUsername,
         password: nakesPassword,
@@ -147,9 +147,9 @@ describe("Phase 2: Auth, Consent, and Faskes Onboarding (e2e)", () => {
     expect(plan?.dailyPillQuota).toBe(4);
   });
 
-  it("2. Patient signs in via /api/auth/sign-in/username and checks consent status", async () => {
+  it("2. Patient signs in via /api/auth/sign-in and checks consent status", async () => {
     const loginRes = await request(app.getHttpServer())
-      .post("/api/auth/sign-in/username")
+      .post("/api/auth/sign-in")
       .send({
         username: patientCredentials.username,
         password: patientCredentials.password,

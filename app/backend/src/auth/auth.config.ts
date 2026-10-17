@@ -1,6 +1,9 @@
-import { betterAuth } from "better-auth";
+import { betterAuth, type User } from "better-auth";
 import { username } from "better-auth/plugins/username";
 import { admin } from "better-auth/plugins/admin";
+import { createAuthEndpoint, APIError } from "better-auth/api";
+import { setSessionCookie } from "better-auth/cookies";
+import { z } from "zod";
 import pg from "pg";
 import { ac, ADMIN, NAKES, PMO, PASIEN } from "./permissions.js";
 
@@ -48,7 +51,73 @@ export const auth = betterAuth({
       roles: { ADMIN, NAKES, PMO, PASIEN },
       defaultRole: "PASIEN",
     }),
+    {
+      id: "unified-sign-in",
+      endpoints: {
+        signIn: createAuthEndpoint("/sign-in", {
+          method: "POST",
+          body: z.object({
+            identifier: z.string().optional(),
+            username: z.string().optional(),
+            email: z.string().optional(),
+            password: z.string(),
+            rememberMe: z.boolean().optional(),
+            callbackURL: z.string().optional(),
+          }),
+        }, async (ctx) => {
+          const identifier = ctx.body.identifier ?? ctx.body.username ?? ctx.body.email;
+          if (!identifier || !ctx.body.password) {
+            throw new APIError("BAD_REQUEST", { message: "Identifier and password are required" });
+          }
+
+          let user = (await ctx.context.adapter.findOne({
+            model: "user",
+            where: [{ field: "username", value: identifier }],
+          })) as User | null;
+
+          if (!user) {
+            user = (await ctx.context.adapter.findOne({
+              model: "user",
+              where: [{ field: "email", value: identifier.toLowerCase() }],
+            })) as User | null;
+          }
+
+          if (!user) {
+            // Mitigate timing attacks with a dummy hash
+            await ctx.context.password.hash(ctx.body.password);
+            throw new APIError("UNAUTHORIZED", { message: "Invalid username/email or password" });
+          }
+
+          const account = await ctx.context.internalAdapter.findCredentialAccount(user.id);
+          if (!account || !account.password) {
+            throw new APIError("UNAUTHORIZED", { message: "Invalid username/email or password" });
+          }
+
+          const isValid = await ctx.context.password.verify({
+            hash: account.password,
+            password: ctx.body.password,
+          });
+
+          if (!isValid) {
+            throw new APIError("UNAUTHORIZED", { message: "Invalid username/email or password" });
+          }
+
+          const session = await ctx.context.internalAdapter.createSession(
+            user.id,
+            ctx.body.rememberMe === false,
+          );
+
+          await setSessionCookie(ctx, { session, user }, ctx.body.rememberMe === false);
+
+          return ctx.json({
+            token: session.token,
+            user,
+          });
+        }),
+      },
+    },
   ],
 });
 
 export type Auth = typeof auth;
+
