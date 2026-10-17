@@ -8,8 +8,8 @@ Usage (from ``app/ai-service``)::
 
     uv run python scripts/ingest_knowledge.py
 """
-from tiby_ai.ingest import ingest_manifest
-from tiby_ai.rag import SQLiteRetriever
+from tiby_ai.guidance.ingest import ingest_manifest
+from tiby_ai.guidance.retrieval import SQLiteRetriever
 
 if __name__ == "__main__":
     print(ingest_manifest("knowledge/manifest.json", SQLiteRetriever()))
