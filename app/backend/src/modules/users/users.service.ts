@@ -125,6 +125,7 @@ export class UsersService {
 
     return {
       id: created.user.id,
+      email: dto.email,
       username: dto.username,
       name: dto.fullName,
       role: dto.role,
@@ -258,12 +259,13 @@ export class UsersService {
     qb.orderBy('u.id', 'ASC');
     const users = await qb.getMany();
 
-    return users.map((u) => ({
-      id: u.id,
-      username: u.username,
-      name: u.name,
-      role: u.role,
-      facilityId: u.facilityId,
+    return users.map((user) => ({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      facilityId: user.facilityId,
     }));
   }
 
@@ -278,6 +280,7 @@ export class UsersService {
     return {
       id: user.id,
       username: user.username,
+      email: user.email,
       name: user.name,
       role: user.role,
       facilityId: user.facilityId,
