@@ -7,10 +7,13 @@
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
+    "prebuild": "bun --filter @tiby/ts-shared build",
     "build": "nest build",
     "deploy": "nest deploy",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "prestart": "bun --filter @tiby/ts-shared build",
     "start": "nest start",
+    "prestart:dev": "bun --filter @tiby/ts-shared build",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
