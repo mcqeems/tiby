@@ -30,6 +30,7 @@ export type ResetUserPasswordDto = z.infer<typeof ResetUserPasswordSchema>;
 export const UserSummarySchema = z.object({
   id: z.string(),
   username: z.string().nullable(),
+  email: z.email().optional(),
   name: z.string(),
   role: z.string(),
   facilityId: z.string().nullable().optional(),
