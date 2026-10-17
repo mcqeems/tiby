@@ -19,6 +19,8 @@ import type {
   ListPatientsQuery,
   RiskSortedPatientList,
   RiskSortedPatientItem,
+  PatientState,
+  TreatmentPhase,
 } from "@tiby/ts-shared";
 
 function hashPhone(phone: string): string {
@@ -348,8 +350,8 @@ export class OnboardingService {
           patientUserId: p.patientUserId,
           patientName: p.patientUser?.name || "Pasien",
           username: p.patientUser?.username || "",
-          patientState: p.patientState as any,
-          phase: p.phase as any,
+          patientState: p.patientState as PatientState,
+          phase: p.phase as TreatmentPhase,
           regimenCode: p.regimenCode,
           dailyPillQuota: p.dailyPillQuota,
           currentStreak: p.currentStreak,

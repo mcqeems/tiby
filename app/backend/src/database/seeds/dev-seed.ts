@@ -2,6 +2,7 @@ import "reflect-metadata";
 import { randomBytes } from "node:crypto";
 import { AppDataSource } from "../data-source.js";
 import { auth } from "../../auth/auth.config.js";
+import type { User } from "better-auth";
 import type { UserRole } from "@tiby/ts-shared";
 import {
   Facility,
@@ -75,7 +76,7 @@ async function runSeed() {
     },
   ];
 
-  const createdUsers: Record<string, any> = {};
+  const createdUsers: Partial<Record<UserRole, User>> = {};
 
   for (const acc of accounts) {
     const res = await auth.api.createUser({
@@ -101,9 +102,9 @@ async function runSeed() {
   }
 
   // 2. Active Consent Record for Pasien
-  const pasienUser = createdUsers["PASIEN"];
-  const nakesUser = createdUsers["NAKES"];
-  const pmoUser = createdUsers["PMO"];
+  const pasienUser = createdUsers["PASIEN"]!;
+  const nakesUser = createdUsers["NAKES"]!;
+  const pmoUser = createdUsers["PMO"]!;
 
   const scopes = ["PATIENT_DATA_SHARE", "PMO_STATUS_ONLY", "STT_AUDIO_PROCESSING"];
   for (const scope of scopes) {

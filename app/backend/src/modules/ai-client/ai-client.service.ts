@@ -25,8 +25,9 @@ export class AiClientService {
       if (res.ok) {
         return (await res.json()) as AiAudioExtractionResponse;
       }
-    } catch (err: any) {
-      this.logger.warn(`AI Service offline or failed: ${err.message}. Using fallback mock extraction.`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`AI Service offline or failed: ${msg}. Using fallback mock extraction.`);
     }
 
     // Heuristic fallback for offline local testing
@@ -53,8 +54,9 @@ export class AiClientService {
       if (res.ok) {
         return (await res.json()) as AiAudioExtractionResponse;
       }
-    } catch (err: any) {
-      this.logger.warn(`AI Service offline or failed: ${err.message}. Using heuristic fallback.`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`AI Service offline or failed: ${msg}. Using heuristic fallback.`);
     }
 
     return this.fallbackHeuristicExtraction(transcriptText);

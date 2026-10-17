@@ -29,6 +29,7 @@ import type {
   PmoPatientStatusList,
   CreatePmoFollowUpDto,
   PmoFollowUpResponse,
+  SafetyVerdict,
 } from "@tiby/ts-shared";
 
 @Injectable()
@@ -462,13 +463,13 @@ export class CheckInService {
           order: { attemptNumber: "DESC" },
         });
 
-        let todayVerdict: any = null;
+        let todayVerdict: SafetyVerdict | null = null;
         if (lockedCheckIn) {
           const ev = await this.evalRepo.findOneBy({ checkInId: lockedCheckIn.id });
-          todayVerdict = ev?.verdict ?? "TERKENDALI";
+          todayVerdict = (ev?.verdict as SafetyVerdict) ?? "TERKENDALI";
         } else if (latestCheckIn) {
           const ev = await this.evalRepo.findOneBy({ checkInId: latestCheckIn.id });
-          todayVerdict = ev?.verdict ?? "PERLU_PERHATIAN";
+          todayVerdict = (ev?.verdict as SafetyVerdict) ?? "PERLU_PERHATIAN";
         }
 
         return {

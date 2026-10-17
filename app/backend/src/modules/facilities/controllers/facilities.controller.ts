@@ -11,6 +11,7 @@ import {
 import { FacilitiesService } from "../services/facilities.service.js";
 import { RolesGuard } from "../../../common/guards/roles.guard.js";
 import { Roles } from "../../../common/decorators/roles.decorator.js";
+import type { AuthenticatedRequest } from "../../../common/types/auth-request.type.js";
 import {
   ListAlertsQuerySchema,
   type ListAlertsQuery,
@@ -23,7 +24,7 @@ import {
 export class FacilitiesController {
   constructor(private readonly facilitiesService: FacilitiesService) {}
 
-  private extractUserId(req: any): string {
+  private extractUserId(req: AuthenticatedRequest): string {
     const userId = req.session?.user?.id ?? req.user?.id;
     if (!userId) {
       throw new UnauthorizedException({
@@ -37,7 +38,7 @@ export class FacilitiesController {
   @Get()
   @Roles(["NAKES"])
   async listAlerts(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query({ schema: ListAlertsQuerySchema }) query: ListAlertsQuery,
   ): Promise<FacilityAlertList> {
     const nakesUserId = this.extractUserId(req);
@@ -47,7 +48,7 @@ export class FacilitiesController {
   @Patch(":id/read")
   @Roles(["NAKES"])
   async markRead(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param("id") id: string,
   ): Promise<FacilityAlertDto> {
     const nakesUserId = this.extractUserId(req);

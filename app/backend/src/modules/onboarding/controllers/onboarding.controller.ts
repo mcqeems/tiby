@@ -17,6 +17,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { OnboardingService } from "../services/onboarding.service.js";
 import { RolesGuard } from "../../../common/guards/roles.guard.js";
 import { Roles } from "../../../common/decorators/roles.decorator.js";
+import type { AuthenticatedRequest } from "../../../common/types/auth-request.type.js";
 import {
   CreateOnboardingSchema,
   ListPatientsQuerySchema,
@@ -32,7 +33,7 @@ import {
 export class OnboardingController {
   constructor(private readonly onboardingService: OnboardingService) {}
 
-  private extractUserId(req: any): string {
+  private extractUserId(req: AuthenticatedRequest): string {
     const userId = req.session?.user?.id ?? req.user?.id;
     if (!userId) {
       throw new UnauthorizedException({
@@ -46,7 +47,7 @@ export class OnboardingController {
   @Post("onboarding")
   @Roles(["NAKES"])
   async onboard(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body({ schema: CreateOnboardingSchema }) body: CreateOnboardingDto,
   ): Promise<OnboardingCredentials> {
     const nakesUserId = this.extractUserId(req);
@@ -77,7 +78,7 @@ export class OnboardingController {
   @Get("patients")
   @Roles(["NAKES"])
   async listPatients(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query({ schema: ListPatientsQuerySchema }) query: ListPatientsQuery,
   ): Promise<RiskSortedPatientList> {
     const nakesUserId = this.extractUserId(req);

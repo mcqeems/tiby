@@ -7,14 +7,15 @@ import {
 import { Observable } from "rxjs";
 import { tap } from "rxjs/operators";
 import { AuditService } from "./audit.service.js";
+import type { AuthenticatedRequest } from "../../common/types/auth-request.type.js";
 
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
   constructor(private readonly auditService: AuditService) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const httpContext = context.switchToHttp();
-    const req = httpContext.getRequest<any>();
+    const req = httpContext.getRequest<AuthenticatedRequest>();
     const method = req.method;
 
     // Log mutating HTTP methods for UU PDP audit trail

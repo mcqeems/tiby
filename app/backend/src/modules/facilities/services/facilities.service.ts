@@ -7,6 +7,8 @@ import type {
   ListAlertsQuery,
   FacilityAlertList,
   FacilityAlertDto,
+  FacilityAlertType,
+  AlertSeverity,
 } from "@tiby/ts-shared";
 
 @Injectable()
@@ -55,8 +57,8 @@ export class FacilitiesService {
       facilityId: a.facilityId,
       treatmentPlanId: a.treatmentPlanId,
       patientName: a.treatmentPlan?.patientUser?.name || "Pasien",
-      alertType: a.alertType as any,
-      severity: a.severity as any,
+      alertType: a.alertType as FacilityAlertType,
+      severity: a.severity as AlertSeverity,
       title: a.title,
       message: a.message,
       isRead: a.isRead,
@@ -102,8 +104,8 @@ export class FacilitiesService {
       facilityId: a.facilityId,
       treatmentPlanId: a.treatmentPlanId,
       patientName: a.treatmentPlan?.patientUser?.name || "Pasien",
-      alertType: a.alertType as any,
-      severity: a.severity as any,
+      alertType: a.alertType as FacilityAlertType,
+      severity: a.severity as AlertSeverity,
       title: a.title,
       message: a.message,
       isRead: a.isRead,

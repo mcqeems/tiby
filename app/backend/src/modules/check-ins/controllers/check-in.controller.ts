@@ -17,6 +17,7 @@ import { CheckInService } from "../services/check-in.service.js";
 import { RolesGuard } from "../../../common/guards/roles.guard.js";
 import { ConsentGuard } from "../../../common/guards/consent.guard.js";
 import { Roles } from "../../../common/decorators/roles.decorator.js";
+import type { AuthenticatedRequest } from "../../../common/types/auth-request.type.js";
 import {
   SubmitCheckInSchema,
   TextExtractRequestSchema,
@@ -24,6 +25,7 @@ import {
   type TextExtractRequest,
   type AiAudioExtractionResponse,
   type CheckInVerdictResponse,
+  type UserRole,
 } from "@tiby/ts-shared";
 
 @Controller("check-ins")
@@ -31,7 +33,7 @@ import {
 export class CheckInController {
   constructor(private readonly checkInService: CheckInService) {}
 
-  private extractUser(req: any): { userId: string; role: string } {
+  private extractUser(req: AuthenticatedRequest): { userId: string; role: UserRole } {
     const user = req.session?.user ?? req.user;
     if (!user?.id) {
       throw new UnauthorizedException({
@@ -50,7 +52,7 @@ export class CheckInController {
     }),
   )
   async extractAudio(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @UploadedFile(
       new ParseFilePipe({
         fileIsRequired: false,
@@ -83,7 +85,7 @@ export class CheckInController {
   @Post("text-extract")
   @Roles(["PASIEN", "PMO"])
   async extractText(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body({ schema: TextExtractRequestSchema }) body: TextExtractRequest,
   ): Promise<AiAudioExtractionResponse> {
     const { userId, role } = this.extractUser(req);
@@ -93,7 +95,7 @@ export class CheckInController {
   @Post()
   @Roles(["PASIEN", "PMO"])
   async submitCheckIn(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body({ schema: SubmitCheckInSchema }) body: SubmitCheckInDto,
   ): Promise<CheckInVerdictResponse> {
     const { userId, role } = this.extractUser(req);

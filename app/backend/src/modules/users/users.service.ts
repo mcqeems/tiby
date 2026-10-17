@@ -89,7 +89,7 @@ export class UsersService {
     const created = await auth.api.createUser({
       body: {
         name: dto.fullName,
-        email: dto.email ?? `${dto.fullName}@tiby.my.id`,
+        email: dto.email ?? `${dto.username.toLowerCase()}@users.tiby.internal`,
         password: dto.password,
         role: dto.role,
         data: {
