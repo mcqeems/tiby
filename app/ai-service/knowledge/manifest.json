@@ -1,0 +1,52 @@
+{
+  "documents": [
+    {
+      "file": "raw/kemenkes-juknis-tb-so-2025.pdf",
+      "metadata": {
+        "document_id": "kemenkes-juknis-tb-so-2025",
+        "organization": "Kemenkes",
+        "title": "Petunjuk Teknis Penatalaksanaan Tuberkulosis Sensitif Obat di Indonesia",
+        "year": 2025,
+        "source_url": "https://p2.kemkes.go.id/wp-content/uploads/2025/12/Buku-Petunjuk-Teknis-Penatalaksanaan-Tuberkulosis-Sensitif-Obat-di-Indonesia_FINAL.pdf"
+      },
+      "sha256": "a5c49c18f23504848b510e52b428b83749a7e34f167499bec9401064f5fd216c",
+      "indexed_chunks": 364
+    },
+    {
+      "file": "raw/who-tb-guidelines-module4-2025.pdf",
+      "metadata": {
+        "document_id": "who-tb-guidelines-module4-2025",
+        "organization": "WHO",
+        "title": "WHO Consolidated Guidelines on Tuberculosis: Module 4: Treatment and Care",
+        "year": 2025,
+        "source_url": "https://who.int/publications/i/item/9789240107243"
+      },
+      "sha256": "f81e9281d2669bd035cc29e7e759ba5f99abee210b61155eb070545e0dc7870f",
+      "indexed_chunks": 1370
+    },
+    {
+      "file": "raw/kemenkes-pnpk-tb-2020.pdf",
+      "metadata": {
+        "document_id": "kemenkes-pnpk-tb-2020",
+        "organization": "Kemenkes",
+        "title": "Pedoman Nasional Pelayanan Kedokteran Tata Laksana Tuberkulosis",
+        "year": 2020,
+        "source_url": "https://repository.kemkes.go.id/book/124"
+      },
+      "sha256": "499766430dbe12d0143613afb70d11c65907efeea63078b3a220bd8c1e696fe8",
+      "indexed_chunks": 270
+    },
+    {
+      "file": "raw/who-tb-module4-2025.pdf",
+      "metadata": {
+        "document_id": "who-tb-module4-2025",
+        "organization": "WHO",
+        "title": "WHO operational handbook on tuberculosis: Module 4: treatment and care",
+        "year": 2025,
+        "source_url": "https://who.int/publications/i/item/9789240108141"
+      },
+      "sha256": "c3b42b5e0828c5b5454a08b9cde2de28b963f2d58df29b0109d872e91f9ef93a",
+      "indexed_chunks": 1176
+    }
+  ]
+}
