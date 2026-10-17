@@ -1,9 +1,23 @@
+"""Request/response models mirroring the OpenCollection contract in
+``shared/api-contract`` (Bruno format).
+
+Design rules that the rest of the service relies on:
+
+- ``null`` means "unstated or uncertain", never false.
+- Models forbid additional properties, so provider or client output that
+  invents clinical decisions (for example ``risk_status``) is rejected
+  instead of silently accepted.
+- ``confidence`` is extraction certainty, not clinical probability.
+"""
+
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class CheckInRequest(BaseModel):
+    """A transcript to extract reported facts from, plus its language tag."""
+
     model_config = ConfigDict(extra="forbid")
 
     transcript: str = Field(min_length=1, max_length=5000)
@@ -11,6 +25,8 @@ class CheckInRequest(BaseModel):
 
 
 class MedicationReport(BaseModel):
+    """What the transcript said about taking medication today."""
+
     model_config = ConfigDict(extra="forbid")
 
     taken: bool | None
@@ -18,6 +34,8 @@ class MedicationReport(BaseModel):
 
 
 class Symptom(BaseModel):
+    """One symptom the speaker directly reported, with its exact quote."""
+
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(min_length=1)
@@ -26,6 +44,8 @@ class Symptom(BaseModel):
 
 
 class Extraction(BaseModel):
+    """The fact set extracted from one check-in transcript."""
+
     model_config = ConfigDict(extra="forbid")
 
     medication: MedicationReport
@@ -35,6 +55,8 @@ class Extraction(BaseModel):
 
 
 class CheckInResponse(BaseModel):
+    """Extraction result; deliberately free of diagnosis or risk decisions."""
+
     model_config = ConfigDict(extra="forbid")
 
     schema_version: Literal["1.0"] = "1.0"
@@ -43,7 +65,64 @@ class CheckInResponse(BaseModel):
     uncertainties: list[str] = Field(default_factory=list)
 
 
+class AudioExtractionResponse(CheckInResponse):
+    """A check-in extraction plus the transcription that produced it."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    transcript: str = Field(min_length=1)
+    transcription_provider: str = Field(min_length=1)
+    transcription_model: str = Field(min_length=1)
+
+
+class GuidanceRequest(BaseModel):
+    """A general educational question, optionally with check-in context."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    question: str = Field(min_length=1, max_length=3000)
+    transcript: str | None = Field(default=None, max_length=5000)
+
+
+class GuidanceCitation(BaseModel):
+    """Source metadata for one chunk of approved-source evidence."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    citation_id: str
+    document_id: str
+    organization: Literal["WHO", "Kemenkes"]
+    title: str
+    year: int | None = None
+    page: int | None = None
+    section: str | None = None
+    source_url: str
+
+
+class GuidanceEvidence(BaseModel):
+    """A cited chunk paired with the citation ID the answer referenced."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    citation_id: str
+    text: str
+
+
+class GuidanceResponse(BaseModel):
+    """Grounded answer contract; ``answer`` is null whenever it fails closed."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    answer: str | None
+    grounded: bool
+    evidence: list[GuidanceEvidence] = Field(default_factory=list)
+    citations: list[GuidanceCitation] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+
+
 class ApiError(BaseModel):
+    """The single error envelope every non-2xx response uses."""
+
     model_config = ConfigDict(extra="forbid")
 
     code: Literal[
