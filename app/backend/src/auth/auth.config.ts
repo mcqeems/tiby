@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { username } from "better-auth/plugins/username";
 import { admin } from "better-auth/plugins/admin";
 import pg from "pg";
-import { ac, NAKES, PMO, PASIEN } from "./permissions.js";
+import { ac, ADMIN, NAKES, PMO, PASIEN } from "./permissions.js";
 
 const { Pool } = pg;
 
@@ -45,7 +45,7 @@ export const auth = betterAuth({
     }),
     admin({
       ac,
-      roles: { NAKES, PMO, PASIEN },
+      roles: { ADMIN, NAKES, PMO, PASIEN },
       defaultRole: "PASIEN",
     }),
   ],

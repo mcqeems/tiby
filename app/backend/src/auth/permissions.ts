@@ -9,6 +9,13 @@ export const statement = {
 
 export const ac = createAccessControl(statement);
 
+export const ADMIN = ac.newRole({
+  patient: ["create", "read", "update", "delete"],
+  checkIn: ["create", "read"],
+  ticket: ["read", "update", "close"],
+  alert: ["read", "update"],
+});
+
 export const NAKES = ac.newRole({
   patient: ["create", "read", "update", "delete"],
   checkIn: ["read"],

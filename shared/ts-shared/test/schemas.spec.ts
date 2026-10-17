@@ -51,6 +51,7 @@ describe("@tiby/ts-shared contracts", () => {
   });
 
   it("has expected enum values", () => {
+    expect(UserRoles).toContain("ADMIN");
     expect(UserRoles).toContain("PASIEN");
     expect(UserRoles).toContain("PMO");
     expect(UserRoles).toContain("NAKES");
