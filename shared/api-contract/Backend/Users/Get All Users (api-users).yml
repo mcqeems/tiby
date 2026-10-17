@@ -1,0 +1,57 @@
+info:
+  name: Get All Users (api/users)
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/users"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Get All Users (200)
+    request:
+      url: "{{baseUrl}}/api/users"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "216"
+        - name: etag
+          value: W/"d8-KI9pb8Ecl0ppeLVB8ayVLrZLZJM"
+        - name: date
+          value: Sat, 17 Oct 2026 10:27:21 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          [
+            {
+              "id": "1ssVNVY3nu4dNW72WzRiovX9RrPaKnMU",
+              "username": "nakes_1792210134186",
+              "email": "nakes_1792210134186@users.tiby.internal",
+              "name": "dr. Nakes E2E",
+              "role": "NAKES",
+              "facilityId": "90e242df-e488-41da-b700-8a32ba47e2ea"
+            }
+          ]

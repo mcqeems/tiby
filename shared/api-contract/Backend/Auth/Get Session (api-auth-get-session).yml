@@ -1,0 +1,84 @@
+info:
+  name: Get Session (api/auth/get-session)
+  type: http
+  seq: 3
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/auth/get-session"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Get Session (200)
+    request:
+      url: "{{baseUrl}}/api/auth/get-session"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: cache-control
+          value: no-store
+        - name: content-type
+          value: application/json
+        - name: pragma
+          value: no-cache
+        - name: date
+          value: Sat, 17 Oct 2026 07:46:28 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+        - name: transfer-encoding
+          value: chunked
+      body:
+        type: json
+        data: |-
+          {
+            "session": {
+              "expiresAt": "2026-10-24T07:46:26.936Z",
+              "token": "UZeu2NdJi780rabwhbKbbeOYA0ISdPel",
+              "createdAt": "2026-10-17T07:46:26.936Z",
+              "updatedAt": "2026-10-17T07:46:26.936Z",
+              "ipAddress": "",
+              "userAgent": "bruno-runtime/4.2.1",
+              "userId": "F5oa7RdsB72S4RggJB1W2yJGu4Z3poUV",
+              "impersonatedBy": null,
+              "id": "DwCIOUmZBRyFGyOxH3lbCBBpVP8HImkg"
+            },
+            "user": {
+              "name": "Super Admin Tiby",
+              "email": "admin_pusat_d29a@users.tiby.internal",
+              "emailVerified": false,
+              "image": null,
+              "createdAt": "2026-10-17T06:16:07.844Z",
+              "updatedAt": "2026-10-17T06:16:07.844Z",
+              "username": "admin_pusat_d29a",
+              "role": "ADMIN",
+              "banned": false,
+              "banReason": null,
+              "banExpires": null,
+              "facility_id": null,
+              "full_name_encrypted": "Super Admin Tiby",
+              "whatsapp_encrypted": "08123456789",
+              "whatsapp_hash": "seed_dummy_hash",
+              "whatsapp_verified": true,
+              "whatsapp_chat_id": null,
+              "whatsapp_verified_at": null,
+              "must_confirm_consent": false,
+              "id": "F5oa7RdsB72S4RggJB1W2yJGu4Z3poUV"
+            }
+          }

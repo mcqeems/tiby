@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/api"
+  url: "{{baseUrl}}/api/health"
   auth: inherit
 
 settings:
@@ -16,7 +16,7 @@ settings:
   forwardAuthorizationHeader: false
 
 examples:
-  - name: Health Example (api/)
+  - name: Health (200)
     request:
       url: "{{baseUrl}}/api"
       method: GET
