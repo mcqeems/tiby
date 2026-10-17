@@ -1,21 +1,22 @@
-from dataclasses import dataclass
 import os
 
 import httpx
 
-
-class SpeechToTextError(RuntimeError):
-    pass
-
-
-@dataclass(frozen=True)
-class Transcription:
-    text: str
-    provider: str
-    model: str
+from .base import (
+    ProviderConfigurationError,
+    ProviderTimeoutError,
+    Transcription,
+    TranscriptionError,
+)
 
 
 class GroqTranscriber:
+    """Groq Whisper speech-to-text adapter (default transcriber).
+
+    Upload limits and accepted content types are part of the ``Transcriber``
+    protocol so the HTTP layer can enforce them before calling the provider.
+    """
+
     endpoint = "https://api.groq.com/openai/v1/audio/transcriptions"
     model = "whisper-large-v3-turbo"
     max_upload_bytes = 20 * 1024 * 1024
@@ -36,8 +37,9 @@ class GroqTranscriber:
         self.timeout_seconds = timeout_seconds
 
     async def transcribe(self, audio: bytes, filename: str = "check-in.wav") -> Transcription:
+        """Transcribe raw audio bytes; raises ProviderConfigurationError without a key."""
         if not self.api_key:
-            raise SpeechToTextError("GROQ_API_KEY is not configured.")
+            raise ProviderConfigurationError("GROQ_API_KEY is not configured.")
         try:
             async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
                 response = await client.post(
@@ -49,9 +51,11 @@ class GroqTranscriber:
                 response.raise_for_status()
                 transcript = response.json().get("text")
                 if not isinstance(transcript, str) or not transcript.strip():
-                    raise SpeechToTextError("Groq returned an empty transcript.")
+                    raise TranscriptionError("Groq returned an empty transcript.")
                 return Transcription(
                     text=transcript.strip(), provider="groq", model=self.model
                 )
+        except httpx.TimeoutException as exc:
+            raise ProviderTimeoutError("Groq transcription timed out.") from exc
         except (httpx.HTTPError, ValueError) as exc:
-            raise SpeechToTextError("Groq transcription failed.") from exc
+            raise TranscriptionError("Groq transcription failed.") from exc
