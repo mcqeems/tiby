@@ -23,9 +23,9 @@ export const auth = betterAuth({
   trustedOrigins: [
     "http://localhost:3000",
     "http://localhost:3001",
-    process.env.BETTER_AUTH_URL || "http://localhost:3001",
-    process.env.FRONTEND_URL || "http://localhost:3000",
-  ],
+    process.env.BETTER_AUTH_URL,
+    process.env.FRONTEND_URL,
+  ].filter(Boolean) as string[],
   user: {
     modelName: "users",
     additionalFields: {
@@ -44,7 +44,8 @@ export const auth = betterAuth({
     database: {
       joins: true,
     },
-    disableCSRFCheck: true,
+    // Disabled in dev & test for Bruno/Postman/curl; enforced in production for browser CSRF protection
+    disableCSRFCheck: process.env.NODE_ENV !== "production",
   },
   plugins: [
     username({
