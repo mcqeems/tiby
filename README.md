@@ -25,4 +25,4 @@ bun run dev:backend  # NestJS (PORT=3001)
 bun run dev          # both
 ```
 
-AI service: `cd app/ai-service`, follow its README (own venv).
+AI service: `cd app/ai-service`, follow its README (own venv + provider API tokens).
