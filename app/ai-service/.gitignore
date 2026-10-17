@@ -3,3 +3,7 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+
+# Local/generated artifacts
+.DS_Store
+knowledge/tiby.db
