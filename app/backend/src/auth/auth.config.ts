@@ -20,6 +20,12 @@ export const auth = betterAuth({
   secret:
     process.env.BETTER_AUTH_SECRET ||
     "rahasia_super_aman_tiby_development_secret_32_bytes_min",
+  trustedOrigins: [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    process.env.BETTER_AUTH_URL || "http://localhost:3001",
+    process.env.FRONTEND_URL || "http://localhost:3000",
+  ],
   user: {
     modelName: "users",
     additionalFields: {
@@ -38,6 +44,7 @@ export const auth = betterAuth({
     database: {
       joins: true,
     },
+    disableCSRFCheck: true,
   },
   plugins: [
     username({
