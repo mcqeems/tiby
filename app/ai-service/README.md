@@ -38,7 +38,7 @@ Request:
 }
 ```
 
-The HTTP contract is defined in `../../shared/api-contract/openapi.yaml`. Python request/response models live in `src/tiby_ai/contracts.py`. Null means unstated or uncertain—not false. Never treat model confidence as clinical probability.
+The HTTP contract is defined in `../../shared/api-contract/` (OpenCollection / Bruno format). Python request/response models live in `src/tiby_ai/contracts.py`. Null means unstated or uncertain—not false. Never treat model confidence as clinical probability.
 
 ### Modules
 

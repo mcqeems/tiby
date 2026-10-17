@@ -1,0 +1,14 @@
+opencollection: 1.0.0
+
+info:
+  name: Tiby AI Extraction API
+  version: 1.0.0
+config:
+  proxy:
+    inherit: true
+bundled: false
+extensions:
+  bruno:
+    ignore:
+      - node_modules
+      - .git

@@ -78,7 +78,9 @@ Kode minimum: `INVALID_REQUEST`, `EXTRACTION_FAILED`, `PROVIDER_TIMEOUT`, `INTER
 
 ## Files
 
-- `openapi.yaml` — kontrak HTTP yang bisa diimpor ke Bruno/Postman.
+- `opencollection.yml` — OpenCollection v1.0.0 collection root (Bruno format).
+- `environments/local.yml` — Environment configuration (`baseUrl = http://localhost:8000`).
+- `extractions/extract-check-in.yml` — Bruno executable request for `POST /v1/extractions/check-in`.
 - `examples/check-in-request.json` — request contoh.
 - `examples/check-in-response.json` — response contoh.
 - `app/ai-service/src/tiby_ai/contracts.py` — model Pydantic yang memvalidasi payload Python.
