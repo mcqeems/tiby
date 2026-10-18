@@ -5,10 +5,10 @@ citations can be traced back to the source PDF. The database file is a build
 artifact (gitignored) rebuilt by ``scripts/ingest_knowledge.py``.
 """
 
-from dataclasses import dataclass
 import json
 import re
 import sqlite3
+from dataclasses import dataclass
 from pathlib import Path
 
 

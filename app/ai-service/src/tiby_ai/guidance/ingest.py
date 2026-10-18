@@ -6,10 +6,10 @@ and part (``…-p12-c3``) so citations stay stable across rebuilds. Run through
 ``scripts/ingest_knowledge.py``; this module never runs during requests.
 """
 
-from pathlib import Path
-import re
 import hashlib
 import json
+import re
+from pathlib import Path
 
 import pymupdf as fitz
 
@@ -29,7 +29,7 @@ def chunk_page(text: str, *, chunk_words: int = 180, overlap_words: int = 35) ->
     instead of becoming a near-empty chunk of its own.
     """
     words = text.split()
-    chunks = []
+    chunks: list[str] = []
     start = 0
     while start < len(words):
         end = min(start + chunk_words, len(words))
@@ -50,7 +50,7 @@ def ingest_pdf(pdf_path: str | Path, metadata: dict, store: SQLiteRetriever) -> 
     skipped. Raises ``ValueError`` when no page yields extractable text.
     """
     pdf_path = Path(pdf_path)
-    chunks = []
+    chunks: list[dict] = []
     with fitz.open(pdf_path) as doc:
         for page_index, page in enumerate(doc):
             text = normalize_text(page.get_text("text"))
