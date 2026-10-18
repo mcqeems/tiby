@@ -6,7 +6,7 @@ lets the routes map failures onto contract status codes — 503 not configured,
 """
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import ClassVar, Protocol
 
 from ..contracts import CheckInRequest, CheckInResponse
 
@@ -35,10 +35,12 @@ class Transcriber(Protocol):
     - TranscriptionError for any other provider failure.
     """
 
-    supported_content_types: set[str]
+    supported_content_types: ClassVar[set[str]]
     max_upload_bytes: int
 
-    async def transcribe(self, audio: bytes, filename: str = "check-in.wav") -> Transcription: ...
+    async def transcribe(
+        self, audio: bytes, filename: str = "check-in.wav"
+    ) -> Transcription: ...
 
 
 class ProviderConfigurationError(RuntimeError):
