@@ -1,0 +1,50 @@
+info:
+  name: Sign Out (api/auth/sign-out)
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/sign-out"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Sign Out (200)
+    request:
+      url: "{{baseUrl}}/api/auth/sign-out"
+      method: POST
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json
+        - name: set-cookie
+          value: better-auth.session_token=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax,better-auth.session_data=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax,better-auth.dont_remember=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax
+        - name: date
+          value: Sat, 17 Oct 2026 07:33:33 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+        - name: transfer-encoding
+          value: chunked
+      body:
+        type: json
+        data: |-
+          {
+            "success": true
+          }

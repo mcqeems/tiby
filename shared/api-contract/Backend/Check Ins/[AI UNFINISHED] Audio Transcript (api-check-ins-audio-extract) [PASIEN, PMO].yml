@@ -1,0 +1,80 @@
+info:
+  name: "[AI UNFINISHED] Audio Transcript (api/check-ins/audio-extract) [PASIEN, PMO]"
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/check-ins/audio-extract"
+  body:
+    type: multipart-form
+    data:
+      - name: audio
+        type: file
+        value:
+          - /home/mcqeems/Documents/Project/UINIC 8.0/tiby/shared/assets/audio/audio-transcript-test.mp3
+        contentType: audio/mpeg
+      - name: treatmentPlanId
+        type: text
+        value: bb1adaae-b7fc-4621-9bdb-26948c44406a
+        description: Optional if it's Patient and MANDATORY if it's PMO
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Audio Transcript (201)
+    request:
+      url: "{{baseUrl}}/api/check-ins/audio-extract"
+      method: POST
+      body:
+        type: multipart-form
+        data:
+          - name: audio
+            type: file
+            value:
+              - /home/mcqeems/Documents/Project/UINIC 8.0/tiby/shared/assets/audio/audio-transcript-test.mp3
+            contentType: audio/mpeg
+          - name: treatmentPlanId
+            type: text
+            value: bb1adaae-b7fc-4621-9bdb-26948c44406a
+            description: Optional if it's Patient and MANDATORY if it's PMO
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "245"
+        - name: etag
+          value: W/"f5-8kPMWqO/E/kNY+aL1kt6oPHMN9U"
+        - name: date
+          value: Sun, 18 Oct 2026 03:14:09 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            "transcript": "Halo Pandu, saya sudah minum 4 butir obat pagi ini dan tidak ada keluhan.",
+            "medicationTaken": "SUDAH_MINUM",
+            "pillsTakenCount": 4,
+            "symptoms": [],
+            "intentToStopOrRefuse": false,
+            "extractionConfidence": 0.92,
+            "emotionalSentiment": "positive"
+          }

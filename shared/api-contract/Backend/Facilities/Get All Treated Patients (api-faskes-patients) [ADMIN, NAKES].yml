@@ -1,0 +1,111 @@
+info:
+  name: Get All Treated Patients (api/faskes/patients) [ADMIN, NAKES]
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/faskes/patients"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Get All Treated Patients (200)
+    request:
+      url: "{{baseUrl}}/api/faskes/patients"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "1412"
+        - name: etag
+          value: W/"584-UAWE4BwSaQZhDYHDzgE4HyXCnLs"
+        - name: date
+          value: Sat, 17 Oct 2026 16:48:28 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            "items": [
+              {
+                "id": "bb1adaae-b7fc-4621-9bdb-26948c44406a",
+                "patientUserId": "0ehKGWIZgdFr6IXIXv13X1wRB8cyHofD",
+                "patientName": "Budi Santoso",
+                "username": "pasien_budi_d29a",
+                "patientState": "PUTUS_FOLLOW_UP",
+                "phase": "INTENSIF",
+                "regimenCode": "FDC-4",
+                "dailyPillQuota": 4,
+                "currentStreak": 0,
+                "consecutiveSilenceDays": 7,
+                "riskScore": 140,
+                "lastCheckInDate": null,
+                "todayCheckInLocked": false,
+                "startDate": "2026-10-17",
+                "targetEndDate": "2027-04-15",
+                "whatsappVerified": true,
+                "pushSubscribed": false
+              },
+              {
+                "id": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "patientUserId": "UAAXQ1l80jCSl7xfLoD1mvCQ1VMuFrVd",
+                "patientName": "Budi Santoso",
+                "username": "pasien_budi_dca6",
+                "patientState": "PUTUS_FOLLOW_UP",
+                "phase": "INTENSIF",
+                "regimenCode": "FDC-4",
+                "dailyPillQuota": 4,
+                "currentStreak": 0,
+                "consecutiveSilenceDays": 7,
+                "riskScore": 140,
+                "lastCheckInDate": null,
+                "todayCheckInLocked": false,
+                "startDate": "2026-10-17",
+                "targetEndDate": "2027-04-15",
+                "whatsappVerified": true,
+                "pushSubscribed": false
+              },
+              {
+                "id": "e2c54216-1b40-4e24-a7b1-08bfa9f5d074",
+                "patientUserId": "koMUsjaDd510j9PIJL87ava43WqyO4In",
+                "patientName": "Ujang Surasep",
+                "username": "ujangsurasep",
+                "patientState": "PENDING",
+                "phase": "INTENSIF",
+                "regimenCode": "FDC-4",
+                "dailyPillQuota": 4,
+                "currentStreak": 0,
+                "consecutiveSilenceDays": 0,
+                "riskScore": 0,
+                "lastCheckInDate": null,
+                "todayCheckInLocked": false,
+                "startDate": "2026-10-17",
+                "targetEndDate": "2027-04-15",
+                "whatsappVerified": false,
+                "pushSubscribed": false
+              }
+            ],
+            "total": 3,
+            "page": 1,
+            "limit": 20
+          }

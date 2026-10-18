@@ -17,6 +17,7 @@
     "lint:frontend": "bun --filter @tiby/frontend lint",
     "test": "bun --filter @tiby/backend test",
     "test:backend": "bun --filter @tiby/backend test",
-    "test:e2e": "bun --filter @tiby/backend test:e2e"
+    "test:e2e": "bun --filter @tiby/backend test:e2e",
+    "seed": "bun --filter @tiby/backend seed"
   }
 }

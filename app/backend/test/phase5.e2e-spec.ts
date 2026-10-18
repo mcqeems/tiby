@@ -102,7 +102,7 @@ describe("Phase 5: WhatsApp Connect & Inbound WAHA Webhook (e2e)", () => {
 
     // Login Patient
     const pLogin = await request(app.getHttpServer())
-      .post("/api/auth/sign-in/username")
+      .post("/api/auth/sign-in")
       .send({ username: patientUsername, password: patientPassword });
     expect(pLogin.status).toBe(200);
     patientCookie = pLogin.headers["set-cookie"] as string[];

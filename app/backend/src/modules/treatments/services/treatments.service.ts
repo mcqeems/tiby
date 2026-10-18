@@ -2,7 +2,11 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { PatientStatusHistory } from "../entities/patient-status-history.entity.js";
-import type { PatientStatusHistoryList, PatientStatusHistoryItem } from "@tiby/ts-shared";
+import type {
+  PatientStatusHistoryList,
+  PatientStatusHistoryItem,
+  PatientStatusEventType,
+} from "@tiby/ts-shared";
 
 @Injectable()
 export class TreatmentsService {
@@ -26,7 +30,7 @@ export class TreatmentsService {
     const items: PatientStatusHistoryItem[] = records.map((r) => ({
       id: r.id,
       treatmentPlanId: r.treatmentPlanId,
-      eventType: r.eventType as any,
+      eventType: r.eventType as PatientStatusEventType,
       previousState: r.previousState,
       newState: r.newState,
       previousStreak: r.previousStreak,

@@ -13,6 +13,7 @@ import { CheckInService } from "../services/check-in.service.js";
 import { RolesGuard } from "../../../common/guards/roles.guard.js";
 import { ConsentGuard } from "../../../common/guards/consent.guard.js";
 import { Roles } from "../../../common/decorators/roles.decorator.js";
+import type { AuthenticatedRequest } from "../../../common/types/auth-request.type.js";
 import {
   PmoPatientStatusListSchema,
   CreatePmoFollowUpSchema,
@@ -29,7 +30,7 @@ export class PmoController {
   @Get("patients")
   @Roles(["PMO"])
   @SerializeOptions({ schema: PmoPatientStatusListSchema })
-  async getPatients(@Req() req: any): Promise<PmoPatientStatusList> {
+  async getPatients(@Req() req: AuthenticatedRequest): Promise<PmoPatientStatusList> {
     const user = req.session?.user ?? req.user;
     if (!user?.id) {
       throw new UnauthorizedException({
@@ -43,7 +44,7 @@ export class PmoController {
   @Post("patients/:id/follow-up")
   @Roles(["PMO"])
   async createFollowUp(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param("id") patientId: string,
     @Body({ schema: CreatePmoFollowUpSchema }) body: CreatePmoFollowUpDto,
   ): Promise<PmoFollowUpResponse> {

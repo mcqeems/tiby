@@ -30,6 +30,11 @@ export class RolesGuard implements CanActivate {
       });
     }
 
+    // ADMIN has absolute authorization over everything
+    if (userRole === "ADMIN") {
+      return true;
+    }
+
     const hasRole = requiredRoles.includes(userRole as UserRole);
     if (!hasRole) {
       throw new ForbiddenException({

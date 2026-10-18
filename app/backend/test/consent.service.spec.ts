@@ -17,6 +17,7 @@ describe("ConsentService Unit Tests", () => {
       find: vi.fn(),
       create: vi.fn((data) => data),
       save: vi.fn((data) => Promise.resolve(data)),
+      upsert: vi.fn().mockResolvedValue({}),
     };
     mockUserRepo = {
       findOneBy: vi.fn(),
@@ -101,6 +102,13 @@ describe("ConsentService Unit Tests", () => {
 
       expect(user.mustConfirmConsent).toBe(false);
       expect(mockUserRepo.save).toHaveBeenCalledWith(user);
+      expect(mockConsentRepo.upsert).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ userId: "user-1", scope: "PATIENT_DATA_SHARE" }),
+          expect.objectContaining({ userId: "user-1", scope: "STT_AUDIO_PROCESSING" }),
+        ]),
+        ["userId", "scope"],
+      );
 
       // Verify TreatmentPlan state transitioned to AKTIF
       expect(plan.patientState).toBe("AKTIF");

@@ -11,12 +11,13 @@ import {
   FileTypeValidator,
   UnauthorizedException,
   BadRequestException,
-} from "@nestjs/common";
-import { FileInterceptor } from "@nestjs/platform-express";
-import { CheckInService } from "../services/check-in.service.js";
-import { RolesGuard } from "../../../common/guards/roles.guard.js";
-import { ConsentGuard } from "../../../common/guards/consent.guard.js";
-import { Roles } from "../../../common/decorators/roles.decorator.js";
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { CheckInService } from '../services/check-in.service.js';
+import { RolesGuard } from '../../../common/guards/roles.guard.js';
+import { ConsentGuard } from '../../../common/guards/consent.guard.js';
+import { Roles } from '../../../common/decorators/roles.decorator.js';
+import type { AuthenticatedRequest } from '../../../common/types/auth-request.type.js';
 import {
   SubmitCheckInSchema,
   TextExtractRequestSchema,
@@ -24,33 +25,37 @@ import {
   type TextExtractRequest,
   type AiAudioExtractionResponse,
   type CheckInVerdictResponse,
-} from "@tiby/ts-shared";
+  type UserRole,
+} from '@tiby/ts-shared';
 
-@Controller("check-ins")
+@Controller('check-ins')
 @UseGuards(RolesGuard, ConsentGuard)
 export class CheckInController {
   constructor(private readonly checkInService: CheckInService) {}
 
-  private extractUser(req: any): { userId: string; role: string } {
+  private extractUser(req: AuthenticatedRequest): {
+    userId: string;
+    role: UserRole;
+  } {
     const user = req.session?.user ?? req.user;
     if (!user?.id) {
       throw new UnauthorizedException({
-        code: "UNAUTHORIZED",
-        message: "Authentication session required",
+        code: 'UNAUTHORIZED',
+        message: 'Authentication session required',
       });
     }
     return { userId: user.id, role: user.role };
   }
 
-  @Post("audio-extract")
-  @Roles(["PASIEN", "PMO"])
+  @Post('audio-extract')
+  @Roles(['PASIEN', 'PMO'])
   @UseInterceptors(
-    FileInterceptor("audio", {
+    FileInterceptor('audio', {
       limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
     }),
   )
   async extractAudio(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @UploadedFile(
       new ParseFilePipe({
         fileIsRequired: false,
@@ -61,29 +66,34 @@ export class CheckInController {
           // fallbackToMimetype: magic-number check first, mimetype string
           // fallback for buffers without detectable signatures (tests).
           new FileTypeValidator({
-            fileType: /^(audio|video)\/(webm|wav|ogg|mp4|mpeg)$/,
+            fileType: /^(audio|video)\/(webm|wav|ogg|mp3|mpeg)$/,
             fallbackToMimetype: true,
           }),
         ],
       }),
     )
     file?: Express.Multer.File,
-    @Body("treatmentPlanId") treatmentPlanId?: string,
+    @Body('treatmentPlanId') treatmentPlanId?: string,
   ): Promise<AiAudioExtractionResponse> {
     if (!file) {
       throw new BadRequestException({
-        code: "BAD_REQUEST",
+        code: 'BAD_REQUEST',
         message: "Audio file is required in 'audio' form-data field",
       });
     }
     const { userId, role } = this.extractUser(req);
-    return this.checkInService.extractAudioPreview(userId, role, file, treatmentPlanId);
+    return this.checkInService.extractAudioPreview(
+      userId,
+      role,
+      file,
+      treatmentPlanId,
+    );
   }
 
-  @Post("text-extract")
-  @Roles(["PASIEN", "PMO"])
+  @Post('text-extract')
+  @Roles(['PASIEN', 'PMO'])
   async extractText(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body({ schema: TextExtractRequestSchema }) body: TextExtractRequest,
   ): Promise<AiAudioExtractionResponse> {
     const { userId, role } = this.extractUser(req);
@@ -91,9 +101,9 @@ export class CheckInController {
   }
 
   @Post()
-  @Roles(["PASIEN", "PMO"])
+  @Roles(['PASIEN', 'PMO'])
   async submitCheckIn(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body({ schema: SubmitCheckInSchema }) body: SubmitCheckInDto,
   ): Promise<CheckInVerdictResponse> {
     const { userId, role } = this.extractUser(req);

@@ -4,6 +4,8 @@ import {
   MinorSideEffects,
   type MedicationStatus,
   type SafetyVerdict,
+  type MajorRedFlag,
+  type MinorSideEffect,
 } from "@tiby/ts-shared";
 
 export interface RuleEvaluationInput {
@@ -30,10 +32,10 @@ export class RuleEngineService {
   evaluate(input: RuleEvaluationInput): RuleEvaluationResult {
     const matchedRuleCodes: string[] = [];
     const activeMajorFlags = input.symptoms.filter((s) =>
-      MajorRedFlags.includes(s as any),
+      MajorRedFlags.includes(s as MajorRedFlag),
     );
     const activeMinorEffects = input.symptoms.filter((s) =>
-      MinorSideEffects.includes(s as any),
+      MinorSideEffects.includes(s as MinorSideEffect),
     );
 
     // 1. Scenario D: Critical Red Flags or Intent to Stop

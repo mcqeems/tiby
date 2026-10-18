@@ -13,3 +13,4 @@ export * from "./check-in.schema.js";
 export * from "./onboarding.schema.js";
 export * from "./faskes.schema.js";
 export * from "./tickets.schema.js";
+export * from "./users.schema.js";

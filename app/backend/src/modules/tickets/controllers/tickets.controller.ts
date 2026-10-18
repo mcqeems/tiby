@@ -12,6 +12,7 @@ import {
 import { TicketsService } from "../services/tickets.service.js";
 import { RolesGuard } from "../../../common/guards/roles.guard.js";
 import { Roles } from "../../../common/decorators/roles.decorator.js";
+import type { AuthenticatedRequest } from "../../../common/types/auth-request.type.js";
 import {
   ListTicketsQuerySchema,
   CloseTicketSchema,
@@ -26,7 +27,7 @@ import {
 export class TicketsController {
   constructor(private readonly ticketsService: TicketsService) {}
 
-  private extractUserId(req: any): string {
+  private extractUserId(req: AuthenticatedRequest): string {
     const userId = req.session?.user?.id ?? req.user?.id;
     if (!userId) {
       throw new UnauthorizedException({
@@ -40,7 +41,7 @@ export class TicketsController {
   @Get()
   @Roles(["NAKES"])
   async listTickets(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query({ schema: ListTicketsQuerySchema }) query: ListTicketsQuery,
   ): Promise<TicketListResponse> {
     const nakesUserId = this.extractUserId(req);
@@ -56,7 +57,7 @@ export class TicketsController {
   @Patch(":id/close")
   @Roles(["NAKES"])
   async closeTicket(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param("id") id: string,
     @Body({ schema: CloseTicketSchema }) body: CloseTicketDto,
   ): Promise<TicketDetail> {

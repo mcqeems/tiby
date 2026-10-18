@@ -13,6 +13,7 @@ import { AllowAnonymous } from "@thallesp/nestjs-better-auth";
 import { WhatsappConnectService } from "../services/whatsapp-connect.service.js";
 import { RolesGuard } from "../../../common/guards/roles.guard.js";
 import { Roles } from "../../../common/decorators/roles.decorator.js";
+import type { AuthenticatedRequest } from "../../../common/types/auth-request.type.js";
 import {
   WhatsappConnectRequestSchema,
   WhatsappStatusQuerySchema,
@@ -22,13 +23,14 @@ import {
   type WhatsappStatusQuery,
   type WhatsappConnectionStatus,
   type WahaWebhookPayload,
+  type UserRole,
 } from "@tiby/ts-shared";
 
 @Controller()
 export class WhatsappController {
   constructor(private readonly whatsappConnectService: WhatsappConnectService) {}
 
-  private extractUser(req: any): { userId: string; role: string } {
+  private extractUser(req: AuthenticatedRequest): { userId: string; role: UserRole } {
     const user = req.session?.user ?? req.user;
     if (!user?.id) {
       throw new UnauthorizedException({
@@ -43,7 +45,7 @@ export class WhatsappController {
   @UseGuards(RolesGuard)
   @Roles(["PASIEN", "PMO", "NAKES"])
   async connect(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body({ schema: WhatsappConnectRequestSchema }) body: WhatsappConnectRequest,
   ): Promise<WhatsappConnectChallenge> {
     const { userId, role } = this.extractUser(req);
@@ -54,7 +56,7 @@ export class WhatsappController {
   @UseGuards(RolesGuard)
   @Roles(["PASIEN", "PMO", "NAKES"])
   async getStatus(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query({ schema: WhatsappStatusQuerySchema }) query: WhatsappStatusQuery,
   ): Promise<WhatsappConnectionStatus> {
     const { userId } = this.extractUser(req);

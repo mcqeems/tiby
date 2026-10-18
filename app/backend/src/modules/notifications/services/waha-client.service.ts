@@ -38,8 +38,9 @@ export class WahaClientService {
         signal: AbortSignal.timeout(5000),
       });
       return res.ok;
-    } catch (err: any) {
-      this.logger.warn(`WAHA sendSeen failed: ${err.message}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`WAHA sendSeen failed: ${msg}`);
       return false;
     }
   }
@@ -108,12 +109,13 @@ export class WahaClientService {
       });
 
       if (res.ok) {
-        const data: any = await res.json();
+        const data = (await res.json()) as { id?: string };
         return { success: true, messageId: data.id };
       }
       return { success: false };
-    } catch (err: any) {
-      this.logger.warn(`WAHA sendText failed: ${err.message}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`WAHA sendText failed: ${msg}`);
       return { success: false };
     }
   }

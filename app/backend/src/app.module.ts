@@ -19,6 +19,7 @@ import { TreatmentsModule } from "./modules/treatments/treatments.module.js";
 import { EscalationModule } from "./modules/escalation/escalation.module.js";
 import { EducationModule } from "./modules/education/education.module.js";
 import { AuditModule } from "./modules/audit/audit.module.js";
+import { UsersModule } from "./modules/users/users.module.js";
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { AuditModule } from "./modules/audit/audit.module.js";
     TreatmentsModule,
     EscalationModule,
     EducationModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

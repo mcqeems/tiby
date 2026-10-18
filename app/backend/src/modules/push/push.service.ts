@@ -42,8 +42,9 @@ export class PushService {
       try {
         webpush.setVapidDetails(subject, publicKey, privateKey);
         this.vapidConfigured = true;
-      } catch (err: any) {
-        this.logger.warn(`Failed to configure VAPID details: ${err.message}`);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.warn(`Failed to configure VAPID details: ${msg}`);
       }
     }
   }
@@ -155,11 +156,15 @@ export class PushService {
             JSON.stringify(cleanPayload),
           );
           sent++;
-        } catch (err: any) {
+        } catch (err: unknown) {
           failed++;
-          this.logger.warn(`Push failed for endpoint ${sub.endpoint}: ${err.statusCode || err.message}`);
+          const statusCode = err && typeof err === "object" && "statusCode" in err
+            ? (err as { statusCode?: number }).statusCode
+            : undefined;
+          const msg = err instanceof Error ? err.message : String(err);
+          this.logger.warn(`Push failed for endpoint ${sub.endpoint}: ${statusCode || msg}`);
           // 410 Gone or 404 Not Found: subscription is expired or unregistered
-          if (err.statusCode === 410 || err.statusCode === 404) {
+          if (statusCode === 410 || statusCode === 404) {
             await this.pushRepo.delete({ id: sub.id });
             this.logger.log(`Pruned expired push subscription ${sub.id}`);
           }

@@ -50,6 +50,14 @@ describe("Security Guards Unit Tests", () => {
       const ctx = createMockContext({ session: { user: { role: "NAKES" } } });
       expect(guard.canActivate(ctx)).toBe(true);
     });
+
+    it("allows access for ADMIN role with absolute authorization", () => {
+      reflector = { get: vi.fn().mockReturnValue(["NAKES"]) } as unknown as Reflector;
+      guard = new RolesGuard(reflector);
+
+      const ctx = createMockContext({ session: { user: { role: "ADMIN" } } });
+      expect(guard.canActivate(ctx)).toBe(true);
+    });
   });
 
   describe("ConsentGuard", () => {
