@@ -65,12 +65,23 @@ class CheckInResponse(BaseModel):
     uncertainties: list[str] = Field(default_factory=list)
 
 
-class AudioExtractionResponse(CheckInResponse):
-    """A check-in extraction plus the transcription that produced it."""
+class AiAudioExtractionResponse(BaseModel):
+    """Flat contract consumed by the backend check-in preview flow."""
 
     model_config = ConfigDict(extra="forbid")
 
     transcript: str = Field(min_length=1)
+    medicationTaken: Literal["SUDAH_MINUM", "BELUM_MINUM", "TIDAK_PASTI"]
+    pillsTakenCount: int | None = Field(ge=0)
+    symptoms: list[str] = Field(default_factory=list)
+    intentToStopOrRefuse: bool
+    extractionConfidence: float = Field(ge=0, le=1)
+    emotionalSentiment: str | None = None
+
+
+class AudioExtractionResponse(AiAudioExtractionResponse):
+    """Backend-compatible extraction plus transcription provider metadata."""
+
     transcription_provider: str = Field(min_length=1)
     transcription_model: str = Field(min_length=1)
 
