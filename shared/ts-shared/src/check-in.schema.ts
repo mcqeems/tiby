@@ -18,7 +18,7 @@ export type AiAudioExtractionResponse = z.infer<typeof AiAudioExtractionResponse
 
 export const TextExtractRequestSchema = z.object({
   editedTranscript: z.string().min(1),
-  treatmentPlanId: z.string().uuid().optional(),
+  treatmentPlanId: z.uuid().optional(),
 });
 export type TextExtractRequest = z.infer<typeof TextExtractRequestSchema>;
 
@@ -42,7 +42,7 @@ export type FallbackButtonsPayload = z.infer<typeof FallbackButtonsPayloadSchema
 
 export const SubmitCheckInSchema = z.object({
   inputMode: CheckInInputModeSchema,
-  treatmentPlanId: z.string().uuid().optional(),
+  treatmentPlanId: z.uuid().optional(),
   confirmedFacts: ConfirmedCheckInFactsSchema.optional(),
   fallbackButtons: FallbackButtonsPayloadSchema.optional(),
 });
@@ -58,7 +58,7 @@ export const CheckInEducationalCardSchema = z.object({
 export type CheckInEducationalCard = z.infer<typeof CheckInEducationalCardSchema>;
 
 export const CheckInVerdictResponseSchema = z.object({
-  checkInId: z.string().uuid(),
+  checkInId: z.uuid(),
   verdict: SafetyVerdictSchema,
   isDoseFulfilled: z.boolean(),
   redoRequiredToday: z.boolean(),
@@ -71,7 +71,7 @@ export const CheckInVerdictResponseSchema = z.object({
 export type CheckInVerdictResponse = z.infer<typeof CheckInVerdictResponseSchema>;
 
 export const PmoPatientStatusItemSchema = z.object({
-  treatmentPlanId: z.string().uuid(),
+  treatmentPlanId: z.uuid(),
   patientName: z.string(),
   isLockedToday: z.boolean(),
   todayVerdict: SafetyVerdictSchema.nullable(),

@@ -1,5 +1,5 @@
 info:
-  name: Get All Treated Patients (api/faskes/patients) [ADMIN, NAKES]
+  name: Get All Treated Patients (api/faskes/patients) [NAKES]
   type: http
   seq: 1
 
