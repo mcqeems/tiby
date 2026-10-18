@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
-import { createHash } from 'node:crypto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DailyCheckIn } from '../entities/daily-check-in.entity.js';
 import { SafetyEvaluation } from '../../rule-engine/entities/safety-evaluation.entity.js';
@@ -15,7 +14,6 @@ import { PmoAssignment } from '../../treatments/entities/pmo-assignment.entity.j
 import { InterventionTicket } from '../../tickets/entities/intervention-ticket.entity.js';
 import { FacilityAlert } from '../../facilities/entities/facility-alert.entity.js';
 import { PatientStatusHistory } from '../../treatments/entities/patient-status-history.entity.js';
-import { FamilyContact } from '../../treatments/entities/family-contact.entity.js';
 import { AuditLog } from '../../audit/entities/audit-log.entity.js';
 import { AiClientService } from '../../ai-client/ai-client.service.js';
 import { RuleEngineService } from '../../rule-engine/rule-engine.service.js';
@@ -49,8 +47,6 @@ export class CheckInService {
     private readonly alertRepo: Repository<FacilityAlert>,
     @InjectRepository(PatientStatusHistory)
     private readonly historyRepo: Repository<PatientStatusHistory>,
-    @InjectRepository(FamilyContact)
-    private readonly familyRepo: Repository<FamilyContact>,
     @InjectRepository(AuditLog)
     private readonly auditRepo: Repository<AuditLog>,
     private readonly aiClientService: AiClientService,
@@ -532,28 +528,6 @@ export class CheckInService {
         code: 'NOT_FOUND',
         message: 'PMO is not assigned to this patient',
       });
-    }
-
-    if (dto.additionalFamilyContact) {
-      const cleanPhone = dto.additionalFamilyContact.whatsappNumber.replace(
-        /\D/g,
-        '',
-      );
-      const whatsappHash = createHash('sha256')
-        .update(cleanPhone)
-        .digest('hex');
-
-      await this.familyRepo.save(
-        this.familyRepo.create({
-          treatmentPlanId: plan.id,
-          addedByUserId: pmoUserId,
-          nameEncrypted: dto.additionalFamilyContact.fullName,
-          whatsappEncrypted: dto.additionalFamilyContact.whatsappNumber,
-          whatsappHash,
-          whatsappVerified: false,
-          notifyOnEscalation: true,
-        }),
-      );
     }
 
     const history = await this.historyRepo.save(

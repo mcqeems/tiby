@@ -10,7 +10,6 @@ import { PmoAssignment } from "../treatments/entities/pmo-assignment.entity.js";
 import { InterventionTicket } from "../tickets/entities/intervention-ticket.entity.js";
 import { FacilityAlert } from "../facilities/entities/facility-alert.entity.js";
 import { PatientStatusHistory } from "../treatments/entities/patient-status-history.entity.js";
-import { FamilyContact } from "../treatments/entities/family-contact.entity.js";
 import { AuditLog } from "../audit/entities/audit-log.entity.js";
 import { AiClientModule } from "../ai-client/ai-client.module.js";
 import { RuleEngineModule } from "../rule-engine/rule-engine.module.js";
@@ -25,7 +24,6 @@ import { RuleEngineModule } from "../rule-engine/rule-engine.module.js";
       InterventionTicket,
       FacilityAlert,
       PatientStatusHistory,
-      FamilyContact,
       AuditLog,
     ]),
     AiClientModule,

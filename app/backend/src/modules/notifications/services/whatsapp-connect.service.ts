@@ -1,39 +1,39 @@
-import { Injectable, NotFoundException, Logger } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import { createHash, randomBytes } from "node:crypto";
-import { WhatsappVerification } from "../entities/whatsapp-verification.entity.js";
-import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
-import { FamilyContact } from "../../treatments/entities/family-contact.entity.js";
-import { TreatmentPlan } from "../../treatments/entities/treatment-plan.entity.js";
-import { PatientStatusHistory } from "../../treatments/entities/patient-status-history.entity.js";
-import { AuditLog } from "../../audit/entities/audit-log.entity.js";
-import { WahaClientService } from "./waha-client.service.js";
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { createHash, randomBytes } from 'node:crypto';
+import { WhatsappVerification } from '../entities/whatsapp-verification.entity.js';
+import { AuthUser } from '../../../auth/entities/auth-user.entity.js';
+import { FamilyContact } from '../../treatments/entities/family-contact.entity.js';
+import { TreatmentPlan } from '../../treatments/entities/treatment-plan.entity.js';
+import { PatientStatusHistory } from '../../treatments/entities/patient-status-history.entity.js';
+import { AuditLog } from '../../audit/entities/audit-log.entity.js';
+import { WahaClientService } from './waha-client.service.js';
 import type {
   WhatsappConnectRequest,
   WhatsappConnectChallenge,
   WhatsappStatusQuery,
   WhatsappConnectionStatus,
   WahaWebhookPayload,
-} from "@tiby/ts-shared";
+} from '@tiby/ts-shared';
 
 function normalizeIndonesianPhone(phone: string): string {
-  let cleaned = phone.replace(/\D/g, "");
-  if (cleaned.startsWith("0")) {
-    cleaned = "62" + cleaned.slice(1);
+  let cleaned = phone.replace(/\D/g, '');
+  if (cleaned.startsWith('0')) {
+    cleaned = '62' + cleaned.slice(1);
   }
   return cleaned;
 }
 
 function hashPhone(phone: string): string {
-  const digits = phone.replace(/\D/g, "");
-  return createHash("sha256").update(digits).digest("hex");
+  const digits = phone.replace(/\D/g, '');
+  return createHash('sha256').update(digits).digest('hex');
 }
 
 function generate6CharCode(): string {
-  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   const bytes = randomBytes(6);
-  let code = "";
+  let code = '';
   for (let i = 0; i < 6; i++) {
     code += alphabet[bytes[i] % alphabet.length];
   }
@@ -70,19 +70,21 @@ export class WhatsappConnectService {
     const phoneHash = hashPhone(dto.phoneNumber);
 
     if (dto.familyContactId) {
-      const family = await this.familyRepo.findOneBy({ id: dto.familyContactId });
+      const family = await this.familyRepo.findOneBy({
+        id: dto.familyContactId,
+      });
       if (!family) {
         throw new NotFoundException({
-          code: "NOT_FOUND",
-          message: "Family contact not found",
+          code: 'NOT_FOUND',
+          message: 'Family contact not found',
         });
       }
     } else {
       const user = await this.userRepo.findOneBy({ id: userId });
       if (!user) {
         throw new NotFoundException({
-          code: "NOT_FOUND",
-          message: "User not found",
+          code: 'NOT_FOUND',
+          message: 'User not found',
         });
       }
     }
@@ -93,32 +95,32 @@ export class WhatsappConnectService {
     // Invalidate prior pending challenges for this user/contact
     if (dto.familyContactId) {
       await this.verifyRepo.update(
-        { familyContactId: dto.familyContactId, status: "PENDING" },
-        { status: "SUPERSEDED" },
+        { familyContactId: dto.familyContactId, status: 'PENDING' },
+        { status: 'REPLACED' },
       );
     } else {
       await this.verifyRepo.update(
-        { userId, status: "PENDING" },
-        { status: "SUPERSEDED" },
+        { userId, status: 'PENDING' },
+        { status: 'REPLACED' },
       );
     }
 
     const verification = this.verifyRepo.create({
       userId: dto.familyContactId ? null : userId,
       familyContactId: dto.familyContactId ?? null,
-      targetRole: dto.familyContactId ? "FAMILY" : userRole,
+      targetRole: dto.familyContactId ? 'FAMILY' : userRole,
       phoneEncrypted: dto.phoneNumber,
       phoneHash,
       expectedChatId,
       verificationCode,
-      status: "PENDING",
+      status: 'PENDING',
       expiresAt,
     });
 
     await this.verifyRepo.save(verification);
 
-    const botPhoneNumber = process.env.WAHA_BOT_PHONE_NUMBER || "";
-    const cleanBotPhone = botPhoneNumber.replace(/\D/g, "");
+    const botPhoneNumber = process.env.WAHA_BOT_PHONE_NUMBER || '';
+    const cleanBotPhone = botPhoneNumber.replace(/\D/g, '');
     const wahaDeepLink = cleanBotPhone
       ? `https://wa.me/${cleanBotPhone}?text=${verificationCode}`
       : `https://wa.me/?text=${verificationCode}`;
@@ -136,51 +138,77 @@ export class WhatsappConnectService {
     query: WhatsappStatusQuery,
   ): Promise<WhatsappConnectionStatus> {
     if (query.familyContactId) {
-      const family = await this.familyRepo.findOneBy({ id: query.familyContactId });
+      const family = await this.familyRepo.findOneBy({
+        id: query.familyContactId,
+      });
       if (!family) {
-        throw new NotFoundException({ code: "NOT_FOUND", message: "Family contact not found" });
+        throw new NotFoundException({
+          code: 'NOT_FOUND',
+          message: 'Family contact not found',
+        });
       }
 
       const pending = await this.verifyRepo.findOne({
-        where: { familyContactId: query.familyContactId, status: "PENDING" },
-        order: { createdAt: "DESC" },
+        where: { familyContactId: query.familyContactId, status: 'PENDING' },
+        order: { createdAt: 'DESC' },
       });
 
       return {
         verified: Boolean(family.whatsappVerified),
         phoneNumber: family.whatsappEncrypted,
-        pendingCode: pending && pending.expiresAt > new Date() ? pending.verificationCode : null,
-        expiresAt: pending && pending.expiresAt > new Date() ? pending.expiresAt.toISOString() : null,
-        verifiedAt: family.whatsappVerifiedAt ? family.whatsappVerifiedAt.toISOString() : null,
+        pendingCode:
+          pending && pending.expiresAt > new Date()
+            ? pending.verificationCode
+            : null,
+        expiresAt:
+          pending && pending.expiresAt > new Date()
+            ? pending.expiresAt.toISOString()
+            : null,
+        verifiedAt: family.whatsappVerifiedAt
+          ? family.whatsappVerifiedAt.toISOString()
+          : null,
       };
     }
 
     const user = await this.userRepo.findOneBy({ id: userId });
     if (!user) {
-      throw new NotFoundException({ code: "NOT_FOUND", message: "User not found" });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'User not found',
+      });
     }
 
     const pending = await this.verifyRepo.findOne({
-      where: { userId, status: "PENDING" },
-      order: { createdAt: "DESC" },
+      where: { userId, status: 'PENDING' },
+      order: { createdAt: 'DESC' },
     });
 
     return {
       verified: Boolean(user.whatsappVerified),
       phoneNumber: user.whatsappEncrypted,
-      pendingCode: pending && pending.expiresAt > new Date() ? pending.verificationCode : null,
-      expiresAt: pending && pending.expiresAt > new Date() ? pending.expiresAt.toISOString() : null,
-      verifiedAt: user.whatsappVerifiedAt ? user.whatsappVerifiedAt.toISOString() : null,
+      pendingCode:
+        pending && pending.expiresAt > new Date()
+          ? pending.verificationCode
+          : null,
+      expiresAt:
+        pending && pending.expiresAt > new Date()
+          ? pending.expiresAt.toISOString()
+          : null,
+      verifiedAt: user.whatsappVerifiedAt
+        ? user.whatsappVerifiedAt.toISOString()
+        : null,
     };
   }
 
-  async handleInboundWebhook(dto: WahaWebhookPayload): Promise<{ handled: boolean; verified: boolean }> {
+  async handleInboundWebhook(
+    dto: WahaWebhookPayload,
+  ): Promise<{ handled: boolean; verified: boolean }> {
     const { event, payload } = dto;
-    if (event !== "message" || payload.fromMe) {
+    if (event !== 'message' || payload.fromMe) {
       return { handled: true, verified: false };
     }
 
-    const bodyText = payload.body?.trim() || "";
+    const bodyText = payload.body?.trim() || '';
     const codeMatch = bodyText.toUpperCase().match(/\b[A-Z0-9]{6}\b/);
 
     if (!codeMatch) {
@@ -191,7 +219,7 @@ export class WhatsappConnectService {
     const verification = await this.verifyRepo.findOne({
       where: {
         verificationCode: candidateCode,
-        status: "PENDING",
+        status: 'PENDING',
       },
     });
 
@@ -200,19 +228,22 @@ export class WhatsappConnectService {
     }
 
     if (verification.expiresAt <= new Date()) {
-      verification.status = "EXPIRED";
+      verification.status = 'EXPIRED';
       await this.verifyRepo.save(verification);
       return { handled: true, verified: false };
     }
 
-    if (verification.expectedChatId && verification.expectedChatId !== payload.from) {
+    if (
+      verification.expectedChatId &&
+      verification.expectedChatId !== payload.from
+    ) {
       this.logger.warn(
         `WAHA verification sender mismatch: expected ${verification.expectedChatId}, got ${payload.from}. Accepting sender as source of truth.`,
       );
     }
 
     // Mark verification as verified
-    verification.status = "VERIFIED";
+    verification.status = 'VERIFIED';
     verification.verifiedAt = new Date();
     await this.verifyRepo.save(verification);
 
@@ -229,12 +260,16 @@ export class WhatsappConnectService {
         await this.userRepo.save(user);
         actorRole = user.role;
       }
-      const plan = await this.planRepo.findOneBy({ patientUserId: verification.userId });
+      const plan = await this.planRepo.findOneBy({
+        patientUserId: verification.userId,
+      });
       if (plan) {
         treatmentPlanId = plan.id;
       }
     } else if (verification.familyContactId) {
-      const family = await this.familyRepo.findOneBy({ id: verification.familyContactId });
+      const family = await this.familyRepo.findOneBy({
+        id: verification.familyContactId,
+      });
       if (family) {
         family.whatsappVerified = true;
         family.whatsappVerifiedAt = new Date();
@@ -250,14 +285,14 @@ export class WhatsappConnectService {
       await this.historyRepo.save(
         this.historyRepo.create({
           treatmentPlanId,
-          eventType: "WHATSAPP_CONNECTED",
+          eventType: 'WHATSAPP_CONNECTED',
           previousState: plan?.patientState ?? null,
           newState: plan?.patientState ?? null,
           previousStreak: plan?.currentStreak ?? null,
           newStreak: plan?.currentStreak ?? null,
           actorUserId,
           actorRole,
-          reasonOrSummary: "WhatsApp number verified via 6-char code",
+          reasonOrSummary: 'WhatsApp number verified via 6-char code',
           metadataJson: { chatId: payload.from },
         }),
       );
@@ -267,8 +302,8 @@ export class WhatsappConnectService {
       this.auditRepo.create({
         actorUserId,
         actorRole,
-        action: "WHATSAPP_CONNECTED",
-        targetEntity: "whatsapp_verifications",
+        action: 'WHATSAPP_CONNECTED',
+        targetEntity: 'whatsapp_verifications',
         targetId: verification.id,
         metadataJson: { chatId: payload.from },
       }),
@@ -278,7 +313,7 @@ export class WhatsappConnectService {
     await this.wahaClient.sendSeen(payload.from, payload.id);
     await this.wahaClient.sendText(
       payload.from,
-      "Halo! Nomor WhatsApp Anda sudah berhasil terhubung dengan Pandu. Pandu siap mendampingi perjalanan sehat Anda!",
+      'Halo! Nomor WhatsApp Anda sudah berhasil terhubung dengan Pandu. Pandu siap mendampingi perjalanan sehat Anda!',
     );
 
     return { handled: true, verified: true };

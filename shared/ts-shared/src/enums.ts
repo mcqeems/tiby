@@ -169,7 +169,7 @@ export const WhatsappVerificationStatuses = [
   "PENDING",
   "VERIFIED",
   "EXPIRED",
-  "SUPERSEDED",
+  "REPLACED",
 ] as const;
 export const WhatsappVerificationStatusSchema = z.enum(WhatsappVerificationStatuses);
 export type WhatsappVerificationStatus = z.infer<typeof WhatsappVerificationStatusSchema>;
@@ -188,4 +188,3 @@ export const PmoFollowUpActions = [
 ] as const;
 export const PmoFollowUpActionSchema = z.enum(PmoFollowUpActions);
 export type PmoFollowUpAction = z.infer<typeof PmoFollowUpActionSchema>;
-

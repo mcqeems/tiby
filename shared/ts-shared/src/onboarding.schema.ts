@@ -42,6 +42,18 @@ export const FamilyContactInputSchema = z.object({
   whatsappNumber: z.string().min(8).max(20),
   notifyOnEscalation: z.boolean().default(true),
 });
+export type FamilyContactInput = z.infer<typeof FamilyContactInputSchema>;
+
+export const FamilyContactItemSchema = z.object({
+  id: z.string().uuid(),
+  treatmentPlanId: z.string().uuid(),
+  fullName: z.string(),
+  whatsappNumber: z.string(),
+  whatsappVerified: z.boolean(),
+  notifyOnEscalation: z.boolean(),
+  createdAt: z.string(),
+});
+export type FamilyContactItem = z.infer<typeof FamilyContactItemSchema>;
 
 export const CreateOnboardingSchema = z.object({
   patient: PatientOnboardingInputSchema,

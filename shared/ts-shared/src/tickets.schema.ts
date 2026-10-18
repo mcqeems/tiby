@@ -82,12 +82,6 @@ export type FacilityAlertList = z.infer<typeof FacilityAlertListSchema>;
 export const CreatePmoFollowUpSchema = z.object({
   actionTaken: PmoFollowUpActionSchema,
   notes: z.string().min(1),
-  additionalFamilyContact: z
-    .object({
-      fullName: z.string().min(2),
-      whatsappNumber: z.string().min(8),
-    })
-    .optional(),
 });
 export type CreatePmoFollowUpDto = z.infer<typeof CreatePmoFollowUpSchema>;
 
