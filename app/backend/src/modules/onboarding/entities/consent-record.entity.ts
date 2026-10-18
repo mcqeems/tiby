@@ -6,9 +6,11 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
+  Unique,
 } from "typeorm";
 import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
 
+@Unique("uq_consent_records_user_scope", ["userId", "scope"])
 @Entity("consent_records")
 export class ConsentRecord {
   @PrimaryGeneratedColumn("uuid")
