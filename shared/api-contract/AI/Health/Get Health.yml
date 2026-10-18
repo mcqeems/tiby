@@ -1,0 +1,49 @@
+info:
+  name: Get Health (ai/health)
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{baseUrl}}/ai/health"
+  auth:
+    type: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Status code is 200", function() {
+          expect(res.status).to.equal(200);
+        });
+
+        test("Service reports ok", function() {
+          expect(res.body).to.deep.equal({ status: "ok" });
+        });
+
+settings:
+  encodeUrl: true
+
+docs: |-
+  Liveness probe for the AI service.
+
+  Responses:
+  - 200: `{"status":"ok"}`.
+
+examples:
+  - name: "200 - ok"
+    request:
+      url: "{{baseUrl}}/ai/health"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: content-type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "status": "ok"
+          }

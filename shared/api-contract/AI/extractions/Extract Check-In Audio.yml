@@ -1,0 +1,83 @@
+info:
+  name: Extract Check-In Audio (ai/extractions/check-in/audio)
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/ai/extractions/check-in/audio"
+  headers:
+    - name: Accept
+      value: application/json
+  body:
+    type: multipart-form
+    data:
+      - name: audio
+        type: file
+        value:
+           - AI/Examples/check-in-audio.wav
+        contentType: audio/wav
+        description: Check-in recording (audio/wav, audio/mp3, audio/mpeg, audio/ogg, audio/webm; max 10 MB). The API transcribes it first, then runs the same extraction as the text endpoint.
+  auth:
+    type: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Status code is 200", function() {
+          expect(res.status).to.equal(200);
+        });
+
+        test("Response contains transcript and backend extraction DTO", function() {
+          expect(res.body).to.have.property("transcript");
+          expect(res.body).to.have.property("transcription_provider");
+          expect(res.body).to.have.property("transcription_model");
+          expect(res.body).to.have.property("medicationTaken");
+          expect(res.body).to.have.property("pillsTakenCount");
+          expect(res.body).to.have.property("symptoms");
+          expect(res.body).to.have.property("intentToStopOrRefuse");
+          expect(res.body).to.have.property("extractionConfidence");
+        });
+
+settings:
+  encodeUrl: true
+
+docs: |-
+  Transcribes a check-in audio file, then extracts reported facts from the transcription. Not a clinical assessment.
+
+  Speech-to-text is Groq Whisper by default; server env `TIBY_TRANSCRIBER=fish` switches to Fish Audio.
+
+  Responses:
+  - 200: Transcription and facts extracted successfully.
+   - 413: Audio is empty or larger than 10 MB (ApiError).
+  - 415: Unsupported audio content type (ApiError).
+  - 422: Transcription exceeds the 5000-character transcript limit (ApiError).
+  - 502: Transcription or extraction provider failed (ApiError).
+  - 503: Transcription or extraction provider is not configured on the server (ApiError).
+  - 504: Transcription or extraction provider timed out (ApiError).
+
+examples:
+  - name: "200 - audio transcribed and facts extracted"
+    request:
+      url: "{{baseUrl}}/ai/extractions/check-in/audio"
+      method: POST
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: content-type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "transcript": "Sudah minum obat 4 biji, mual dari siang dan tidak nafsu makan.",
+            "medicationTaken": "SUDAH_MINUM",
+            "pillsTakenCount": 4,
+            "symptoms": ["MUAL_RINGAN"],
+            "intentToStopOrRefuse": false,
+            "extractionConfidence": 0.95,
+            "transcription_provider": "groq",
+            "transcription_model": "whisper-large-v3-turbo"
+          }

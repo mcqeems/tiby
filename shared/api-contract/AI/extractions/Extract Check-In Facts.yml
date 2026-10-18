@@ -1,0 +1,97 @@
+info:
+  name: Extract Check-In Facts (ai/extractions/check-in)
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/ai/extractions/check-in"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Accept
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        // Raw text of the daily check-in, typed or produced by speech-to-text. Max 5000 characters.
+        "transcript": "Sudah minum obat empat biji. Mual dari siang dan tidak nafsu makan.",
+        // Optional BCP-47 language tag. Defaults to id-ID.
+        "language": "id-ID"
+      }
+  auth:
+    type: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Status code is 200", function() {
+          expect(res.status).to.equal(200);
+        });
+
+        test("Response contains the backend extraction DTO", function() {
+          expect(res.body).to.have.property("transcript");
+          expect(res.body).to.have.property("medicationTaken");
+          expect(res.body).to.have.property("pillsTakenCount");
+          expect(res.body).to.have.property("symptoms");
+          expect(res.body).to.have.property("intentToStopOrRefuse");
+          expect(res.body).to.have.property("extractionConfidence");
+        });
+
+settings:
+  encodeUrl: true
+
+docs: |-
+  Extracts reported facts from a check-in transcript. It does not diagnose or assign clinical risk.
+
+  Facts only: every field means "what the transcript stated". `null` means unstated or uncertain, never false.
+
+  Responses:
+  - 200: Facts extracted successfully; not a clinical assessment.
+  - 422: Request validation failed (ApiError).
+  - 502: Extraction provider failed or returned invalid output (ApiError).
+  - 503: Extraction provider is not configured on the server (ApiError).
+  - 504: Extraction provider timed out (ApiError).
+
+examples:
+  - name: "200 - facts extracted"
+    request:
+      url: "{{baseUrl}}/ai/extractions/check-in"
+      method: POST
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: content-type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "transcript": "Sudah minum obat empat biji. Mual dari siang dan tidak nafsu makan.",
+            "medicationTaken": "SUDAH_MINUM",
+            "pillsTakenCount": 4,
+            "symptoms": ["MUAL_RINGAN"],
+            "intentToStopOrRefuse": false,
+            "extractionConfidence": 0.95
+          }
+  - name: "422 - empty transcript"
+    request:
+      url: "{{baseUrl}}/ai/extractions/check-in"
+      method: POST
+    response:
+      status: 422
+      statusText: Unprocessable Entity
+      headers:
+        - name: content-type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "code": "INVALID_REQUEST",
+            "message": "Request does not match the API contract.",
+            "request_id": null
+          }

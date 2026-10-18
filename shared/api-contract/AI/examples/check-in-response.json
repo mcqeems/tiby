@@ -1,25 +1,8 @@
 {
-  "schema_version": "1.0",
-  "extraction": {
-    "medication": {
-      "taken": true,
-      "dose_count": 4
-    },
-    "symptoms": [
-      {
-        "name": "mual",
-        "severity": "unknown",
-        "evidence": "Mual dari siang"
-      },
-      {
-        "name": "tidak nafsu makan",
-        "severity": "unknown",
-        "evidence": "tidak nafsu makan"
-      }
-    ],
-    "possible_red_flags": [],
-    "intent_to_stop": false
-  },
-  "confidence": 0.94,
-  "uncertainties": []
+  "transcript": "Sudah minum obat empat biji. Mual dari siang dan tidak nafsu makan.",
+  "medicationTaken": "SUDAH_MINUM",
+  "pillsTakenCount": 4,
+  "symptoms": ["MUAL_RINGAN"],
+  "intentToStopOrRefuse": false,
+  "extractionConfidence": 0.95
 }
