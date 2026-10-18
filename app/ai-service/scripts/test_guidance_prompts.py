@@ -15,9 +15,10 @@ import asyncio
 import json
 from pathlib import Path
 
-from tiby_ai.guidance.service import GroundedAnswerer, pack_evidence
 from tiby_ai.guidance.retrieval import SQLiteRetriever
 from tiby_ai.guidance.safety import detect_action_request
+from tiby_ai.guidance.service import GroundedAnswerer, pack_evidence
+from tiby_ai.providers.base import ProviderError
 
 
 def main() -> None:
@@ -47,7 +48,7 @@ def main() -> None:
             try:
                 result = await run_case(case)
                 print(json.dumps(result, ensure_ascii=False))
-            except Exception as exc:
+            except (ProviderError, KeyError, ValueError) as exc:
                 print(json.dumps({"id": case["id"], "error": type(exc).__name__}, ensure_ascii=False))
 
     asyncio.run(run_all())
