@@ -2,21 +2,18 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
-} from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import { createHash } from "node:crypto";
-import { FamilyContact } from "../entities/family-contact.entity.js";
-import { TreatmentPlan } from "../entities/treatment-plan.entity.js";
-import { PmoAssignment } from "../entities/pmo-assignment.entity.js";
-import type {
-  FamilyContactInput,
-  FamilyContactItem,
-} from "@tiby/ts-shared";
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { createHash } from 'node:crypto';
+import { FamilyContact } from '../entities/family-contact.entity.js';
+import { TreatmentPlan } from '../entities/treatment-plan.entity.js';
+import { PmoAssignment } from '../entities/pmo-assignment.entity.js';
+import type { FamilyContactInput, FamilyContactItem } from '@tiby/ts-shared';
 
 function hashPhone(phone: string): string {
-  const digits = phone.replace(/\D/g, "");
-  return createHash("sha256").update(digits).digest("hex");
+  const digits = phone.replace(/\D/g, '');
+  return createHash('sha256').update(digits).digest('hex');
 }
 
 @Injectable()
@@ -41,8 +38,8 @@ export class FamilyContactsService {
     }
     if (!plan) {
       throw new NotFoundException({
-        code: "NOT_FOUND",
-        message: "Treatment plan or patient not found",
+        code: 'NOT_FOUND',
+        message: 'Treatment plan or patient not found',
       });
     }
     return plan;
@@ -53,52 +50,46 @@ export class FamilyContactsService {
     plan: TreatmentPlan,
     requireDeleteRole = false,
   ): Promise<void> {
-    if (caller.role === "ADMIN") {
+    if (caller.role === 'ADMIN') {
       return;
     }
 
-    if (caller.role === "PASIEN") {
+    if (caller.role === 'PASIEN') {
       if (caller.id !== plan.patientUserId) {
         throw new ForbiddenException({
-          code: "FORBIDDEN",
-          message: "Cannot access family contacts for another patient",
+          code: 'FORBIDDEN',
+          message: 'Cannot access family contacts for another patient',
         });
       }
       return;
     }
 
-    if (caller.role === "NAKES") {
+    if (caller.role === 'NAKES') {
       if (caller.facilityId && caller.facilityId !== plan.facilityId) {
         throw new ForbiddenException({
-          code: "FORBIDDEN",
-          message: "Cannot access family contacts outside your facility",
+          code: 'FORBIDDEN',
+          message: 'Cannot access family contacts outside your facility',
         });
       }
       return;
     }
 
-    if (caller.role === "PMO") {
-      if (requireDeleteRole) {
-        throw new ForbiddenException({
-          code: "FORBIDDEN",
-          message: "PMO cannot delete family contacts",
-        });
-      }
+    if (caller.role === 'PMO') {
       const assignment = await this.pmoRepo.findOne({
         where: { pmoUserId: caller.id, treatmentPlanId: plan.id, active: true },
       });
       if (!assignment) {
         throw new ForbiddenException({
-          code: "FORBIDDEN",
-          message: "PMO is not assigned to this patient",
+          code: 'FORBIDDEN',
+          message: 'PMO is not assigned to this patient',
         });
       }
       return;
     }
 
     throw new ForbiddenException({
-      code: "FORBIDDEN",
-      message: "Insufficient permissions",
+      code: 'FORBIDDEN',
+      message: 'Insufficient permissions',
     });
   }
 
@@ -111,7 +102,7 @@ export class FamilyContactsService {
 
     const contacts = await this.familyRepo.find({
       where: { treatmentPlanId: plan.id },
-      order: { createdAt: "ASC" },
+      order: { createdAt: 'ASC' },
     });
 
     return contacts.map((c) => ({
@@ -133,7 +124,7 @@ export class FamilyContactsService {
     const plan = await this.resolvePlan(patientOrPlanId);
     await this.verifyAccess(caller, plan);
 
-    const cleanPhone = dto.whatsappNumber.replace(/\D/g, "");
+    const cleanPhone = dto.whatsappNumber.replace(/\D/g, '');
     const whatsappHash = hashPhone(cleanPhone);
 
     const contact = await this.familyRepo.save(
@@ -155,7 +146,9 @@ export class FamilyContactsService {
       whatsappNumber: contact.whatsappEncrypted,
       whatsappVerified: contact.whatsappVerified,
       notifyOnEscalation: contact.notifyOnEscalation,
-      createdAt: contact.createdAt ? contact.createdAt.toISOString() : new Date().toISOString(),
+      createdAt: contact.createdAt
+        ? contact.createdAt.toISOString()
+        : new Date().toISOString(),
     };
   }
 
@@ -173,8 +166,8 @@ export class FamilyContactsService {
 
     if (!contact) {
       throw new NotFoundException({
-        code: "NOT_FOUND",
-        message: "Family contact not found",
+        code: 'NOT_FOUND',
+        message: 'Family contact not found',
       });
     }
 
@@ -182,7 +175,7 @@ export class FamilyContactsService {
 
     return {
       success: true,
-      message: "Family contact removed successfully",
+      message: 'Family contact removed successfully',
     };
   }
 }
