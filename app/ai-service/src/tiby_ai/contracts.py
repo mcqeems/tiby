@@ -86,6 +86,20 @@ class AudioExtractionResponse(AiAudioExtractionResponse):
     transcription_model: str = Field(min_length=1)
 
 
+class OcrOnboardingDraft(BaseModel):
+    """Unconfirmed fields read from an onboarding card; never clinical advice."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    patientName: str | None
+    regimenCode: str | None
+    dailyPillQuota: int | None = Field(ge=1)
+    startDate: str | None
+    targetEndDate: str | None
+    confidence: float = Field(ge=0, le=1)
+    rawText: str
+
+
 class GuidanceRequest(BaseModel):
     """A general educational question, optionally with check-in context."""
 
