@@ -61,7 +61,7 @@ class NaraRouterClient:
                     content = "".join(part.get("text", "") for part in content if isinstance(part, dict))
                 parsed = json.loads(content)
                 if not isinstance(parsed, dict):
-                    raise ValueError("Provider returned JSON that is not an object.")
+                    raise TypeError("Provider returned JSON that is not an object.")
                 return parsed
         except httpx.TimeoutException as exc:
             raise ProviderTimeoutError("The language model provider timed out.") from exc
