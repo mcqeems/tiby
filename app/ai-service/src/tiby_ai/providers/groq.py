@@ -1,4 +1,5 @@
 import os
+from typing import ClassVar
 
 import httpx
 
@@ -19,24 +20,28 @@ class GroqTranscriber:
 
     endpoint = "https://api.groq.com/openai/v1/audio/transcriptions"
     model = "whisper-large-v3-turbo"
-    max_upload_bytes = 20 * 1024 * 1024
-    supported_content_types = {
+    # Keep the service upload boundary compatible with the backend.
+    max_upload_bytes = 10 * 1024 * 1024
+    supported_content_types: ClassVar[set[str]] = {
         "audio/wav",
-        "audio/x-wav",
+        "video/wav",
+        "video/webm",
+        "audio/mp3",
+        "video/mp3",
         "audio/mpeg",
-        "audio/mp4",
-        "audio/x-m4a",
+        "video/mpeg",
         "audio/ogg",
+        "video/ogg",
         "audio/webm",
-        "audio/flac",
-        "audio/x-flac",
     }
 
     def __init__(self, *, api_key: str | None = None, timeout_seconds: float = 60.0):
         self.api_key = api_key or os.getenv("GROQ_API_KEY")
         self.timeout_seconds = timeout_seconds
 
-    async def transcribe(self, audio: bytes, filename: str = "check-in.wav") -> Transcription:
+    async def transcribe(
+        self, audio: bytes, filename: str = "check-in.wav"
+    ) -> Transcription:
         """Transcribe raw audio bytes; raises ProviderConfigurationError without a key."""
         if not self.api_key:
             raise ProviderConfigurationError("GROQ_API_KEY is not configured.")
@@ -45,7 +50,11 @@ class GroqTranscriber:
                 response = await client.post(
                     self.endpoint,
                     headers={"Authorization": f"Bearer {self.api_key}"},
-                    data={"model": self.model, "language": "id", "response_format": "json"},
+                    data={
+                        "model": self.model,
+                        "language": "id",
+                        "response_format": "json",
+                    },
                     files={"file": (filename, audio)},
                 )
                 response.raise_for_status()
