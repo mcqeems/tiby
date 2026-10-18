@@ -19,6 +19,7 @@ uv run uvicorn tiby_ai.main:app --reload   # http://localhost:8000, docs at /doc
 - `src/tiby_ai/main.py` — FastAPI routes and dependency wiring.
 - `src/tiby_ai/extraction/` — check-in fact extraction.
 - `src/tiby_ai/guidance/` — safety guard, retrieval, PDF ingestion, and grounded answers.
+- `src/tiby_ai/onboarding_ocr/` — local RapidOCR processing and conservative onboarding-card draft parsing.
 - `src/tiby_ai/providers/` — LLM and speech-to-text adapters.
 - `prompts/` — active system prompts; synthetic regression cases and audio samples live under `tests/fixtures/`.
 - `knowledge/raw/` — approved source PDFs; `knowledge/tiby.db` is a local generated index.
@@ -40,7 +41,8 @@ Missing token → 503, provider failure → 502, timeout → 504. For offline sm
 ## Endpoints
 
 - `POST /ai/extractions/check-in` — JSON transcript → structured facts (`null` = unstated or uncertain, never false).
-- `POST /ai/extractions/check-in/audio` — multipart `audio` (max 20 MB) → transcription + facts.
+- `POST /ai/extractions/check-in/audio` — multipart `audio` (max 10 MB, backend-compatible media types) → transcription + facts and transcription metadata.
+- Backend compatibility aliases: `POST /text/extract` (JSON `transcript`), `POST /audio/extract` (`audio` multipart), and `POST /ocr/extract` (`cardImage` multipart). OCR accepts PNG/JPEG/JPG/WebP up to 10 MB and returns an unconfirmed draft; a Nakes must verify every field, especially handwriting. Confidence is not field-level certainty.
 - `POST /ai/guidance` — educational answers only from approved-source evidence; fails closed (`answer: null`) on personal dosing/start-stop questions or when no evidence matches. Not a diagnosis or treatment instruction.
 - `GET /ai/health` — liveness.
 
@@ -50,7 +52,7 @@ Missing token → 503, provider failure → 502, timeout → 504. For offline sm
 uv run pytest    # mocked providers; use only synthetic data, never real patient data
 ```
 
-`tests/test_api_contract.py` fails if the code and the `shared/api-contract` collection drift apart (routes, `/ai` prefix, JSON bodies, docs/examples present).
+`tests/test_api_contract.py` checks the canonical AI routes against the AI-service OpenCollection. Backend aliases intentionally remain private from that collection and match the backend/frontend shared DTOs.
 
 ## Knowledge base (guidance)
 
