@@ -7,7 +7,13 @@ uses :class:`tiby_ai.providers.agnes.AgnesExtractor`.
 
 import re
 
-from ..contracts import CheckInRequest, CheckInResponse, Extraction, MedicationReport, Symptom
+from ..contracts import (
+    CheckInRequest,
+    CheckInResponse,
+    Extraction,
+    MedicationReport,
+    Symptom,
+)
 
 _SYMPTOMS = (
     "mual",
