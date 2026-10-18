@@ -1,5 +1,5 @@
 info:
-  name: Create User (api/users) [ADMIN, NAKES]
+  name: Create User (api/users) [NAKES]
   type: http
   seq: 1
 

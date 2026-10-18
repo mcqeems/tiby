@@ -10,7 +10,7 @@ http:
     type: json
     data: |-
       {
-        "email": "admin_1792227731491@users.tiby.internal",
+        "email": "ujangkekep@users.tiby.internal",
       //   "username": "admin_1792227731491",
         "password": "pwgampang_123" 
       }
