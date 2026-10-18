@@ -10,8 +10,8 @@ http:
     type: json
     data: |-
       {
-        "email": "nakes_1792210134186",
-      //   "username": "ucup",
+        "email": "admin_1792227731491@users.tiby.internal",
+      //   "username": "admin_1792227731491",
         "password": "pwgampang_123" 
       }
   auth: inherit

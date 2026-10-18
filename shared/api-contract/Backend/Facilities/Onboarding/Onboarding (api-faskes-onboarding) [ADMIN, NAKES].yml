@@ -1,7 +1,7 @@
 info:
-  name: Onboarding (api/faskes/onboarding)
+  name: Onboarding (api/faskes/onboarding) [ADMIN, NAKES]
   type: http
-  seq: 1
+  seq: 2
 
 http:
   method: POST

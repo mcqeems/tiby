@@ -1,0 +1,68 @@
+info:
+  name: "[AI UNFINISHED] OCR Onboarding (api/faskes/onboarding/ocr) [ADMIN, NAKES]"
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/faskes/onboarding/ocr"
+  body:
+    type: file
+    data:
+      - filePath: /home/mcqeems/Documents/Project/UINIC 8.0/tiby/shared/assets/images/ocr_test.png
+        contentType: image/png
+        selected: true
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: OCR Onboarding [UNFINISHED] (201)
+    request:
+      url: "{{baseUrl}}/api/faskes/onboarding/ocr"
+      method: POST
+      body:
+        type: file
+        data:
+          - filePath: /home/mcqeems/Documents/Project/UINIC 8.0/tiby/shared/assets/images/ocr_test.png
+            contentType: image/png
+            selected: true
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "173"
+        - name: etag
+          value: W/"ad-VoltaqFm8WzkBN4SbgBSf1oQkbc"
+        - name: date
+          value: Sat, 17 Oct 2026 16:45:17 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            "patientName": null,
+            "regimenCode": "FDC-4",
+            "dailyPillQuota": 4,
+            "startDate": "2026-10-17",
+            "targetEndDate": "2027-04-15",
+            "confidence": 0.8,
+            "rawText": "Template draft without image"
+          }
