@@ -81,7 +81,5 @@ export const PmoPatientStatusItemSchema = z.object({
 });
 export type PmoPatientStatusItem = z.infer<typeof PmoPatientStatusItemSchema>;
 
-export const PmoPatientStatusListSchema = z.object({
-  patients: z.array(PmoPatientStatusItemSchema),
-});
+export const PmoPatientStatusListSchema = z.array(PmoPatientStatusItemSchema);
 export type PmoPatientStatusList = z.infer<typeof PmoPatientStatusListSchema>;

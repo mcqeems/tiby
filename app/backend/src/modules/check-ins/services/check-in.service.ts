@@ -3,23 +3,23 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
-} from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, In } from "typeorm";
-import { createHash } from "node:crypto";
-import { EventEmitter2 } from "@nestjs/event-emitter";
-import { DailyCheckIn } from "../entities/daily-check-in.entity.js";
-import { SafetyEvaluation } from "../../rule-engine/entities/safety-evaluation.entity.js";
-import { TreatmentPlan } from "../../treatments/entities/treatment-plan.entity.js";
-import { PmoAssignment } from "../../treatments/entities/pmo-assignment.entity.js";
-import { InterventionTicket } from "../../tickets/entities/intervention-ticket.entity.js";
-import { FacilityAlert } from "../../facilities/entities/facility-alert.entity.js";
-import { PatientStatusHistory } from "../../treatments/entities/patient-status-history.entity.js";
-import { FamilyContact } from "../../treatments/entities/family-contact.entity.js";
-import { AuditLog } from "../../audit/entities/audit-log.entity.js";
-import { AiClientService } from "../../ai-client/ai-client.service.js";
-import { RuleEngineService } from "../../rule-engine/rule-engine.service.js";
-import { NotificationTriggerEvent } from "../../../common/events/notification-trigger.event.js";
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, In } from 'typeorm';
+import { createHash } from 'node:crypto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { DailyCheckIn } from '../entities/daily-check-in.entity.js';
+import { SafetyEvaluation } from '../../rule-engine/entities/safety-evaluation.entity.js';
+import { TreatmentPlan } from '../../treatments/entities/treatment-plan.entity.js';
+import { PmoAssignment } from '../../treatments/entities/pmo-assignment.entity.js';
+import { InterventionTicket } from '../../tickets/entities/intervention-ticket.entity.js';
+import { FacilityAlert } from '../../facilities/entities/facility-alert.entity.js';
+import { PatientStatusHistory } from '../../treatments/entities/patient-status-history.entity.js';
+import { FamilyContact } from '../../treatments/entities/family-contact.entity.js';
+import { AuditLog } from '../../audit/entities/audit-log.entity.js';
+import { AiClientService } from '../../ai-client/ai-client.service.js';
+import { RuleEngineService } from '../../rule-engine/rule-engine.service.js';
+import { NotificationTriggerEvent } from '../../../common/events/notification-trigger.event.js';
 import type {
   AiAudioExtractionResponse,
   CheckInVerdictResponse,
@@ -30,7 +30,7 @@ import type {
   CreatePmoFollowUpDto,
   PmoFollowUpResponse,
   SafetyVerdict,
-} from "@tiby/ts-shared";
+} from '@tiby/ts-shared';
 
 @Injectable()
 export class CheckInService {
@@ -63,24 +63,24 @@ export class CheckInService {
     role: string,
     treatmentPlanId?: string,
   ): Promise<TreatmentPlan> {
-    if (role === "PASIEN") {
+    if (role === 'PASIEN') {
       const plan = await this.planRepo.findOne({
         where: { patientUserId: userId },
       });
       if (!plan) {
         throw new NotFoundException({
-          code: "NOT_FOUND",
-          message: "No active treatment plan found for patient",
+          code: 'NOT_FOUND',
+          message: 'No active treatment plan found for patient',
         });
       }
       return plan;
     }
 
-    if (role === "PMO") {
+    if (role === 'PMO') {
       if (!treatmentPlanId) {
         throw new BadRequestException({
-          code: "BAD_REQUEST",
-          message: "treatmentPlanId is required when PMO submits check-in",
+          code: 'BAD_REQUEST',
+          message: 'treatmentPlanId is required when PMO submits check-in',
         });
       }
       const assignment = await this.pmoRepo.findOne({
@@ -88,27 +88,32 @@ export class CheckInService {
       });
       if (!assignment) {
         throw new BadRequestException({
-          code: "BAD_REQUEST",
-          message: "PMO is not assigned to this treatment plan",
+          code: 'BAD_REQUEST',
+          message: 'PMO is not assigned to this treatment plan',
         });
       }
-      const plan = await this.planRepo.findOne({ where: { id: treatmentPlanId } });
+      const plan = await this.planRepo.findOne({
+        where: { id: treatmentPlanId },
+      });
       if (!plan) {
         throw new NotFoundException({
-          code: "NOT_FOUND",
-          message: "Treatment plan not found",
+          code: 'NOT_FOUND',
+          message: 'Treatment plan not found',
         });
       }
       return plan;
     }
 
     throw new BadRequestException({
-      code: "BAD_REQUEST",
+      code: 'BAD_REQUEST',
       message: `Invalid role ${role} for check-in`,
     });
   }
 
-  async checkIsLockedToday(treatmentPlanId: string, checkInDate: string): Promise<void> {
+  async checkIsLockedToday(
+    treatmentPlanId: string,
+    checkInDate: string,
+  ): Promise<void> {
     const locked = await this.checkInRepo.findOne({
       where: {
         treatmentPlanId,
@@ -119,8 +124,8 @@ export class CheckInService {
 
     if (locked) {
       throw new ConflictException({
-        code: "CHECK_IN_ALREADY_LOCKED",
-        message: "Check-in for today is already completed and locked.",
+        code: 'CHECK_IN_ALREADY_LOCKED',
+        message: 'Check-in for today is already completed and locked.',
       });
     }
   }
@@ -163,18 +168,18 @@ export class CheckInService {
     const plan = await this.resolvePlan(userId, role, dto.treatmentPlanId);
     await this.checkIsLockedToday(plan.id, today);
 
-    let medicationStatus: MedicationStatus = "SUDAH_MINUM";
+    let medicationStatus: MedicationStatus = 'SUDAH_MINUM';
     let pillsTakenCount: number | null = plan.dailyPillQuota;
     let symptoms: string[] = [];
     let intentToStop = false;
     let confidence = 0.95;
     let rawTranscript: string | null = null;
 
-    if (dto.inputMode === "VOICE_STT") {
+    if (dto.inputMode === 'VOICE_STT') {
       if (!dto.confirmedFacts) {
         throw new BadRequestException({
-          code: "BAD_REQUEST",
-          message: "confirmedFacts required for VOICE_STT mode",
+          code: 'BAD_REQUEST',
+          message: 'confirmedFacts required for VOICE_STT mode',
         });
       }
       medicationStatus = dto.confirmedFacts.medicationStatus;
@@ -186,8 +191,8 @@ export class CheckInService {
     } else {
       if (!dto.fallbackButtons) {
         throw new BadRequestException({
-          code: "BAD_REQUEST",
-          message: "fallbackButtons required for FALLBACK_BUTTONS mode",
+          code: 'BAD_REQUEST',
+          message: 'fallbackButtons required for FALLBACK_BUTTONS mode',
         });
       }
       medicationStatus = dto.fallbackButtons.medicationStatus;
@@ -248,14 +253,14 @@ export class CheckInService {
 
     // Business Logic updates
     if (verdictResult.isDoseFulfilled) {
-      const isRedFlag = verdictResult.verdict === "SEGERA_KE_FASKES";
+      const isRedFlag = verdictResult.verdict === 'SEGERA_KE_FASKES';
       const wasSilentOrAtRisk =
         plan.consecutiveSilenceDays > 0 ||
-        ["BERISIKO", "PUTUS_FOLLOW_UP"].includes(plan.patientState);
+        ['BERISIKO', 'PUTUS_FOLLOW_UP'].includes(plan.patientState);
 
       if (wasSilentOrAtRisk && !isRedFlag) {
         const previousState = plan.patientState;
-        plan.patientState = "AKTIF";
+        plan.patientState = 'AKTIF';
         plan.consecutiveSilenceDays = 0;
         plan.currentStreak = 1; // Locked decision DEC-05: resets to 1
 
@@ -263,24 +268,25 @@ export class CheckInService {
         const openSilenceTickets = await this.ticketRepo.find({
           where: {
             treatmentPlanId: plan.id,
-            triggerSource: "SILENCE_H3",
-            status: In(["OPEN", "IN_PROGRESS"]),
+            triggerSource: 'SILENCE_H3',
+            status: In(['OPEN', 'IN_PROGRESS']),
           },
         });
 
         for (const t of openSilenceTickets) {
-          t.status = "AUTO_CLOSED_BY_CHECKIN";
+          t.status = 'AUTO_CLOSED_BY_CHECKIN';
           t.closedAt = new Date();
-          t.resolutionReason = "PATIENT_CHECKED_IN_RECOVERED";
-          t.resolutionNotes = "Pasien kembali melakukan check-in dosis penuh secara mandiri.";
+          t.resolutionReason = 'PATIENT_CHECKED_IN_RECOVERED';
+          t.resolutionNotes =
+            'Pasien kembali melakukan check-in dosis penuh secara mandiri.';
           await this.ticketRepo.save(t);
 
           await this.historyRepo.save(
             this.historyRepo.create({
               treatmentPlanId: plan.id,
-              eventType: "TICKET_AUTO_CLOSED",
+              eventType: 'TICKET_AUTO_CLOSED',
               previousState,
-              newState: "AKTIF",
+              newState: 'AKTIF',
               previousStreak: 0,
               newStreak: 1,
               actorUserId: userId,
@@ -295,24 +301,25 @@ export class CheckInService {
           this.alertRepo.create({
             facilityId: plan.facilityId,
             treatmentPlanId: plan.id,
-            alertType: "SILENCE_RECOVERED_WARNING",
-            severity: "WARNING",
-            title: "Pasien Pulih dari Putus Kontak",
-            message: "Pasien yang sebelumnya tidak melapor telah berhasil check-in dosis penuh hari ini.",
+            alertType: 'SILENCE_RECOVERED_WARNING',
+            severity: 'WARNING',
+            title: 'Pasien Pulih dari Putus Kontak',
+            message:
+              'Pasien yang sebelumnya tidak melapor telah berhasil check-in dosis penuh hari ini.',
           }),
         );
 
         await this.historyRepo.save(
           this.historyRepo.create({
             treatmentPlanId: plan.id,
-            eventType: "STATE_TRANSITION",
+            eventType: 'STATE_TRANSITION',
             previousState,
-            newState: "AKTIF",
+            newState: 'AKTIF',
             previousStreak: 0,
             newStreak: 1,
             actorUserId: userId,
             actorRole: role,
-            reasonOrSummary: "Patient recovered adherence after silence period",
+            reasonOrSummary: 'Patient recovered adherence after silence period',
           }),
         );
       } else {
@@ -325,13 +332,16 @@ export class CheckInService {
       await this.historyRepo.save(
         this.historyRepo.create({
           treatmentPlanId: plan.id,
-          eventType: "CHECK_IN_LOCKED",
+          eventType: 'CHECK_IN_LOCKED',
           previousStreak: plan.currentStreak - 1,
           newStreak: plan.currentStreak,
           actorUserId: userId,
           actorRole: role,
           reasonOrSummary: `Check-in locked for date ${today}`,
-          metadataJson: { checkInId: checkIn.id, verdict: verdictResult.verdict },
+          metadataJson: {
+            checkInId: checkIn.id,
+            verdict: verdictResult.verdict,
+          },
         }),
       );
     } else {
@@ -339,22 +349,25 @@ export class CheckInService {
       await this.historyRepo.save(
         this.historyRepo.create({
           treatmentPlanId: plan.id,
-          eventType: "CHECK_IN_INCOMPLETE_RETRY",
+          eventType: 'CHECK_IN_INCOMPLETE_RETRY',
           previousStreak: plan.currentStreak,
           newStreak: plan.currentStreak,
           actorUserId: userId,
           actorRole: role,
           reasonOrSummary: `Incomplete check-in attempt #${attemptNumber} recorded`,
-          metadataJson: { checkInId: checkIn.id, verdict: verdictResult.verdict },
+          metadataJson: {
+            checkInId: checkIn.id,
+            verdict: verdictResult.verdict,
+          },
         }),
       );
 
       this.eventEmitter.emit(
-        "notification.trigger",
+        'notification.trigger',
         new NotificationTriggerEvent(
-          "DOSE_INCOMPLETE_NUDGE",
+          'DOSE_INCOMPLETE_NUDGE',
           plan.id,
-          "PASIEN",
+          'PASIEN',
           plan.patientUserId,
           undefined,
           verdictResult.responseMessage,
@@ -363,30 +376,30 @@ export class CheckInService {
     }
 
     // Critical Red Flag Handling
-    if (verdictResult.verdict === "SEGERA_KE_FASKES") {
-      plan.patientState = "BERISIKO";
+    if (verdictResult.verdict === 'SEGERA_KE_FASKES') {
+      plan.patientState = 'BERISIKO';
       plan.riskScore += 25;
       plan.consecutiveSilenceDays = 0;
       await this.planRepo.save(plan);
 
-      const triggerSource = intentToStop ? "INTENT_TO_STOP" : "RED_FLAG";
+      const triggerSource = intentToStop ? 'INTENT_TO_STOP' : 'RED_FLAG';
       const ticket = await this.ticketRepo.save(
         this.ticketRepo.create({
           treatmentPlanId: plan.id,
           facilityId: plan.facilityId,
           triggerSource,
-          priority: "CRITICAL",
-          status: "OPEN",
-          pmoNotes: `Check-in flag reported by ${role}: ${symptoms.join(", ")}`,
+          priority: 'CRITICAL',
+          status: 'OPEN',
+          pmoNotes: `Check-in flag reported by ${role}: ${symptoms.join(', ')}`,
         }),
       );
 
       await this.historyRepo.save(
         this.historyRepo.create({
           treatmentPlanId: plan.id,
-          eventType: "TICKET_OPENED",
+          eventType: 'TICKET_OPENED',
           previousState: plan.patientState,
-          newState: "BERISIKO",
+          newState: 'BERISIKO',
           previousStreak: plan.currentStreak,
           newStreak: plan.currentStreak,
           actorUserId: userId,
@@ -397,11 +410,11 @@ export class CheckInService {
       );
 
       this.eventEmitter.emit(
-        "notification.trigger",
+        'notification.trigger',
         new NotificationTriggerEvent(
-          intentToStop ? "INTENT_TO_STOP_ALERT" : "RED_FLAG_ALERT",
+          intentToStop ? 'INTENT_TO_STOP_ALERT' : 'RED_FLAG_ALERT',
           plan.id,
-          "PMO",
+          'PMO',
           undefined,
           undefined,
           verdictResult.responseMessage,
@@ -413,8 +426,8 @@ export class CheckInService {
       this.auditRepo.create({
         actorUserId: userId,
         actorRole: role,
-        action: "SUBMIT_CHECK_IN",
-        targetEntity: "daily_check_ins",
+        action: 'SUBMIT_CHECK_IN',
+        targetEntity: 'daily_check_ins',
         targetId: checkIn.id,
         metadataJson: {
           isDoseFulfilled: verdictResult.isDoseFulfilled,
@@ -460,21 +473,25 @@ export class CheckInService {
 
         const latestCheckIn = await this.checkInRepo.findOne({
           where: { treatmentPlanId: plan.id, checkInDate: todayStr },
-          order: { attemptNumber: "DESC" },
+          order: { attemptNumber: 'DESC' },
         });
 
         let todayVerdict: SafetyVerdict | null = null;
         if (lockedCheckIn) {
-          const ev = await this.evalRepo.findOneBy({ checkInId: lockedCheckIn.id });
-          todayVerdict = (ev?.verdict as SafetyVerdict) ?? "TERKENDALI";
+          const ev = await this.evalRepo.findOneBy({
+            checkInId: lockedCheckIn.id,
+          });
+          todayVerdict = (ev?.verdict as SafetyVerdict) ?? 'TERKENDALI';
         } else if (latestCheckIn) {
-          const ev = await this.evalRepo.findOneBy({ checkInId: latestCheckIn.id });
-          todayVerdict = (ev?.verdict as SafetyVerdict) ?? "PERLU_PERHATIAN";
+          const ev = await this.evalRepo.findOneBy({
+            checkInId: latestCheckIn.id,
+          });
+          todayVerdict = (ev?.verdict as SafetyVerdict) ?? 'PERLU_PERHATIAN';
         }
 
         return {
           treatmentPlanId: plan.id,
-          patientName: plan.patientUser?.name || "Pasien",
+          patientName: plan.patientUser?.name || 'Pasien',
           isLockedToday: Boolean(lockedCheckIn),
           todayVerdict,
           currentStreak: plan.currentStreak,
@@ -484,7 +501,7 @@ export class CheckInService {
       }),
     );
 
-    return { patients };
+    return patients;
   }
 
   async createPmoFollowUp(
@@ -502,8 +519,8 @@ export class CheckInService {
     }
     if (!plan) {
       throw new NotFoundException({
-        code: "NOT_FOUND",
-        message: "Treatment plan not found for patient",
+        code: 'NOT_FOUND',
+        message: 'Treatment plan not found for patient',
       });
     }
 
@@ -512,14 +529,19 @@ export class CheckInService {
     });
     if (!assignment) {
       throw new NotFoundException({
-        code: "NOT_FOUND",
-        message: "PMO is not assigned to this patient",
+        code: 'NOT_FOUND',
+        message: 'PMO is not assigned to this patient',
       });
     }
 
     if (dto.additionalFamilyContact) {
-      const cleanPhone = dto.additionalFamilyContact.whatsappNumber.replace(/\D/g, "");
-      const whatsappHash = createHash("sha256").update(cleanPhone).digest("hex");
+      const cleanPhone = dto.additionalFamilyContact.whatsappNumber.replace(
+        /\D/g,
+        '',
+      );
+      const whatsappHash = createHash('sha256')
+        .update(cleanPhone)
+        .digest('hex');
 
       await this.familyRepo.save(
         this.familyRepo.create({
@@ -537,13 +559,13 @@ export class CheckInService {
     const history = await this.historyRepo.save(
       this.historyRepo.create({
         treatmentPlanId: plan.id,
-        eventType: "PMO_OUTREACH",
+        eventType: 'PMO_OUTREACH',
         previousState: plan.patientState,
         newState: plan.patientState,
         previousStreak: plan.currentStreak,
         newStreak: plan.currentStreak,
         actorUserId: pmoUserId,
-        actorRole: "PMO",
+        actorRole: 'PMO',
         reasonOrSummary: dto.notes,
         metadataJson: { actionTaken: dto.actionTaken },
       }),
