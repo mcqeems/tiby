@@ -7,15 +7,25 @@ import pytest
 from fastapi.testclient import TestClient
 
 from tiby_ai.contracts import CheckInRequest, CheckInResponse, GuidanceResponse
+from tiby_ai.guidance.retrieval import Citation, Evidence
 from tiby_ai.guidance.service import GroundedAnswerer
-from tiby_ai.main import app, extraction_service, transcription_service, RuleBasedExtractor
+from tiby_ai.main import (
+    app,
+    extraction_service,
+    transcription_service,
+)
+from tiby_ai.onboarding_ocr.service import parse_onboarding_text
 from tiby_ai.providers.agnes import AgnesExtractor
-from tiby_ai.providers.base import ProviderError, ProviderTimeoutError, Transcription
+from tiby_ai.providers.base import (
+    ProviderConfigurationError,
+    ProviderError,
+    ProviderTimeoutError,
+    Transcription,
+)
+from tiby_ai.providers.factory import RuleBasedExtractor
 from tiby_ai.providers.fish import FishAudioTranscriber
 from tiby_ai.providers.groq import GroqTranscriber
 from tiby_ai.providers.nararouter import NaraRouterClient, NaraRouterSettings
-from tiby_ai.guidance.retrieval import Citation, Evidence
-
 
 client = TestClient(app)
 
@@ -54,6 +64,20 @@ def test_service_factories_switch_on_env(monkeypatch):
     assert isinstance(transcription_service(), FishAudioTranscriber)
 
 
+@pytest.mark.parametrize(
+    "content_type",
+    ["audio/wav", "audio/mp3", "audio/mpeg", "audio/ogg", "audio/webm", "video/webm"],
+)
+def test_audio_upload_mime_types_match_backend_contract(content_type):
+    assert content_type in GroqTranscriber.supported_content_types
+    assert content_type in FishAudioTranscriber.supported_content_types
+
+
+def test_audio_upload_limit_matches_backend_contract():
+    assert GroqTranscriber.max_upload_bytes == 10 * 1024 * 1024
+    assert FishAudioTranscriber.max_upload_bytes == 10 * 1024 * 1024
+
+
 def test_check_in_extracts_facts_in_rules_mode(monkeypatch):
     monkeypatch.setenv("TIBY_EXTRACTOR", "rules")
     response = client.post(
@@ -61,8 +85,52 @@ def test_check_in_extracts_facts_in_rules_mode(monkeypatch):
         json={"transcript": "Sudah minum obat empat biji. Mual dari siang."},
     )
     assert response.status_code == 200
-    assert response.json()["extraction"]["medication"] == {"taken": True, "dose_count": 4}
-    assert response.json()["extraction"]["symptoms"][0]["name"] == "mual"
+    assert response.json()["medicationTaken"] == "SUDAH_MINUM"
+    assert response.json()["pillsTakenCount"] == 4
+    assert "MUAL_RINGAN" in response.json()["symptoms"]
+
+
+def test_text_extract_alias_uses_the_same_response_contract(monkeypatch):
+    monkeypatch.setenv("TIBY_EXTRACTOR", "rules")
+    response = client.post("/text/extract", json={"transcript": "Belum minum obat."})
+    assert response.status_code == 200
+    assert response.json()["medicationTaken"] == "BELUM_MINUM"
+    assert set(response.json()) == {
+        "transcript",
+        "medicationTaken",
+        "pillsTakenCount",
+        "symptoms",
+        "intentToStopOrRefuse",
+        "extractionConfidence",
+    }
+
+
+def test_check_in_maps_unconfigured_provider_to_api_error(monkeypatch):
+    with patch(
+        "tiby_ai.main.extraction_service",
+        side_effect=ProviderConfigurationError("missing secret"),
+    ):
+        response = client.post(
+            "/ai/extractions/check-in", json={"transcript": "Sudah minum."}
+        )
+    assert response.status_code == 503
+    assert response.json() == {
+        "code": "INTERNAL",
+        "message": "missing secret",
+        "request_id": None,
+    }
+
+
+def test_check_in_maps_provider_failure_to_api_error():
+    with patch(
+        "tiby_ai.main.extraction_service",
+        side_effect=ProviderError("provider failed"),
+    ):
+        response = client.post(
+            "/ai/extractions/check-in", json={"transcript": "Sudah minum."}
+        )
+    assert response.status_code == 502
+    assert response.json()["code"] == "EXTRACTION_FAILED"
 
 
 def test_check_in_rejects_invalid_request(monkeypatch):
@@ -85,9 +153,13 @@ def test_check_in_timeout_maps_to_provider_timeout(monkeypatch):
     monkeypatch.setenv("NARAROUTER_API_TOKEN", "test-router-token")
     monkeypatch.setenv("NARAROUTER_BASE_URL", "https://router.test/v1")
     with patch.object(
-        AgnesExtractor, "extract", new=AsyncMock(side_effect=ProviderTimeoutError("timed out"))
+        AgnesExtractor,
+        "extract",
+        new=AsyncMock(side_effect=ProviderTimeoutError("timed out")),
     ):
-        response = client.post("/ai/extractions/check-in", json={"transcript": "Sudah minum obat."})
+        response = client.post(
+            "/ai/extractions/check-in", json={"transcript": "Sudah minum obat."}
+        )
     assert response.status_code == 504
     assert response.json()["code"] == "PROVIDER_TIMEOUT"
 
@@ -96,13 +168,20 @@ def test_audio_endpoint_connects_transcriber_and_extractor(monkeypatch):
     monkeypatch.setenv("NARAROUTER_API_TOKEN", "test-router-token")
     monkeypatch.setenv("NARAROUTER_BASE_URL", "https://router.test/v1")
     fake_result = CheckInResponse.model_validate(response_payload())
-    with patch.object(
-        GroqTranscriber,
-        "transcribe",
-        new=AsyncMock(return_value=Transcription("Sudah minum obat empat biji.", "groq", "whisper-large-v3-turbo")),
-    ) as transcribe, patch.object(
-        AgnesExtractor, "extract", new=AsyncMock(return_value=fake_result)
-    ) as extract:
+    with (
+        patch.object(
+            GroqTranscriber,
+            "transcribe",
+            new=AsyncMock(
+                return_value=Transcription(
+                    "Sudah minum obat empat biji.", "groq", "whisper-large-v3-turbo"
+                )
+            ),
+        ) as transcribe,
+        patch.object(
+            AgnesExtractor, "extract", new=AsyncMock(return_value=fake_result)
+        ) as extract,
+    ):
         response = client.post(
             "/ai/extractions/check-in/audio",
             files={"audio": ("speech.wav", b"fake-wav", "audio/wav")},
@@ -111,7 +190,8 @@ def test_audio_endpoint_connects_transcriber_and_extractor(monkeypatch):
     assert response.json()["transcript"] == "Sudah minum obat empat biji."
     assert response.json()["transcription_provider"] == "groq"
     assert response.json()["transcription_model"] == "whisper-large-v3-turbo"
-    assert response.json()["extraction"]["medication"]["dose_count"] == 4
+    assert response.json()["pillsTakenCount"] == 4
+    assert "emotionalSentiment" not in response.json()
     transcribe.assert_awaited_once()
     extract.assert_awaited_once()
 
@@ -123,6 +203,42 @@ def test_audio_endpoint_rejects_non_audio_upload():
     )
     assert response.status_code == 415
     assert response.json()["code"] == "INVALID_REQUEST"
+
+
+def test_audio_endpoint_rejects_empty_upload():
+    response = client.post(
+        "/ai/extractions/check-in/audio",
+        files={"audio": ("empty.wav", b"", "audio/wav")},
+    )
+    assert response.status_code == 413
+    assert response.json()["code"] == "INVALID_REQUEST"
+
+
+def test_audio_extract_alias_uses_the_same_audio_contract(monkeypatch):
+    monkeypatch.setenv("NARAROUTER_API_TOKEN", "test-router-token")
+    monkeypatch.setenv("NARAROUTER_BASE_URL", "https://router.test/v1")
+    fake_result = CheckInResponse.model_validate(response_payload())
+    with (
+        patch(
+            "tiby_ai.main.transcription_service",
+            return_value=GroqTranscriber(api_key="test-token"),
+        ),
+        patch.object(
+            GroqTranscriber,
+            "transcribe",
+            new=AsyncMock(
+                return_value=Transcription("Sudah minum.", "groq", "whisper")
+            ),
+        ),
+        patch("tiby_ai.main.extraction_service") as extraction,
+    ):
+        extraction.return_value.extract = AsyncMock(return_value=fake_result)
+        response = client.post(
+            "/audio/extract", files={"audio": ("speech.wav", b"audio", "audio/wav")}
+        )
+    assert response.status_code == 200
+    assert response.json()["transcription_provider"] == "groq"
+    assert response.json()["pillsTakenCount"] == 4
 
 
 def test_audio_endpoint_rejects_oversized_upload(monkeypatch):
@@ -140,7 +256,9 @@ def test_audio_endpoint_rejects_transcription_over_contract_limit():
     with patch.object(
         GroqTranscriber,
         "transcribe",
-        new=AsyncMock(return_value=Transcription(long_text, "groq", "whisper-large-v3-turbo")),
+        new=AsyncMock(
+            return_value=Transcription(long_text, "groq", "whisper-large-v3-turbo")
+        ),
     ):
         response = client.post(
             "/ai/extractions/check-in/audio",
@@ -152,7 +270,9 @@ def test_audio_endpoint_rejects_transcription_over_contract_limit():
 
 def test_audio_endpoint_maps_transcription_timeout(monkeypatch):
     with patch.object(
-        GroqTranscriber, "transcribe", new=AsyncMock(side_effect=ProviderTimeoutError("timed out"))
+        GroqTranscriber,
+        "transcribe",
+        new=AsyncMock(side_effect=ProviderTimeoutError("timed out")),
     ):
         response = client.post(
             "/ai/extractions/check-in/audio",
@@ -165,7 +285,9 @@ def test_audio_endpoint_maps_transcription_timeout(monkeypatch):
 def test_guidance_endpoint_returns_null_without_evidence():
     with patch("tiby_ai.main.SQLiteRetriever") as retriever_cls:
         retriever_cls.return_value.search.return_value = []
-        response = client.post("/ai/guidance", json={"question": "Topik yang tidak ada di indeks."})
+        response = client.post(
+            "/ai/guidance", json={"question": "Topik yang tidak ada di indeks."}
+        )
     assert response.status_code == 200
     assert response.json()["answer"] is None
     assert response.json()["grounded"] is False
@@ -175,20 +297,35 @@ def test_guidance_endpoint_returns_null_without_evidence():
 def test_guidance_endpoint_packs_evidence_for_answerer():
     evidence = [
         Evidence(
-            Citation("chunk-1", "who-demo", "WHO", "Demo guidance", 2025, 7, None, "https://who.int"),
+            Citation(
+                "chunk-1",
+                "who-demo",
+                "WHO",
+                "Demo guidance",
+                2025,
+                7,
+                None,
+                "https://who.int",
+            ),
             "Adherence support text.",
         )
     ]
     expected = GuidanceResponse(answer="ok", grounded=False, limitations=[])
-    with patch("tiby_ai.main.SQLiteRetriever") as retriever_cls, patch(
-        "tiby_ai.main.GroundedAnswerer"
-    ) as answerer_cls:
-        retriever_cls.return_value.search.return_value = evidence
-        answerer_cls.return_value.answer = AsyncMock(return_value=expected)
+    from tiby_ai.main import app
+
+    retriever = patch("tiby_ai.main.SQLiteRetriever").start()
+    answerer = patch("tiby_ai.main.GroundedAnswerer").start()
+    try:
+        app.state.guidance_retriever = retriever.return_value
+        app.state.guidance_answerer = answerer.return_value
+        retriever.return_value.search.return_value = evidence
+        answerer.return_value.answer = AsyncMock(return_value=expected)
         response = client.post("/ai/guidance", json={"question": "Apa itu TB?"})
+    finally:
+        patch.stopall()
     assert response.status_code == 200
     assert response.json()["answer"] == "ok"
-    question, transcript, packed = answerer_cls.return_value.answer.await_args.args
+    question, transcript, packed = answerer.return_value.answer.await_args.args
     assert question == "Apa itu TB?"
     assert transcript is None
     assert packed == [
@@ -214,6 +351,75 @@ def test_guidance_validation_uses_error_envelope():
     assert response.json()["code"] == "INVALID_REQUEST"
 
 
+def test_onboarding_ocr_route_returns_a_draft(monkeypatch):
+    expected = {
+        "patientName": None,
+        "regimenCode": None,
+        "dailyPillQuota": None,
+        "startDate": None,
+        "targetEndDate": None,
+        "confidence": 0.0,
+        "rawText": "",
+    }
+    with patch("tiby_ai.main.extract_onboarding_card", return_value=expected):
+        response = client.post(
+            "/ocr/extract",
+            files={"cardImage": ("card.png", b"image-bytes", "image/png")},
+        )
+    assert response.status_code == 200
+    assert response.json() == expected
+
+
+def test_onboarding_ocr_rejects_non_image_upload():
+    response = client.post(
+        "/ocr/extract", files={"cardImage": ("card.txt", b"text", "text/plain")}
+    )
+    assert response.status_code == 415
+    assert response.json()["code"] == "INVALID_REQUEST"
+
+
+def test_onboarding_ocr_accepts_jpg_mime_type(monkeypatch):
+    draft = {
+        "patientName": None,
+        "regimenCode": None,
+        "dailyPillQuota": None,
+        "startDate": None,
+        "targetEndDate": None,
+        "confidence": 0.0,
+        "rawText": "",
+    }
+    with patch("tiby_ai.main.extract_onboarding_card", return_value=draft):
+        response = client.post(
+            "/ocr/extract", files={"cardImage": ("card.jpg", b"bytes", "image/jpg")}
+        )
+    assert response.status_code == 200
+    assert response.json() == draft
+
+
+def test_onboarding_parser_only_extracts_explicitly_labelled_fields():
+    draft = parse_onboarding_text(
+        "Nama Pasien: Siti Aminah\nRegimen: HRZE-4\n"
+        "Kuota obat: 4\nTanggal mulai: 03/04/2026\n"
+        "Tanggal selesai: 2026-10-03",
+        0.82,
+    )
+    assert draft.patientName == "Siti Aminah"
+    assert draft.regimenCode == "HRZE-4"
+    assert draft.dailyPillQuota == 4
+    assert draft.startDate == "2026-04-03"
+    assert draft.targetEndDate == "2026-10-03"
+    assert draft.confidence == 0.82
+
+
+def test_onboarding_parser_leaves_unlabelled_fields_unknown():
+    draft = parse_onboarding_text("Siti Aminah\nHRZE 4 tablet sehari", 0.4)
+    assert draft.patientName is None
+    assert draft.regimenCode is None
+    assert draft.dailyPillQuota is None
+    assert draft.startDate is None
+    assert draft.targetEndDate is None
+
+
 def test_agnes_provider_builds_configured_request_and_validates_response():
     seen = {}
 
@@ -223,7 +429,9 @@ def test_agnes_provider_builds_configured_request_and_validates_response():
         seen["body"] = json.loads(request.content)
         return httpx.Response(
             200,
-            json={"choices": [{"message": {"content": json.dumps(response_payload())}}]},
+            json={
+                "choices": [{"message": {"content": json.dumps(response_payload())}}]
+            },
         )
 
     real_client = httpx.AsyncClient
@@ -279,12 +487,14 @@ def test_nararouter_timeout_maps_to_provider_timeout():
 
     async def run_test():
         transport = httpx.MockTransport(handler)
-        with patch(
-            "tiby_ai.providers.nararouter.httpx.AsyncClient",
-            side_effect=lambda **kwargs: real_client(transport=transport, **kwargs),
+        with (
+            patch(
+                "tiby_ai.providers.nararouter.httpx.AsyncClient",
+                side_effect=lambda **kwargs: real_client(transport=transport, **kwargs),
+            ),
+            pytest.raises(ProviderTimeoutError),
         ):
-            with pytest.raises(ProviderTimeoutError):
-                await router_client().chat_json("system", "user")
+            await router_client().chat_json("system", "user")
 
     asyncio.run(run_test())
 
@@ -309,7 +519,9 @@ def test_groq_provider_uses_configured_token_and_returns_transcript():
             "tiby_ai.providers.groq.httpx.AsyncClient",
             side_effect=lambda **kwargs: real_client(transport=transport, **kwargs),
         ):
-            return await GroqTranscriber(api_key="groq-test-token").transcribe(b"wav-bytes")
+            return await GroqTranscriber(api_key="groq-test-token").transcribe(
+                b"wav-bytes"
+            )
 
     result = asyncio.run(run_test())
     assert result.text == "Sudah minum obat."
@@ -361,7 +573,10 @@ def test_prompt_defines_strict_fact_only_boundaries():
 
     assert "intent to stop taking the medication only" in CHECKIN_EXTRACTION_SYSTEM
     assert "return []" in CHECKIN_EXTRACTION_SYSTEM
-    assert "Set severity to unknown unless the speaker explicitly qualifies it" in CHECKIN_EXTRACTION_SYSTEM
+    assert (
+        "Set severity to unknown unless the speaker explicitly qualifies it"
+        in CHECKIN_EXTRACTION_SYSTEM
+    )
     assert "null" in CHECKIN_EXTRACTION_SYSTEM
 
 
