@@ -12,11 +12,12 @@ body comments on their own lines — and validate against the Pydantic models.
 """
 
 import json
-from pathlib import Path
 import re
+from pathlib import Path
 
 import yaml
 from fastapi.routing import APIRoute
+from pydantic import BaseModel
 
 from tiby_ai.contracts import CheckInRequest, GuidanceRequest
 from tiby_ai.main import app
@@ -24,7 +25,7 @@ from tiby_ai.main import app
 COLLECTION_ROOT = Path(__file__).resolve().parents[3] / "shared" / "api-contract" / "AI"
 COMMENT_LINE = re.compile(r"^\s*//.*$", re.MULTILINE)
 
-BODY_MODELS = {
+BODY_MODELS: dict[str, type[BaseModel]] = {
     "/ai/extractions/check-in": CheckInRequest,
     "/ai/guidance": GuidanceRequest,
 }
@@ -48,8 +49,8 @@ def app_routes() -> set[tuple[str, str]]:
     return {
         (method, route.path)
         for route in app.routes
-        if isinstance(route, APIRoute)
-        for method in route.methods
+        if isinstance(route, APIRoute) and route.include_in_schema
+        for method in route.methods or set()
     }
 
 
