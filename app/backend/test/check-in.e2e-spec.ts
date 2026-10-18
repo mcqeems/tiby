@@ -318,10 +318,10 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
       .set("Cookie", pmo1Cookie);
 
     expect(res.status).toBe(200);
-    expect(res.body.patients).toBeDefined();
-    expect(res.body.patients.length).toBeGreaterThanOrEqual(1);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThanOrEqual(1);
 
-    const monitoredPatient = res.body.patients.find((p: any) => p.treatmentPlanId === plan1Id);
+    const monitoredPatient = res.body.find((p: any) => p.treatmentPlanId === plan1Id);
     expect(monitoredPatient).toBeDefined();
     expect(monitoredPatient.patientName).toBe("Ahmad Dahlan");
     expect(monitoredPatient.isLockedToday).toBe(true);

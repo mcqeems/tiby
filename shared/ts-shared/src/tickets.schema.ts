@@ -5,6 +5,7 @@ import {
   TicketPrioritySchema,
   TicketStatusSchema,
   TicketTriggerSourceSchema,
+  PmoFollowUpActionSchema,
 } from "./enums.js";
 
 export const ListTicketsQuerySchema = z.object({
@@ -79,7 +80,7 @@ export const FacilityAlertListSchema = z.object({
 export type FacilityAlertList = z.infer<typeof FacilityAlertListSchema>;
 
 export const CreatePmoFollowUpSchema = z.object({
-  actionTaken: z.string().min(1),
+  actionTaken: PmoFollowUpActionSchema,
   notes: z.string().min(1),
   additionalFamilyContact: z
     .object({

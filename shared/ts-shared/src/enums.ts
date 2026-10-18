@@ -173,3 +173,19 @@ export const WhatsappVerificationStatuses = [
 ] as const;
 export const WhatsappVerificationStatusSchema = z.enum(WhatsappVerificationStatuses);
 export type WhatsappVerificationStatus = z.infer<typeof WhatsappVerificationStatusSchema>;
+
+// PMO Follow-Up / Outreach Actions
+export const PmoFollowUpActions = [
+  "MENGHUBUNGI_PASIEN",           // Contacted patient directly (Phone/WhatsApp)
+  "KUNJUNGAN_RUMAH",             // Visited patient's residence
+  "MENGHUBUNGI_KELUARGA",         // Contacted family / household member
+  "MENGANTAR_OBAT",              // Delivered medication directly to patient
+  "EDUKASI_KONSULTASI",          // Provided motivational counseling / compliance education
+  "MENGINGATKAN_JADWAL_KONTROL",  // Reminded about clinic checkup or lab refill schedule
+  "KONSULTASI_FASKES",           // Consulted with Puskesmas / nurse regarding patient condition
+  "PASIEN_TIDAK_DAPAT_DIHUBUNGI", // Attempted contact but patient unreachable
+  "LAINNYA",                     // Other custom action (detailed in notes)
+] as const;
+export const PmoFollowUpActionSchema = z.enum(PmoFollowUpActions);
+export type PmoFollowUpAction = z.infer<typeof PmoFollowUpActionSchema>;
+
