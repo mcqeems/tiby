@@ -45,6 +45,7 @@ export class FamilyContactsController {
   }
 
   @Get()
+  @Roles(['ADMIN', 'NAKES', 'PMO', 'PASIEN'])
   async listFamilyContacts(
     @Req() req: AuthenticatedRequest,
     @Param('id') patientId: string,
@@ -54,6 +55,7 @@ export class FamilyContactsController {
   }
 
   @Post()
+  @Roles(['ADMIN', 'NAKES', 'PMO', 'PASIEN'])
   async createFamilyContact(
     @Req() req: AuthenticatedRequest,
     @Param('id') patientId: string,
@@ -68,6 +70,7 @@ export class FamilyContactsController {
   }
 
   @Delete(':contactId')
+  @Roles(['ADMIN', 'NAKES', 'PASIEN'])
   async deleteFamilyContact(
     @Req() req: AuthenticatedRequest,
     @Param('id') patientId: string,

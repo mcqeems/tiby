@@ -75,6 +75,12 @@ export class FamilyContactsService {
     }
 
     if (caller.role === 'PMO') {
+      if (requireDeleteRole) {
+        throw new ForbiddenException({
+          code: 'FORBIDDEN',
+          message: 'PMO cannot delete family contacts',
+        });
+      }
       const assignment = await this.pmoRepo.findOne({
         where: { pmoUserId: caller.id, treatmentPlanId: plan.id, active: true },
       });

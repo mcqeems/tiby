@@ -81,9 +81,25 @@ export const TicketTriggerSources = [
   "INTENT_TO_STOP",
   "SILENCE_H3",
   "PMO_ESCALATION",
+  "MANUAL_PATIENT",
+  "MANUAL_REPORT",
 ] as const;
 export const TicketTriggerSourceSchema = z.enum(TicketTriggerSources);
 export type TicketTriggerSource = z.infer<typeof TicketTriggerSourceSchema>;
+
+export const TicketResolutionReasons = [
+  "KUNJUNGAN_RUMAH",             // Petugas Faskes mendatangi rumah pasien
+  "KONSULTASI_KLINIK",           // Pasien datang konsultasi / pemeriksaan ke Puskesmas
+  "PENYESUAIAN_DOSIS_OBAT",      // Penyesuaian regimen/dosis atau obat simtomatik
+  "KONFIRMASI_TELEPON",          // Masalah/keluhan teratasi via telepon atau WhatsApp
+  "EDUKASI_KEMBALI",             // Pasien diberikan konseling ulang dan berkomitmen lanjut minum obat
+  "RUJUKAN_RSUD",                // Pasien dirujuk ke Rumah Sakit / Poli Paru Spesialis
+  "PASIEN_MENOLAK_INTERVENSI",   // Pasien menolak tindakan atau bersikeras tidak mau minum obat
+  "PATIENT_CHECKED_IN_RECOVERED",// Ditutup otomatis oleh sistem saat pasien check-in kembali
+  "LAINNYA",                     // Tindakan lainnya (dijelaskan rinci pada resolutionNotes)
+] as const;
+export const TicketResolutionReasonSchema = z.enum(TicketResolutionReasons);
+export type TicketResolutionReason = z.infer<typeof TicketResolutionReasonSchema>;
 
 export const TicketPriorities = ["HIGH", "CRITICAL"] as const;
 export const TicketPrioritySchema = z.enum(TicketPriorities);

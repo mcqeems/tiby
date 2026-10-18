@@ -5,6 +5,7 @@ import {
   TicketPrioritySchema,
   TicketStatusSchema,
   TicketTriggerSourceSchema,
+  TicketResolutionReasonSchema,
   PmoFollowUpActionSchema,
 } from "./enums.js";
 
@@ -42,9 +43,17 @@ export const TicketListResponseSchema = z.object({
 });
 export type TicketListResponse = z.infer<typeof TicketListResponseSchema>;
 
+export const CreateTicketSchema = z.object({
+  treatmentPlanId: z.string().uuid().optional(),
+  patientUserId: z.string().optional(),
+  priority: TicketPrioritySchema.default("HIGH"),
+  reason: z.string().min(1, "Reason is required"),
+});
+export type CreateTicketDto = z.infer<typeof CreateTicketSchema>;
+
 export const CloseTicketSchema = z.object({
-  resolutionReason: z.string().min(1),
-  resolutionNotes: z.string().min(1),
+  resolutionReason: TicketResolutionReasonSchema,
+  resolutionNotes: z.string().min(1, "Resolution notes are required"),
 });
 export type CloseTicketDto = z.infer<typeof CloseTicketSchema>;
 
