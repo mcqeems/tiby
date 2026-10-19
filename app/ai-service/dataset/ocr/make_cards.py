@@ -5,7 +5,7 @@ The fixtures are committed PNGs so OCR regressions are caught by a plain
 only when a fixture needs to change, or to check what a card actually looks
 like:
 
-    uv run python tests/fixtures/ocr/make_cards.py
+    uv run python dataset/ocr/make_cards.py
 
 Two folders, split by which layer they are meant to catch failing: ``layouts/``
 holds clean scans that exercise the field parser, ``photos/`` holds a phone

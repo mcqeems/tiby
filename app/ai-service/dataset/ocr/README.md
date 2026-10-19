@@ -25,7 +25,7 @@ failure here is a `card_parser` regression.
 | --- | --- |
 | `card-photographed.png` | A phone capture: skewed, shadowed, underexposed, JPEG'd, and downscaled. A failure here means the *engine* stopped reading, not that a parsing rule regressed. |
 
-Regenerate with `uv run python tests/fixtures/ocr/make_cards.py`, which is
+Regenerate with `uv run python dataset/ocr/make_cards.py`, which is
 deterministic. Re-run the OCR tests afterwards: a card that stops reading is a
 regression until proven otherwise, and the committed PNGs are what
 `uv run pytest` compares against.
