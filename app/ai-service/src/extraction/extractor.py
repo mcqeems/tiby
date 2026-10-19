@@ -1,8 +1,20 @@
+"""Rule-based fallback extractor for ``TIBY_EXTRACTOR=rules``.
+
+Transparent keyword baseline used for offline smoke tests and deterministic
+tests. It is not an LLM and not clinically validated; production extraction
+uses :class:`providers.agnes.AgnesExtractor`.
+"""
+
 import re
 
-from .contracts import CheckInRequest, CheckInResponse, Extraction, MedicationReport, Symptom
+from contracts import (
+    CheckInRequest,
+    CheckInResponse,
+    Extraction,
+    MedicationReport,
+    Symptom,
+)
 
-# Transparent hackathon baseline, not an LLM and not clinically validated.
 _SYMPTOMS = (
     "mual",
     "muntah",
@@ -41,6 +53,7 @@ _NUMBER_WORDS = {
 
 
 def _extract_dose_count(text: str) -> int | None:
+    """Read a pill count that is directly stated (digit or number word + unit)."""
     digit_match = re.search(r"\b(\d{1,2})\s*(?:biji|butir|tablet|pil)\b", text)
     if digit_match:
         return int(digit_match.group(1))
@@ -51,6 +64,7 @@ def _extract_dose_count(text: str) -> int | None:
 
 
 def extract_check_in(request: CheckInRequest) -> CheckInResponse:
+    """Extract facts with keyword rules; confidence stays a fixed 0.5 baseline."""
     text = " ".join(request.transcript.lower().split())
     medication_taken: bool | None = None
     if re.search(r"\b(belum|tidak|nggak|gak)\b.{0,30}\b(minum|obat)\b", text):

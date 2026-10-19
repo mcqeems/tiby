@@ -1,87 +1,101 @@
 # Tiby AI Service
 
-Small FastAPI service for extracting reported facts from a check-in transcript. It does **not** diagnose patients or assign clinical risk. The deterministic safety rules belong in the main backend.
+FastAPI service for TB check-ins: extracts reported facts from transcripts (text or audio) and answers general questions with citation-grounded Kemenkes/WHO evidence. It does **not** diagnose, assign risk, or recommend treatment — deterministic safety rules live in the backend. Module docs live in docstrings; the HTTP contract is the OpenCollection (Bruno format) collection in `../../shared/api-contract` — open it with **Bruno → Open Collection → select the folder**.
 
-## Requirements
-
-- Python 3.10
-- `uv`
-
-Check versions:
-
-```bash
-python3.10 --version
-uv --version
-```
-
-## Install
+## Install & run
 
 From `app/ai-service`:
 
 ```bash
-uv python pin 3.10
-uv sync --group dev
-```
-
-`uv sync` creates `.venv` and installs dependencies. The generated `uv.lock` is committed for reproducible installs.
-
-## Current API contract
-
-`POST /v1/extractions/check-in`
-
-Request:
-
-```json
-{
-  "transcript": "Sudah minum obat empat biji. Mual dari siang.",
-  "language": "id-ID"
-}
-```
-
-The HTTP contract is defined in `../../shared/api-contract/` (OpenCollection / Bruno format). Python request/response models live in `src/tiby_ai/contracts.py`. Null means unstated or uncertain—not false. Never treat model confidence as clinical probability.
-
-### Modules
-
-- `src/tiby_ai/main.py` — HTTP routes and dependency wiring.
-- `src/tiby_ai/contracts.py` — request/response validation models.
-- `src/tiby_ai/prompts.py` — task-specific system/user prompt templates.
-- `src/tiby_ai/providers/base.py` — provider protocol and shared errors.
-- `src/tiby_ai/providers/fish.py` — Fish Audio speech-to-text adapter.
-- `src/tiby_ai/providers/agnes.py` — Agnes/NaraRouter structured extraction adapter.
-- `src/tiby_ai/extractor.py` — offline rule-based smoke-test extractor.
-
-## Test contract
-
-```bash
-uv run pytest
-```
-
-Tests check request validation, nullable/uncertain fields, confidence bounds, and rejection of unexpected fields such as AI-assigned risk status. The OpenAPI example can be validated against the Python models.
-
-- `POST /v1/extractions/check-in` — accepts a JSON transcript.
-- `POST /v1/extractions/check-in/audio` — accepts a multipart `audio` file, sends it to Fish Audio ASR, then runs Agnes extraction.
-- `GET /health` — liveness check.
-
-Set provider environment variables in the process that launches the app:
-
-```bash
-export FISH_AUDIO_API_TOKEN="..."
-export NARAROUTER_API_TOKEN="..."  # or NARAROUTER_API_KEY
+uv sync --group dev                        # .venv + deps + this package (editable); uv.lock is committed
+export NARAROUTER_API_TOKEN="..."          # or NARAROUTER_API_KEY
 export NARAROUTER_BASE_URL="https://your-router-base/v1"
-export TIBY_LLM_MODEL="agnes-2.5-flash"
+export GROQ_API_KEY="..."                  # audio endpoint (default transcriber)
+PYTHONPATH=src uv run uvicorn main:app --reload   # http://localhost:8000, docs at /docs
 ```
 
-The service reads these at request time and never logs the values. `NARAROUTER_BASE_URL` should include `/v1`; the service appends `/chat/completions`. Configure values in `~/.zshrc` if desired, then start Uvicorn from a new login shell so it inherits them.
+`src/` is the import root — there is no `tiby_ai` package, so the app is
+`main:app`, not `tiby_ai.main:app`. `uv sync` installs this project editable
+with `src/` on the path, so `uv run uvicorn main:app` works as-is; the
+`PYTHONPATH=src` prefix above is what keeps the same commands working from a
+bare checkout with no install.
 
-Example:
+## Layout
+
+Layered like the backend's NestJS modules, so both services read the same way: `controllers/` is HTTP wiring only, `services/` holds the use cases.
+
+```
+src/
+  main.py       # composes the app; mounts domain routers
+  errors.py     # the shared ApiError envelope
+  contracts.py  # HTTP contract, mirroring shared/ts-shared
+  prompts.py    # extraction + guidance prompt text
+  extraction/  guidance/  onboarding_ocr/  providers/
+```
+
+`dataset/knowledge/` holds the approved PDFs that feed `/ai/guidance` and nothing
+else; the rest of `dataset/` holds the synthetic card images and transcripts the
+tests read. Each `dataset/*` folder carries its own README.
+
+### OCR weights
+
+`/ocr/extract` runs PP-OCRv6 locally, and those weights are **hash-locked and never downloaded at runtime**. RapidOCR will happily fetch ~30 MB from ModelScope the moment it cannot find a file; the service checks first and returns 503 instead.
 
 ```bash
-curl -X POST http://localhost:8000/v1/extractions/check-in/audio \\
-  -F 'audio=@speech.wav;type=audio/wav'
+export TIBY_OCR_MODEL_DIR=/opt/tiby/ocr-models   # pre-stage here at build time
 ```
 
-### Offline prototype and safety boundary
+Without the variable it falls back to the cache inside the installed `rapidocr` package, which is what local development uses. `models.lock.json` records the SHA-256 of each weight; changing a hash means OCR output may change, so re-run `uv run pytest tests/test_ocr.py` before committing one.
 
-Set `TIBY_EXTRACTOR=rules` to use the small local rule-based prototype without calling an LLM. This is for smoke tests only, not a clinically validated model. The normal/default mode uses Agnes for fact extraction. No risk level, diagnosis, or treatment recommendation is generated by this service; deterministic risk rules and human escalation belong to the backend. `possible_red_flags` must not be treated as a clinical decision.
+## Tokens
 
-Automated provider tests use mocked HTTP responses. Live calls require working credentials and network access; test only with synthetic speech/text, never real patient data.
+Set in the shell that launches the app; read per request, never logged.
+
+| Env var | Needed for | Notes |
+| --- | --- | --- |
+| `NARAROUTER_API_TOKEN` (or `NARAROUTER_API_KEY`) | check-in extraction + guidance | requires `NARAROUTER_BASE_URL` including `/v1`; model via `TIBY_LLM_MODEL`, default `agnes-2.5-flash` |
+| `GROQ_API_KEY` | `/ai/extractions/check-in/audio` | default transcriber (`TIBY_TRANSCRIBER=groq`) |
+| `FISH_AUDIO_API_TOKEN` (or `FISH_API_KEY`) | audio when `TIBY_TRANSCRIBER=fish` | optional alternative transcriber |
+
+Missing token → 503, provider failure → 502, timeout → 504. Real providers are the default on `TIBY_EXTRACTOR` and `TIBY_TRANSCRIBER`; `TIBY_EXTRACTOR=rules` is the offline keyword baseline for deterministic tests only, and any unrecognised value is rejected at startup rather than falling through to a paid provider.
+
+## Endpoints
+
+- `POST /ai/extractions/check-in` — JSON transcript → structured facts (`null` = unstated or uncertain, never false).
+- `POST /ai/extractions/check-in/audio` — multipart `audio` (max 10 MB) → transcription + facts.
+- `POST /ai/guidance` — educational answers from approved-source evidence only; fails closed (`answer: null`) on personal dosing/start-stop questions or when no evidence matches.
+- `GET /ai/health` — liveness.
+
+Backend aliases, kept private from the contract collection: `POST /text/extract`, `POST /audio/extract`, `POST /ocr/extract` (`cardImage`, max 10 MB). OCR returns an unconfirmed draft — read `fieldConfidence` and `uncertainties` before trusting any field. `tests/test_api_contract.py` fails if the routes and the collection drift apart.
+
+## Test
+
+```bash
+uv run pytest                                     # offline; no tokens, no network
+PYTHONPATH=src uv run python tests/test_live_providers.py    # real providers; pass/fail + accuracy per field
+PYTHONPATH=src uv run python tests/test_guidance_prompts.py # real providers; one JSON line per case, human review
+```
+
+Each answers a different question, and `dataset/README.md` picks the right one: `pytest` for *did I break the code?* (it also runs the real OCR engine over the card images in `dataset/`), `test_live_providers.py` for *is the AI working and how accurate is it?* (exits non-zero, so it can gate a deploy), `test_guidance_prompts.py` for *does this answer need a human eye?*
+
+```bash
+PYTHONPATH=src uv run python tests/test_live_providers.py --only extraction --repeat 3
+PYTHONPATH=src uv run python tests/test_live_providers.py --list   # health ocr extraction audio guidance
+TIBY_EXTRACTOR=rules uv run pytest -q     # the offline baseline, not a live check
+```
+
+Extraction is not deterministic, so `--repeat` separates a case that is sometimes right (`UNSTABLE`) from one that never is (`FAIL`). The live runner refuses to run under `TIBY_EXTRACTOR=rules`, where a green run would be indistinguishable from a green run against the model.
+
+One thing is **not** measured: audio transcription accuracy — the samples in `dataset/audio/` carry no expected transcript, so the live runner only proves the provider is reachable and the contract holds. OCR is likewise measured only on synthetic scans. See `dataset/audio/README.md`.
+
+Run `ruff`, `mypy`, and `pytest` from `app/ai-service`, not the repo root: `pyproject.toml` sets no `[tool.ruff]`, so first-party detection follows the working directory and you get a wall of spurious `I001` errors otherwise.
+
+## Knowledge base
+
+`/ai/guidance` reads `dataset/knowledge/tiby.db`, built from the PDFs in `dataset/knowledge/manifest.json`:
+
+```bash
+PYTHONPATH=src uv run python src/ingest_knowledge.py
+```
+
+Fresh clone without the index → guidance returns `answer: null`. TB-specific; verify issuer and edition before relying on any document. See `dataset/knowledge/README.md`.

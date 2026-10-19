@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from tiby_ai.contracts import CheckInRequest, CheckInResponse
+from contracts import CheckInRequest, CheckInResponse
 
 
 def test_request_accepts_indonesian_transcript_and_default_language():

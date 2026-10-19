@@ -1,0 +1,134 @@
+info:
+  name: Ask Guidance (ai/guidance)
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/ai/guidance"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Accept
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        // Hanya menerima pertanyaan umum, maksimal 3000 karakter. Pertanyaan personal tentang dosis atau mulai/berhenti/mengganti obat akan ditolak secara fail-closed.
+        "question": "Menurut panduan, apakah mual termasuk efek samping umum obat TB?",
+        // jejak transkrip check-in untuk konteks. max 5000 char, scanned for fail-closed case (Optional)
+        "transcript": null
+      }
+  auth:
+    type: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Status code is 200", function() {
+          expect(res.status).to.equal(200);
+        });
+
+        test("Response carries the guidance contract", function() {
+          expect(res.body).to.have.property("answer");
+          expect(res.body).to.have.property("grounded");
+          expect(res.body).to.have.property("citations");
+          expect(res.body).to.have.property("limitations");
+        });
+
+        test("Grounded answers cite at least one source", function() {
+          if (res.body.grounded === true) {
+            expect(res.body.citations.length).to.be.above(0);
+          }
+        });
+
+settings:
+  encodeUrl: true
+
+docs: |-
+  Answers general educational questions using approved Kemenkes/WHO evidence only. It does not diagnose or instruct treatment.
+
+  Fails closed - `answer: null`, still HTTP 200 - for personal decision questions (dose, start/stop/switch medication) or when no evidence matches; `limitations` explains why.
+
+  Responses:
+  - 200: Answer (possibly null) with `grounded`, `evidence`, `citations`, and `limitations`.
+  - 422: Request validation failed (ApiError).
+  - 503: Guidance provider is not configured on the server (ApiError).
+
+examples:
+  - name: "200 - grounded answer with citations"
+    request:
+      url: "{{baseUrl}}/ai/guidance"
+      method: POST
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: content-type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "answer": "Ya, menurut Panduan Kemenkes (Petunjuk Teknis Penatalaksanaan Tuberkulosis Sensitif Obat di Indonesia, 2025), mual termasuk contoh efek samping umum OAT. Mual ringan dikategorikan sebagai efek samping derajat Ringan (Derajat 1), sedangkan mual muntah berulang termasuk Derajat Sedang (Derajat 2) (src-1, src-2).",
+            "grounded": true,
+            "evidence": [
+              {
+                "citation_id": "src-1",
+                "text": "Tata Laksana Umum Derajat Keparahan Kriteria Klinis dan/atau Laboratorik Contoh Efek Samping Umum OAT Tata Laksana Umum (Panduan Kemenkes) Ringan (Derajat 1) 1. Keluhan ringan, berlangsung <48 jam. 2. Tidak mengganggu aktivitas harian. 3. Tidak memerlukan intervensi medis. 1. Mual ringan, nyeri epigastrium 2. Nyeri kepala, nyeri sendi ringan 3. Gatal ringan tanpa ruam luas 1. Edukasi pasien agar tetap melanjutkan OAT. 2. Berikan terapi simptomatik: antiemetik sebelum minum obat, antihistamin ringan,"
+              },
+              {
+                "citation_id": "src-2",
+                "text": "91 Petunjuk Teknis Penatalaksanaan Tuberkulosis Sensitif Obat di Indonesia Derajat Keparahan Kriteria Klinis dan/atau Laboratorik Contoh Efek Samping Umum OAT Tata Laksana Umum (Panduan Kemenkes) 4. Parestesia ujung jari (INH) 5. Anoreksia ringan, lelah ringan vitamin B6 untuk neuropati. 3. Observasi klinis; evaluasi bila gejala menetap >3 hari. 4. Tidak perlu penghentian obat. Sedang (Derajat 2) 1. Mengganggu sebagian aktivitas, memerlukan evaluasi medis. 2. Dapat disertai kelainan laboratorium ringan– sedang (SGPT/SGOT 3–5x ULN). 1. Mual muntah berulang 2. Ruam kulit terbatas, urtikaria ringan– sedang 3. Nyeri sendi sedang (PZA) 4. Neuropati sensorik ringan– sedang 5. Penurunan nafsu makan, lemas 6. Anemia ringan, trombositopenia ringan 1. Evaluasi klinis dan laborator­ ik (fungsi hati, ginjal, hema­ tologi). 2. Berikan obat simptomatik (antiemetik, analgesik, antihistamin, suplemen vit. B6). 3. Pertimbang­ kan penye­ suaian dosis atau peng­ gantian obat tersangka bila gejala mene­ tap. 4. Lanjutkan pengobatan TB bila memu­ ngkinkan. 5. Konsultasi/ rujuk ke FPK­ TL bila gejala tidak membaik dalam 3–5 hari."
+              }
+            ],
+            "citations": [
+              {
+                "citation_id": "src-1",
+                "document_id": "kemenkes-juknis-tb-so-2025",
+                "organization": "Kemenkes",
+                "title": "Petunjuk Teknis Penatalaksanaan Tuberkulosis Sensitif Obat di Indonesia",
+                "year": 2025,
+                "page": 116,
+                "section": null,
+                "source_url": "https://p2.kemkes.go.id/wp-content/uploads/2025/12/Buku-Petunjuk-Teknis-Penatalaksanaan-Tuberkulosis-Sensitif-Obat-di-Indonesia_FINAL.pdf"
+              },
+              {
+                "citation_id": "src-2",
+                "document_id": "kemenkes-juknis-tb-so-2025",
+                "organization": "Kemenkes",
+                "title": "Petunjuk Teknis Penatalaksanaan Tuberkulosis Sensitif Obat di Indonesia",
+                "year": 2025,
+                "page": 117,
+                "section": null,
+                "source_url": "https://p2.kemkes.go.id/wp-content/uploads/2025/12/Buku-Petunjuk-Teknis-Penatalaksanaan-Tuberkulosis-Sensitif-Obat-di-Indonesia_FINAL.pdf"
+              }
+            ],
+            "limitations": [
+              "Informasi ini merupakan ringkasan umum berdasarkan panduan Kemenkes dan bukan penilaian spesifik untuk kasus pasien tertentu. Untuk pertanyaan mengenai kondisi pribadi, konsultasikan dengan tenaga kesehatan yang menangani."
+            ]
+          }
+  - name: "200 - fail closed on personal dosing question"
+    request:
+      url: "{{baseUrl}}/ai/guidance"
+      method: POST
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: content-type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "answer": null,
+            "grounded": false,
+            "evidence": [],
+            "citations": [],
+            "limitations": [
+              "Permintaan ini menyangkut keputusan atau tindakan pengobatan pribadi; silakan hubungi tenaga kesehatan yang menangani Anda."
+            ]
+          }
