@@ -1,11 +1,11 @@
 info:
-  name: Get User (api/users/me)
+  name: Get Assigned Patients (api/pmo/patients) [PMO]
   type: http
-  seq: 4
+  seq: 1
 
 http:
   method: GET
-  url: "{{baseUrl}}/api/users/me"
+  url: "{{baseUrl}}/api/pmo/patients"
   auth: inherit
 
 settings:
@@ -16,9 +16,9 @@ settings:
   forwardAuthorizationHeader: false
 
 examples:
-  - name: Get User (200)
+  - name: Get Assigned Patients (200)
     request:
-      url: "{{baseUrl}}/api/users/me"
+      url: "{{baseUrl}}/api/pmo/patients"
       method: GET
     response:
       status: 200
@@ -33,11 +33,11 @@ examples:
         - name: content-type
           value: application/json; charset=utf-8
         - name: content-length
-          value: "172"
+          value: "196"
         - name: etag
-          value: W/"ac-L0GOU8tYaC3KmvUVm3pY5ugJplw"
+          value: W/"c4-Nabg7pGVrXinSYeN+4bBYJPdZYc"
         - name: date
-          value: Sat, 17 Oct 2026 10:25:46 GMT
+          value: Sun, 18 Oct 2026 06:26:13 GMT
         - name: connection
           value: keep-alive
         - name: keep-alive
@@ -45,11 +45,14 @@ examples:
       body:
         type: json
         data: |-
-          {
-            "id": "hO7jnpiFKHgj611i6AFeAEDbotSYfXUM",
-            "username": "ucup",
-            "email": "ucup@gmail.com",
-            "name": "Ucup Kasep",
-            "role": "PASIEN",
-            "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e"
-          }
+          [
+            {
+              "treatmentPlanId": "e2c54216-1b40-4e24-a7b1-08bfa9f5d074",
+              "patientName": "Ujang Surasep",
+              "isLockedToday": false,
+              "todayVerdict": null,
+              "currentStreak": 0,
+              "phase": "INTENSIF",
+              "consecutiveSilenceDays": 0
+            }
+          ]

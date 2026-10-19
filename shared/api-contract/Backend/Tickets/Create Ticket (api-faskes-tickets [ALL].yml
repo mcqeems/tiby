@@ -1,0 +1,79 @@
+info:
+  name: Create Ticket (api/faskes/tickets [ALL]
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/faskes/tickets"
+  body:
+    type: json
+    data: |-
+      {
+        "treatmentPlanId": "e2c54216-1b40-4e24-a7b1-08bfa9f5d074",
+        "priority": "HIGH", // "HIGH" | "CRITICAL" (default: "HIGH")
+        "reason": "Pasien mengeluh mual dan pusing berputar sejak kemarin setelah minum obat."
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Create Ticket (201)
+    request:
+      url: "{{baseUrl}}/api/faskes/tickets"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "treatmentPlanId": "e2c54216-1b40-4e24-a7b1-08bfa9f5d074",
+            "priority": "HIGH", // "HIGH" | "CRITICAL" (default: "HIGH")
+            "reason": "Pasien mengeluh mual dan pusing berputar sejak kemarin setelah minum obat."
+          }
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "504"
+        - name: etag
+          value: W/"1f8-vJLVSDfvLtL+HHXDwtiBvdhOfkQ"
+        - name: date
+          value: Mon, 19 Oct 2026 02:21:40 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            "id": "93df8f98-6450-45ae-b84a-5055390be1ce",
+            "treatmentPlanId": "e2c54216-1b40-4e24-a7b1-08bfa9f5d074",
+            "facilityId": "90e242df-e488-41da-b700-8a32ba47e2ea",
+            "patientName": "Ujang Surasep",
+            "patientUsername": "ujangsurasep",
+            "triggerSource": "MANUAL_REPORT",
+            "priority": "HIGH",
+            "status": "OPEN",
+            "assignedNakesId": null,
+            "pmoNotes": "[NAKES]: Pasien mengeluh mual dan pusing berputar sejak kemarin setelah minum obat.",
+            "resolutionReason": null,
+            "resolutionNotes": null,
+            "openedAt": "2026-10-19T02:21:40.039Z",
+            "closedAt": null
+          }

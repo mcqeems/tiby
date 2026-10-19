@@ -1,0 +1,75 @@
+info:
+  name: Get All Family Contacts (api/patients/:id/family-contacts) [ALL]
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/patients/:id/family-contacts"
+  params:
+    - name: id
+      value: koMUsjaDd510j9PIJL87ava43WqyO4In
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Get All Family Contacts (200)
+    request:
+      url: "{{baseUrl}}/api/patients/:id/family-contacts"
+      method: GET
+      params:
+        - name: id
+          value: koMUsjaDd510j9PIJL87ava43WqyO4In
+          type: path
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "503"
+        - name: etag
+          value: W/"1f7-j2QJdd0xn0lV9Rn3G8G25vdSDFU"
+        - name: date
+          value: Sun, 18 Oct 2026 16:16:22 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          [
+            {
+              "id": "9c5ff8cb-c25d-4ce3-878a-5c9d8a3966f2",
+              "treatmentPlanId": "e2c54216-1b40-4e24-a7b1-08bfa9f5d074",
+              "fullName": "Udin Surasep",
+              "whatsappNumber": "08812312345",
+              "whatsappVerified": false,
+              "notifyOnEscalation": true,
+              "createdAt": "2026-10-17T15:16:25.884Z"
+            },
+            {
+              "id": "c271e4d4-3a65-49a3-86a6-dcc1d25fcebf",
+              "treatmentPlanId": "e2c54216-1b40-4e24-a7b1-08bfa9f5d074",
+              "fullName": "jajang surasep",
+              "whatsappNumber": "08811558295",
+              "whatsappVerified": false,
+              "notifyOnEscalation": true,
+              "createdAt": "2026-10-18T07:12:17.924Z"
+            }
+          ]

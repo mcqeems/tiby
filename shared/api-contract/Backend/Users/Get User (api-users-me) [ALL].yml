@@ -1,11 +1,11 @@
 info:
-  name: Get All Users (api/users)
+  name: Get User (api/users/me) [ALL]
   type: http
-  seq: 5
+  seq: 4
 
 http:
   method: GET
-  url: "{{baseUrl}}/api/users"
+  url: "{{baseUrl}}/api/users/me"
   auth: inherit
 
 settings:
@@ -16,9 +16,9 @@ settings:
   forwardAuthorizationHeader: false
 
 examples:
-  - name: Get All Users (200)
+  - name: Get User (200)
     request:
-      url: "{{baseUrl}}/api/users"
+      url: "{{baseUrl}}/api/users/me"
       method: GET
     response:
       status: 200
@@ -33,11 +33,11 @@ examples:
         - name: content-type
           value: application/json; charset=utf-8
         - name: content-length
-          value: "216"
+          value: "172"
         - name: etag
-          value: W/"d8-KI9pb8Ecl0ppeLVB8ayVLrZLZJM"
+          value: W/"ac-L0GOU8tYaC3KmvUVm3pY5ugJplw"
         - name: date
-          value: Sat, 17 Oct 2026 10:27:21 GMT
+          value: Sat, 17 Oct 2026 10:25:46 GMT
         - name: connection
           value: keep-alive
         - name: keep-alive
@@ -45,13 +45,11 @@ examples:
       body:
         type: json
         data: |-
-          [
-            {
-              "id": "1ssVNVY3nu4dNW72WzRiovX9RrPaKnMU",
-              "username": "nakes_1792210134186",
-              "email": "nakes_1792210134186@users.tiby.internal",
-              "name": "dr. Nakes E2E",
-              "role": "NAKES",
-              "facilityId": "90e242df-e488-41da-b700-8a32ba47e2ea"
-            }
-          ]
+          {
+            "id": "hO7jnpiFKHgj611i6AFeAEDbotSYfXUM",
+            "username": "ucup",
+            "email": "ucup@gmail.com",
+            "name": "Ucup Kasep",
+            "role": "PASIEN",
+            "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e"
+          }
