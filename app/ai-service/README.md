@@ -26,7 +26,17 @@ src/tiby_ai/
   extraction/  guidance/  onboarding_ocr/  providers/
 ```
 
-`knowledge/` holds the approved PDFs that feed `/ai/guidance` and nothing else; `docs/` holds engineering notes that are never indexed. `prompts/` and `tests/fixtures/` carry their own READMEs.
+`knowledge/` holds the approved PDFs that feed `/ai/guidance` and nothing else; `dataset/` holds the synthetic card images the OCR tests read; `docs/` holds engineering notes that are never indexed. `prompts/` and `tests/fixtures/` carry their own READMEs.
+
+### OCR weights
+
+`/ocr/extract` runs PP-OCRv6 locally, and those weights are **hash-locked and never downloaded at runtime**. RapidOCR will happily fetch ~30 MB from ModelScope the moment it cannot find a file; the service checks first and returns 503 instead.
+
+```bash
+export TIBY_OCR_MODEL_DIR=/opt/tiby/ocr-models   # pre-stage here at build time
+```
+
+Without the variable it falls back to the cache inside the installed `rapidocr` package, which is what local development uses. `models.lock.json` records the SHA-256 of each weight; changing a hash means OCR output may change, so re-run `uv run pytest tests/test_ocr.py` before committing one.
 
 ## Tokens
 
@@ -57,16 +67,17 @@ uv run python scripts/test_live_providers.py  # real providers; pass/fail + accu
 uv run python scripts/test_guidance_prompts.py # real providers; one JSON line per case, human review
 ```
 
-Each answers a different question, and `prompts/README.md` picks the right one: `pytest` for *did I break the code?* (it also runs the real OCR engine over the card fixtures), `test_live_providers.py` for *is the AI working and how accurate is it?* (exits non-zero, so it can gate a deploy), `test_guidance_prompts.py` for *does this answer need a human eye?*
+Each answers a different question, and `prompts/README.md` picks the right one: `pytest` for *did I break the code?* (it also runs the real OCR engine over the card images in `dataset/`), `test_live_providers.py` for *is the AI working and how accurate is it?* (exits non-zero, so it can gate a deploy), `test_guidance_prompts.py` for *does this answer need a human eye?*
 
 ```bash
 uv run python scripts/test_live_providers.py --only extraction --repeat 3
+uv run python scripts/test_live_providers.py --list   # health ocr extraction audio guidance
 TIBY_EXTRACTOR=rules uv run pytest -q     # the offline baseline, not a live check
 ```
 
 Extraction is not deterministic, so `--repeat` separates a case that is sometimes right (`UNSTABLE`) from one that never is (`FAIL`). The live runner refuses to run under `TIBY_EXTRACTOR=rules`, where a green run would be indistinguishable from a green run against the model.
 
-Two things are **not** measured: audio transcription accuracy (the samples carry no expected transcript) and OCR on real card photos (the fixtures are synthetic scans). Both are called out in `tests/fixtures/`.
+One thing is **not** measured: audio transcription accuracy — the samples in `tests/fixtures/audio/` carry no expected transcript, so the live runner only proves the provider is reachable and the contract holds. OCR is likewise measured only on synthetic scans. See `tests/fixtures/README.md`.
 
 Run `ruff`, `mypy`, and `pytest` from `app/ai-service`, not the repo root: `pyproject.toml` sets no `[tool.ruff]`, so first-party detection follows the working directory and you get a wall of spurious `I001` errors otherwise.
 
