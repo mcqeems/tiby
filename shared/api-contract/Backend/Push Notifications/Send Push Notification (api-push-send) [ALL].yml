@@ -1,0 +1,74 @@
+info:
+  name: Send Push Notification (api/push/send) [ALL]
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/push/send"
+  body:
+    type: json
+    data: |-
+      {
+        "targetUserId": "UAAXQ1l80jCSl7xfLoD1mvCQ1VMuFrVd",
+        "title": "Pengingat Minum Obat Bersama Pandu",
+        "body": "Halo Budi! Jangan lupa minum obat sebelum jam 20:00 ya.",
+        "url": "/check-in"
+      //   "data": {} // Additional Data if needed.
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Send Push Notification (201)
+    request:
+      url: "{{baseUrl}}/api/push/send"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "targetUserId": "UAAXQ1l80jCSl7xfLoD1mvCQ1VMuFrVd",
+            "title": "Pengingat Minum Obat Bersama Pandu",
+            "body": "Halo Budi! Jangan lupa minum obat sebelum jam 20:00 ya.",
+            "url": "/check-in"
+          //   "data": {} // Additional Data if needed.
+          }
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "131"
+        - name: etag
+          value: W/"83-8zH5xm6G14cgz9h5MG4sYn7qqeM"
+        - name: date
+          value: Mon, 19 Oct 2026 05:09:09 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            "success": false,
+            "sent": 0,
+            "failed": 1,
+            "targetUserId": "UAAXQ1l80jCSl7xfLoD1mvCQ1VMuFrVd",
+            "message": "Delivery failed for 1 device(s)"
+          }
