@@ -43,6 +43,9 @@ export class SilenceDetectorService {
       where: {
         patientState: In(["AKTIF", "BERISIKO"]),
       },
+      relations: {
+        patientUser: true,
+      },
     });
 
     let silenced = 0;
@@ -64,6 +67,19 @@ export class SilenceDetectorService {
         // Reset streak to 0 and increment silence days
         plan.currentStreak = 0;
         plan.consecutiveSilenceDays += 1;
+
+        if (previousStreak > 0) {
+          await this.alertRepo.save(
+            this.alertRepo.create({
+              facilityId: plan.facilityId,
+              treatmentPlanId: plan.id,
+              alertType: "STREAK_RESET_WARNING",
+              severity: "WARNING",
+              title: "Streak Minum Obat Terputus",
+              message: `Pasien ${plan.patientUser?.name || 'Pasien'} tidak mencatat check-in sebelum batas tengah malam. Streak ${previousStreak} hari terputus dan kembali ke 0.`,
+            }),
+          );
+        }
 
         await this.historyRepo.save(
           this.historyRepo.create({

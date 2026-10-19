@@ -166,6 +166,16 @@ describe("CheckInService Unit Tests", () => {
           recipientRole: "PASIEN",
         }),
       );
+
+      // Verify DOSE_RETRY_WARNING alert emitted
+      expect(mockAlertRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          facilityId: "faskes-1",
+          treatmentPlanId: "plan-1",
+          alertType: "DOSE_RETRY_WARNING",
+          severity: "INFO",
+        }),
+      );
     });
   });
 

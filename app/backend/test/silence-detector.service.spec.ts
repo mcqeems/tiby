@@ -75,6 +75,16 @@ describe("SilenceDetectorService Unit Tests", () => {
       }),
     );
 
+    // Verify STREAK_RESET_WARNING alert created
+    expect(mockAlertRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        facilityId: "faskes-1",
+        treatmentPlanId: "plan-1",
+        alertType: "STREAK_RESET_WARNING",
+        severity: "WARNING",
+      }),
+    );
+
     // Verify H+1 event emitted
     expect(mockEventEmitter.emit).toHaveBeenCalledWith(
       "notification.trigger",

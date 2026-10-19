@@ -358,6 +358,18 @@ export class CheckInService {
         }),
       );
 
+      // Emit DOSE_RETRY_WARNING facility alert
+      await this.alertRepo.save(
+        this.alertRepo.create({
+          facilityId: plan.facilityId,
+          treatmentPlanId: plan.id,
+          alertType: 'DOSE_RETRY_WARNING',
+          severity: 'INFO',
+          title: 'Percobaan Ulang Dosis Belum Lengkap',
+          message: `Pasien ${plan.patientUser?.name || 'Pasien'} mencatat dosis belum lengkap (percobaan #${attemptNumber}). Pasien telah diingatkan untuk mencoba lagi sebelum tengah malam.`,
+        }),
+      );
+
       this.eventEmitter.emit(
         'notification.trigger',
         new NotificationTriggerEvent(
