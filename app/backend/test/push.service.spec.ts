@@ -29,8 +29,11 @@ describe("PushService Unit Tests", () => {
       create: vi.fn((data) => data),
       save: vi.fn((data) => Promise.resolve(data)),
     };
+    const mockUserRepo: any = {
+      findOneBy: vi.fn(),
+    };
 
-    service = new PushService(mockPushRepo, mockPlanRepo, mockHistoryRepo);
+    service = new PushService(mockPushRepo, mockPlanRepo, mockHistoryRepo, mockUserRepo);
   });
 
   describe("getVapidPublicKey", () => {
@@ -135,6 +138,33 @@ describe("PushService Unit Tests", () => {
       expect(res.failed).toBe(1);
       // Pruned expired subscription
       expect(mockPushRepo.delete).toHaveBeenCalledWith({ id: "sub-expired-id" });
+    });
+  });
+
+  describe("sendManualNotification", () => {
+    it("allows user to send notification to themselves (self-test)", async () => {
+      vi.spyOn(service, "sendNotificationToUser").mockResolvedValue({
+        sent: 1,
+        failed: 0,
+      });
+
+      const res = await service.sendManualNotification(
+        { id: "user-1", role: "PASIEN" },
+        { title: "Test Title", body: "Test Body" },
+      );
+
+      expect(res.success).toBe(true);
+      expect(res.sent).toBe(1);
+      expect(res.targetUserId).toBe("user-1");
+    });
+
+    it("forbids PASIEN from sending notification to another user", async () => {
+      await expect(
+        service.sendManualNotification(
+          { id: "patient-1", role: "PASIEN" },
+          { targetUserId: "patient-2", title: "Test", body: "Test" },
+        ),
+      ).rejects.toThrow();
     });
   });
 });

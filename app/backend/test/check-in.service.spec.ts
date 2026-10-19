@@ -16,7 +16,6 @@ describe("CheckInService Unit Tests", () => {
   let mockTicketRepo: any;
   let mockAlertRepo: any;
   let mockHistoryRepo: any;
-  let mockFamilyRepo: any;
   let mockAuditRepo: any;
   let mockAiClient: any;
   let mockRuleEngine: any;
@@ -56,10 +55,6 @@ describe("CheckInService Unit Tests", () => {
       create: vi.fn((data) => data),
       save: vi.fn((data) => Promise.resolve(data)),
     };
-    mockFamilyRepo = {
-      create: vi.fn((data) => data),
-      save: vi.fn((data) => Promise.resolve(data)),
-    };
     mockAuditRepo = {
       create: vi.fn((data) => data),
       save: vi.fn((data) => Promise.resolve(data)),
@@ -83,7 +78,6 @@ describe("CheckInService Unit Tests", () => {
       mockTicketRepo,
       mockAlertRepo,
       mockHistoryRepo,
-      mockFamilyRepo,
       mockAuditRepo,
       mockAiClient,
       mockRuleEngine,
@@ -170,6 +164,16 @@ describe("CheckInService Unit Tests", () => {
           circumstance: "DOSE_INCOMPLETE_NUDGE",
           treatmentPlanId: "plan-1",
           recipientRole: "PASIEN",
+        }),
+      );
+
+      // Verify DOSE_RETRY_WARNING alert emitted
+      expect(mockAlertRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          facilityId: "faskes-1",
+          treatmentPlanId: "plan-1",
+          alertType: "DOSE_RETRY_WARNING",
+          severity: "INFO",
         }),
       );
     });
@@ -366,28 +370,19 @@ describe("CheckInService Unit Tests", () => {
       });
 
       const res = await service.createPmoFollowUp("pmo-1", "patient-1", {
-        actionTaken: "Kunjungan rumah",
+        actionTaken: "KUNJUNGAN_RUMAH",
         notes: "Pasien minum obat dengan baik",
-        additionalFamilyContact: {
-          fullName: "Ibu Pasien",
-          whatsappNumber: "081234567890",
-        },
       });
 
       expect(res.success).toBe(true);
       expect(res.notes).toBe("Pasien minum obat dengan baik");
-      expect(mockFamilyRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          treatmentPlanId: "plan-1",
-          addedByUserId: "pmo-1",
-          whatsappVerified: false,
-        }),
-      );
       expect(mockHistoryRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({
           treatmentPlanId: "plan-1",
           eventType: "PMO_OUTREACH",
+          actorUserId: "pmo-1",
           actorRole: "PMO",
+          reasonOrSummary: "Pasien minum obat dengan baik",
         }),
       );
     });

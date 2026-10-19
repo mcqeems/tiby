@@ -7,7 +7,7 @@ import { AppModule } from "../src/app.module.js";
 import { auth } from "../src/auth/auth.config.js";
 import { AuthUser } from "../src/auth/entities/auth-user.entity.js";
 import { Facility } from "../src/modules/facilities/entities/facility.entity.js";
-import { TreatmentPlan } from "../src/modules/treatments/entities/treatment-plan.entity.js";
+import { TreatmentPlan } from "../src/modules/patients/entities/treatment-plan.entity.js";
 
 describe("Phase 5: WhatsApp Connect & Inbound WAHA Webhook (e2e)", () => {
   let app: INestApplication;

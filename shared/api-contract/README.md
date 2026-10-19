@@ -2,6 +2,8 @@
 
 Source of truth untuk batas komunikasi antara frontend, backend, dan AI service.
 
+Kontraknya hidup sebagai collection **OpenCollection (format Bruno)** di folder ini — bukan di README. Pakai caranya: buka **Bruno → Open Collection → pilih folder `shared/api-contract`**, pilih environment (`local` untuk request AI, `TIby API ENV` untuk Backend), lalu run request-nya. Detail field ditulis sebagai komentar di body request, dan contoh response disimpan dari hasil run asli — jangan diketik manual.
+
 ## Prinsip
 
 - AI service **mengekstrak fakta dari transkrip**, bukan menentukan diagnosis atau status risiko.
@@ -9,54 +11,7 @@ Source of truth untuk batas komunikasi antara frontend, backend, dan AI service.
 - Nilai `null` berarti informasi tidak disebutkan atau tidak dapat diekstrak. Jangan menganggap `null` sebagai `false`.
 - Jika AI gagal, timeout, atau output provider tidak valid, backend harus memperlakukannya sebagai hasil tidak pasti dan menjalankan jalur fail-safe.
 
-## Endpoint v1
-
-`POST /v1/extractions/check-in`
-
-Menerima transkrip check-in harian dan mengembalikan fakta terstruktur.
-
-### Request minimal
-
-```json
-{
-  "transcript": "Sudah minum obat empat biji. Mual dari siang dan tidak nafsu makan.",
-  "language": "id-ID"
-}
-```
-
-`transcript` wajib berupa teks hasil STT. Audio tidak dikirim ke endpoint ini; STT adalah tanggung jawab caller/provider terpisah.
-
-### Response sukses
-
-```json
-{
-  "schema_version": "1.0",
-  "extraction": {
-    "medication": {
-      "taken": true,
-      "dose_count": 4
-    },
-    "symptoms": [
-      {
-        "name": "mual",
-        "severity": "unknown",
-        "evidence": "Mual dari siang"
-      },
-      {
-        "name": "tidak nafsu makan",
-        "severity": "unknown",
-        "evidence": "tidak nafsu makan"
-      }
-    ],
-    "possible_red_flags": [],
-    "intent_to_stop": false
-  },
-  "confidence": 0.94,
-  "uncertainties": []
-}
-```
-
-### Aturan penting
+Aturan ekstraksi:
 
 - `confidence` berada pada rentang `0..1`, tetapi bukan probabilitas klinis.
 - `symptoms[].name` adalah teks singkat yang dinormalisasi ringan, bukan diagnosis.
@@ -64,23 +19,27 @@ Menerima transkrip check-in harian dan mengembalikan fakta terstruktur.
 - `intent_to_stop` hanya boleh `true` jika ada ucapan eksplisit seperti ingin berhenti/tidak mau melanjutkan.
 - Ekstraksi ambigu harus menghasilkan `null` atau menambah `uncertainties`, bukan menebak.
 
-### Error envelope
+## Endpoint
 
-```json
-{
-  "code": "INVALID_REQUEST",
-  "message": "transcript must not be empty",
-  "request_id": "req_123"
-}
-```
+- `GET /ai/health` — liveness.
+- `POST /ai/extractions/check-in` — ekstraksi fakta dari transkrip teks.
+- `POST /ai/extractions/check-in/audio` — multipart audio; STT dulu (Groq Whisper default, `TIBY_TRANSCRIBER=fish` untuk Fish Audio), lalu ekstraksi yang sama.
+- `POST /ai/guidance` — jawaban edukatif yang hanya boleh mengutip evidence resmi WHO/Kemenkes. Fail-closed (`answer: null`) untuk pertanyaan keputusan pribadi (dosis, mulai/berhenti/ubah obat) atau jika tidak ada evidence yang cocok. Bukan diagnosis atau instruksi pengobatan.
 
-Kode minimum: `INVALID_REQUEST`, `EXTRACTION_FAILED`, `PROVIDER_TIMEOUT`, `INTERNAL`.
+## Konvensi
+
+- Semua error memakai envelope `ApiError` (`code`, `message`, `request_id` opsional). Kode: `INVALID_REQUEST` (422), `EXTRACTION_FAILED` (502), `PROVIDER_TIMEOUT` (504), `INTERNAL` (503, provider belum dikonfigurasi).
+- Ekstraksi dan guidance memakai NaraRouter (`NARAROUTER_API_TOKEN` + `NARAROUTER_BASE_URL`, model via `TIBY_LLM_MODEL`).
+- Guidance hanya boleh mengutip `citation_id` (`src-N`) yang dikirim ke model; citation di luar allowlist menggagalkan request (fail-closed).
 
 ## Files
 
 - `opencollection.yml` — OpenCollection v1.0.0 collection root (Bruno format).
-- `environments/local.yml` — Environment configuration (`baseUrl = http://localhost:8000`).
-- `extractions/extract-check-in.yml` — Bruno executable request for `POST /v1/extractions/check-in`.
-- `examples/check-in-request.json` — request contoh.
-- `examples/check-in-response.json` — response contoh.
+- `environments/local.yml` — environment AI service (`baseUrl = http://localhost:8000`).
+- `environments/TIby API ENV.yml` — environment backend (`baseUrl = http://localhost:3001`).
+- `AI/` — request AI service (body berkomentar + contoh response dari hasil run asli): `extractions/` (check-in teks & audio), `guidance/`, `health/`.
+- `AI/examples/check-in-audio.wav` — audio sintetis untuk request audio.
+- `AI/examples/check-in-request.json`, `check-in-response.json` — contoh JSON untuk review cepat.
+- `Backend/` — request backend (`Health (api/)`); jalankan dengan environment `TIby API ENV`.
 - `app/ai-service/src/tiby_ai/contracts.py` — model Pydantic yang memvalidasi payload Python.
+- `app/ai-service/tests/test_api_contract.py` — test yang gagal kalau route kode dan folder `AI/` berbeda.

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { WahaClientService } from "../src/modules/notifications/services/waha-client.service.js";
+import { WahaClientService } from "../src/modules/whatsapp/services/waha-client.service.js";
 
 describe("WahaClientService Unit Tests", () => {
   let service: WahaClientService;

@@ -1,0 +1,50 @@
+info:
+  name: Get VAPID Public Key (api/push/vapid-public-key) [ALL]
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/push/vapid-public-key"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Get VAPID Public Key (200)
+    request:
+      url: "{{baseUrl}}/api/push/vapid-public-key"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "103"
+        - name: etag
+          value: W/"67-NcbHJ2ujWCEik/68d5A6MapMZPs"
+        - name: date
+          value: Mon, 19 Oct 2026 03:48:16 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            "publicKey": "BAK8cLaycb4Sk0Ea8y_kjTed9Temj7WY-XxLfdhnzly2-6wcZrUaMGDPwEnFqsLTyQ7u-elWzCCzH5uc8Uwtubc"
+          }

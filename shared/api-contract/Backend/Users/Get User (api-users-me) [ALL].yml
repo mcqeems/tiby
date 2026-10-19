@@ -1,0 +1,55 @@
+info:
+  name: Get User (api/users/me) [ALL]
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/users/me"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Get User (200)
+    request:
+      url: "{{baseUrl}}/api/users/me"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "172"
+        - name: etag
+          value: W/"ac-L0GOU8tYaC3KmvUVm3pY5ugJplw"
+        - name: date
+          value: Sat, 17 Oct 2026 10:25:46 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            "id": "hO7jnpiFKHgj611i6AFeAEDbotSYfXUM",
+            "username": "ucup",
+            "email": "ucup@gmail.com",
+            "name": "Ucup Kasep",
+            "role": "PASIEN",
+            "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e"
+          }

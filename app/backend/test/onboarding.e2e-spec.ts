@@ -7,8 +7,8 @@ import { AppModule } from "../src/app.module.js";
 import { auth } from "../src/auth/auth.config.js";
 import { AuthUser } from "../src/auth/entities/auth-user.entity.js";
 import { Facility } from "../src/modules/facilities/entities/facility.entity.js";
-import { TreatmentPlan } from "../src/modules/treatments/entities/treatment-plan.entity.js";
-import { FacilityAlert } from "../src/modules/facilities/entities/facility-alert.entity.js";
+import { TreatmentPlan } from "../src/modules/patients/entities/treatment-plan.entity.js";
+import { FacilityAlert } from "../src/modules/alerts/entities/facility-alert.entity.js";
 
 describe("Phase 2: Auth, Consent, and Faskes Onboarding (e2e)", () => {
   let app: INestApplication;

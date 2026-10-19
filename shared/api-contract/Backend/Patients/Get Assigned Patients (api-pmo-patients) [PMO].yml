@@ -1,0 +1,58 @@
+info:
+  name: Get Assigned Patients (api/pmo/patients) [PMO]
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/pmo/patients"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Get Assigned Patients (200)
+    request:
+      url: "{{baseUrl}}/api/pmo/patients"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "196"
+        - name: etag
+          value: W/"c4-Nabg7pGVrXinSYeN+4bBYJPdZYc"
+        - name: date
+          value: Sun, 18 Oct 2026 06:26:13 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          [
+            {
+              "treatmentPlanId": "e2c54216-1b40-4e24-a7b1-08bfa9f5d074",
+              "patientName": "Ujang Surasep",
+              "isLockedToday": false,
+              "todayVerdict": null,
+              "currentStreak": 0,
+              "phase": "INTENSIF",
+              "consecutiveSilenceDays": 0
+            }
+          ]

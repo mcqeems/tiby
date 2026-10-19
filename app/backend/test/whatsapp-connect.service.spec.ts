@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { NotFoundException } from "@nestjs/common";
-import { WhatsappConnectService } from "../src/modules/notifications/services/whatsapp-connect.service.js";
+import { WhatsappConnectService } from "../src/modules/whatsapp/services/whatsapp-connect.service.js";
 
 describe("WhatsappConnectService Unit Tests", () => {
   let service: WhatsappConnectService;

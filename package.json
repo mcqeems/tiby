@@ -19,5 +19,8 @@
     "test:backend": "bun --filter @tiby/backend test",
     "test:e2e": "bun --filter @tiby/backend test:e2e",
     "seed": "bun --filter @tiby/backend seed"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3"
   }
 }

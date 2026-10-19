@@ -81,9 +81,25 @@ export const TicketTriggerSources = [
   "INTENT_TO_STOP",
   "SILENCE_H3",
   "PMO_ESCALATION",
+  "MANUAL_PATIENT",
+  "MANUAL_REPORT",
 ] as const;
 export const TicketTriggerSourceSchema = z.enum(TicketTriggerSources);
 export type TicketTriggerSource = z.infer<typeof TicketTriggerSourceSchema>;
+
+export const TicketResolutionReasons = [
+  "KUNJUNGAN_RUMAH",
+  "KONSULTASI_KLINIK",
+  "PENYESUAIAN_DOSIS_OBAT",
+  "KONFIRMASI_TELEPON",
+  "EDUKASI_KEMBALI",
+  "RUJUKAN_RSUD",
+  "PASIEN_MENOLAK_INTERVENSI",
+  "PATIENT_CHECKED_IN_RECOVERED",
+  "LAINNYA",
+] as const;
+export const TicketResolutionReasonSchema = z.enum(TicketResolutionReasons);
+export type TicketResolutionReason = z.infer<typeof TicketResolutionReasonSchema>;
 
 export const TicketPriorities = ["HIGH", "CRITICAL"] as const;
 export const TicketPrioritySchema = z.enum(TicketPriorities);
@@ -169,7 +185,22 @@ export const WhatsappVerificationStatuses = [
   "PENDING",
   "VERIFIED",
   "EXPIRED",
-  "SUPERSEDED",
+  "REPLACED",
 ] as const;
 export const WhatsappVerificationStatusSchema = z.enum(WhatsappVerificationStatuses);
 export type WhatsappVerificationStatus = z.infer<typeof WhatsappVerificationStatusSchema>;
+
+// PMO Follow-Up / Outreach Actions
+export const PmoFollowUpActions = [
+  "MENGHUBUNGI_PASIEN",
+  "KUNJUNGAN_RUMAH",
+  "MENGHUBUNGI_KELUARGA",
+  "MENGANTAR_OBAT",
+  "EDUKASI_KONSULTASI",
+  "MENGINGATKAN_JADWAL_KONTROL",
+  "KONSULTASI_FASKES",
+  "PASIEN_TIDAK_DAPAT_DIHUBUNGI",
+  "LAINNYA",
+] as const;
+export const PmoFollowUpActionSchema = z.enum(PmoFollowUpActions);
+export type PmoFollowUpAction = z.infer<typeof PmoFollowUpActionSchema>;

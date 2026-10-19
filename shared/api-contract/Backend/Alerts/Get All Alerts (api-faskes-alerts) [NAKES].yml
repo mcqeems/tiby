@@ -1,0 +1,317 @@
+info:
+  name: Get All Alerts (api/faskes/alerts) [NAKES]
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/faskes/alerts"
+  params:
+    - name: unreadOnly
+      value: ""
+      type: query
+      description: "Boolean, Default: false"
+      disabled: true
+    - name: severity
+      value: ""
+      type: query
+      description: INFO | WARNING | HIGH
+      disabled: true
+    - name: page
+      value: ""
+      type: query
+      description: "Default: 1"
+      disabled: true
+    - name: limit
+      value: ""
+      type: query
+      description: "Default: 20, Max: 100"
+      disabled: true
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Get All Alerts (200)
+    request:
+      url: "{{baseUrl}}/api/faskes/alerts"
+      method: GET
+      params:
+        - name: unreadOnly
+          value: ""
+          type: query
+          description: "Boolean, Default: false"
+          disabled: true
+        - name: severity
+          value: ""
+          type: query
+          description: INFO | WARNING | HIGH
+          disabled: true
+        - name: page
+          value: ""
+          type: query
+          description: "Default: 1"
+          disabled: true
+        - name: limit
+          value: ""
+          type: query
+          description: "Default: 20, Max: 100"
+          disabled: true
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "7444"
+        - name: etag
+          value: W/"1d14-gbP5aQW5xYTd6Sx8Jzw1fjuDQFc"
+        - name: date
+          value: Mon, 19 Oct 2026 03:06:11 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            "items": [
+              {
+                "id": "d95fa062-d7ab-4267-8d64-68501480dd92",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "treatmentPlanId": "bb1adaae-b7fc-4621-9bdb-26948c44406a",
+                "patientName": "Budi Santoso",
+                "alertType": "SILENCE_H3_WARNING",
+                "severity": "HIGH",
+                "title": "Pasien Putus Kontak H+3",
+                "message": "Pasien belum melapor selama 7 hari berturut-turut. Segera lakukan tindak lanjut lapangan.",
+                "isRead": false,
+                "createdAt": "2026-10-18T07:35:29.778Z",
+                "readAt": null
+              },
+              {
+                "id": "c3f083f9-3f88-45fb-8e0e-594eada31acf",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "treatmentPlanId": "bb1adaae-b7fc-4621-9bdb-26948c44406a",
+                "patientName": "Budi Santoso",
+                "alertType": "SILENCE_H3_WARNING",
+                "severity": "HIGH",
+                "title": "Pasien Putus Kontak H+3",
+                "message": "Pasien belum melapor selama 6 hari berturut-turut. Segera lakukan tindak lanjut lapangan.",
+                "isRead": false,
+                "createdAt": "2026-10-18T07:06:08.448Z",
+                "readAt": null
+              },
+              {
+                "id": "d129464a-5512-48ed-806c-136a9c2805b6",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "treatmentPlanId": "bb1adaae-b7fc-4621-9bdb-26948c44406a",
+                "patientName": "Budi Santoso",
+                "alertType": "SILENCE_H3_WARNING",
+                "severity": "HIGH",
+                "title": "Pasien Putus Kontak H+3",
+                "message": "Pasien belum melapor selama 5 hari berturut-turut. Segera lakukan tindak lanjut lapangan.",
+                "isRead": false,
+                "createdAt": "2026-10-18T07:06:08.405Z",
+                "readAt": null
+              },
+              {
+                "id": "30e4d0bf-c7ca-49cc-b73a-31a5538e200d",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "treatmentPlanId": "bb1adaae-b7fc-4621-9bdb-26948c44406a",
+                "patientName": "Budi Santoso",
+                "alertType": "SILENCE_H3_WARNING",
+                "severity": "HIGH",
+                "title": "Pasien Putus Kontak H+3",
+                "message": "Pasien belum melapor selama 4 hari berturut-turut. Segera lakukan tindak lanjut lapangan.",
+                "isRead": false,
+                "createdAt": "2026-10-18T07:06:08.344Z",
+                "readAt": null
+              },
+              {
+                "id": "7bb27c76-8d39-4973-8363-10e12f599a82",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "treatmentPlanId": "bb1adaae-b7fc-4621-9bdb-26948c44406a",
+                "patientName": "Budi Santoso",
+                "alertType": "SILENCE_H3_WARNING",
+                "severity": "HIGH",
+                "title": "Pasien Putus Kontak H+3",
+                "message": "Pasien belum melapor selama 3 hari berturut-turut. Segera lakukan tindak lanjut lapangan.",
+                "isRead": false,
+                "createdAt": "2026-10-18T07:05:01.448Z",
+                "readAt": null
+              },
+              {
+                "id": "99b24ca5-69b3-4d92-9ddc-2aa75821bb59",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "treatmentPlanId": "bb1adaae-b7fc-4621-9bdb-26948c44406a",
+                "patientName": "Budi Santoso",
+                "alertType": "SILENCE_RECOVERED_WARNING",
+                "severity": "WARNING",
+                "title": "Pasien Pulih dari Putus Kontak",
+                "message": "Pasien yang sebelumnya tidak melapor telah berhasil check-in dosis penuh hari ini.",
+                "isRead": false,
+                "createdAt": "2026-10-18T03:52:04.107Z",
+                "readAt": null
+              },
+              {
+                "id": "6f83e5e4-f453-4297-996e-ae44569b9281",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "treatmentPlanId": "bb1adaae-b7fc-4621-9bdb-26948c44406a",
+                "patientName": "Budi Santoso",
+                "alertType": "CONSENT_REVOKED_WARNING",
+                "severity": "HIGH",
+                "title": "Persetujuan Pasien Dicabut",
+                "message": "pengen aja",
+                "isRead": false,
+                "createdAt": "2026-10-18T02:50:19.250Z",
+                "readAt": null
+              },
+              {
+                "id": "a9127f65-5109-49fd-85a1-7d15b0c8bf24",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "treatmentPlanId": "bb1adaae-b7fc-4621-9bdb-26948c44406a",
+                "patientName": "Budi Santoso",
+                "alertType": "SILENCE_H3_WARNING",
+                "severity": "HIGH",
+                "title": "Pasien Putus Kontak H+3",
+                "message": "Pasien belum melapor selama 7 hari berturut-turut. Segera lakukan tindak lanjut lapangan.",
+                "isRead": false,
+                "createdAt": "2026-10-17T09:02:18.663Z",
+                "readAt": null
+              },
+              {
+                "id": "e9c3f45c-d32c-4ae1-a717-5c59b3d0185c",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "treatmentPlanId": "bb1adaae-b7fc-4621-9bdb-26948c44406a",
+                "patientName": "Budi Santoso",
+                "alertType": "SILENCE_H3_WARNING",
+                "severity": "HIGH",
+                "title": "Pasien Putus Kontak H+3",
+                "message": "Pasien belum melapor selama 6 hari berturut-turut. Segera lakukan tindak lanjut lapangan.",
+                "isRead": false,
+                "createdAt": "2026-10-17T06:48:04.547Z",
+                "readAt": null
+              },
+              {
+                "id": "bf724a27-a388-4f9e-bfb4-3a6d7288444b",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "treatmentPlanId": "bb1adaae-b7fc-4621-9bdb-26948c44406a",
+                "patientName": "Budi Santoso",
+                "alertType": "SILENCE_H3_WARNING",
+                "severity": "HIGH",
+                "title": "Pasien Putus Kontak H+3",
+                "message": "Pasien belum melapor selama 5 hari berturut-turut. Segera lakukan tindak lanjut lapangan.",
+                "isRead": false,
+                "createdAt": "2026-10-17T06:48:04.508Z",
+                "readAt": null
+              },
+              {
+                "id": "46b1b2b8-03b0-49ae-99fd-0f27dc89b3af",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "treatmentPlanId": "bb1adaae-b7fc-4621-9bdb-26948c44406a",
+                "patientName": "Budi Santoso",
+                "alertType": "SILENCE_H3_WARNING",
+                "severity": "HIGH",
+                "title": "Pasien Putus Kontak H+3",
+                "message": "Pasien belum melapor selama 4 hari berturut-turut. Segera lakukan tindak lanjut lapangan.",
+                "isRead": false,
+                "createdAt": "2026-10-17T06:48:04.447Z",
+                "readAt": null
+              },
+              {
+                "id": "f8da30f7-a0be-4805-a68c-f1904e8cef1e",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "treatmentPlanId": "bb1adaae-b7fc-4621-9bdb-26948c44406a",
+                "patientName": "Budi Santoso",
+                "alertType": "SILENCE_H3_WARNING",
+                "severity": "HIGH",
+                "title": "Pasien Putus Kontak H+3",
+                "message": "Pasien belum melapor selama 3 hari berturut-turut. Segera lakukan tindak lanjut lapangan.",
+                "isRead": false,
+                "createdAt": "2026-10-17T06:36:36.091Z",
+                "readAt": null
+              },
+              {
+                "id": "53b290f2-c0e5-4c27-93db-e58b7985a6f5",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "patientName": "Budi Santoso",
+                "alertType": "SILENCE_H3_WARNING",
+                "severity": "HIGH",
+                "title": "Pasien Putus Kontak H+3",
+                "message": "Pasien belum melapor selama 7 hari berturut-turut. Segera lakukan tindak lanjut lapangan.",
+                "isRead": false,
+                "createdAt": "2026-10-17T06:36:36.029Z",
+                "readAt": null
+              },
+              {
+                "id": "e9c151b4-36e4-4804-9bb5-3d6d2a3f7389",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "patientName": "Budi Santoso",
+                "alertType": "SILENCE_H3_WARNING",
+                "severity": "HIGH",
+                "title": "Pasien Putus Kontak H+3",
+                "message": "Pasien belum melapor selama 6 hari berturut-turut. Segera lakukan tindak lanjut lapangan.",
+                "isRead": false,
+                "createdAt": "2026-10-17T04:10:14.180Z",
+                "readAt": null
+              },
+              {
+                "id": "008bf8a6-5eb2-45f8-a9f9-2bba278dc78f",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "patientName": "Budi Santoso",
+                "alertType": "SILENCE_H3_WARNING",
+                "severity": "HIGH",
+                "title": "Pasien Putus Kontak H+3",
+                "message": "Pasien belum melapor selama 5 hari berturut-turut. Segera lakukan tindak lanjut lapangan.",
+                "isRead": false,
+                "createdAt": "2026-10-17T04:10:14.155Z",
+                "readAt": null
+              },
+              {
+                "id": "4db1718a-54ab-4d37-879b-a9ce1c000f20",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "patientName": "Budi Santoso",
+                "alertType": "SILENCE_H3_WARNING",
+                "severity": "HIGH",
+                "title": "Pasien Putus Kontak H+3",
+                "message": "Pasien belum melapor selama 4 hari berturut-turut. Segera lakukan tindak lanjut lapangan.",
+                "isRead": false,
+                "createdAt": "2026-10-17T04:10:14.118Z",
+                "readAt": null
+              },
+              {
+                "id": "ec3ba423-4dd6-436a-8b0c-4e102a6b5079",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "patientName": "Budi Santoso",
+                "alertType": "SILENCE_H3_WARNING",
+                "severity": "HIGH",
+                "title": "Pasien Putus Kontak H+3",
+                "message": "Pasien belum melapor selama 3 hari berturut-turut. Segera lakukan tindak lanjut lapangan.",
+                "isRead": false,
+                "createdAt": "2026-10-17T04:09:43.831Z",
+                "readAt": null
+              }
+            ],
+            "total": 17,
+            "page": 1,
+            "limit": 20
+          }

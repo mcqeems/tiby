@@ -1,0 +1,31 @@
+info:
+  name: Whatsapp Webhook (api/webhooks/waha) [PUBLIC]
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/webhooks/waha"
+  body:
+    type: json
+    data: |-
+      {
+        "event": "message" (required),
+        "session": "string (default: 'default')",
+        "payload": {
+          "id": "string (required, WhatsApp message ID)",
+          "from": "string (required, e.g. '6281234567890@c.us')",
+          "to": "string (required, bot WhatsApp number JID)",
+          "body": "string (required, raw message text containing code)",
+          "fromMe": "boolean (required, must be false)",
+          "timestamp": "integer (required, Unix epoch timestamp)"
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

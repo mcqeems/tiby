@@ -7,8 +7,8 @@ import { AppModule } from "../src/app.module.js";
 import { auth } from "../src/auth/auth.config.js";
 import { AuthUser } from "../src/auth/entities/auth-user.entity.js";
 import { Facility } from "../src/modules/facilities/entities/facility.entity.js";
-import { TreatmentPlan } from "../src/modules/treatments/entities/treatment-plan.entity.js";
-import { PmoAssignment } from "../src/modules/treatments/entities/pmo-assignment.entity.js";
+import { TreatmentPlan } from "../src/modules/patients/entities/treatment-plan.entity.js";
+import { PmoAssignment } from "../src/modules/patients/entities/pmo-assignment.entity.js";
 import { InterventionTicket } from "../src/modules/tickets/entities/intervention-ticket.entity.js";
 
 describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
@@ -318,10 +318,10 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
       .set("Cookie", pmo1Cookie);
 
     expect(res.status).toBe(200);
-    expect(res.body.patients).toBeDefined();
-    expect(res.body.patients.length).toBeGreaterThanOrEqual(1);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThanOrEqual(1);
 
-    const monitoredPatient = res.body.patients.find((p: any) => p.treatmentPlanId === plan1Id);
+    const monitoredPatient = res.body.find((p: any) => p.treatmentPlanId === plan1Id);
     expect(monitoredPatient).toBeDefined();
     expect(monitoredPatient.patientName).toBe("Ahmad Dahlan");
     expect(monitoredPatient.isLockedToday).toBe(true);

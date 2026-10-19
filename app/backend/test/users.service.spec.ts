@@ -12,6 +12,7 @@ describe("UsersService Unit Tests", () => {
   beforeEach(() => {
     mockUserRepo = {
       findOneBy: vi.fn(),
+      findOne: vi.fn(),
       createQueryBuilder: vi.fn(),
     };
     mockFacilityRepo = {

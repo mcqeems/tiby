@@ -7,11 +7,11 @@ import { AppModule } from "../src/app.module.js";
 import { auth } from "../src/auth/auth.config.js";
 import { AuthUser } from "../src/auth/entities/auth-user.entity.js";
 import { Facility } from "../src/modules/facilities/entities/facility.entity.js";
-import { TreatmentPlan } from "../src/modules/treatments/entities/treatment-plan.entity.js";
-import { PmoAssignment } from "../src/modules/treatments/entities/pmo-assignment.entity.js";
+import { TreatmentPlan } from "../src/modules/patients/entities/treatment-plan.entity.js";
+import { PmoAssignment } from "../src/modules/patients/entities/pmo-assignment.entity.js";
 import { SilenceDetectorService } from "../src/modules/escalation/services/silence-detector.service.js";
 import { InterventionTicket } from "../src/modules/tickets/entities/intervention-ticket.entity.js";
-import { FacilityAlert } from "../src/modules/facilities/entities/facility-alert.entity.js";
+import { FacilityAlert } from "../src/modules/alerts/entities/facility-alert.entity.js";
 import { PushSubscription } from "../src/modules/push/entities/push-subscription.entity.js";
 
 describe("Phase 4: Silence, Tickets, Alerts, History, & Web Push (e2e)", () => {
@@ -210,6 +210,19 @@ describe("Phase 4: Silence, Tickets, Alerts, History, & Web Push (e2e)", () => {
     const subInDb = await dataSource.getRepository(PushSubscription).findOneBy({ endpoint });
     expect(subInDb).toBeDefined();
     expect(subInDb?.userId).toBe(patientId);
+
+    // Send manual test push notification to self
+    const sendPushRes = await request(app.getHttpServer())
+      .post("/api/push/send")
+      .set("Cookie", patientCookie)
+      .send({
+        title: "Test Pengingat Pandu",
+        body: "Halo! Ini adalah tes notifikasi langsung.",
+      });
+
+    expect(sendPushRes.status).toBe(201);
+    expect(sendPushRes.body.targetUserId).toBe(patientId);
+    expect(sendPushRes.body).toHaveProperty("sent");
 
     // Unsubscribe
     const unsubRes = await request(app.getHttpServer())
