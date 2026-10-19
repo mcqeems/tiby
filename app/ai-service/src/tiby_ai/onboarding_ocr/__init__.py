@@ -1,15 +1,14 @@
 """Local OCR for onboarding documents.
 
-Layered the way the backend's NestJS modules are, so a reader coming from
-``modules/onboarding`` finds the same shape here:
+Four files, flat:
 
-- ``controllers/`` — HTTP wiring: content types, size limits, error envelope.
-- ``services/`` — the use cases. ``ocr_service`` owns the engine; ``card_parser``
-  holds the pure field rules and has no OCR or image-library dependency.
-
-``module.py`` assembles the two, mirroring ``*.module.ts``.
+- ``controller.py`` — the HTTP route: content types, size limits, error envelope.
+- ``ocr_service.py`` — the engine. The only place OpenCV and RapidOCR appear.
+- ``card_parser.py`` — the field rules. Pure, no image library, so it tests in
+  milliseconds and is where every real bug has lived.
 """
 
-from .module import extract_onboarding_card, router
+from .controller import router
+from .ocr_service import extract_onboarding_card
 
 __all__ = ["extract_onboarding_card", "router"]

@@ -2,16 +2,16 @@
 
 Route wiring only: content types, the upload ceiling, and the mapping onto the
 shared ``ApiError`` envelope. No OCR and no parsing happens here, so the rules
-in :mod:`..services.card_parser` stay testable without a request.
+in :mod:`.card_parser` stay testable without a request.
 """
 
 from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
-from ...contracts import ApiError, OcrOnboardingDraft
-from ...errors import api_error
-from ..services.ocr_service import extract_onboarding_card
+from ..contracts import ApiError, OcrOnboardingDraft
+from ..errors import api_error
+from .ocr_service import OcrModelError, extract_onboarding_card
 
 SUPPORTED_CONTENT_TYPES = frozenset({"image/png", "image/jpeg", "image/jpg", "image/webp"})
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
@@ -42,5 +42,10 @@ async def extract_onboarding_card_endpoint(
         return api_error(413, "INVALID_REQUEST", "Image must be between 1 byte and 10 MB.")
     try:
         return await run_in_threadpool(extract_onboarding_card, content)
+    except OcrModelError as exc:
+        # Weights were not staged, or do not match the lock. Same shape as a
+        # missing provider token: the service is configured wrong, not the
+        # request.
+        return api_error(503, "INTERNAL", str(exc))
     except ValueError:
         return api_error(422, "INVALID_REQUEST", "Uploaded file is not a decodable image.")

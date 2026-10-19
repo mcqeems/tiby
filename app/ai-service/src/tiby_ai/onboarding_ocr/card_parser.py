@@ -26,7 +26,7 @@ import datetime
 import re
 from typing import NamedTuple
 
-from ...contracts import OcrOnboardingDraft
+from ..contracts import OcrOnboardingDraft
 
 MIN_LINE_SCORE = 0.5
 """Below this a row is treated as unread rather than parsed."""
