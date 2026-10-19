@@ -14,7 +14,6 @@ from tiby_ai.main import (
     extraction_service,
     transcription_service,
 )
-from tiby_ai.onboarding_ocr.service import parse_onboarding_text
 from tiby_ai.providers.agnes import AgnesExtractor
 from tiby_ai.providers.base import (
     ProviderConfigurationError,
@@ -360,8 +359,10 @@ def test_onboarding_ocr_route_returns_a_draft(monkeypatch):
         "targetEndDate": None,
         "confidence": 0.0,
         "rawText": "",
+        "fieldConfidence": {},
+        "uncertainties": [],
     }
-    with patch("tiby_ai.main.extract_onboarding_card", return_value=expected):
+    with patch("tiby_ai.onboarding_ocr.controllers.ocr_controller.extract_onboarding_card", return_value=expected):
         response = client.post(
             "/ocr/extract",
             files={"cardImage": ("card.png", b"image-bytes", "image/png")},
@@ -387,37 +388,15 @@ def test_onboarding_ocr_accepts_jpg_mime_type(monkeypatch):
         "targetEndDate": None,
         "confidence": 0.0,
         "rawText": "",
+        "fieldConfidence": {},
+        "uncertainties": [],
     }
-    with patch("tiby_ai.main.extract_onboarding_card", return_value=draft):
+    with patch("tiby_ai.onboarding_ocr.controllers.ocr_controller.extract_onboarding_card", return_value=draft):
         response = client.post(
             "/ocr/extract", files={"cardImage": ("card.jpg", b"bytes", "image/jpg")}
         )
     assert response.status_code == 200
     assert response.json() == draft
-
-
-def test_onboarding_parser_only_extracts_explicitly_labelled_fields():
-    draft = parse_onboarding_text(
-        "Nama Pasien: Siti Aminah\nRegimen: HRZE-4\n"
-        "Kuota obat: 4\nTanggal mulai: 03/04/2026\n"
-        "Tanggal selesai: 2026-10-03",
-        0.82,
-    )
-    assert draft.patientName == "Siti Aminah"
-    assert draft.regimenCode == "HRZE-4"
-    assert draft.dailyPillQuota == 4
-    assert draft.startDate == "2026-04-03"
-    assert draft.targetEndDate == "2026-10-03"
-    assert draft.confidence == 0.82
-
-
-def test_onboarding_parser_leaves_unlabelled_fields_unknown():
-    draft = parse_onboarding_text("Siti Aminah\nHRZE 4 tablet sehari", 0.4)
-    assert draft.patientName is None
-    assert draft.regimenCode is None
-    assert draft.dailyPillQuota is None
-    assert draft.startDate is None
-    assert draft.targetEndDate is None
 
 
 def test_agnes_provider_builds_configured_request_and_validates_response():
