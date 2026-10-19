@@ -4,9 +4,12 @@ Every case in ``tests/fixtures/guidance/guidance.jsonl`` goes through real retri
 and the real provider, then prints one JSON line per case (guard hit, retrieved
 count, answer, citations). Requires provider credentials and costs API calls;
 review the output by hand — these cases are QA fixtures, not clinical
-validation (see ``prompts/test-cases/README.md``).
+validation (see ``prompts/README.md``).
 
-Usage (from ``app/ai-service``)::
+For a scored, pass/fail check that can gate a deploy, use
+``scripts/test_live_providers.py`` instead.
+
+Usage::
 
     uv run python scripts/test_guidance_prompts.py
 """
@@ -20,13 +23,14 @@ from tiby_ai.guidance.safety import detect_action_request
 from tiby_ai.guidance.service import GroundedAnswerer, pack_evidence
 from tiby_ai.providers.base import ProviderError
 
+CASES = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "guidance" / "guidance.jsonl"
+
 
 def main() -> None:
     """Load the cases, run each through retrieval + answerer, print results."""
-    cases_path = Path("tests/fixtures/guidance/guidance.jsonl")
     retriever = SQLiteRetriever()
     answerer = GroundedAnswerer()
-    cases = [json.loads(line) for line in cases_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    cases = [json.loads(line) for line in CASES.read_text(encoding="utf-8").splitlines() if line.strip()]
 
     async def run_case(case: dict) -> dict:
         evidence = retriever.search(case["question"], limit=4)
