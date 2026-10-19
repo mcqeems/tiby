@@ -1,0 +1,74 @@
+info:
+  name: Subscribe Browser Web Push (api/push/subscribe) [ALL]
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/push/subscribe"
+  body:
+    type: json
+    data: |-
+      {
+        "endpoint": "https://fcm.googleapis.com/fcm/send/f1w2e3r4t5y6u7i8o9p0:APA91bF_dummy_token_for_testing_purposes_only_987654321",
+        "expirationTime": null,
+        "keys": {
+          "p256dh": "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM",
+          "auth": "tBHItJI5svbpez7KI4CCXg"
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Subscribe Browser (201)
+    request:
+      url: "{{baseUrl}}/api/push/subscribe"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "endpoint": "https://fcm.googleapis.com/fcm/send/f1w2e3r4t5y6u7i8o9p0:APA91bF_dummy_token_for_testing_purposes_only_987654321",
+            "expirationTime": null,
+            "keys": {
+              "p256dh": "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM",
+              "auth": "tBHItJI5svbpez7KI4CCXg"
+            }
+          }
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "189"
+        - name: etag
+          value: W/"bd-CWD4FV9yXDBk28HNJqQ9K//RsFs"
+        - name: date
+          value: Mon, 19 Oct 2026 03:58:59 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            "id": "8dc6d7a7-3d29-498f-8319-c7e92a05da60",
+            "endpoint": "https://fcm.googleapis.com/fcm/send/f1w2e3r4t5y6u7i8o9p0:APA91bF_dummy_token_for_testing_purposes_only_987654321",
+            "subscribed": true
+          }

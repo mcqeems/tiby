@@ -1,11 +1,17 @@
 info:
-  name: Get All Consent (api/consent) [PATIENT, PMO]
+  name: Delete All Consent for own user (api/consent) [PASIEN, PMO]
   type: http
-  seq: 4
+  seq: 3
 
 http:
-  method: GET
+  method: DELETE
   url: "{{baseUrl}}/api/consent"
+  body:
+    type: json
+    data: |-
+      {
+        "reason": "pengen aja" // Optional
+      }
   auth: inherit
 
 settings:
@@ -16,10 +22,16 @@ settings:
   forwardAuthorizationHeader: false
 
 examples:
-  - name: Get All Consent (200)
+  - name: Delete Consent (200)
     request:
       url: "{{baseUrl}}/api/consent"
-      method: GET
+      method: DELETE
+      body:
+        type: json
+        data: |-
+          {
+            "reason": "pengen aja" // Optional
+          }
     response:
       status: 200
       statusText: OK
@@ -33,11 +45,11 @@ examples:
         - name: content-type
           value: application/json; charset=utf-8
         - name: content-length
-          value: "171"
+          value: "110"
         - name: etag
-          value: W/"ab-n+lk7qTif+FvCUipVumUwCnATQU"
+          value: W/"6e-gPnBy865FaQgYl9dloqL+pa7TLU"
         - name: date
-          value: Sat, 17 Oct 2026 23:54:44 GMT
+          value: Sun, 18 Oct 2026 02:50:19 GMT
         - name: connection
           value: keep-alive
         - name: keep-alive
@@ -46,13 +58,9 @@ examples:
         type: json
         data: |-
           {
-            "active": true,
-            "grantedAt": "2026-10-17T06:16:08.209Z",
-            "revokedAt": null,
-            "scopes": [
-              "STT_AUDIO_PROCESSING",
-              "PMO_STATUS_ONLY",
-              "PATIENT_DATA_SHARE"
-            ],
-            "mustConfirmConsent": false
+            "active": false,
+            "grantedAt": null,
+            "revokedAt": "2026-10-18T02:50:19.228Z",
+            "scopes": [],
+            "mustConfirmConsent": true
           }

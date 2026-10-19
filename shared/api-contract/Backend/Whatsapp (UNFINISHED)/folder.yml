@@ -1,7 +1,7 @@
 info:
-  name: Whatsapp
+  name: Whatsapp (UNFINISHED)
   type: folder
-  seq: 11
+  seq: 13
 
 request:
   auth: inherit

@@ -1,5 +1,5 @@
 info:
-  name: Create Follow Up (Catatan Tindak Lanjut) Patient [PMO]
+  name: Create Follow Up (Catatan Tindak Lanjut) (/api/pmo/patients/:id/follow-up) [PMO]
   type: http
   seq: 3
 

@@ -1,0 +1,328 @@
+info:
+  name: Pasien History (api/faskes/patients/:id/history) [NAKES]
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/faskes/patients/:id/history"
+  params:
+    - name: page
+      value: ""
+      type: query
+      description: "Default: 1"
+      disabled: true
+    - name: limit
+      value: ""
+      type: query
+      description: "Default: 50, Max: 100"
+      disabled: true
+    - name: id
+      value: a0f0c34d-b119-408f-8ede-98a35920f2ea
+      type: path
+      description: ID from treatmentPlanId
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Pasien History (200)
+    request:
+      url: "{{baseUrl}}/api/faskes/patients/:id/history"
+      method: GET
+      params:
+        - name: page
+          value: ""
+          type: query
+          description: "Default: 1"
+          disabled: true
+        - name: limit
+          value: ""
+          type: query
+          description: "Default: 50, Max: 100"
+          disabled: true
+        - name: id
+          value: a0f0c34d-b119-408f-8ede-98a35920f2ea
+          type: path
+          description: ID from treatmentPlanId
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "6729"
+        - name: etag
+          value: W/"1a49-J97Tly1vxNb7ux8kMNFDa8pScsw"
+        - name: date
+          value: Mon, 19 Oct 2026 03:10:58 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            "items": [
+              {
+                "id": "c62ec050-7a46-457d-aead-5ed5e905b5e3",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "eventType": "STATE_TRANSITION",
+                "previousState": "BERISIKO",
+                "newState": "PUTUS_FOLLOW_UP",
+                "previousStreak": 0,
+                "newStreak": 0,
+                "actorRole": "SYSTEM",
+                "reasonOrSummary": "H+3 critical silence reached (7 days)",
+                "metadata": null,
+                "createdAt": "2026-10-17T06:36:36.033Z"
+              },
+              {
+                "id": "3a37a62c-1370-4c48-9075-e7064ede82d5",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "eventType": "TICKET_OPENED",
+                "previousState": "BERISIKO",
+                "newState": "PUTUS_FOLLOW_UP",
+                "previousStreak": 0,
+                "newStreak": 0,
+                "actorRole": "SYSTEM",
+                "reasonOrSummary": "SILENCE_H3 ticket opened after 7 silent days",
+                "metadata": {
+                  "ticketId": "37004a17-73dd-4089-b0e5-4645b8d61545"
+                },
+                "createdAt": "2026-10-17T06:36:36.026Z"
+              },
+              {
+                "id": "27352c86-0e5d-4976-9361-209f4e0e3d33",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "eventType": "STREAK_RESET",
+                "previousState": "BERISIKO",
+                "newState": "BERISIKO",
+                "previousStreak": 0,
+                "newStreak": 0,
+                "actorRole": "SYSTEM",
+                "reasonOrSummary": "Midnight deadline missed for 2026-10-15; streak reset to 0",
+                "metadata": null,
+                "createdAt": "2026-10-17T06:36:36.018Z"
+              },
+              {
+                "id": "917ffb80-d477-4f65-8c94-d8c5dbec0695",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "eventType": "STATE_TRANSITION",
+                "previousState": "BERISIKO",
+                "newState": "BERISIKO",
+                "previousStreak": 0,
+                "newStreak": 0,
+                "actorRole": "SYSTEM",
+                "reasonOrSummary": "H+3 critical silence reached (6 days)",
+                "metadata": null,
+                "createdAt": "2026-10-17T04:10:14.181Z"
+              },
+              {
+                "id": "469de0e6-3bfc-4435-9078-d6237d20b28a",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "eventType": "TICKET_OPENED",
+                "previousState": "BERISIKO",
+                "newState": "BERISIKO",
+                "previousStreak": 0,
+                "newStreak": 0,
+                "actorRole": "SYSTEM",
+                "reasonOrSummary": "SILENCE_H3 ticket opened after 6 silent days",
+                "metadata": {
+                  "ticketId": "dfde6329-7b56-44da-bfd4-bd181269e18f"
+                },
+                "createdAt": "2026-10-17T04:10:14.178Z"
+              },
+              {
+                "id": "9f2ec3c6-72d2-4b50-bb23-69a2a8d72303",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "eventType": "STREAK_RESET",
+                "previousState": "BERISIKO",
+                "newState": "BERISIKO",
+                "previousStreak": 0,
+                "newStreak": 0,
+                "actorRole": "SYSTEM",
+                "reasonOrSummary": "Midnight deadline missed for 2026-10-13; streak reset to 0",
+                "metadata": null,
+                "createdAt": "2026-10-17T04:10:14.173Z"
+              },
+              {
+                "id": "29f85958-72ca-48b5-a741-4ad865020d51",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "eventType": "STATE_TRANSITION",
+                "previousState": "BERISIKO",
+                "newState": "BERISIKO",
+                "previousStreak": 0,
+                "newStreak": 0,
+                "actorRole": "SYSTEM",
+                "reasonOrSummary": "H+3 critical silence reached (5 days)",
+                "metadata": null,
+                "createdAt": "2026-10-17T04:10:14.157Z"
+              },
+              {
+                "id": "2e2660e1-18ef-4977-a784-71b660dfc491",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "eventType": "TICKET_OPENED",
+                "previousState": "BERISIKO",
+                "newState": "BERISIKO",
+                "previousStreak": 0,
+                "newStreak": 0,
+                "actorRole": "SYSTEM",
+                "reasonOrSummary": "SILENCE_H3 ticket opened after 5 silent days",
+                "metadata": {
+                  "ticketId": "6adc7b7a-c71a-4e74-b71f-25f8485f654b"
+                },
+                "createdAt": "2026-10-17T04:10:14.153Z"
+              },
+              {
+                "id": "90ed84fd-cce3-4b35-8065-e692d563261d",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "eventType": "STREAK_RESET",
+                "previousState": "BERISIKO",
+                "newState": "BERISIKO",
+                "previousStreak": 0,
+                "newStreak": 0,
+                "actorRole": "SYSTEM",
+                "reasonOrSummary": "Midnight deadline missed for 2026-10-14; streak reset to 0",
+                "metadata": null,
+                "createdAt": "2026-10-17T04:10:14.147Z"
+              },
+              {
+                "id": "c0399219-ef78-47f9-9fbd-fac694c0db83",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "eventType": "STATE_TRANSITION",
+                "previousState": "BERISIKO",
+                "newState": "BERISIKO",
+                "previousStreak": 0,
+                "newStreak": 0,
+                "actorRole": "SYSTEM",
+                "reasonOrSummary": "H+3 critical silence reached (4 days)",
+                "metadata": null,
+                "createdAt": "2026-10-17T04:10:14.121Z"
+              },
+              {
+                "id": "c339cbde-8185-4586-86c0-1d5d9958d66f",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "eventType": "TICKET_OPENED",
+                "previousState": "BERISIKO",
+                "newState": "BERISIKO",
+                "previousStreak": 0,
+                "newStreak": 0,
+                "actorRole": "SYSTEM",
+                "reasonOrSummary": "SILENCE_H3 ticket opened after 4 silent days",
+                "metadata": {
+                  "ticketId": "66a58c1a-8b44-4627-a628-15f021fbca8d"
+                },
+                "createdAt": "2026-10-17T04:10:14.116Z"
+              },
+              {
+                "id": "a1af9cfa-da26-40ff-b159-9473d58a0234",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "eventType": "STREAK_RESET",
+                "previousState": "BERISIKO",
+                "newState": "BERISIKO",
+                "previousStreak": 0,
+                "newStreak": 0,
+                "actorRole": "SYSTEM",
+                "reasonOrSummary": "Midnight deadline missed for 2026-10-15; streak reset to 0",
+                "metadata": null,
+                "createdAt": "2026-10-17T04:10:14.110Z"
+              },
+              {
+                "id": "6f8ac288-ac03-4196-82e0-5cbb5c98dfe3",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "eventType": "STATE_TRANSITION",
+                "previousState": "BERISIKO",
+                "newState": "BERISIKO",
+                "previousStreak": 0,
+                "newStreak": 0,
+                "actorRole": "SYSTEM",
+                "reasonOrSummary": "H+3 critical silence reached (3 days)",
+                "metadata": null,
+                "createdAt": "2026-10-17T04:09:43.834Z"
+              },
+              {
+                "id": "d1529186-5248-4e68-b66a-38f88953a241",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "eventType": "TICKET_OPENED",
+                "previousState": "BERISIKO",
+                "newState": "BERISIKO",
+                "previousStreak": 0,
+                "newStreak": 0,
+                "actorRole": "SYSTEM",
+                "reasonOrSummary": "SILENCE_H3 ticket opened after 3 silent days",
+                "metadata": {
+                  "ticketId": "d3f1f990-8bbf-4d86-8224-8c52909117eb"
+                },
+                "createdAt": "2026-10-17T04:09:43.829Z"
+              },
+              {
+                "id": "310962c5-89eb-47c4-883a-cd636ce51f1f",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "eventType": "STREAK_RESET",
+                "previousState": "BERISIKO",
+                "newState": "BERISIKO",
+                "previousStreak": 0,
+                "newStreak": 0,
+                "actorRole": "SYSTEM",
+                "reasonOrSummary": "Midnight deadline missed for 2026-10-13; streak reset to 0",
+                "metadata": null,
+                "createdAt": "2026-10-17T04:09:43.825Z"
+              },
+              {
+                "id": "224ef7be-cac0-4f63-a66a-e9dad4d4e5f2",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "eventType": "STATE_TRANSITION",
+                "previousState": "AKTIF",
+                "newState": "BERISIKO",
+                "previousStreak": 0,
+                "newStreak": 0,
+                "actorRole": "SYSTEM",
+                "reasonOrSummary": "Patient transitioned to BERISIKO due to H+2 silence",
+                "metadata": null,
+                "createdAt": "2026-10-17T04:09:43.808Z"
+              },
+              {
+                "id": "caec495d-7f43-4393-aaf4-6dbb99e8be64",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "eventType": "STREAK_RESET",
+                "previousState": "AKTIF",
+                "newState": "AKTIF",
+                "previousStreak": 0,
+                "newStreak": 0,
+                "actorRole": "SYSTEM",
+                "reasonOrSummary": "Midnight deadline missed for 2026-10-14; streak reset to 0",
+                "metadata": null,
+                "createdAt": "2026-10-17T04:09:43.806Z"
+              },
+              {
+                "id": "504b68dc-27fa-490c-8c35-166b2d5bf076",
+                "treatmentPlanId": "a0f0c34d-b119-408f-8ede-98a35920f2ea",
+                "eventType": "STREAK_RESET",
+                "previousState": "AKTIF",
+                "newState": "AKTIF",
+                "previousStreak": 5,
+                "newStreak": 0,
+                "actorRole": "SYSTEM",
+                "reasonOrSummary": "Midnight deadline missed for 2026-10-15; streak reset to 0",
+                "metadata": null,
+                "createdAt": "2026-10-17T04:09:43.786Z"
+              }
+            ],
+            "total": 18,
+            "page": 1,
+            "limit": 20
+          }

@@ -1,17 +1,11 @@
 info:
-  name: Delete All Consent for own user (api/consent) [PATIENT, PMO]
+  name: Get VAPID Public Key (api/push/vapid-public-key) [ALL]
   type: http
-  seq: 3
+  seq: 1
 
 http:
-  method: DELETE
-  url: "{{baseUrl}}/api/consent"
-  body:
-    type: json
-    data: |-
-      {
-        "reason": "pengen aja" // Optional
-      }
+  method: GET
+  url: "{{baseUrl}}/api/push/vapid-public-key"
   auth: inherit
 
 settings:
@@ -22,16 +16,10 @@ settings:
   forwardAuthorizationHeader: false
 
 examples:
-  - name: Delete Consent (200)
+  - name: Get VAPID Public Key (200)
     request:
-      url: "{{baseUrl}}/api/consent"
-      method: DELETE
-      body:
-        type: json
-        data: |-
-          {
-            "reason": "pengen aja" // Optional
-          }
+      url: "{{baseUrl}}/api/push/vapid-public-key"
+      method: GET
     response:
       status: 200
       statusText: OK
@@ -45,11 +33,11 @@ examples:
         - name: content-type
           value: application/json; charset=utf-8
         - name: content-length
-          value: "110"
+          value: "103"
         - name: etag
-          value: W/"6e-gPnBy865FaQgYl9dloqL+pa7TLU"
+          value: W/"67-NcbHJ2ujWCEik/68d5A6MapMZPs"
         - name: date
-          value: Sun, 18 Oct 2026 02:50:19 GMT
+          value: Mon, 19 Oct 2026 03:48:16 GMT
         - name: connection
           value: keep-alive
         - name: keep-alive
@@ -58,9 +46,5 @@ examples:
         type: json
         data: |-
           {
-            "active": false,
-            "grantedAt": null,
-            "revokedAt": "2026-10-18T02:50:19.228Z",
-            "scopes": [],
-            "mustConfirmConsent": true
+            "publicKey": "BAK8cLaycb4Sk0Ea8y_kjTed9Temj7WY-XxLfdhnzly2-6wcZrUaMGDPwEnFqsLTyQ7u-elWzCCzH5uc8Uwtubc"
           }

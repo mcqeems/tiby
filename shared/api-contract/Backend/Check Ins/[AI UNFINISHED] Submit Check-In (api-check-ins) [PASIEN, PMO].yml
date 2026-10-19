@@ -1,5 +1,5 @@
 info:
-  name: "[AI UNFINISHED] Submit Check-In (api/check-ins) [PATIENT, PMO]"
+  name: "[AI UNFINISHED] Submit Check-In (api/check-ins) [PASIEN, PMO]"
   type: http
   seq: 3
 

@@ -1,5 +1,5 @@
 info:
-  name: Grant Consent (api/consent) [PATIENT, PMO]
+  name: Grant Consent (api/consent) [PASIEN, PMO]
   type: http
   seq: 2
 
