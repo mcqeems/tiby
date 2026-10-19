@@ -1,1 +1,0 @@
-"""Card OCR use cases."""
