@@ -211,6 +211,19 @@ describe("Phase 4: Silence, Tickets, Alerts, History, & Web Push (e2e)", () => {
     expect(subInDb).toBeDefined();
     expect(subInDb?.userId).toBe(patientId);
 
+    // Send manual test push notification to self
+    const sendPushRes = await request(app.getHttpServer())
+      .post("/api/push/send")
+      .set("Cookie", patientCookie)
+      .send({
+        title: "Test Pengingat Pandu",
+        body: "Halo! Ini adalah tes notifikasi langsung.",
+      });
+
+    expect(sendPushRes.status).toBe(201);
+    expect(sendPushRes.body.targetUserId).toBe(patientId);
+    expect(sendPushRes.body).toHaveProperty("sent");
+
     // Unsubscribe
     const unsubRes = await request(app.getHttpServer())
       .post("/api/push/unsubscribe")

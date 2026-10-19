@@ -1,4 +1,9 @@
-import { Injectable, Logger } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ForbiddenException,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import webpush from "web-push";
@@ -6,11 +11,14 @@ import { randomUUID } from "node:crypto";
 import { PushSubscription } from "./entities/push-subscription.entity.js";
 import { TreatmentPlan } from "../treatments/entities/treatment-plan.entity.js";
 import { PatientStatusHistory } from "../treatments/entities/patient-status-history.entity.js";
+import { AuthUser } from "../../auth/entities/auth-user.entity.js";
 import type {
   PushSubscriptionPayload,
   PushSubscriptionStatus,
   PushUnsubscribeDto,
   VapidPublicKeyResponse,
+  SendPushNotificationDto,
+  SendPushNotificationResponse,
 } from "@tiby/ts-shared";
 
 export interface PushNotificationPayload {
@@ -33,6 +41,8 @@ export class PushService {
     private readonly planRepo: Repository<TreatmentPlan>,
     @InjectRepository(PatientStatusHistory)
     private readonly historyRepo: Repository<PatientStatusHistory>,
+    @InjectRepository(AuthUser)
+    private readonly userRepo: Repository<AuthUser>,
   ) {
     const publicKey = process.env.VAPID_PUBLIC_KEY;
     const privateKey = process.env.VAPID_PRIVATE_KEY;
@@ -117,6 +127,64 @@ export class PushService {
       userId,
     });
     return { unsubscribed: true };
+  }
+
+  async sendManualNotification(
+    caller: { id: string; role: string; facilityId?: string | null },
+    dto: SendPushNotificationDto,
+  ): Promise<SendPushNotificationResponse> {
+    const targetUserId = dto.targetUserId || caller.id;
+
+    if (targetUserId !== caller.id) {
+      if (caller.role !== "ADMIN" && caller.role !== "NAKES") {
+        throw new ForbiddenException({
+          code: "FORBIDDEN",
+          message: "Only healthcare workers or admins can send notifications to other users",
+        });
+      }
+
+      const targetUser = await this.userRepo.findOneBy({ id: targetUserId });
+      if (!targetUser) {
+        throw new NotFoundException({
+          code: "NOT_FOUND",
+          message: "Target user not found",
+        });
+      }
+
+      if (
+        caller.role === "NAKES" &&
+        caller.facilityId &&
+        targetUser.facilityId &&
+        targetUser.facilityId !== caller.facilityId
+      ) {
+        throw new ForbiddenException({
+          code: "FORBIDDEN",
+          message: "Cannot send notification to user in another facility",
+        });
+      }
+    }
+
+    const result = await this.sendNotificationToUser(targetUserId, {
+      title: dto.title,
+      body: dto.body,
+      url: dto.url,
+      data: dto.data,
+    });
+
+    const success = result.sent > 0;
+    const message = success
+      ? `Notification sent to ${result.sent} device(s)`
+      : result.failed > 0
+        ? `Delivery failed for ${result.failed} device(s)`
+        : "No active push subscriptions found for target user";
+
+    return {
+      success,
+      sent: result.sent,
+      failed: result.failed,
+      targetUserId,
+      message,
+    };
   }
 
   async sendNotificationToUser(

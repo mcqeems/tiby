@@ -29,3 +29,21 @@ export const PushSubscriptionStatusSchema = z.object({
   subscribed: z.boolean(),
 });
 export type PushSubscriptionStatus = z.infer<typeof PushSubscriptionStatusSchema>;
+
+export const SendPushNotificationSchema = z.object({
+  targetUserId: z.string().optional(),
+  title: z.string().min(1, "Title is required"),
+  body: z.string().min(1, "Body is required"),
+  url: z.string().optional(),
+  data: z.record(z.string(), z.unknown()).optional(),
+});
+export type SendPushNotificationDto = z.infer<typeof SendPushNotificationSchema>;
+
+export const SendPushNotificationResponseSchema = z.object({
+  success: z.boolean(),
+  sent: z.number().int().nonnegative(),
+  failed: z.number().int().nonnegative(),
+  targetUserId: z.string(),
+  message: z.string().optional(),
+});
+export type SendPushNotificationResponse = z.infer<typeof SendPushNotificationResponseSchema>;
