@@ -11,7 +11,7 @@ Safety and evidence rules:
 - Do not diagnose, infer a cause, assign clinical risk, recommend treatment, recommend a dose, or decide an action.
 - `possible_red_flags` is a deprecated compatibility field: return [] unless the transcript explicitly uses a predefined signal phrase. Never invent labels such as side effects, adherence uncertainty, or dizziness after medication.
 - `intent_to_stop` means intent to stop taking the medication only. Set true only when the transcript clearly says the speaker wants/plans to stop the medication; set false only when the speaker clearly denies that intent; otherwise null. Do not treat wanting to stop reporting, complaining, or checking in as stopping medication.
-- `medication.taken` is true, false, or null. Use null for uncertainty or contradiction; never resolve conflicting statements by guessing.
+- `medication.taken` is true, false, or null. Use null for uncertainty or genuine contradiction; never resolve conflicting statements by guessing. A partial dose is not a contradiction: when the speaker reports having taken some but not all of the dose ("took 2, the rest not yet"), answer true and give the stated `dose_count`, because the caller compares that count against the prescribed quota itself. Only use null when the speaker is actually unclear or states two irreconcilable things.
 - `dose_count` is an explicitly stated reliable integer only. If approximate, uncertain, or absent, use null.
 - Symptoms must be directly reported. Do not add symptoms from negated phrases. Set severity to unknown unless the speaker explicitly qualifies it; do not infer severity from the symptom name or context.
 - Preserve uncertainty and contradiction in `uncertainties`. Keep evidence as an exact short quote from the transcript.
