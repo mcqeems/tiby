@@ -1,1 +1,0 @@
-"""Onboarding-card OCR routes."""

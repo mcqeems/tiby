@@ -11,19 +11,86 @@ fixtures. PPOCRv6-small already reads a rotated, shadowed, underexposed,
 the raw image in any scenario, while upscaling a very small card made it
 strictly worse. When the engine does fail, the honest signal is the per-field
 confidence dropping, which is what a Nakes needs to see anyway.
+
+Model weights are hash-locked and verified *before* the engine is built, because
+RapidOCR's own behaviour when a weight file is missing is to download ~30 MB
+from ModelScope on the spot. In production that turns a cold start into a
+network dependency and lets an unverified file load silently. Pre-stage the
+files and point ``TIBY_OCR_MODEL_DIR`` at them; a missing or mismatched weight
+raises :class:`OcrModelError` instead of reaching for the network.
 """
 
 from __future__ import annotations
 
+import hashlib
+import json
+import os
 from functools import lru_cache
-from typing import Protocol, cast
+from pathlib import Path
+from typing import NamedTuple, Protocol, cast
 
 import cv2
 import numpy as np
 from rapidocr import EngineType, ModelType, OCRVersion, RapidOCR
 
-from ...contracts import OcrOnboardingDraft
+from ..contracts import OcrOnboardingDraft
 from .card_parser import OcrLine, parse_onboarding_lines
+
+MODEL_DIR_ENV = "TIBY_OCR_MODEL_DIR"
+MODEL_LOCK = Path(__file__).with_name("models.lock.json")
+def _default_model_dir() -> Path:
+    """The cache RapidOCR ships with, found through the installed package.
+
+    Resolved from ``rapidocr`` rather than by walking up to ``.venv``: the
+    interpreter version in the path changes, and this does not.
+    """
+    import rapidocr
+
+    return Path(rapidocr.__file__).parent / "models"
+
+
+class OcrModelError(RuntimeError):
+    """A weight file is missing or does not match the lock. Never a download."""
+
+
+class LockedModel(NamedTuple):
+    name: str
+    sha256: str
+
+
+def locked_models() -> list[LockedModel]:
+    lock = json.loads(MODEL_LOCK.read_text(encoding="utf-8"))
+    return [LockedModel(name, sha) for name, sha in sorted(lock["models"].items())]
+
+
+def model_dir() -> Path:
+    """Where weights must already be, staged ahead of time."""
+    override = os.getenv(MODEL_DIR_ENV)
+    return Path(override) if override else _default_model_dir()
+
+
+def verify_models(directory: Path | None = None) -> None:
+    """Check every locked weight is present and byte-for-byte correct.
+
+    Called before the engine is constructed, which is the only point where
+    refusing is cheap. Once RapidOCR has been built it has already reached the
+    network, and by then a bad file is indistinguishable from a good one.
+    """
+    root = directory or model_dir()
+    for model in locked_models():
+        path = root / model.name
+        if not path.is_file():
+            raise OcrModelError(
+                f"{model.name} is missing from {root}. Stage the OCR weights there "
+                f"first (see models.lock.json); they are never downloaded at runtime."
+            )
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        if digest != model.sha256:
+            raise OcrModelError(
+                f"{model.name} does not match models.lock.json "
+                f"(expected {model.sha256[:12]}…, got {digest[:12]}…). "
+                f"Refusing to run OCR on unverified weights."
+            )
 
 
 class OcrEngine(Protocol):
@@ -33,10 +100,12 @@ class OcrEngine(Protocol):
 @lru_cache(maxsize=1)
 def _engine() -> OcrEngine:
     """Load one local ONNX model pipeline per worker process."""
+    verify_models()
     return cast(
         OcrEngine,
         RapidOCR(
             params={
+                "Global.model_root_dir": model_dir(),
                 "Det.engine_type": EngineType.ONNXRUNTIME,
                 "Det.lang_type": "id",
                 "Det.model_type": ModelType.SMALL,
