@@ -34,6 +34,7 @@ export const UserSummarySchema = z.object({
   name: z.string(),
   role: z.string(),
   facilityId: z.string().nullable().optional(),
+  facility: z.string().nullable().optional()
 });
 export type UserSummary = z.infer<typeof UserSummarySchema>;
 

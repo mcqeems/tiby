@@ -81,6 +81,7 @@ describe("Users & RBAC Password Management (e2e)", () => {
         facilityId,
       });
     expect(createNakesRes.status).toBe(201);
+    expect(createNakesRes.body.facility).toBe("Puskesmas Menteng");
     nakesUserId = createNakesRes.body.id;
 
     // 5. Login as NAKES using unified /api/auth/sign-in (with email)
@@ -101,6 +102,7 @@ describe("Users & RBAC Password Management (e2e)", () => {
         role: "PASIEN",
       });
     expect(createPasienRes.status).toBe(201);
+    expect(createPasienRes.body.facility).toBe("Puskesmas Menteng");
     pasienUserId = createPasienRes.body.id;
 
     // 7. Login as PASIEN using unified /api/auth/sign-in (with identifier)
@@ -140,6 +142,21 @@ describe("Users & RBAC Password Management (e2e)", () => {
           role: "PASIEN",
         });
       expect(res.status).toBe(403);
+    });
+
+    it("returns facility name in GET /api/users/me and GET /api/users", async () => {
+      const meRes = await request(app.getHttpServer())
+        .get("/api/users/me")
+        .set("Cookie", nakesCookie);
+      expect(meRes.status).toBe(200);
+      expect(meRes.body.facility).toBe("Puskesmas Menteng");
+
+      const listRes = await request(app.getHttpServer())
+        .get("/api/users")
+        .set("Cookie", nakesCookie);
+      expect(listRes.status).toBe(200);
+      const foundNakes = listRes.body.find((u: any) => u.id === nakesUserId);
+      expect(foundNakes?.facility).toBe("Puskesmas Menteng");
     });
   });
 

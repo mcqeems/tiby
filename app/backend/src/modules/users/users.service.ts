@@ -39,6 +39,7 @@ export class UsersService {
     dto: CreateUserDto,
   ): Promise<UserSummary> {
     let targetFacilityId: string | null = null;
+    let targetFacilityName: string | null = null;
 
     if (caller.role === 'ADMIN') {
       if (dto.facilityId) {
@@ -52,6 +53,7 @@ export class UsersService {
           });
         }
         targetFacilityId = dto.facilityId;
+        targetFacilityName = facility.name;
       }
     } else if (caller.role === 'NAKES') {
       if (dto.role !== 'PASIEN' && dto.role !== 'PMO') {
@@ -70,6 +72,12 @@ export class UsersService {
           code: 'FORBIDDEN',
           message: 'Cannot create accounts for a different facility',
         });
+      }
+      if (targetFacilityId) {
+        const facility = await this.facilityRepo.findOneBy({
+          id: targetFacilityId,
+        });
+        targetFacilityName = facility?.name ?? null;
       }
     } else {
       throw new ForbiddenException({
@@ -130,6 +138,7 @@ export class UsersService {
       name: dto.fullName,
       role: dto.role,
       facilityId: targetFacilityId,
+      facility: targetFacilityName,
     };
   }
 
@@ -250,7 +259,9 @@ export class UsersService {
     role: string;
     facilityId?: string | null;
   }): Promise<UserSummary[]> {
-    const qb = this.userRepo.createQueryBuilder('u');
+    const qb = this.userRepo
+      .createQueryBuilder('u')
+      .leftJoinAndSelect('u.facility', 'facility');
 
     if (caller.role === 'NAKES' && caller.facilityId) {
       qb.where('u.facilityId = :facilityId', { facilityId: caller.facilityId });
@@ -266,11 +277,15 @@ export class UsersService {
       name: user.name,
       role: user.role,
       facilityId: user.facilityId,
+      facility: user.facility?.name ?? null,
     }));
   }
 
   async getMe(userId: string): Promise<UserSummary> {
-    const user = await this.userRepo.findOneBy({ id: userId });
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      relations: { facility: true },
+    });
     if (!user) {
       throw new NotFoundException({
         code: 'NOT_FOUND',
@@ -284,6 +299,7 @@ export class UsersService {
       name: user.name,
       role: user.role,
       facilityId: user.facilityId,
+      facility: user.facility?.name ?? null,
     };
   }
 }
