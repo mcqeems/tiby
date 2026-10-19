@@ -1,6 +1,6 @@
 import pytest
 
-from tiby_ai.guidance.safety import detect_action_request
+from guidance.safety import detect_action_request
 
 
 @pytest.mark.parametrize(

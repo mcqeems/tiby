@@ -1,7 +1,7 @@
 import pytest
 
-from tiby_ai.guidance.retrieval import Citation, Evidence
-from tiby_ai.guidance.service import pack_evidence, render_answer
+from guidance.retrieval import Citation, Evidence
+from guidance.service import pack_evidence, render_answer
 
 
 def make_evidence(document_id="who-demo", page=7, text="Adherence support text."):

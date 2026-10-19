@@ -1,5 +1,5 @@
 
-from tiby_ai.guidance.retrieval import SQLiteRetriever
+from guidance.retrieval import SQLiteRetriever
 
 
 def test_sqlite_fts_retrieves_chunk_and_citation(tmp_path):

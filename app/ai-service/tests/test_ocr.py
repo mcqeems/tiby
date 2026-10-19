@@ -15,14 +15,14 @@ import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
-from tiby_ai.main import app
-from tiby_ai.onboarding_ocr.card_parser import (
+from main import app
+from onboarding_ocr.card_parser import (
     OcrLine,
     parse_onboarding_lines,
     parse_onboarding_text,
     segment,
 )
-from tiby_ai.onboarding_ocr.ocr_service import extract_onboarding_card
+from onboarding_ocr.ocr_service import extract_onboarding_card
 
 DATASET = Path(__file__).resolve().parents[1] / "dataset" / "ocr"
 LAYOUTS = DATASET / "layouts"

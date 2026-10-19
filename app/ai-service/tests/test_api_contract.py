@@ -19,8 +19,8 @@ import yaml
 from fastapi.routing import APIRoute
 from pydantic import BaseModel
 
-from tiby_ai.contracts import CheckInRequest, GuidanceRequest
-from tiby_ai.main import app
+from contracts import CheckInRequest, GuidanceRequest
+from main import app
 
 COLLECTION_ROOT = Path(__file__).resolve().parents[3] / "shared" / "api-contract" / "AI"
 COMMENT_LINE = re.compile(r"^\s*//.*$", re.MULTILINE)

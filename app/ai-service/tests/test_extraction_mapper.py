@@ -1,7 +1,7 @@
 import pytest
 
-from tiby_ai.contracts import CheckInResponse
-from tiby_ai.extraction.mapper import to_backend_extraction
+from contracts import CheckInResponse
+from extraction.mapper import to_backend_extraction
 
 
 def result(*, taken, intent, symptoms=None, confidence=0.9):

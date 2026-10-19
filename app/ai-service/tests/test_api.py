@@ -6,25 +6,25 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from tiby_ai.contracts import CheckInRequest, CheckInResponse, GuidanceResponse
-from tiby_ai.guidance.retrieval import Citation, Evidence
-from tiby_ai.guidance.service import GroundedAnswerer
-from tiby_ai.main import (
+from contracts import CheckInRequest, CheckInResponse, GuidanceResponse
+from guidance.retrieval import Citation, Evidence
+from guidance.service import GroundedAnswerer
+from main import (
     app,
     extraction_service,
     transcription_service,
 )
-from tiby_ai.providers.agnes import AgnesExtractor
-from tiby_ai.providers.base import (
+from providers.agnes import AgnesExtractor
+from providers.base import (
     ProviderConfigurationError,
     ProviderError,
     ProviderTimeoutError,
     Transcription,
 )
-from tiby_ai.providers.factory import RuleBasedExtractor
-from tiby_ai.providers.fish import FishAudioTranscriber
-from tiby_ai.providers.groq import GroqTranscriber
-from tiby_ai.providers.nararouter import NaraRouterClient, NaraRouterSettings
+from providers.factory import RuleBasedExtractor
+from providers.fish import FishAudioTranscriber
+from providers.groq import GroqTranscriber
+from providers.nararouter import NaraRouterClient, NaraRouterSettings
 
 client = TestClient(app)
 
@@ -106,7 +106,7 @@ def test_text_extract_alias_uses_the_same_response_contract(monkeypatch):
 
 def test_check_in_maps_unconfigured_provider_to_api_error(monkeypatch):
     with patch(
-        "tiby_ai.main.extraction_service",
+        "main.extraction_service",
         side_effect=ProviderConfigurationError("missing secret"),
     ):
         response = client.post(
@@ -122,7 +122,7 @@ def test_check_in_maps_unconfigured_provider_to_api_error(monkeypatch):
 
 def test_check_in_maps_provider_failure_to_api_error():
     with patch(
-        "tiby_ai.main.extraction_service",
+        "main.extraction_service",
         side_effect=ProviderError("provider failed"),
     ):
         response = client.post(
@@ -219,7 +219,7 @@ def test_audio_extract_alias_uses_the_same_audio_contract(monkeypatch):
     fake_result = CheckInResponse.model_validate(response_payload())
     with (
         patch(
-            "tiby_ai.main.transcription_service",
+            "main.transcription_service",
             return_value=GroqTranscriber(api_key="test-token"),
         ),
         patch.object(
@@ -229,7 +229,7 @@ def test_audio_extract_alias_uses_the_same_audio_contract(monkeypatch):
                 return_value=Transcription("Sudah minum.", "groq", "whisper")
             ),
         ),
-        patch("tiby_ai.main.extraction_service") as extraction,
+        patch("main.extraction_service") as extraction,
     ):
         extraction.return_value.extract = AsyncMock(return_value=fake_result)
         response = client.post(
@@ -282,7 +282,7 @@ def test_audio_endpoint_maps_transcription_timeout(monkeypatch):
 
 
 def test_guidance_endpoint_returns_null_without_evidence():
-    with patch("tiby_ai.main.SQLiteRetriever") as retriever_cls:
+    with patch("main.SQLiteRetriever") as retriever_cls:
         retriever_cls.return_value.search.return_value = []
         response = client.post(
             "/ai/guidance", json={"question": "Topik yang tidak ada di indeks."}
@@ -310,10 +310,10 @@ def test_guidance_endpoint_packs_evidence_for_answerer():
         )
     ]
     expected = GuidanceResponse(answer="ok", grounded=False, limitations=[])
-    from tiby_ai.main import app
+    from main import app
 
-    retriever = patch("tiby_ai.main.SQLiteRetriever").start()
-    answerer = patch("tiby_ai.main.GroundedAnswerer").start()
+    retriever = patch("main.SQLiteRetriever").start()
+    answerer = patch("main.GroundedAnswerer").start()
     try:
         app.state.guidance_retriever = retriever.return_value
         app.state.guidance_answerer = answerer.return_value
@@ -362,7 +362,7 @@ def test_onboarding_ocr_route_returns_a_draft(monkeypatch):
         "fieldConfidence": {},
         "uncertainties": [],
     }
-    with patch("tiby_ai.onboarding_ocr.controller.extract_onboarding_card", return_value=expected):
+    with patch("onboarding_ocr.controller.extract_onboarding_card", return_value=expected):
         response = client.post(
             "/ocr/extract",
             files={"cardImage": ("card.png", b"image-bytes", "image/png")},
@@ -391,7 +391,7 @@ def test_onboarding_ocr_accepts_jpg_mime_type(monkeypatch):
         "fieldConfidence": {},
         "uncertainties": [],
     }
-    with patch("tiby_ai.onboarding_ocr.controller.extract_onboarding_card", return_value=draft):
+    with patch("onboarding_ocr.controller.extract_onboarding_card", return_value=draft):
         response = client.post(
             "/ocr/extract", files={"cardImage": ("card.jpg", b"bytes", "image/jpg")}
         )
@@ -418,7 +418,7 @@ def test_agnes_provider_builds_configured_request_and_validates_response():
     async def run_test():
         transport = httpx.MockTransport(handler)
         with patch(
-            "tiby_ai.providers.nararouter.httpx.AsyncClient",
+            "providers.nararouter.httpx.AsyncClient",
             side_effect=lambda **kwargs: real_client(transport=transport, **kwargs),
         ):
             extractor = AgnesExtractor(router_client(model="agnes-2.5-flash"))
@@ -448,7 +448,7 @@ def test_agnes_provider_rejects_unexpected_risk_decision():
 
     async def run_test():
         with patch(
-            "tiby_ai.providers.nararouter.httpx.AsyncClient",
+            "providers.nararouter.httpx.AsyncClient",
             side_effect=lambda **kwargs: real_client(transport=transport, **kwargs),
         ):
             extractor = AgnesExtractor(router_client())
@@ -468,7 +468,7 @@ def test_nararouter_timeout_maps_to_provider_timeout():
         transport = httpx.MockTransport(handler)
         with (
             patch(
-                "tiby_ai.providers.nararouter.httpx.AsyncClient",
+                "providers.nararouter.httpx.AsyncClient",
                 side_effect=lambda **kwargs: real_client(transport=transport, **kwargs),
             ),
             pytest.raises(ProviderTimeoutError),
@@ -495,7 +495,7 @@ def test_groq_provider_uses_configured_token_and_returns_transcript():
     async def run_test():
         transport = httpx.MockTransport(handler)
         with patch(
-            "tiby_ai.providers.groq.httpx.AsyncClient",
+            "providers.groq.httpx.AsyncClient",
             side_effect=lambda **kwargs: real_client(transport=transport, **kwargs),
         ):
             return await GroqTranscriber(api_key="groq-test-token").transcribe(
@@ -513,7 +513,7 @@ def test_groq_provider_uses_configured_token_and_returns_transcript():
 def test_guidance_action_request_fails_closed_without_provider_call(monkeypatch):
     monkeypatch.setenv("NARAROUTER_API_TOKEN", "dummy")
     monkeypatch.setenv("NARAROUTER_BASE_URL", "https://router.test/v1")
-    with patch("tiby_ai.providers.nararouter.httpx.AsyncClient") as client_factory:
+    with patch("providers.nararouter.httpx.AsyncClient") as client_factory:
         result = asyncio.run(
             GroundedAnswerer().answer(
                 "Saya mual. Haruskah saya berhenti minum obat?", None, []
@@ -528,7 +528,7 @@ def test_guidance_action_request_fails_closed_without_provider_call(monkeypatch)
 def test_guidance_action_request_in_transcript_also_fails_closed(monkeypatch):
     monkeypatch.setenv("NARAROUTER_API_TOKEN", "dummy")
     monkeypatch.setenv("NARAROUTER_BASE_URL", "https://router.test/v1")
-    with patch("tiby_ai.providers.nararouter.httpx.AsyncClient") as client_factory:
+    with patch("providers.nararouter.httpx.AsyncClient") as client_factory:
         result = asyncio.run(
             GroundedAnswerer().answer(
                 "Apa itu tuberkulosis?",
@@ -548,7 +548,7 @@ def test_guidance_general_question_can_continue_to_grounded_answerer(monkeypatch
 
 
 def test_prompt_defines_strict_fact_only_boundaries():
-    from tiby_ai.prompts import CHECKIN_EXTRACTION_SYSTEM
+    from prompts import CHECKIN_EXTRACTION_SYSTEM
 
     assert "intent to stop taking the medication only" in CHECKIN_EXTRACTION_SYSTEM
     assert "return []" in CHECKIN_EXTRACTION_SYSTEM
@@ -560,7 +560,7 @@ def test_prompt_defines_strict_fact_only_boundaries():
 
 
 def test_prompt_keeps_ambiguous_transcript_as_quoted_data():
-    from tiby_ai.prompts import checkin_extraction_user
+    from prompts import checkin_extraction_user
 
     prompt = checkin_extraction_user("lupa {json} dan belum minum")
     assert '"lupa {json} dan belum minum"' in prompt

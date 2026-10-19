@@ -14,7 +14,7 @@ import json
 
 import pytest
 
-from tiby_ai.onboarding_ocr.ocr_service import (
+from onboarding_ocr.ocr_service import (
     MODEL_LOCK,
     OcrModelError,
     locked_models,
