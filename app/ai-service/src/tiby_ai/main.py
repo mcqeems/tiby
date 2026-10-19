@@ -9,13 +9,12 @@ happens here so the providers stay free of transport and env concerns.
 """
 
 from contextlib import asynccontextmanager
-from typing import Any, Literal
+from typing import Any
 
 from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
-from starlette.concurrency import run_in_threadpool
 
 from .contracts import (
     AiAudioExtractionResponse,
@@ -24,14 +23,14 @@ from .contracts import (
     CheckInRequest,
     GuidanceRequest,
     GuidanceResponse,
-    OcrOnboardingDraft,
 )
+from .errors import api_error
 from .extraction.mapper import to_backend_extraction
 from .extraction.service import extract_audio
 from .extraction.service import extract_check_in as run_extraction
 from .guidance.retrieval import SQLiteRetriever
 from .guidance.service import GroundedAnswerer, pack_evidence
-from .onboarding_ocr.service import extract_onboarding_card
+from .onboarding_ocr import router as onboarding_ocr_router
 from .providers.base import (
     ProviderConfigurationError,
     ProviderError,
@@ -42,19 +41,6 @@ from .providers.factory import (
     extraction_service,
     transcription_service,
 )
-
-ApiErrorCode = Literal[
-    "INVALID_REQUEST", "EXTRACTION_FAILED", "PROVIDER_TIMEOUT", "INTERNAL"
-]
-
-
-def api_error(status_code: int, code: ApiErrorCode, message: str) -> JSONResponse:
-    """Build the shared ``ApiError`` response envelope."""
-    return JSONResponse(
-        status_code=status_code,
-        content=ApiError(code=code, message=message).model_dump(),
-    )
-
 
 EXTRACTION_ERRORS: dict[int | str, dict[str, Any]] = {
     422: {"model": ApiError, "description": "Request validation failed."},
@@ -100,14 +86,6 @@ GUIDANCE_ERRORS: dict[int | str, dict[str, Any]] = {
         "description": "Guidance provider is not configured on the server.",
     },
 }
-OCR_ERRORS: dict[int | str, dict[str, Any]] = {
-    413: {
-        "model": ApiError,
-        "description": "Image is empty or exceeds the 10 MB limit.",
-    },
-    415: {"model": ApiError, "description": "Unsupported image content type."},
-    422: {"model": ApiError, "description": "Image could not be decoded."},
-}
 
 
 @asynccontextmanager
@@ -124,6 +102,10 @@ app = FastAPI(
     description="Extracts reported facts from check-in text; does not diagnose or assign risk.",
     lifespan=lifespan,
 )
+
+# Domain modules own their own routes, the way each NestJS module declares its
+# controllers; this file only composes the application.
+app.include_router(onboarding_ocr_router)
 
 
 @app.exception_handler(RequestValidationError)
@@ -208,36 +190,6 @@ async def guidance_endpoint(
         return api_error(503, "INTERNAL", str(exc))
     except ProviderError as exc:
         return GuidanceResponse(answer=None, grounded=False, limitations=[str(exc)])
-
-
-@app.post(
-    "/ocr/extract",
-    response_model=OcrOnboardingDraft,
-    responses=OCR_ERRORS,
-    include_in_schema=False,
-)
-async def extract_onboarding_ocr_endpoint(
-    cardImage: UploadFile = File(...),  # noqa: B008 - FastAPI requires File metadata here.
-) -> OcrOnboardingDraft | JSONResponse:
-    """Return an OCR draft; Nakes must verify every field against the image."""
-    if cardImage.content_type not in {
-        "image/png",
-        "image/jpeg",
-        "image/jpg",
-        "image/webp",
-    }:
-        return api_error(415, "INVALID_REQUEST", "Unsupported image content type.")
-    content = await cardImage.read(10 * 1024 * 1024 + 1)
-    if not content or len(content) > 10 * 1024 * 1024:
-        return api_error(
-            413, "INVALID_REQUEST", "Image must be between 1 byte and 10 MB."
-        )
-    try:
-        return await run_in_threadpool(extract_onboarding_card, content)
-    except ValueError:
-        return api_error(
-            422, "INVALID_REQUEST", "Uploaded file is not a decodable image."
-        )
 
 
 @app.post(
