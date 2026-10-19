@@ -44,7 +44,8 @@ def main() -> None:
             "grounded": response.grounded,
             "citations": [citation.model_dump() for citation in response.citations],
             "limitations": response.limitations,
-            "expected_behavior": case["expected_behavior"],
+            "expect": case["expect"],
+            "review": case["review"],
         }
 
     async def run_all() -> None:
