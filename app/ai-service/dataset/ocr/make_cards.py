@@ -102,7 +102,10 @@ def photographed_card() -> np.ndarray:
     image = cv2.resize(image, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
     image = cv2.convertScaleAbs(image, alpha=0.85, beta=0)
     _, encoded = cv2.imencode(".jpg", image, [cv2.IMWRITE_JPEG_QUALITY, 60])
-    return cv2.imdecode(encoded, cv2.IMREAD_COLOR)
+    decoded = cv2.imdecode(encoded, cv2.IMREAD_COLOR)
+    if decoded is None:
+        raise RuntimeError("could not re-decode the JPEG round trip")
+    return decoded
 
 
 def main() -> None:

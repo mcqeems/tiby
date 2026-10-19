@@ -2,7 +2,7 @@
 
 Deliberately no embeddings: every hit keeps its document ID and PDF page so
 citations can be traced back to the source PDF. The database file is a build
-artifact (gitignored) rebuilt by ``scripts/ingest_knowledge.py``.
+artifact (gitignored) rebuilt by ``src/ingest_knowledge.py``.
 """
 
 import json

@@ -10,14 +10,14 @@ This folder means exactly one thing: the PDFs that feed the retrieval index for
 
 ## The indexing rule
 
-`scripts/ingest_knowledge.py` reads `manifest.json` and nothing else. It does
+`src/ingest_knowledge.py` reads `manifest.json` and nothing else. It does
 not glob this folder. A PDF dropped into `raw/` without a manifest entry is
 therefore **silently never indexed**, and guidance will quietly answer from the
 older corpus instead of failing. `tests/test_knowledge_manifest.py` fails on
 exactly that drift, in both directions.
 
 Conversely, a markdown note left in this folder is harmless to the index, which
-is why engineering notes live in `../docs/` instead — see `../docs/README.md`.
+is why engineering notes live in the docstrings and in `../README.md` instead.
 
 `tiby.db` is the generated index. It is a gitignored build artifact, not a
 source file; rebuild it with the script above.

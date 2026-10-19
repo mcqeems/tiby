@@ -7,7 +7,7 @@ patient statement here.
 Run them:
 
 ```bash
-uv run python scripts/test_live_providers.py --only extraction --repeat 3
+PYTHONPATH=src uv run python tests/test_live_providers.py --only extraction --repeat 3
 ```
 
 What the expectations mean:

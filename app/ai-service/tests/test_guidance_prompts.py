@@ -1,17 +1,17 @@
 """Run the guidance regression cases against the live stack for manual review.
 
-Every case in ``tests/fixtures/guidance/guidance.jsonl`` goes through real retrieval
+Every case in ``dataset/guidance/guidance.jsonl`` goes through real retrieval
 and the real provider, then prints one JSON line per case (guard hit, retrieved
 count, answer, citations). Requires provider credentials and costs API calls;
 review the output by hand — these cases are QA fixtures, not clinical
-validation (see ``prompts/README.md``).
+validation (see ``dataset/guidance/README.md``).
 
 For a scored, pass/fail check that can gate a deploy, use
-``scripts/test_live_providers.py`` instead.
+``tests/test_live_providers.py`` instead.
 
 Usage::
 
-    uv run python scripts/test_guidance_prompts.py
+    PYTHONPATH=src uv run python tests/test_guidance_prompts.py
 """
 
 import asyncio

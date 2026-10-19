@@ -2,7 +2,7 @@
 
 Every card is invented — the names, the medical record number, and the address
 are filler. Never replace one with a photograph of a real card, and never drop
-a real patient record in here; see `tests/fixtures/README.md` for the same
+a real patient record in here; see `../README.md` for the same
 rule on the prompt side.
 
 The fixtures are split by the layer they are meant to catch failing, so a card

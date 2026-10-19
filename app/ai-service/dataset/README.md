@@ -6,9 +6,9 @@ at all. Each set below has its own README with the detail.
 
 | Set | What it is for | Exercised by |
 | --- | --- | --- |
-| `extraction/` | Ten Indonesian check-in transcripts with the facts a correct extraction should produce. | `scripts/test_live_providers.py --only extraction` |
-| `guidance/` | Seven synthetic questions with machine-checkable `expect` blocks and a separate prose `review`. | `scripts/test_live_providers.py --only guidance` |
-| `audio/` | Five synthetic speech samples with expected transcripts, not yet scored. **See its README.** | `scripts/test_live_providers.py --only audio` |
+| `extraction/` | Ten Indonesian check-in transcripts with the facts a correct extraction should produce. | `tests/test_live_providers.py --only extraction` |
+| `guidance/` | Seven synthetic questions with machine-checkable `expect` blocks and a separate prose `review`. | `tests/test_live_providers.py --only guidance` |
+| `audio/` | Five synthetic speech samples with expected transcripts, not yet scored. **See its README.** | `tests/test_live_providers.py --only audio` |
 
 Card images are not here: they are dataset material rather than expectations,
 so they live in `../../dataset/ocr/`.

@@ -1,4 +1,4 @@
-"""Keep ``knowledge/`` and its manifest from drifting apart.
+"""Keep ``dataset/knowledge/`` and its manifest from drifting apart.
 
 Ingestion reads the manifest and never globs the folder, which is what keeps
 unrelated notes out of the retrieval index. The cost of that design is silence:
@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-KNOWLEDGE = ROOT / "knowledge"
+KNOWLEDGE = ROOT / "dataset" / "knowledge"
 MANIFEST = KNOWLEDGE / "manifest.json"
 RAW = KNOWLEDGE / "raw"
 

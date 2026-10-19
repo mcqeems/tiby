@@ -11,22 +11,31 @@ uv sync --group dev                        # .venv + deps + this package (editab
 export NARAROUTER_API_TOKEN="..."          # or NARAROUTER_API_KEY
 export NARAROUTER_BASE_URL="https://your-router-base/v1"
 export GROQ_API_KEY="..."                  # audio endpoint (default transcriber)
-uv run uvicorn tiby_ai.main:app --reload   # http://localhost:8000, docs at /docs
+PYTHONPATH=src uv run uvicorn main:app --reload   # http://localhost:8000, docs at /docs
 ```
+
+`src/` is the import root — there is no `tiby_ai` package, so the app is
+`main:app`, not `tiby_ai.main:app`. `uv sync` installs this project editable
+with `src/` on the path, so `uv run uvicorn main:app` works as-is; the
+`PYTHONPATH=src` prefix above is what keeps the same commands working from a
+bare checkout with no install.
 
 ## Layout
 
 Layered like the backend's NestJS modules, so both services read the same way: `controllers/` is HTTP wiring only, `services/` holds the use cases.
 
 ```
-src/tiby_ai/
+src/
   main.py       # composes the app; mounts domain routers
   errors.py     # the shared ApiError envelope
   contracts.py  # HTTP contract, mirroring shared/ts-shared
+  prompts.py    # extraction + guidance prompt text
   extraction/  guidance/  onboarding_ocr/  providers/
 ```
 
-`knowledge/` holds the approved PDFs that feed `/ai/guidance` and nothing else; `dataset/` holds the synthetic card images the OCR tests read; `docs/` holds engineering notes that are never indexed. `prompts/` and `tests/fixtures/` carry their own READMEs.
+`dataset/knowledge/` holds the approved PDFs that feed `/ai/guidance` and nothing
+else; the rest of `dataset/` holds the synthetic card images and transcripts the
+tests read. Each `dataset/*` folder carries its own README.
 
 ### OCR weights
 
@@ -62,31 +71,31 @@ Backend aliases, kept private from the contract collection: `POST /text/extract`
 ## Test
 
 ```bash
-uv run pytest                                 # offline; no tokens, no network
-uv run python scripts/test_live_providers.py  # real providers; pass/fail + accuracy per field
-uv run python scripts/test_guidance_prompts.py # real providers; one JSON line per case, human review
+uv run pytest                                     # offline; no tokens, no network
+PYTHONPATH=src uv run python tests/test_live_providers.py    # real providers; pass/fail + accuracy per field
+PYTHONPATH=src uv run python tests/test_guidance_prompts.py # real providers; one JSON line per case, human review
 ```
 
-Each answers a different question, and `prompts/README.md` picks the right one: `pytest` for *did I break the code?* (it also runs the real OCR engine over the card images in `dataset/`), `test_live_providers.py` for *is the AI working and how accurate is it?* (exits non-zero, so it can gate a deploy), `test_guidance_prompts.py` for *does this answer need a human eye?*
+Each answers a different question, and `dataset/README.md` picks the right one: `pytest` for *did I break the code?* (it also runs the real OCR engine over the card images in `dataset/`), `test_live_providers.py` for *is the AI working and how accurate is it?* (exits non-zero, so it can gate a deploy), `test_guidance_prompts.py` for *does this answer need a human eye?*
 
 ```bash
-uv run python scripts/test_live_providers.py --only extraction --repeat 3
-uv run python scripts/test_live_providers.py --list   # health ocr extraction audio guidance
+PYTHONPATH=src uv run python tests/test_live_providers.py --only extraction --repeat 3
+PYTHONPATH=src uv run python tests/test_live_providers.py --list   # health ocr extraction audio guidance
 TIBY_EXTRACTOR=rules uv run pytest -q     # the offline baseline, not a live check
 ```
 
 Extraction is not deterministic, so `--repeat` separates a case that is sometimes right (`UNSTABLE`) from one that never is (`FAIL`). The live runner refuses to run under `TIBY_EXTRACTOR=rules`, where a green run would be indistinguishable from a green run against the model.
 
-One thing is **not** measured: audio transcription accuracy — the samples in `tests/fixtures/audio/` carry no expected transcript, so the live runner only proves the provider is reachable and the contract holds. OCR is likewise measured only on synthetic scans. See `tests/fixtures/README.md`.
+One thing is **not** measured: audio transcription accuracy — the samples in `dataset/audio/` carry no expected transcript, so the live runner only proves the provider is reachable and the contract holds. OCR is likewise measured only on synthetic scans. See `dataset/audio/README.md`.
 
 Run `ruff`, `mypy`, and `pytest` from `app/ai-service`, not the repo root: `pyproject.toml` sets no `[tool.ruff]`, so first-party detection follows the working directory and you get a wall of spurious `I001` errors otherwise.
 
 ## Knowledge base
 
-`/ai/guidance` reads `knowledge/tiby.db`, built from the PDFs in `knowledge/manifest.json`:
+`/ai/guidance` reads `dataset/knowledge/tiby.db`, built from the PDFs in `dataset/knowledge/manifest.json`:
 
 ```bash
-uv run python scripts/ingest_knowledge.py
+PYTHONPATH=src uv run python src/ingest_knowledge.py
 ```
 
-Fresh clone without the index → guidance returns `answer: null`. TB-specific; verify issuer and edition before relying on any document. See `knowledge/README.md`.
+Fresh clone without the index → guidance returns `answer: null`. TB-specific; verify issuer and edition before relying on any document. See `dataset/knowledge/README.md`.

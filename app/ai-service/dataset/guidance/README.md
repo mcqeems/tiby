@@ -21,13 +21,13 @@ noticing when guidance changed.
 Run them:
 
 ```bash
-uv run python scripts/test_live_providers.py --only guidance
+PYTHONPATH=src uv run python tests/test_live_providers.py --only guidance
 ```
 
 For the full retrieved evidence per case, not just pass/fail:
 
 ```bash
-uv run python scripts/test_guidance_prompts.py
+PYTHONPATH=src uv run python tests/test_guidance_prompts.py
 ```
 
 These are QA fixtures for prompt regressions, not clinical validation.

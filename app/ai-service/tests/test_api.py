@@ -149,6 +149,7 @@ def test_check_in_rejects_decision_fields(monkeypatch):
 
 
 def test_check_in_timeout_maps_to_provider_timeout(monkeypatch):
+    monkeypatch.setenv("TIBY_EXTRACTOR", "agnes")
     monkeypatch.setenv("NARAROUTER_API_TOKEN", "test-router-token")
     monkeypatch.setenv("NARAROUTER_BASE_URL", "https://router.test/v1")
     with patch.object(
@@ -164,6 +165,7 @@ def test_check_in_timeout_maps_to_provider_timeout(monkeypatch):
 
 
 def test_audio_endpoint_connects_transcriber_and_extractor(monkeypatch):
+    monkeypatch.setenv("TIBY_EXTRACTOR", "agnes")
     monkeypatch.setenv("NARAROUTER_API_TOKEN", "test-router-token")
     monkeypatch.setenv("NARAROUTER_BASE_URL", "https://router.test/v1")
     fake_result = CheckInResponse.model_validate(response_payload())
@@ -250,7 +252,9 @@ def test_audio_endpoint_rejects_oversized_upload(monkeypatch):
     assert response.json()["code"] == "INVALID_REQUEST"
 
 
-def test_audio_endpoint_rejects_transcription_over_contract_limit():
+def test_audio_endpoint_rejects_transcription_over_contract_limit(monkeypatch):
+    monkeypatch.setenv("NARAROUTER_API_TOKEN", "test-router-token")
+    monkeypatch.setenv("NARAROUTER_BASE_URL", "https://router.test/v1")
     long_text = "mual " * 1500
     with patch.object(
         GroqTranscriber,
@@ -268,6 +272,8 @@ def test_audio_endpoint_rejects_transcription_over_contract_limit():
 
 
 def test_audio_endpoint_maps_transcription_timeout(monkeypatch):
+    monkeypatch.setenv("NARAROUTER_API_TOKEN", "test-router-token")
+    monkeypatch.setenv("NARAROUTER_BASE_URL", "https://router.test/v1")
     with patch.object(
         GroqTranscriber,
         "transcribe",

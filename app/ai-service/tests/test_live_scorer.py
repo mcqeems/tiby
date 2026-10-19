@@ -7,7 +7,8 @@ acceptable answers scored every correct symptom list as a mismatch, and a field
 counter was divided by case count instead of run count, reporting 300%. Neither
 showed up until a live run was read closely.
 
-The script is loaded by path because ``scripts/`` is not an importable package.
+The script is loaded by path because it is a runnable CLI, not an importable
+module of the package.
 """
 
 import importlib.util
@@ -16,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "test_live_providers.py"
+SCRIPT = Path(__file__).resolve().parent / "test_live_providers.py"
 
 
 def load():
@@ -83,7 +84,7 @@ def test_preflight_rejects_a_missing_token(monkeypatch):
 
 def test_every_fixture_expectation_is_scorable():
     """A fixture shape the scorer cannot compare would silently fail everything."""
-    cases = (runner.FIXTURES / "extraction" / "cases.jsonl").read_text(encoding="utf-8")
+    cases = (runner.DATASET / "extraction" / "cases.jsonl").read_text(encoding="utf-8")
     assert cases.strip(), "no extraction cases"
     for line in cases.splitlines():
         if not line.strip():

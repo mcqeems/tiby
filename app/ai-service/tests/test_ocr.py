@@ -247,6 +247,7 @@ def test_a_shadowed_rotated_scan_still_needs_no_conditioning(engine: None):
     image = cv2.imdecode(
         np.frombuffer(read("layouts", "card-printed.png"), dtype=np.uint8), cv2.IMREAD_COLOR
     )
+    assert image is not None, "the committed card fixture did not decode"
     height, width = image.shape[:2]
     matrix = cv2.getRotationMatrix2D((width / 2, height / 2), 6.0, 1.0)
     image = cv2.warpAffine(image, matrix, (width, height), borderValue=250)

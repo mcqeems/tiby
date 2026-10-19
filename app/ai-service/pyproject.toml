@@ -31,7 +31,11 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/tiby_ai"]
+# `src` is the import root: modules install top-level (`main`, `contracts`,
+# `extraction.*`, ...) and are reached with PYTHONPATH=src, not as a `tiby_ai`
+# package. `sources` strips the directory so `src/main.py` lands as `main.py`.
+only-include = ["src"]
+sources = ["src"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

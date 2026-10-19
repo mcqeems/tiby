@@ -12,9 +12,9 @@ the model was broken. That is the exact confusion this script exists to remove.
 
 Usage, with provider credentials exported::
 
-    uv run python scripts/test_live_providers.py                # everything
-    uv run python scripts/test_live_providers.py --only extraction --repeat 3
-    uv run python scripts/test_live_providers.py --list
+    PYTHONPATH=src uv run python tests/test_live_providers.py                # everything
+    PYTHONPATH=src uv run python tests/test_live_providers.py --only extraction --repeat 3
+    PYTHONPATH=src uv run python tests/test_live_providers.py --list
 
 Extraction is not deterministic, so a single run per case is not a measurement.
 ``--repeat`` runs each case N times and reports a case that is right only
@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -36,10 +37,9 @@ from guidance.safety import detect_action_request
 from main import app
 
 ROOT = Path(__file__).resolve().parents[1]
-FIXTURES = ROOT / "tests" / "fixtures"
 DATASET = ROOT / "dataset"
 OCR_CARD = DATASET / "ocr" / "layouts" / "card-printed.png"
-AUDIO_SAMPLE = FIXTURES / "audio" / "check-in-sample-01.wav"
+AUDIO_SAMPLE = DATASET / "audio" / "check-in-sample-01.wav"
 SCORED_FIELDS = ("medicationTaken", "pillsTakenCount", "symptoms", "intentToStopOrRefuse")
 
 
@@ -135,7 +135,7 @@ def check_text_extraction(client: TestClient, report: Report, repeat: int = 1) -
     ``UNSTABLE`` rather than ``FAIL`` — a different problem, and one worth
     looking at, but not a regression.
     """
-    path = FIXTURES / "extraction" / "cases.jsonl"
+    path = DATASET / "extraction" / "cases.jsonl"
     if not path.is_file():
         report.add("extraction / text", False, f"missing fixture {path}")
         return {}
@@ -223,7 +223,7 @@ def check_guidance(client: TestClient, report: Report, repeat: int = 1) -> None:
     it would mean the model asserted something the retrieved evidence does not
     support.
     """
-    path = FIXTURES / "guidance" / "guidance.jsonl"
+    path = DATASET / "guidance" / "guidance.jsonl"
     if not path.is_file():
         report.add("guidance / cases", False, f"missing fixture {path}")
         return
@@ -255,7 +255,7 @@ def check_guidance(client: TestClient, report: Report, repeat: int = 1) -> None:
         report.add(f"guidance / {case['id']}", not problems, "; ".join(problems))
 
 
-GROUPS = {
+GROUPS: dict[str, Callable[[TestClient, Report, int], None | dict[str, int]]] = {
     "health": check_health,
     "ocr": lambda client, report, repeat: check_ocr(client, report),
     "extraction": check_text_extraction,
