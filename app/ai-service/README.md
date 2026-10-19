@@ -14,17 +14,19 @@ export GROQ_API_KEY="..."                  # audio endpoint (default transcriber
 uv run uvicorn tiby_ai.main:app --reload   # http://localhost:8000, docs at /docs
 ```
 
-## Project layout
+## Layout
 
-- `src/tiby_ai/main.py` — FastAPI routes and dependency wiring.
-- `src/tiby_ai/extraction/` — check-in fact extraction.
-- `src/tiby_ai/guidance/` — safety guard, retrieval, PDF ingestion, and grounded answers.
-- `src/tiby_ai/onboarding_ocr/` — local RapidOCR processing and conservative onboarding-card draft parsing.
-- `src/tiby_ai/providers/` — LLM and speech-to-text adapters.
-- `prompts/` — active system prompts; synthetic regression cases and audio samples live under `tests/fixtures/`.
-- `knowledge/raw/` — approved source PDFs; `knowledge/tiby.db` is a local generated index.
-- `scripts/` — manual ingestion and live prompt QA commands.
-- `tests/` — automated tests and non-patient fixtures.
+Layered like the backend's NestJS modules, so both services read the same way: `controllers/` is HTTP wiring only, `services/` holds the use cases.
+
+```
+src/tiby_ai/
+  main.py       # composes the app; mounts domain routers
+  errors.py     # the shared ApiError envelope
+  contracts.py  # HTTP contract, mirroring shared/ts-shared
+  extraction/  guidance/  onboarding_ocr/  providers/
+```
+
+`knowledge/` holds the approved PDFs that feed `/ai/guidance` and nothing else; `docs/` holds engineering notes that are never indexed. `prompts/` and `tests/fixtures/` carry their own READMEs.
 
 ## Tokens
 
@@ -36,31 +38,44 @@ Set in the shell that launches the app; read per request, never logged.
 | `GROQ_API_KEY` | `/ai/extractions/check-in/audio` | default transcriber (`TIBY_TRANSCRIBER=groq`) |
 | `FISH_AUDIO_API_TOKEN` (or `FISH_API_KEY`) | audio when `TIBY_TRANSCRIBER=fish` | optional alternative transcriber |
 
-Missing token → 503, provider failure → 502, timeout → 504. For offline smoke tests, `TIBY_EXTRACTOR=rules` swaps extraction for the local keyword baseline (not clinically validated); guidance still needs the LLM token, audio still needs a speech-to-text token.
+Missing token → 503, provider failure → 502, timeout → 504. Real providers are the default on `TIBY_EXTRACTOR` and `TIBY_TRANSCRIBER`; `TIBY_EXTRACTOR=rules` is the offline keyword baseline for deterministic tests only, and any unrecognised value is rejected at startup rather than falling through to a paid provider.
 
 ## Endpoints
 
 - `POST /ai/extractions/check-in` — JSON transcript → structured facts (`null` = unstated or uncertain, never false).
-- `POST /ai/extractions/check-in/audio` — multipart `audio` (max 10 MB, backend-compatible media types) → transcription + facts and transcription metadata.
-- Backend compatibility aliases: `POST /text/extract` (JSON `transcript`), `POST /audio/extract` (`audio` multipart), and `POST /ocr/extract` (`cardImage` multipart). OCR accepts PNG/JPEG/JPG/WebP up to 10 MB and returns an unconfirmed draft; a Nakes must verify every field, especially handwriting. Confidence is not field-level certainty.
-- `POST /ai/guidance` — educational answers only from approved-source evidence; fails closed (`answer: null`) on personal dosing/start-stop questions or when no evidence matches. Not a diagnosis or treatment instruction.
+- `POST /ai/extractions/check-in/audio` — multipart `audio` (max 10 MB) → transcription + facts.
+- `POST /ai/guidance` — educational answers from approved-source evidence only; fails closed (`answer: null`) on personal dosing/start-stop questions or when no evidence matches.
 - `GET /ai/health` — liveness.
+
+Backend aliases, kept private from the contract collection: `POST /text/extract`, `POST /audio/extract`, `POST /ocr/extract` (`cardImage`, max 10 MB). OCR returns an unconfirmed draft — read `fieldConfidence` and `uncertainties` before trusting any field. `tests/test_api_contract.py` fails if the routes and the collection drift apart.
 
 ## Test
 
 ```bash
-uv run pytest    # mocked providers; use only synthetic data, never real patient data
+uv run pytest                                 # offline; no tokens, no network
+uv run python scripts/test_live_providers.py  # real providers; pass/fail + accuracy per field
+uv run python scripts/test_guidance_prompts.py # real providers; one JSON line per case, human review
 ```
 
-`tests/test_api_contract.py` checks the canonical AI routes against the AI-service OpenCollection. Backend aliases intentionally remain private from that collection and match the backend/frontend shared DTOs.
-
-## Knowledge base (guidance)
-
-`/ai/guidance` reads `knowledge/tiby.db` (gitignored build artifact) built from the PDFs listed in `knowledge/manifest.json`:
+Each answers a different question, and `prompts/README.md` picks the right one: `pytest` for *did I break the code?* (it also runs the real OCR engine over the card fixtures), `test_live_providers.py` for *is the AI working and how accurate is it?* (exits non-zero, so it can gate a deploy), `test_guidance_prompts.py` for *does this answer need a human eye?*
 
 ```bash
-uv run python scripts/ingest_knowledge.py      # rebuild after changing the manifest
-uv run python scripts/test_guidance_prompts.py # live prompt QA (real calls, manual review)
+uv run python scripts/test_live_providers.py --only extraction --repeat 3
+TIBY_EXTRACTOR=rules uv run pytest -q     # the offline baseline, not a live check
 ```
 
-Fresh clone without the index → guidance returns `answer: null`. The seed is TB-specific; verify issuer/edition before relying on any document.
+Extraction is not deterministic, so `--repeat` separates a case that is sometimes right (`UNSTABLE`) from one that never is (`FAIL`). The live runner refuses to run under `TIBY_EXTRACTOR=rules`, where a green run would be indistinguishable from a green run against the model.
+
+Two things are **not** measured: audio transcription accuracy (the samples carry no expected transcript) and OCR on real card photos (the fixtures are synthetic scans). Both are called out in `tests/fixtures/`.
+
+Run `ruff`, `mypy`, and `pytest` from `app/ai-service`, not the repo root: `pyproject.toml` sets no `[tool.ruff]`, so first-party detection follows the working directory and you get a wall of spurious `I001` errors otherwise.
+
+## Knowledge base
+
+`/ai/guidance` reads `knowledge/tiby.db`, built from the PDFs in `knowledge/manifest.json`:
+
+```bash
+uv run python scripts/ingest_knowledge.py
+```
+
+Fresh clone without the index → guidance returns `answer: null`. TB-specific; verify issuer and edition before relying on any document. See `knowledge/README.md`.
