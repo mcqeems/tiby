@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { NotFoundException, ForbiddenException } from "@nestjs/common";
-import { FamilyContactsService } from "../src/modules/treatments/services/family-contacts.service.js";
+import { FamilyContactsService } from "../src/modules/family-contacts/family-contacts.service.js";
 
 describe("FamilyContactsService Unit Tests", () => {
   let service: FamilyContactsService;

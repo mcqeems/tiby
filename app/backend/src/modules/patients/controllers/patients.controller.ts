@@ -5,7 +5,7 @@ import {
   Query,
   UseGuards,
 } from "@nestjs/common";
-import { TreatmentsService } from "../services/treatments.service.js";
+import { PatientsService } from "../services/patients.service.js";
 import { RolesGuard } from "../../../common/guards/roles.guard.js";
 import { Roles } from "../../../common/decorators/roles.decorator.js";
 import {
@@ -16,8 +16,8 @@ import {
 
 @Controller("faskes/patients")
 @UseGuards(RolesGuard)
-export class TreatmentsController {
-  constructor(private readonly treatmentsService: TreatmentsService) {}
+export class PatientsController {
+  constructor(private readonly patientsService: PatientsService) {}
 
   @Get(":id/history")
   @Roles(["NAKES"])
@@ -25,7 +25,7 @@ export class TreatmentsController {
     @Param("id") treatmentPlanId: string,
     @Query({ schema: PaginationQuerySchema }) query: PaginationQuery,
   ): Promise<PatientStatusHistoryList> {
-    return this.treatmentsService.getPatientHistory(
+    return this.patientsService.getPatientHistory(
       treatmentPlanId,
       query.page ?? 1,
       query.limit ?? 50,

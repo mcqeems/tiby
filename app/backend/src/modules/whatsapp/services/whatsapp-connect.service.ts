@@ -4,9 +4,9 @@ import { Repository } from 'typeorm';
 import { createHash, randomBytes } from 'node:crypto';
 import { WhatsappVerification } from '../entities/whatsapp-verification.entity.js';
 import { AuthUser } from '../../../auth/entities/auth-user.entity.js';
-import { FamilyContact } from '../../treatments/entities/family-contact.entity.js';
-import { TreatmentPlan } from '../../treatments/entities/treatment-plan.entity.js';
-import { PatientStatusHistory } from '../../treatments/entities/patient-status-history.entity.js';
+import { FamilyContact } from '../../family-contacts/entities/family-contact.entity.js';
+import { TreatmentPlan } from '../../patients/entities/treatment-plan.entity.js';
+import { PatientStatusHistory } from '../../patients/entities/patient-status-history.entity.js';
 import { AuditLog } from '../../audit/entities/audit-log.entity.js';
 import { WahaClientService } from './waha-client.service.js';
 import type {

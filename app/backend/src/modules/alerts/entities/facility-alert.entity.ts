@@ -7,8 +7,8 @@ import {
   JoinColumn,
   Index,
 } from "typeorm";
-import { Facility } from "./facility.entity.js";
-import { TreatmentPlan } from "../../treatments/entities/treatment-plan.entity.js";
+import { Facility } from "../../facilities/entities/facility.entity.js";
+import { TreatmentPlan } from "../../patients/entities/treatment-plan.entity.js";
 import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
 
 @Entity("facility_alerts")

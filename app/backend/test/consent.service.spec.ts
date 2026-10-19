@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { NotFoundException } from "@nestjs/common";
-import { ConsentService } from "../src/modules/onboarding/services/consent.service.js";
+import { ConsentService } from "../src/modules/consent/consent.service.js";
 
 describe("ConsentService Unit Tests", () => {
   let service: ConsentService;

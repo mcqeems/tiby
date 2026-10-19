@@ -8,7 +8,7 @@ import {
   Index,
 } from "typeorm";
 import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
-import { FamilyContact } from "../../treatments/entities/family-contact.entity.js";
+import { FamilyContact } from "../../family-contacts/entities/family-contact.entity.js";
 import { EncryptedColumnTransformer } from "../../../database/transformers/encrypted-column.transformer.js";
 
 @Index("idx_whatsapp_verifications_pending", ["phoneHash", "verificationCode"], {

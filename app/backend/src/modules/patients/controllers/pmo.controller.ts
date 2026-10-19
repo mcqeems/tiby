@@ -9,7 +9,7 @@ import {
   UnauthorizedException,
   SerializeOptions,
 } from '@nestjs/common';
-import { CheckInService } from '../services/check-in.service.js';
+import { CheckInService } from '../../check-ins/services/check-in.service.js';
 import { RolesGuard } from '../../../common/guards/roles.guard.js';
 import { ConsentGuard } from '../../../common/guards/consent.guard.js';
 import { Roles } from '../../../common/decorators/roles.decorator.js';

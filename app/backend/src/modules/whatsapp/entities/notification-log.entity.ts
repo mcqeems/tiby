@@ -7,7 +7,7 @@ import {
   JoinColumn,
   Index,
 } from "typeorm";
-import { TreatmentPlan } from "../../treatments/entities/treatment-plan.entity.js";
+import { TreatmentPlan } from "../../patients/entities/treatment-plan.entity.js";
 
 @Entity("notification_logs")
 export class NotificationLog {

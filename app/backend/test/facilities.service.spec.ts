@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { NotFoundException } from "@nestjs/common";
-import { FacilitiesService } from "../src/modules/facilities/services/facilities.service.js";
+import { AlertsService } from "../src/modules/alerts/alerts.service.js";
 
-describe("FacilitiesService Unit Tests", () => {
-  let service: FacilitiesService;
+describe("AlertsService Unit Tests", () => {
+  let service: AlertsService;
   let mockAlertRepo: any;
   let mockUserRepo: any;
 
@@ -17,7 +17,7 @@ describe("FacilitiesService Unit Tests", () => {
       findOneBy: vi.fn(),
     };
 
-    service = new FacilitiesService(mockAlertRepo, mockUserRepo);
+    service = new AlertsService(mockAlertRepo, mockUserRepo);
   });
 
   describe("markAlertRead", () => {

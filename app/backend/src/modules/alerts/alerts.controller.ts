@@ -8,10 +8,10 @@ import {
   UseGuards,
   UnauthorizedException,
 } from "@nestjs/common";
-import { FacilitiesService } from "../services/facilities.service.js";
-import { RolesGuard } from "../../../common/guards/roles.guard.js";
-import { Roles } from "../../../common/decorators/roles.decorator.js";
-import type { AuthenticatedRequest } from "../../../common/types/auth-request.type.js";
+import { AlertsService } from "./alerts.service.js";
+import { RolesGuard } from "../../common/guards/roles.guard.js";
+import { Roles } from "../../common/decorators/roles.decorator.js";
+import type { AuthenticatedRequest } from "../../common/types/auth-request.type.js";
 import {
   ListAlertsQuerySchema,
   type ListAlertsQuery,
@@ -21,8 +21,8 @@ import {
 
 @Controller("faskes/alerts")
 @UseGuards(RolesGuard)
-export class FacilitiesController {
-  constructor(private readonly facilitiesService: FacilitiesService) {}
+export class AlertsController {
+  constructor(private readonly alertsService: AlertsService) {}
 
   private extractUserId(req: AuthenticatedRequest): string {
     const userId = req.session?.user?.id ?? req.user?.id;
@@ -42,7 +42,7 @@ export class FacilitiesController {
     @Query({ schema: ListAlertsQuerySchema }) query: ListAlertsQuery,
   ): Promise<FacilityAlertList> {
     const nakesUserId = this.extractUserId(req);
-    return this.facilitiesService.listAlerts(nakesUserId, query);
+    return this.alertsService.listAlerts(nakesUserId, query);
   }
 
   @Patch(":id/read")
@@ -52,6 +52,6 @@ export class FacilitiesController {
     @Param("id") id: string,
   ): Promise<FacilityAlertDto> {
     const nakesUserId = this.extractUserId(req);
-    return this.facilitiesService.markAlertRead(id, nakesUserId);
+    return this.alertsService.markAlertRead(id, nakesUserId);
   }
 }

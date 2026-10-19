@@ -10,12 +10,15 @@ import { validateEnv } from "./config/env.schema.js";
 import { entities } from "./database/entities.js";
 import { auth } from "./auth/auth.config.js";
 import { OnboardingModule } from "./modules/onboarding/onboarding.module.js";
+import { ConsentModule } from "./modules/consent/consent.module.js";
 import { CheckInModule } from "./modules/check-ins/check-ins.module.js";
 import { PushModule } from "./modules/push/push.module.js";
-import { NotificationsModule } from "./modules/notifications/notifications.module.js";
+import { WhatsappModule } from "./modules/whatsapp/whatsapp.module.js";
 import { TicketsModule } from "./modules/tickets/tickets.module.js";
+import { AlertsModule } from "./modules/alerts/alerts.module.js";
 import { FacilitiesModule } from "./modules/facilities/facilities.module.js";
-import { TreatmentsModule } from "./modules/treatments/treatments.module.js";
+import { PatientsModule } from "./modules/patients/patients.module.js";
+import { FamilyContactsModule } from "./modules/family-contacts/family-contacts.module.js";
 import { EscalationModule } from "./modules/escalation/escalation.module.js";
 import { EducationModule } from "./modules/education/education.module.js";
 import { AuditModule } from "./modules/audit/audit.module.js";
@@ -43,12 +46,15 @@ import { UsersModule } from "./modules/users/users.module.js";
     AuthModule.forRoot({ auth }),
     AuditModule,
     OnboardingModule,
+    ConsentModule,
     CheckInModule,
     PushModule,
-    NotificationsModule,
+    WhatsappModule,
     TicketsModule,
+    AlertsModule,
     FacilitiesModule,
-    TreatmentsModule,
+    PatientsModule,
+    FamilyContactsModule,
     EscalationModule,
     EducationModule,
     UsersModule,

@@ -3,11 +3,11 @@ import { Cron, CronExpression } from "@nestjs/schedule";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, In } from "typeorm";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import { TreatmentPlan } from "../../treatments/entities/treatment-plan.entity.js";
+import { TreatmentPlan } from "../../patients/entities/treatment-plan.entity.js";
 import { DailyCheckIn } from "../../check-ins/entities/daily-check-in.entity.js";
-import { PatientStatusHistory } from "../../treatments/entities/patient-status-history.entity.js";
+import { PatientStatusHistory } from "../../patients/entities/patient-status-history.entity.js";
 import { InterventionTicket } from "../../tickets/entities/intervention-ticket.entity.js";
-import { FacilityAlert } from "../../facilities/entities/facility-alert.entity.js";
+import { FacilityAlert } from "../../alerts/entities/facility-alert.entity.js";
 import { NotificationTriggerEvent } from "../../../common/events/notification-trigger.event.js";
 
 @Injectable()

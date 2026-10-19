@@ -8,9 +8,9 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { InterventionTicket } from "../entities/intervention-ticket.entity.js";
 import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
-import { PatientStatusHistory } from "../../treatments/entities/patient-status-history.entity.js";
-import { TreatmentPlan } from "../../treatments/entities/treatment-plan.entity.js";
-import { PmoAssignment } from "../../treatments/entities/pmo-assignment.entity.js";
+import { PatientStatusHistory } from "../../patients/entities/patient-status-history.entity.js";
+import { TreatmentPlan } from "../../patients/entities/treatment-plan.entity.js";
+import { PmoAssignment } from "../../patients/entities/pmo-assignment.entity.js";
 import type {
   ListTicketsQuery,
   TicketListResponse,

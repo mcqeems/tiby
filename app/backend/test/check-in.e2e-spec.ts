@@ -7,8 +7,8 @@ import { AppModule } from "../src/app.module.js";
 import { auth } from "../src/auth/auth.config.js";
 import { AuthUser } from "../src/auth/entities/auth-user.entity.js";
 import { Facility } from "../src/modules/facilities/entities/facility.entity.js";
-import { TreatmentPlan } from "../src/modules/treatments/entities/treatment-plan.entity.js";
-import { PmoAssignment } from "../src/modules/treatments/entities/pmo-assignment.entity.js";
+import { TreatmentPlan } from "../src/modules/patients/entities/treatment-plan.entity.js";
+import { PmoAssignment } from "../src/modules/patients/entities/pmo-assignment.entity.js";
 import { InterventionTicket } from "../src/modules/tickets/entities/intervention-ticket.entity.js";
 
 describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {

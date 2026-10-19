@@ -7,7 +7,7 @@ import {
   JoinColumn,
   Index,
 } from "typeorm";
-import { TreatmentPlan } from "../../treatments/entities/treatment-plan.entity.js";
+import { TreatmentPlan } from "../../patients/entities/treatment-plan.entity.js";
 import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
 import { EncryptedColumnTransformer } from "../../../database/transformers/encrypted-column.transformer.js";
 

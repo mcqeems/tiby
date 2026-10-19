@@ -9,7 +9,7 @@ import type {
 } from "@tiby/ts-shared";
 
 @Injectable()
-export class TreatmentsService {
+export class PatientsService {
   constructor(
     @InjectRepository(PatientStatusHistory)
     private readonly historyRepo: Repository<PatientStatusHistory>,
