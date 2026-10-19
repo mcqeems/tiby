@@ -10,9 +10,12 @@ Design rules that the rest of the service relies on:
 - ``confidence`` is extraction certainty, not clinical probability.
 """
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+Confidence = Annotated[float, Field(ge=0, le=1)]
+"""A 0..1 certainty reading, kept as a reusable alias so every model agrees."""
 
 
 class CheckInRequest(BaseModel):
@@ -61,7 +64,7 @@ class CheckInResponse(BaseModel):
 
     schema_version: Literal["1.0"] = "1.0"
     extraction: Extraction
-    confidence: float = Field(ge=0, le=1)
+    confidence: Confidence
     uncertainties: list[str] = Field(default_factory=list)
 
 
@@ -75,7 +78,7 @@ class AiAudioExtractionResponse(BaseModel):
     pillsTakenCount: int | None = Field(ge=0)
     symptoms: list[str] = Field(default_factory=list)
     intentToStopOrRefuse: bool
-    extractionConfidence: float = Field(ge=0, le=1)
+    extractionConfidence: Confidence
     emotionalSentiment: str | None = None
 
 
@@ -87,7 +90,13 @@ class AudioExtractionResponse(AiAudioExtractionResponse):
 
 
 class OcrOnboardingDraft(BaseModel):
-    """Unconfirmed fields read from an onboarding card; never clinical advice."""
+    """Unconfirmed fields read from an onboarding card; never clinical advice.
+
+    ``fieldConfidence`` and ``uncertainties`` exist because a single document
+    score hides the failure mode that matters: one field read perfectly while
+    the dose was misread. A Nakes re-checks every field, but only these two
+    tell them *which* ones the engine was unsure about.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
@@ -96,8 +105,10 @@ class OcrOnboardingDraft(BaseModel):
     dailyPillQuota: int | None = Field(ge=1)
     startDate: str | None
     targetEndDate: str | None
-    confidence: float = Field(ge=0, le=1)
+    confidence: Confidence
     rawText: str
+    fieldConfidence: dict[str, Confidence] = Field(default_factory=dict)
+    uncertainties: list[str] = Field(default_factory=list)
 
 
 class GuidanceRequest(BaseModel):
