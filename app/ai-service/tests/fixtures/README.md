@@ -6,17 +6,19 @@ at all. Each set below has its own README with the detail.
 
 | Set | What it is for | Exercised by |
 | --- | --- | --- |
-| `extraction/` | Ten Indonesian check-in transcripts with the facts a correct extraction should produce. The only set with machine-checkable expectations. | `scripts/test_live_providers.py --only extraction` |
-| `guidance/` | Seven synthetic questions probing grounding and fail-closed behaviour. `expected_behavior` is review criteria in prose, not a scorable answer. | `scripts/test_guidance_prompts.py` |
-| `ocr/` | Card images, split into `layouts/` (field parser) and `photos/` (whole pipeline). | `uv run pytest tests/test_ocr.py` |
-| `audio/` | Five synthetic speech samples. **No expected facts attached — see its README.** | `scripts/test_live_providers.py --only audio` |
+| `extraction/` | Ten Indonesian check-in transcripts with the facts a correct extraction should produce. | `scripts/test_live_providers.py --only extraction` |
+| `guidance/` | Seven synthetic questions with machine-checkable `expect` blocks and a separate prose `review`. | `scripts/test_live_providers.py --only guidance` |
+| `audio/` | Five synthetic speech samples. **No expected transcription attached — see its README.** | `scripts/test_live_providers.py --only audio` |
+
+Card images are not here: they are dataset material rather than expectations,
+so they live in `../../dataset/ocr/`.
 
 ## Which one answers which question
 
 - *Is the model accurate?* → `extraction/`, scored per field, via the live
   runner. It prints a percentage.
 - *Does guidance still refuse personal dosing questions?* → the live runner's
-  `guidance` group. One hard case, exits non-zero on regression.
+  `guidance` group, now checking all seven cases against their `expect` blocks.
 - *Does the answer need a human eye?* → `guidance/` via its own runner, one
   JSON line per case with the retrieved evidence and citations attached.
 - *Did I break the parsing or the contract?* → `uv run pytest`, no credentials,

@@ -1,10 +1,11 @@
-"""Onboarding-card OCR: parsing rules, image conditioning, and real-engine reads.
+"""Onboarding-card OCR: parsing rules, and real-engine reads of the card set.
 
 The parser tests feed it rows shaped like real RapidOCR output, welded labels
 included, because the original fixtures were hand-written ideal text that the
 engine never actually produces. The engine tests run the committed card images
-through the real model; they skip when the ONNX models are not cached locally,
-because the first run downloads them and CI must not depend on that network.
+from ``dataset/ocr/`` through the real model; they skip when the ONNX models are
+not cached locally, because the first run downloads them and CI must not depend
+on that network.
 """
 
 from pathlib import Path
@@ -15,21 +16,21 @@ import pytest
 from fastapi.testclient import TestClient
 
 from tiby_ai.main import app
-from tiby_ai.onboarding_ocr.services.card_parser import (
+from tiby_ai.onboarding_ocr.card_parser import (
     OcrLine,
     parse_onboarding_lines,
     parse_onboarding_text,
     segment,
 )
-from tiby_ai.onboarding_ocr.services.ocr_service import extract_onboarding_card
+from tiby_ai.onboarding_ocr.ocr_service import extract_onboarding_card
 
-FIXTURES = Path(__file__).parent / "fixtures" / "ocr"
-LAYOUTS = FIXTURES / "layouts"
-PHOTOS = FIXTURES / "photos"
+DATASET = Path(__file__).resolve().parents[1] / "dataset" / "ocr"
+LAYOUTS = DATASET / "layouts"
+PHOTOS = DATASET / "photos"
 
 
 def read(*parts: str) -> bytes:
-    return FIXTURES.joinpath(*parts).read_bytes()
+    return DATASET.joinpath(*parts).read_bytes()
 
 
 def lines(*rows: tuple[str, float]) -> list[OcrLine]:

@@ -362,7 +362,7 @@ def test_onboarding_ocr_route_returns_a_draft(monkeypatch):
         "fieldConfidence": {},
         "uncertainties": [],
     }
-    with patch("tiby_ai.onboarding_ocr.controllers.ocr_controller.extract_onboarding_card", return_value=expected):
+    with patch("tiby_ai.onboarding_ocr.controller.extract_onboarding_card", return_value=expected):
         response = client.post(
             "/ocr/extract",
             files={"cardImage": ("card.png", b"image-bytes", "image/png")},
@@ -391,7 +391,7 @@ def test_onboarding_ocr_accepts_jpg_mime_type(monkeypatch):
         "fieldConfidence": {},
         "uncertainties": [],
     }
-    with patch("tiby_ai.onboarding_ocr.controllers.ocr_controller.extract_onboarding_card", return_value=draft):
+    with patch("tiby_ai.onboarding_ocr.controller.extract_onboarding_card", return_value=draft):
         response = client.post(
             "/ocr/extract", files={"cardImage": ("card.jpg", b"bytes", "image/jpg")}
         )
