@@ -1,8 +1,9 @@
+@import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;500&display=swap");
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fcfcfa;
+  --foreground: #2c2c2c;
 }
 
 @theme inline {
@@ -10,6 +11,20 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --color-tiby-teal-50: #F1FAF9;
+  --color-tiby-teal-100: #DDF0EE;
+  --color-tiby-teal-600: #1B9E9B;
+  --color-tiby-teal-700: #127A78;
+  --color-tiby-white: #FCFCFA;
+  --color-tiby-cream: #FAF5EA;
+  --color-tiby-ink: #2C2C2C;
+  --color-tiby-muted: #6F6F6A;
+  --color-tiby-danger: #FDF3F3;
+  --color-tiby-danger-text: #9B1C1C;
+
+  --font-heading: "Fredoka", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Nunito", ui-sans-serif, system-ui, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +37,5 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
 }
