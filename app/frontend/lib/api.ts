@@ -80,19 +80,25 @@ export const api = {
         formData.append("treatmentPlanId", treatmentPlanId);
       }
 
-      return apiFetch<AiAudioExtractionResponse>("/api/check-ins/audio-extract", {
-        method: "POST",
-        body: formData,
-      });
+      return apiFetch<AiAudioExtractionResponse>(
+        "/api/check-ins/audio-extract",
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
     },
 
     async extractText(
       payload: TextExtractRequest,
     ): Promise<AiAudioExtractionResponse> {
-      return apiFetch<AiAudioExtractionResponse>("/api/check-ins/text-extract", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
+      return apiFetch<AiAudioExtractionResponse>(
+        "/api/check-ins/text-extract",
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        },
+      );
     },
 
     async submit(dto: SubmitCheckInDto): Promise<CheckInVerdictResponse> {
@@ -112,7 +118,11 @@ export const api = {
     },
 
     async grant(
-      scopes = ["PATIENT_DATA_SHARE", "PMO_STATUS_ONLY", "STT_AUDIO_PROCESSING"],
+      scopes = [
+        "PATIENT_DATA_SHARE",
+        "PMO_STATUS_ONLY",
+        "STT_AUDIO_PROCESSING",
+      ],
       scheduleConfirmed = true,
     ): Promise<ConsentStatus> {
       return apiFetch<ConsentStatus>("/api/consent", {
@@ -188,18 +198,14 @@ export const api = {
       );
     },
 
-    async onboard(
-      dto: CreateOnboardingDto,
-    ): Promise<OnboardingCredentials> {
+    async onboard(dto: CreateOnboardingDto): Promise<OnboardingCredentials> {
       return apiFetch<OnboardingCredentials>("/api/faskes/onboarding", {
         method: "POST",
         body: JSON.stringify(dto),
       });
     },
 
-    async ocrExtract(
-      file: File | Blob,
-    ): Promise<OcrOnboardingDraft> {
+    async ocrExtract(file: File | Blob): Promise<OcrOnboardingDraft> {
       const formData = new FormData();
       formData.append("cardImage", file);
       return apiFetch<OcrOnboardingDraft>("/api/faskes/onboarding/ocr", {
@@ -279,4 +285,58 @@ export const api = {
       });
     },
   },
+  // Facilities APIs (Master Faskes untuk Admin)
+  facilities: {
+    async getAll(): Promise<FacilityItem[]> {
+      return apiFetch<FacilityItem[]>("/api/facilities", {
+        method: "GET",
+      });
+    },
+
+    async create(dto: CreateFacilityDto): Promise<FacilityItem> {
+      return apiFetch<FacilityItem>("/api/facilities", {
+        method: "POST",
+        body: JSON.stringify(dto),
+      });
+    },
+
+    async update(
+      id: string,
+      dto: Partial<CreateFacilityDto>,
+    ): Promise<FacilityItem> {
+      return apiFetch<FacilityItem>(`/api/facilities/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(dto),
+      });
+    },
+
+    async remove(id: string): Promise<{ success: boolean; message?: string }> {
+      return apiFetch(`/api/facilities/${id}`, {
+        method: "DELETE",
+      });
+    },
+  },
 };
+
+
+export interface FacilityItem {
+  id: string;
+  code: string;
+  name: string;
+  type: "PUSKESMAS" | "RUMAH_SAKIT" | "KLINIK";
+  province: string;
+  city: string;
+  address?: string;
+  phone?: string;
+  createdAt?: string;
+}
+
+export interface CreateFacilityDto {
+  code: string;
+  name: string;
+  type: "PUSKESMAS" | "RUMAH_SAKIT" | "KLINIK";
+  province: string;
+  city: string;
+  address?: string;
+  phone?: string;
+}
