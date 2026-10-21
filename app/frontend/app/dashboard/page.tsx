@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "@/lib/auth-client";
+import { useSession, type TibyUser } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -22,7 +22,7 @@ export default function DashboardRedirect() {
       router.push("/login");
       return;
     }
-    const role = ((data.user as any).role || "PASIEN").toUpperCase();
+    const role = ((data.user as TibyUser).role || "PASIEN").toUpperCase();
     router.replace(ROLE_PATH[role] ?? "/pasien");
   }, [data, isPending, router]);
 
