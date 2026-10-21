@@ -34,7 +34,7 @@ export default function RegisterPage() {
     try {
       // Gunakan email dummy jika tidak diisi, username dikirim sebagai field tambahan
       // yang di-hook oleh plugin username di server
-      const email = form.email || `${form.username}@tiby.local`;
+      const email = form.email;
 
       const signUpResult = await authClient.signUp.email({
         email,
@@ -105,7 +105,7 @@ export default function RegisterPage() {
             />
           </div>
           <div>
-            <label className="block text-sm text-tiby-ink font-body">Email (opsional)</label>
+            <label className="block text-sm text-tiby-ink font-body">Email</label>
             <input
               type="email"
               name="email"
@@ -113,6 +113,7 @@ export default function RegisterPage() {
               value={form.email}
               onChange={handleChange}
               autoComplete="email"
+              required
             />
           </div>
           <div>
