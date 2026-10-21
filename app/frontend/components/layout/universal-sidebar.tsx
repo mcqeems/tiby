@@ -127,9 +127,20 @@ export default function UniversalSidebar({
 
   const toggleCollapsed = () => setCollapsedValue(!collapsed);
 
-  const isItemActive = (href: string) =>
-    pathname === href ||
-    (href !== "/admin" && href !== "/nakes" && pathname.startsWith(href));
+  // ✅ FIX LOGIKA ACTIVE MENU
+  const isItemActive = (href: string) => {
+    // 1. Jika URL persis sama, pasti aktif
+    if (pathname === href) return true;
+
+    // 2. Daftar menu "Root" (Induk). Menu ini HANYA boleh aktif jika URL persis sama.
+    // Jangan biarkan "/pasien" aktif saat kita berada di "/pasien/check-in"
+    const rootPaths = ["/pasien", "/nakes", "/pmo", "/admin", "/faskes"];
+    if (rootPaths.includes(href)) return false;
+
+    // 3. Untuk sub-menu (misal: "/pasien/riwayat"), aktifkan jika URL berawalan sama
+    // Ditambah garis miring (/) agar "/pasien/riwayat" tidak menyalakan "/pasien/riwayat-lain"
+    return pathname.startsWith(`${href}/`);
+  };
 
   const labelCls = `overflow-hidden whitespace-nowrap transition-opacity duration-200 motion-reduce:transition-none ${
     collapsed ? "w-0 opacity-0" : "opacity-100"
