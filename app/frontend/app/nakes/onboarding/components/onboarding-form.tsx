@@ -2,12 +2,25 @@
 
 import { useState } from "react";
 import { api } from "@/lib/api";
+import { usePopup } from "@/components/ui/popup-provider";
+import PublicLoading from "@/components/ui/public-loading";
 import OnboardingSuccessCard from "./onboarding-success-card";
 import type {
   CreateOnboardingDto,
   OnboardingCredentials,
   PmoRelationship,
 } from "@tiby/ts-shared";
+import {
+  Camera,
+  UserPlus,
+  Users,
+  Search,
+  Check,
+  PhoneCall,
+  Send,
+  Pill,
+  UserCheck,
+} from "lucide-react";
 
 type PmoMode = "baru" | "existing";
 
@@ -20,6 +33,7 @@ type ExistingUser = {
 };
 
 export default function OnboardingForm() {
+  const { confirm, notify } = usePopup();
   const todayStr = new Date().toISOString().slice(0, 10);
 
   const [form, setForm] = useState<CreateOnboardingDto>({
@@ -51,16 +65,13 @@ export default function OnboardingForm() {
 
   const [includeFamily, setIncludeFamily] = useState(false);
   const [ocrLoading, setOcrLoading] = useState(false);
-  const [ocrMessage, setOcrMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [createdCredentials, setCreatedCredentials] =
     useState<OnboardingCredentials | null>(null);
 
-  // Fungsi fetch dipicu langsung saat tombol mode "existing" dipilih (Event-driven, bebas dari useEffect lint error)
   const handleSwitchToExistingPmo = async () => {
     setPmoMode("existing");
-    if (existingUsers.length > 0) return; // Jangan fetch ulang jika sudah ada datanya
+    if (existingUsers.length > 0) return;
 
     setLoadingUsers(true);
     try {
@@ -91,8 +102,6 @@ export default function OnboardingForm() {
     if (!file) return;
 
     setOcrLoading(true);
-    setOcrMessage(null);
-    setErrorMsg(null);
 
     try {
       const draft = await api.faskes.ocrExtract(file);
@@ -106,24 +115,46 @@ export default function OnboardingForm() {
         dailyPillQuota: draft.dailyPillQuota ?? prev.dailyPillQuota,
         startDate: draft.startDate || prev.startDate,
       }));
-      setOcrMessage(
-        `Data kartu berhasil diekstrak! (Akurasi: ${Math.round((draft.confidence || 0.8) * 100)}%)`,
-      );
+
+      await notify({
+        variant: "success",
+        badgeText: "Ekstraksi OCR",
+        title: "Data Kartu Berhasil Dibaca",
+        description: `Nama pasien, regimen (${draft.regimenCode || form.regimenCode}), dan dosis berhasil diisi otomatis oleh sistem.`,
+        confirmLabel: "Lanjutkan",
+      });
     } catch (err: unknown) {
-      setErrorMsg(
-        err instanceof Error
-          ? err.message
-          : "Gagal membaca teks kartu pengobatan",
-      );
+      await notify({
+        variant: "warning",
+        badgeText: "Pindai Kartu",
+        title: "Foto Tidak Terbaca Otomatis",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Pastikan foto kartu pengobatan cukup terang, atau isi kolom formulir secara manual.",
+        confirmLabel: "Isi Manual",
+      });
     } finally {
       setOcrLoading(false);
+      e.target.value = "";
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const isConfirmed = await confirm({
+      variant: "info",
+      badgeText: "Verifikasi Data",
+      title: `Terbitkan akun untuk ${form.patient.fullName}?`,
+      description: `Sistem akan membuat akun Pasien (@${form.patient.username}) dan PMO (@${form.pmo.username}) dengan regimen ${form.regimenCode} (${form.dailyPillQuota} butir per hari).`,
+      confirmLabel: "Ya, Terbitkan Akun",
+      cancelLabel: "Periksa Kembali",
+    });
+
+    if (!isConfirmed) return;
+
     setSubmitting(true);
-    setErrorMsg(null);
 
     try {
       const payload: CreateOnboardingDto = {
@@ -135,12 +166,26 @@ export default function OnboardingForm() {
       };
       const creds = await api.faskes.onboard(payload);
       setCreatedCredentials(creds);
+
+      await notify({
+        variant: "success",
+        badgeText: "Selesai",
+        title: "Akun dan Terapi Berhasil Dibuat",
+        description:
+          "Silakan salin informasi login sementara Pasien dan PMO pada kartu di layar sebelum meninggalkan halaman ini.",
+        confirmLabel: "Lihat Kredensial",
+      });
     } catch (err: unknown) {
-      setErrorMsg(
-        err instanceof Error
-          ? err.message
-          : "Gagal mendaftarkan rencana terapi pasien",
-      );
+      await notify({
+        variant: "danger",
+        badgeText: "Gagal",
+        title: "Pendaftaran Tidak Berhasil",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Terjadi kendala saat menerbitkan rencana terapi. Pastikan username belum pernah digunakan.",
+        confirmLabel: "Tutup",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -180,6 +225,13 @@ export default function OnboardingForm() {
 
   return (
     <div className="space-y-6">
+      {submitting && (
+        <PublicLoading
+          message="Menerbitkan akun dan rencana terapi pasien..."
+          fullScreen
+        />
+      )}
+
       {createdCredentials && (
         <OnboardingSuccessCard
           credentials={createdCredentials}
@@ -188,45 +240,36 @@ export default function OnboardingForm() {
       )}
 
       {/* OCR SCAN CARD UPLOAD OPTION */}
-      <div className="rounded-3xl border border-dashed border-tiby-teal-100 bg-white p-5 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h3 className="font-heading text-sm font-600 text-tiby-ink">
-              Scan / Unggah Kartu Pengobatan Pasien (OCR)
-            </h3>
-            <p className="text-xs text-tiby-muted mt-0.5">
-              Unggah foto kartu pengobatan (TB-01) untuk mengisi otomatis nama,
-              regimen, dan tanggal mulai.
-            </p>
+      {!createdCredentials && (
+        <div className="rounded-3xl border border-dashed border-tiby-teal-100 bg-white p-5 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-tiby-teal-50 text-tiby-teal-700">
+                <Camera className="w-5 h-5" />
+              </span>
+              <div>
+                <h3 className="font-heading text-sm font-semibold text-tiby-ink">
+                  Pindai Kartu Pengobatan (OCR)
+                </h3>
+                <p className="text-xs text-tiby-muted mt-0.5">
+                  Unggah foto kartu pengobatan pasien untuk mengisi formulir
+                  secara otomatis.
+                </p>
+              </div>
+            </div>
+
+            <label className="relative inline-flex items-center justify-center gap-2 rounded-full bg-tiby-teal-50 border border-tiby-teal-100 px-4 py-2 text-xs font-semibold text-tiby-teal-700 hover:bg-tiby-teal-100/60 transition cursor-pointer shrink-0">
+              <Camera className="w-3.5 h-3.5" />
+              <span>{ocrLoading ? "Mengekstrak..." : "Unggah Foto Kartu"}</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleOcrFile}
+                disabled={ocrLoading}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+            </label>
           </div>
-
-          <label className="relative inline-flex items-center justify-center rounded-full bg-tiby-teal-50 border border-tiby-teal-100 px-4 py-2 text-xs font-semibold text-tiby-teal-700 hover:bg-tiby-teal-100/60 transition cursor-pointer shrink-0">
-            {ocrLoading ? "Mengekstrak Foto..." : "Unggah Foto Kartu"}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleOcrFile}
-              disabled={ocrLoading}
-              className="absolute inset-0 opacity-0 cursor-pointer"
-            />
-          </label>
-        </div>
-        {ocrMessage && (
-          <p className="mt-2 text-xs text-tiby-teal-700 font-medium">
-            {ocrMessage}
-          </p>
-        )}
-      </div>
-
-      {errorMsg && (
-        <div className="rounded-2xl border border-red-100 bg-tiby-danger p-3 text-xs text-tiby-danger-text flex justify-between">
-          <span>{errorMsg}</span>
-          <button
-            onClick={() => setErrorMsg(null)}
-            className="font-bold cursor-pointer"
-          >
-            ✕
-          </button>
         </div>
       )}
 
@@ -234,14 +277,20 @@ export default function OnboardingForm() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* SECTION 1: DATA PASIEN */}
           <div className="rounded-3xl border border-tiby-teal-100 bg-white p-6 shadow-xs space-y-4">
-            <div className="border-b border-tiby-teal-100/60 pb-2">
-              <span className="text-[10px] font-bold text-tiby-teal-700 uppercase tracking-wider block">
-                Langkah 1
+            <div className="flex items-center gap-2.5 border-b border-tiby-teal-100/60 pb-3">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-tiby-teal-50 text-tiby-teal-700">
+                <UserCheck className="w-4 h-4" />
               </span>
-              <h3 className="font-heading text-base font-600 text-tiby-ink">
-                Data Pribadi Pasien
-              </h3>
+              <div>
+                <span className="text-[11px] font-semibold text-tiby-teal-700 block">
+                  Langkah 1 dari 3
+                </span>
+                <h3 className="font-heading text-base font-semibold text-tiby-ink">
+                  Informasi Pasien
+                </h3>
+              </div>
             </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-medium text-tiby-ink mb-1">
@@ -308,13 +357,21 @@ export default function OnboardingForm() {
           {/* SECTION 2: DATA PMO */}
           <div className="rounded-3xl border border-tiby-teal-100 bg-white p-6 shadow-xs space-y-4">
             <div className="border-b border-tiby-teal-100/60 pb-3">
-              <span className="text-[10px] font-bold text-tiby-teal-700 uppercase tracking-wider block">
-                Langkah 2
-              </span>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-1">
-                <h3 className="font-heading text-base font-600 text-tiby-ink">
-                  Pengawas Menelan Obat (PMO)
-                </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-tiby-teal-50 text-tiby-teal-700">
+                    <Users className="w-4 h-4" />
+                  </span>
+                  <div>
+                    <span className="text-[11px] font-semibold text-tiby-teal-700 block">
+                      Langkah 2 dari 3
+                    </span>
+                    <h3 className="font-heading text-base font-semibold text-tiby-ink">
+                      Pengawas Menelan Obat (PMO)
+                    </h3>
+                  </div>
+                </div>
+
                 <div className="flex items-center gap-1.5 rounded-xl bg-tiby-teal-50/70 border border-tiby-teal-100 p-1">
                   <button
                     type="button"
@@ -331,24 +388,26 @@ export default function OnboardingForm() {
                         },
                       }));
                     }}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                    className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
                       pmoMode === "baru"
                         ? "bg-white text-tiby-teal-700 shadow-sm"
                         : "text-tiby-muted"
                     }`}
                   >
-                    + Daftarkan Baru
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>Buat Baru</span>
                   </button>
                   <button
                     type="button"
                     onClick={handleSwitchToExistingPmo}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                    className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
                       pmoMode === "existing"
                         ? "bg-white text-tiby-teal-700 shadow-sm"
                         : "text-tiby-muted"
                     }`}
                   >
-                    Pilih PMO Terdaftar
+                    <Search className="w-3.5 h-3.5" />
+                    <span>Pilih Terdaftar</span>
                   </button>
                 </div>
               </div>
@@ -356,17 +415,18 @@ export default function OnboardingForm() {
 
             {pmoMode === "existing" && (
               <div className="space-y-3">
-                <input
-                  type="text"
-                  value={usersSearch}
-                  onChange={(e) => setUsersSearch(e.target.value)}
-                  placeholder="Cari nama atau username PMO..."
-                  className="w-full rounded-xl border border-tiby-teal-100 px-3.5 py-2 text-xs text-tiby-ink focus:outline-none focus:ring-2 focus:ring-tiby-teal-600"
-                />
+                <div className="relative">
+                  <Search className="w-4 h-4 text-tiby-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={usersSearch}
+                    onChange={(e) => setUsersSearch(e.target.value)}
+                    placeholder="Cari nama atau username PMO..."
+                    className="w-full rounded-xl border border-tiby-teal-100 pl-9 pr-3.5 py-2 text-xs text-tiby-ink focus:outline-none focus:ring-2 focus:ring-tiby-teal-600"
+                  />
+                </div>
                 {loadingUsers ? (
-                  <p className="text-xs text-tiby-muted py-3 text-center">
-                    Memuat daftar PMO...
-                  </p>
+                  <PublicLoading message="Memuat daftar pengawas..." />
                 ) : filteredUsers.length === 0 ? (
                   <p className="text-xs text-tiby-muted py-3 text-center">
                     Tidak ada PMO ditemukan.
@@ -391,7 +451,10 @@ export default function OnboardingForm() {
                           </p>
                         </div>
                         {selectedExistingPmo?.id === user.id && (
-                          <span className="text-xs font-bold">Dipilih</span>
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold">
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Dipilih</span>
+                          </span>
                         )}
                       </button>
                     ))}
@@ -486,14 +549,20 @@ export default function OnboardingForm() {
 
           {/* SECTION 3: RENCANA TERAPI */}
           <div className="rounded-3xl border border-tiby-teal-100 bg-white p-6 shadow-xs space-y-4">
-            <div className="border-b border-tiby-teal-100/60 pb-2">
-              <span className="text-[10px] font-bold text-tiby-teal-700 uppercase tracking-wider block">
-                Langkah 3
+            <div className="flex items-center gap-2.5 border-b border-tiby-teal-100/60 pb-3">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-tiby-teal-50 text-tiby-teal-700">
+                <Pill className="w-4 h-4" />
               </span>
-              <h3 className="font-heading text-base font-600 text-tiby-ink">
-                Rencana Terapi Obat
-              </h3>
+              <div>
+                <span className="text-[11px] font-semibold text-tiby-teal-700 block">
+                  Langkah 3 dari 3
+                </span>
+                <h3 className="font-heading text-base font-semibold text-tiby-ink">
+                  Rencana Terapi Obat
+                </h3>
+              </div>
             </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
                 <label className="block text-xs font-medium text-tiby-ink mb-1">
@@ -560,15 +629,93 @@ export default function OnboardingForm() {
             </div>
           </div>
 
+          {/* SECTION 4: KONTAK DARURAT OPSIONAL */}
+          <div className="rounded-3xl border border-tiby-teal-100 bg-white p-6 shadow-xs space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-tiby-teal-50 text-tiby-teal-700">
+                  <PhoneCall className="w-4 h-4" />
+                </span>
+                <div>
+                  <h3 className="font-heading text-sm font-semibold text-tiby-ink">
+                    Kontak Darurat Tambahan (Opsional)
+                  </h3>
+                  <p className="text-xs text-tiby-muted">
+                    Dihubungi otomatis oleh sistem jika pasien memerlukan
+                    eskalasi darurat.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIncludeFamily(!includeFamily)}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition cursor-pointer shrink-0 ${
+                  includeFamily
+                    ? "bg-tiby-teal-600 text-white"
+                    : "bg-white border border-tiby-teal-100 text-tiby-muted hover:text-tiby-ink"
+                }`}
+              >
+                {includeFamily ? "Diaktifkan" : "+ Tambahkan"}
+              </button>
+            </div>
+
+            {includeFamily && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div>
+                  <label className="block text-xs font-medium text-tiby-ink mb-1">
+                    Nama Kontak Darurat
+                  </label>
+                  <input
+                    type="text"
+                    value={form.familyContact?.fullName || ""}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        familyContact: {
+                          fullName: e.target.value,
+                          whatsappNumber:
+                            form.familyContact?.whatsappNumber || "",
+                          notifyOnEscalation: true,
+                        },
+                      })
+                    }
+                    placeholder="cth: Ibu Kandung"
+                    className="w-full rounded-xl border border-tiby-teal-100 px-3.5 py-2 text-xs text-tiby-ink focus:outline-none focus:ring-2 focus:ring-tiby-teal-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-tiby-ink mb-1">
+                    Nomor WhatsApp Darurat
+                  </label>
+                  <input
+                    type="tel"
+                    value={form.familyContact?.whatsappNumber || ""}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        familyContact: {
+                          fullName: form.familyContact?.fullName || "",
+                          whatsappNumber: e.target.value,
+                          notifyOnEscalation: true,
+                        },
+                      })
+                    }
+                    placeholder="cth: 08129876543"
+                    className="w-full rounded-xl border border-tiby-teal-100 px-3.5 py-2 text-xs text-tiby-ink focus:outline-none focus:ring-2 focus:ring-tiby-teal-600"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="flex justify-end">
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-full bg-tiby-teal-600 px-8 py-3 text-sm font-semibold text-white shadow-md hover:bg-tiby-teal-700 transition disabled:opacity-50 cursor-pointer"
+              className="inline-flex items-center gap-2 rounded-xl bg-tiby-teal-600 px-6 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-tiby-teal-700 transition disabled:opacity-50 cursor-pointer"
             >
-              {submitting
-                ? "Menerbitkan Rencana Terapi..."
-                : "Simpan & Terbitkan Akun"}
+              <Send className="w-3.5 h-3.5" />
+              <span>Simpan & Terbitkan Akun</span>
             </button>
           </div>
         </form>
