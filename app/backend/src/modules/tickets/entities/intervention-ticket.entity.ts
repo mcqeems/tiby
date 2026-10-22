@@ -8,7 +8,7 @@ import {
   Index,
 } from "typeorm";
 import { TreatmentPlan } from "../../patients/entities/treatment-plan.entity.js";
-import { Facility } from "../../../entities/facility.entity.js";
+import { Facility } from "../../facilities/entities/facilities.entity.js";
 import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
 
 @Entity("intervention_tickets")

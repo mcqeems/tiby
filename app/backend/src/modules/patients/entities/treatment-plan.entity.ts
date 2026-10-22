@@ -9,7 +9,7 @@ import {
   Index,
 } from "typeorm";
 import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
-import { Facility } from "../../../entities/facility.entity.js";
+import { Facility } from "../../facilities/entities/facilities.entity.js";
 
 @Index("idx_treatment_plans_triage", ["facilityId", "patientState", "riskScore"])
 @Entity("treatment_plans")
