@@ -25,17 +25,14 @@ export interface RiskSortedPatientItem {
   todayCheckInLocked: boolean;
   whatsappVerified: boolean;
   startDate?: string;
-  // Variasi penamaan PMO dari backend
-  pmoName?: string;
-  pmoFullName?: string;
-  pmoUsername?: string;
-  pmoWhatsapp?: string;
-  pmo?: {
-    fullName?: string;
-    username?: string;
-    whatsappNumber?: string;
-    relationship?: string;
-  };
+  pmo: {
+    userId: string;
+    fullName: string;
+    username: string;
+    whatsappNumber: string | null;
+    relationship: string;
+    isPrimary: boolean;
+  } | null;
 }
 
 export interface PatientStatusHistoryItem {

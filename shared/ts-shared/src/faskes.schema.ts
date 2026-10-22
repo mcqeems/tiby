@@ -19,7 +19,7 @@ export const ListPatientsQuerySchema = PaginationQuerySchema.extend({
 export type ListPatientsQuery = z.infer<typeof ListPatientsQuerySchema>;
 
 export const RiskSortedPatientItemSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   patientUserId: z.string(),
   patientName: z.string(),
   username: z.string(),
@@ -36,6 +36,16 @@ export const RiskSortedPatientItemSchema = z.object({
   targetEndDate: z.string(),
   whatsappVerified: z.boolean(),
   pushSubscribed: z.boolean(),
+  pmo: z
+    .object({
+      userId: z.string(),
+      fullName: z.string(),
+      username: z.string(),
+      whatsappNumber: z.string().nullable(),
+      relationship: z.string(),
+      isPrimary: z.boolean(),
+    })
+    .nullable(),
 });
 export type RiskSortedPatientItem = z.infer<typeof RiskSortedPatientItemSchema>;
 
@@ -54,7 +64,7 @@ export const UpdatePatientStateSchema = z.object({
 export type UpdatePatientStateDto = z.infer<typeof UpdatePatientStateSchema>;
 
 export const TreatmentPlanSummarySchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   patientUserId: z.string(),
   patientState: PatientStateSchema,
   phase: TreatmentPhaseSchema,
@@ -67,8 +77,8 @@ export const TreatmentPlanSummarySchema = z.object({
 export type TreatmentPlanSummary = z.infer<typeof TreatmentPlanSummarySchema>;
 
 export const PatientStatusHistoryItemSchema = z.object({
-  id: z.string().uuid(),
-  treatmentPlanId: z.string().uuid(),
+  id: z.uuid(),
+  treatmentPlanId: z.uuid(),
   eventType: PatientStatusEventTypeSchema,
   previousState: z.string().nullable(),
   newState: z.string().nullable(),
@@ -79,7 +89,9 @@ export const PatientStatusHistoryItemSchema = z.object({
   metadata: z.record(z.string(), z.any()).nullable(),
   createdAt: z.string(),
 });
-export type PatientStatusHistoryItem = z.infer<typeof PatientStatusHistoryItemSchema>;
+export type PatientStatusHistoryItem = z.infer<
+  typeof PatientStatusHistoryItemSchema
+>;
 
 export const PatientStatusHistoryListSchema = z.object({
   items: z.array(PatientStatusHistoryItemSchema),
@@ -87,4 +99,6 @@ export const PatientStatusHistoryListSchema = z.object({
   page: z.number(),
   limit: z.number(),
 });
-export type PatientStatusHistoryList = z.infer<typeof PatientStatusHistoryListSchema>;
+export type PatientStatusHistoryList = z.infer<
+  typeof PatientStatusHistoryListSchema
+>;

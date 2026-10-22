@@ -30,6 +30,14 @@ export interface RiskSortedPatientItem {
   targetEndDate: string;
   whatsappVerified: boolean;
   pushSubscribed: boolean;
+  pmo: {
+    userId: string;
+    fullName: string;
+    username: string;
+    whatsappNumber: string | null;
+    relationship: string;
+    isPrimary: boolean;
+  } | null;
 }
 
 // --- Tipe untuk Tiket (Tickets) ---

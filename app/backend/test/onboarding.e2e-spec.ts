@@ -25,6 +25,7 @@ describe("Phase 2: Auth, Consent, and Faskes Onboarding (e2e)", () => {
     treatmentPlanId: string;
     userId: string;
   };
+  let pmoUsername: string;
   let patientCookie: string[];
 
   beforeAll(async () => {
@@ -93,7 +94,7 @@ describe("Phase 2: Auth, Consent, and Faskes Onboarding (e2e)", () => {
   it("1. Nakes onboards Patient + PMO in under 1 minute via POST /api/faskes/onboarding", async () => {
     const timestamp = Date.now();
     const patientUsername = `pasien_${timestamp}`;
-    const pmoUsername = `pmo_${timestamp}`;
+    pmoUsername = `pmo_${timestamp}`;
 
     const onboardingPayload = {
       patient: {
@@ -228,6 +229,24 @@ describe("Phase 2: Auth, Consent, and Faskes Onboarding (e2e)", () => {
     expect(targetPatient).toBeDefined();
     expect(targetPatient.username).toBe(patientCredentials.username);
     expect(targetPatient.patientState).toBe("DIPANTAU_TERBATAS");
+    expect(targetPatient.pmo).toMatchObject({
+      username: pmoUsername,
+      fullName: "Sri Wahyuni",
+      relationship: "KELUARGA",
+      isPrimary: true,
+    });
+    expect(targetPatient.pmo.userId).toBeDefined();
+  });
+
+  it("5b. Nakes can search patients by assigned PMO name", async () => {
+    const res = await request(app.getHttpServer())
+      .get("/api/faskes/patients")
+      .query({ search: pmoUsername })
+      .set("Cookie", nakesCookie);
+
+    expect(res.status).toBe(200);
+    const ids = res.body.items.map((p: any) => p.id);
+    expect(ids).toContain(patientCredentials.treatmentPlanId);
   });
 
   it("6. Nakes requests OCR draft via POST /api/faskes/onboarding/ocr", async () => {

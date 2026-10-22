@@ -1,13 +1,13 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import { TreatmentPlan } from "../entities/treatment-plan.entity.js";
-import { PatientStatusHistory } from "../entities/patient-status-history.entity.js";
-import { PmoAssignment } from "../entities/pmo-assignment.entity.js";
-import { DailyCheckIn } from "../../check-ins/entities/daily-check-in.entity.js";
-import { SafetyEvaluation } from "../../internal/rule-engine/entities/safety-evaluation.entity.js";
-import { PushSubscription } from "../../push/entities/push-subscription.entity.js";
-import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { In, Repository } from 'typeorm';
+import { TreatmentPlan } from '../entities/treatment-plan.entity.js';
+import { PatientStatusHistory } from '../entities/patient-status-history.entity.js';
+import { PmoAssignment } from '../entities/pmo-assignment.entity.js';
+import { DailyCheckIn } from '../../check-ins/entities/daily-check-in.entity.js';
+import { SafetyEvaluation } from '../../internal/rule-engine/entities/safety-evaluation.entity.js';
+import { PushSubscription } from '../../push/entities/push-subscription.entity.js';
+import { AuthUser } from '../../../auth/entities/auth-user.entity.js';
 import type {
   PatientStatusHistoryList,
   PatientStatusHistoryItem,
@@ -21,7 +21,7 @@ import type {
   CreatePmoFollowUpDto,
   PmoFollowUpResponse,
   SafetyVerdict,
-} from "@tiby/ts-shared";
+} from '@tiby/ts-shared';
 
 @Injectable()
 export class PatientsService {
@@ -49,7 +49,7 @@ export class PatientsService {
   ): Promise<PatientStatusHistoryList> {
     const [records, total] = await this.historyRepo.findAndCount({
       where: { treatmentPlanId },
-      order: { createdAt: "DESC" },
+      order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
     });
@@ -84,37 +84,63 @@ export class PatientsService {
     const facilityId = nakes?.facilityId;
 
     const qb = this.planRepo
-      .createQueryBuilder("plan")
-      .leftJoinAndSelect("plan.patientUser", "patient")
-      .where("1=1");
+      .createQueryBuilder('plan')
+      .leftJoinAndSelect('plan.patientUser', 'patient');
 
     if (facilityId) {
-      qb.andWhere("plan.facilityId = :facilityId", { facilityId });
+      qb.andWhere('plan.facilityId = :facilityId', { facilityId });
     }
 
     if (query.state) {
-      qb.andWhere("plan.patientState = :state", { state: query.state });
+      qb.andWhere('plan.patientState = :state', { state: query.state });
     }
 
     if (query.phase) {
-      qb.andWhere("plan.phase = :phase", { phase: query.phase });
+      qb.andWhere('plan.phase = :phase', { phase: query.phase });
     }
 
     if (query.search) {
-      qb.andWhere("(patient.name ILIKE :search OR patient.username ILIKE :search)", {
-        search: `%${query.search}%`,
-      });
+      qb.andWhere(
+        `(patient.name ILIKE :search
+          OR patient.username ILIKE :search
+          OR EXISTS (
+            SELECT 1 FROM pmo_assignments search_pmo
+            JOIN users search_pmo_user ON search_pmo_user.id = search_pmo.pmo_user_id
+            WHERE search_pmo.treatment_plan_id = plan.id
+              AND search_pmo.active = true
+              AND (search_pmo_user.name ILIKE :search OR search_pmo_user.username ILIKE :search)
+          ))`,
+        {
+          search: `%${query.search}%`,
+        },
+      );
     }
 
-    qb.orderBy("plan.riskScore", "DESC")
-      .addOrderBy("plan.consecutiveSilenceDays", "DESC")
-      .addOrderBy("plan.createdAt", "DESC");
+    qb.orderBy('plan.riskScore', 'DESC')
+      .addOrderBy('plan.consecutiveSilenceDays', 'DESC')
+      .addOrderBy('plan.createdAt', 'DESC');
 
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     qb.skip((page - 1) * limit).take(limit);
 
     const [plans, total] = await qb.getManyAndCount();
+
+    const planIds = plans.map((p) => p.id);
+    const assignments = planIds.length
+      ? await this.pmoRepo.find({
+          where: { treatmentPlanId: In(planIds), active: true },
+          relations: { pmoUser: true },
+        })
+      : [];
+
+    const pmoByPlan = new Map<string, PmoAssignment>();
+    for (const a of assignments) {
+      const current = pmoByPlan.get(a.treatmentPlanId);
+      if (!current || (a.isPrimary && !current.isPrimary)) {
+        pmoByPlan.set(a.treatmentPlanId, a);
+      }
+    }
 
     const todayStr = new Date().toISOString().slice(0, 10);
 
@@ -130,16 +156,20 @@ export class PatientsService {
 
         const lastCheckIn = await this.checkInRepo.findOne({
           where: { treatmentPlanId: p.id, isDoseFulfilled: true },
-          order: { checkInDate: "DESC" },
+          order: { checkInDate: 'DESC' },
         });
 
-        const pushCount = await this.pushRepo.countBy({ userId: p.patientUserId });
+        const pushCount = await this.pushRepo.countBy({
+          userId: p.patientUserId,
+        });
+
+        const pmo = pmoByPlan.get(p.id);
 
         return {
           id: p.id,
           patientUserId: p.patientUserId,
-          patientName: p.patientUser?.name || "Pasien",
-          username: p.patientUser?.username || "",
+          patientName: p.patientUser?.name || 'Pasien',
+          username: p.patientUser?.username || '',
           patientState: p.patientState as PatientState,
           phase: p.phase as TreatmentPhase,
           regimenCode: p.regimenCode,
@@ -153,6 +183,16 @@ export class PatientsService {
           targetEndDate: p.targetEndDate,
           whatsappVerified: Boolean(p.patientUser?.whatsappVerified),
           pushSubscribed: pushCount > 0,
+          pmo: pmo
+            ? {
+                userId: pmo.pmoUserId,
+                fullName: pmo.pmoUser?.name || "PMO",
+                username: pmo.pmoUser?.username || "",
+                whatsappNumber: pmo.pmoUser?.whatsappEncrypted ?? null,
+                relationship: pmo.relationship,
+                isPrimary: pmo.isPrimary,
+              }
+            : null,
         };
       }),
     );
@@ -190,7 +230,7 @@ export class PatientsService {
 
         const latestCheckIn = await this.checkInRepo.findOne({
           where: { treatmentPlanId: plan.id, checkInDate: todayStr },
-          order: { attemptNumber: "DESC" },
+          order: { attemptNumber: 'DESC' },
         });
 
         let todayVerdict: SafetyVerdict | null = null;
@@ -198,17 +238,17 @@ export class PatientsService {
           const ev = await this.evalRepo.findOneBy({
             checkInId: lockedCheckIn.id,
           });
-          todayVerdict = (ev?.verdict as SafetyVerdict) ?? "TERKENDALI";
+          todayVerdict = (ev?.verdict as SafetyVerdict) ?? 'TERKENDALI';
         } else if (latestCheckIn) {
           const ev = await this.evalRepo.findOneBy({
             checkInId: latestCheckIn.id,
           });
-          todayVerdict = (ev?.verdict as SafetyVerdict) ?? "PERLU_PERHATIAN";
+          todayVerdict = (ev?.verdict as SafetyVerdict) ?? 'PERLU_PERHATIAN';
         }
 
         return {
           treatmentPlanId: plan.id,
-          patientName: plan.patientUser?.name || "Pasien",
+          patientName: plan.patientUser?.name || 'Pasien',
           isLockedToday: Boolean(lockedCheckIn),
           todayVerdict,
           currentStreak: plan.currentStreak,
@@ -236,8 +276,8 @@ export class PatientsService {
     }
     if (!plan) {
       throw new NotFoundException({
-        code: "NOT_FOUND",
-        message: "Treatment plan not found for patient",
+        code: 'NOT_FOUND',
+        message: 'Treatment plan not found for patient',
       });
     }
 
@@ -246,21 +286,21 @@ export class PatientsService {
     });
     if (!assignment) {
       throw new NotFoundException({
-        code: "NOT_FOUND",
-        message: "PMO is not assigned to this patient",
+        code: 'NOT_FOUND',
+        message: 'PMO is not assigned to this patient',
       });
     }
 
     const history = await this.historyRepo.save(
       this.historyRepo.create({
         treatmentPlanId: plan.id,
-        eventType: "PMO_OUTREACH",
+        eventType: 'PMO_OUTREACH',
         previousState: plan.patientState,
         newState: plan.patientState,
         previousStreak: plan.currentStreak,
         newStreak: plan.currentStreak,
         actorUserId: pmoUserId,
-        actorRole: "PMO",
+        actorRole: 'PMO',
         reasonOrSummary: dto.notes,
         metadataJson: { actionTaken: dto.actionTaken },
       }),

@@ -198,6 +198,7 @@ export default function PatientsTable() {
                   <th className="px-4 py-3.5">Fase & Regimen</th>
                   <th className="px-4 py-3.5">Check-In Hari Ini</th>
                   <th className="px-4 py-3.5">Streak</th>
+                  <th className="px-4 py-3.5">PMO</th>
                   <th className="px-4 py-3.5">Skor Risiko</th>
                   <th className="px-5 py-3.5 text-right">Aksi</th>
                 </tr>
@@ -249,6 +250,22 @@ export default function PatientsTable() {
                           <p className="text-[10px] text-red-600 font-medium mt-0.5">
                             Sunyi {p.consecutiveSilenceDays} hari
                           </p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        {p.pmo ? (
+                          <>
+                            <p className="font-medium text-tiby-ink">
+                              {p.pmo.fullName}
+                            </p>
+                            <p className="text-[11px] text-tiby-muted font-mono">
+                              @{p.pmo.username} · {p.pmo.relationship}
+                            </p>
+                          </>
+                        ) : (
+                          <span className="text-[11px] text-tiby-muted">
+                            Belum ada PMO
+                          </span>
                         )}
                       </td>
                       <td className="px-4 py-3.5">
