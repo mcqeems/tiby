@@ -1,7 +1,9 @@
-"use client";
-
-import FacilitiesManager from "./components/facilities-manager";
+import FacilityManager from "./components/facility-manager";
 
 export default function AdminFacilitiesPage() {
-  return <FacilitiesManager />;
+  return (
+    <div className="max-w-5xl mx-auto pb-20">
+      <FacilityManager />
+    </div>
+  );
 }
