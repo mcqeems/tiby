@@ -1,0 +1,63 @@
+info:
+  name: Get Facilities by Id (api/facilities/:id) [ALL]
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/facilities/:id"
+  params:
+    - name: id
+      value: e0d9c295-b2c6-4561-b879-349df787d033
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Get Facilities by Id (200)
+    request:
+      url: "{{baseUrl}}/api/facilities/:id"
+      method: GET
+      params:
+        - name: id
+          value: e0d9c295-b2c6-4561-b879-349df787d033
+          type: path
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "200"
+        - name: etag
+          value: W/"c8-qL0PyhoFMXyVIzuPCc/0knzSkVc"
+        - name: date
+          value: Thu, 22 Oct 2026 14:02:12 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            "id": "e0d9c295-b2c6-4561-b879-349df787d033",
+            "code": "FASKES-W5-1792628278670",
+            "name": "Puskesmas Gambir",
+            "district": "Jakarta Pusat",
+            "emergencyPhone": "021-123456",
+            "createdAt": "2026-10-22T00:17:58.929Z"
+          }

@@ -1,0 +1,1657 @@
+info:
+  name: Get Facilities (api/facilities) [ALL]
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/facilities"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Get Facilities (200)
+    request:
+      url: "{{baseUrl}}/api/facilities"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "41180"
+        - name: etag
+          value: W/"a0dc-bKsseZPJGxW1nX+sxuoqpo4HQeY"
+        - name: date
+          value: Thu, 22 Oct 2026 13:56:09 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          [
+            {
+              "id": "e0d9c295-b2c6-4561-b879-349df787d033",
+              "code": "FASKES-W5-1792628278670",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T00:17:58.929Z"
+            },
+            {
+              "id": "a088d126-ac88-46a9-a2f9-cfc3b8b7ed39",
+              "code": "FASKES-W5-1792630897170",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T01:01:37.434Z"
+            },
+            {
+              "id": "b80033ad-4f2d-4821-8ed0-483a1727c573",
+              "code": "FASKES-W5-1792289940801",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-18T02:19:01.283Z"
+            },
+            {
+              "id": "5455fe42-e008-4372-87bf-3c4bd519e595",
+              "code": "FASKES-W5-1792636322814",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T02:32:03.086Z"
+            },
+            {
+              "id": "816e01c3-e75b-4b01-b5c3-4db812dbb2bf",
+              "code": "FASKES-W5-1792210217336",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-17T04:10:17.493Z"
+            },
+            {
+              "id": "61750017-ae37-4b29-a801-146a66c2ef3d",
+              "code": "FASKES-W5-1792227843326",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-17T09:04:03.567Z"
+            },
+            {
+              "id": "259c88cf-aeed-4da2-84a0-12ff1aac7f8a",
+              "code": "FASKES-W5-1792637974355",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T02:59:34.632Z"
+            },
+            {
+              "id": "1bdec539-d914-47c8-9c68-9ac3a1e46c93",
+              "code": "FASKES-W5-1792628104848",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T00:15:05.076Z"
+            },
+            {
+              "id": "1356e5c0-a358-49fa-9dea-23d77b30cf55",
+              "code": "FASKES-W5-1792630123457",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T00:48:43.614Z"
+            },
+            {
+              "id": "8106dea6-4cd4-4fe3-bb3a-66a634496030",
+              "code": "FASKES-W5-1792633637828",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T01:47:18.096Z"
+            },
+            {
+              "id": "61a4f981-2f27-4f63-bfe1-18de74836b47",
+              "code": "FASKES-W5-1792219690754",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-17T06:48:11.110Z"
+            },
+            {
+              "id": "460ec56e-666e-42bc-a899-c6af64407d5e",
+              "code": "FASKES-W5-1792389311587",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-19T05:55:11.819Z"
+            },
+            {
+              "id": "9d3e3610-8b94-4c49-bc29-855b9019b1eb",
+              "code": "FASKES-W5-1792384350622",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-19T04:32:30.920Z"
+            },
+            {
+              "id": "a06ef99d-f452-4e6a-861e-fe6b89534df2",
+              "code": "FASKES-W5-1792380414455",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-19T03:26:54.744Z"
+            },
+            {
+              "id": "49b74789-0fe4-4df9-9c8c-2b986d935262",
+              "code": "FASKES-W5-1792630069380",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T00:47:49.632Z"
+            },
+            {
+              "id": "c6bd7f2e-10dc-4689-a6e2-ed742add8faf",
+              "code": "FASKES-W5-1792630208190",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T00:50:08.347Z"
+            },
+            {
+              "id": "da2c00df-1860-41dd-b3a6-7c7b27aed99b",
+              "code": "FASKES-W5-1792227743647",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-17T09:02:24.034Z"
+            },
+            {
+              "id": "63575488-a230-429b-80da-41355b125d38",
+              "code": "FASKES-W5-1792210187070",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-17T04:09:47.236Z"
+            },
+            {
+              "id": "2c03b7c4-a4ab-4cd2-9545-00aafcb79da1",
+              "code": "FASKES-W5-1792219009229",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-17T06:36:49.510Z"
+            },
+            {
+              "id": "e5b25fde-3fe3-4372-ae7b-1c0d4d2974c5",
+              "code": "FASKES-W5-1792379329741",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-19T03:08:50.061Z"
+            },
+            {
+              "id": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+              "code": "FASKES-DEV-001",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-2233-4455",
+              "createdAt": "2026-10-17T04:07:19.206Z"
+            },
+            {
+              "id": "7df31d01-4cd9-48af-9275-c4b339c32c92",
+              "code": "FASKES-W5-1792629462044",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T00:37:42.216Z"
+            },
+            {
+              "id": "1c49b8a9-9e66-4ff1-afbe-958609cf00fa",
+              "code": "FASKES-W5-1792630247340",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T00:50:47.503Z"
+            },
+            {
+              "id": "95bc8e1d-740b-4dac-ad52-b1225fdc7469",
+              "code": "FASKES-W5-1792350488961",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-18T19:08:09.227Z"
+            },
+            {
+              "id": "83f6468d-3755-4b59-a063-ed771da616a4",
+              "code": "FASKES-W5-1792309034082",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-18T07:37:14.354Z"
+            },
+            {
+              "id": "69c905fc-8d19-488b-ac2f-91e48e4d4a94",
+              "code": "FASKES-W5-1792634917663",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T02:08:37.830Z"
+            },
+            {
+              "id": "57b9c875-3e98-410a-8644-bc9c5334d0e4",
+              "code": "FASKES-W5-1792308935312",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-18T07:35:35.577Z"
+            },
+            {
+              "id": "0e933511-53da-4da0-82cc-c2ad04b03c9e",
+              "code": "FASKES-W5-1792307174165",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-18T07:06:14.476Z"
+            },
+            {
+              "id": "d2b7f7c2-b684-4c4c-aea2-646c0291316a",
+              "code": "FASKES-W5-1792307103583",
+              "name": "Puskesmas Gambir",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-18T07:05:03.853Z"
+            },
+            {
+              "id": "87910d3a-1f0d-44d0-bd82-1b12c1aebf87",
+              "code": "FASKES-FC-1792630066245",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-22T00:47:46.523Z"
+            },
+            {
+              "id": "de9a935c-2085-40cf-885c-4d6d3726efba",
+              "code": "FASKES-FC-1792630078712",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-22T00:47:58.949Z"
+            },
+            {
+              "id": "b681f933-f69b-47d2-a423-0a04cc728ed0",
+              "code": "FASKES-FC-1792630109699",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-22T00:48:29.864Z"
+            },
+            {
+              "id": "2849b12e-9153-47a6-a425-9be81b9c375e",
+              "code": "FASKES-FC-1792630206158",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-22T00:50:06.317Z"
+            },
+            {
+              "id": "db037277-66af-4bd3-acfd-4566d976ebd2",
+              "code": "FASKES-FC-1792630245350",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-22T00:50:45.505Z"
+            },
+            {
+              "id": "51f210db-75f0-4ca9-a907-feaf3fd76aa9",
+              "code": "FASKES-FC-1792630893894",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-22T01:01:34.161Z"
+            },
+            {
+              "id": "31234143-c542-48f3-86e7-bb3684faca20",
+              "code": "FASKES-FC-1792636319389",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-22T02:31:59.683Z"
+            },
+            {
+              "id": "db7669a3-af03-4273-8732-68e643d4799a",
+              "code": "FASKES-FC-1792308981380",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-18T07:36:21.567Z"
+            },
+            {
+              "id": "64c647b6-9b8a-45dc-b4b1-acc9c9bd61e5",
+              "code": "FASKES-FC-1792309030797",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-18T07:37:11.062Z"
+            },
+            {
+              "id": "7db7e48d-bf67-4334-8a58-a4fea9754885",
+              "code": "FASKES-FC-1792634913084",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-22T02:08:33.282Z"
+            },
+            {
+              "id": "5c72db3c-523f-41e1-a3ac-dab2bccc0ffd",
+              "code": "FASKES-FC-1792350482185",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-18T19:08:02.466Z"
+            },
+            {
+              "id": "5a1d6d9e-1934-4e7e-90d6-9291e61ab88a",
+              "code": "FASKES-FC-1792379319446",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-19T03:08:39.705Z"
+            },
+            {
+              "id": "28335a3e-f92b-4a8c-b805-07434ede59e9",
+              "code": "FASKES-FC-1792380410665",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-19T03:26:50.999Z"
+            },
+            {
+              "id": "d563ee97-3e8f-4feb-ad48-8d927e99de6e",
+              "code": "FASKES-FC-1792384342678",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-19T04:32:22.995Z"
+            },
+            {
+              "id": "4b4a29ca-3c72-4f9c-8f74-69ec7db62613",
+              "code": "FASKES-FC-1792389305396",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-19T05:55:05.652Z"
+            },
+            {
+              "id": "4bade0d5-3503-4bd8-b447-528bbdf23b5e",
+              "code": "FASKES-FC-1792628099438",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-22T00:14:59.680Z"
+            },
+            {
+              "id": "4e1b65b7-770b-4a54-ab44-7a6a5de11e7b",
+              "code": "FASKES-FC-1792633634564",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-22T01:47:14.830Z"
+            },
+            {
+              "id": "e6c84f23-1dcf-4df2-8b54-927fa90e7126",
+              "code": "FASKES-FC-1792628272362",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-22T00:17:52.704Z"
+            },
+            {
+              "id": "82d2e910-484f-418d-a39d-34b31b97a0d2",
+              "code": "FASKES-FC-1792637971017",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-22T02:59:31.299Z"
+            },
+            {
+              "id": "65c3edc6-cfe8-470f-8a3a-4d85e807ac0d",
+              "code": "FASKES-FC-1792629457704",
+              "name": "Puskesmas Gambir Family",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-999-888",
+              "createdAt": "2026-10-22T00:37:37.874Z"
+            },
+            {
+              "id": "3cc90dce-afb7-4160-a84d-17335c168251",
+              "code": "FASKES-E2E-1792210185232",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-17T04:09:45.234Z"
+            },
+            {
+              "id": "4d56050a-77db-4b7c-81b3-45e926e83f82",
+              "code": "FASKES-E2E-1792636304683",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-22T02:31:44.687Z"
+            },
+            {
+              "id": "7587eddb-962e-468a-845b-3d5a3cacbb4a",
+              "code": "FASKES-E2E-1792307170982",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-18T07:06:10.986Z"
+            },
+            {
+              "id": "9e42346c-1143-4359-a341-b7d7b126d53c",
+              "code": "FASKES-E2E-1792630887147",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-22T01:01:27.150Z"
+            },
+            {
+              "id": "e80fedfc-7f28-4340-9cb2-6a11c4927362",
+              "code": "FASKES-E2E-1792308932188",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-18T07:35:32.192Z"
+            },
+            {
+              "id": "ea469c62-762a-4a53-8137-4e9c8a84fb04",
+              "code": "FASKES-E2E-1792630063519",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-22T00:47:43.522Z"
+            },
+            {
+              "id": "0f4c4c7f-baab-4bb3-942f-dafdfb0afc60",
+              "code": "FASKES-E2E-1792309027763",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-18T07:37:07.766Z"
+            },
+            {
+              "id": "0e3d7593-8659-4045-b235-ca0ef343a437",
+              "code": "FASKES-E2E-1792219005206",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-17T06:36:45.211Z"
+            },
+            {
+              "id": "60bc9df4-4a31-45fc-88b0-8a146f94a1ca",
+              "code": "FASKES-E2E-1792629453176",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-22T00:37:33.179Z"
+            },
+            {
+              "id": "0a8d53e6-b9cf-4787-918b-32cd2f2095d1",
+              "code": "FASKES-E2E-1792350479157",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-18T19:07:59.161Z"
+            },
+            {
+              "id": "0ec065ea-19f7-4b69-9b18-6a823da634bb",
+              "code": "FASKES-E2E-1792630835552",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-22T01:00:35.557Z"
+            },
+            {
+              "id": "6333da50-b41e-42d4-ae0f-30d9dda2db1f",
+              "code": "FASKES-E2E-1792630243198",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-22T00:50:43.200Z"
+            },
+            {
+              "id": "6d28fc79-8a97-4405-bf5d-9f0ff358ab33",
+              "code": "FASKES-E2E-1792379323197",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-19T03:08:43.201Z"
+            },
+            {
+              "id": "b73cbc0e-289a-444f-aed6-d68b38bebb2d",
+              "code": "FASKES-E2E-1792634907467",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-22T02:08:27.471Z"
+            },
+            {
+              "id": "63429804-5e20-4418-bca6-0c9da3a74584",
+              "code": "FASKES-E2E-1792637964388",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-22T02:59:24.392Z"
+            },
+            {
+              "id": "a5f5fd83-8528-40c6-a3fa-9e358bb14845",
+              "code": "FASKES-E2E-1792380407414",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-19T03:26:47.418Z"
+            },
+            {
+              "id": "2d028b9f-a5b6-4f08-a1a4-7e14d3811057",
+              "code": "FASKES-E2E-1792384347084",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-19T04:32:27.089Z"
+            },
+            {
+              "id": "9e1da16d-8263-4918-8842-8649cf109f65",
+              "code": "FASKES-E2E-1792630202236",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-22T00:50:02.238Z"
+            },
+            {
+              "id": "3b791f17-1240-4c98-8430-9b74d498ac38",
+              "code": "FASKES-E2E-1792219687075",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-17T06:48:07.079Z"
+            },
+            {
+              "id": "75491e0e-cca6-4d1e-8a2a-a97b75878560",
+              "code": "FASKES-E2E-1792389308858",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-19T05:55:08.861Z"
+            },
+            {
+              "id": "662507c0-e0fc-4431-8c43-29a088c96174",
+              "code": "FASKES-E2E-1792227740961",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-17T09:02:20.965Z"
+            },
+            {
+              "id": "2119bcc4-16e0-4b9e-bf98-e537a0129c2c",
+              "code": "FASKES-E2E-1792628102378",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-22T00:15:02.381Z"
+            },
+            {
+              "id": "a6540ab4-6df3-48cb-b4ac-cf7a1c8b3b84",
+              "code": "FASKES-E2E-1792630119445",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-22T00:48:39.448Z"
+            },
+            {
+              "id": "ecc9dab0-0438-43a7-b43a-0f2fc3e71434",
+              "code": "FASKES-E2E-1792633628081",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-22T01:47:08.085Z"
+            },
+            {
+              "id": "13c43469-3cf2-4c8b-8804-4477bc15b12e",
+              "code": "FASKES-E2E-1792628275714",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-22T00:17:55.721Z"
+            },
+            {
+              "id": "5ab5f6cc-ee89-47c3-a9e1-1d29427744f7",
+              "code": "FASKES-E2E-1792227840436",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-17T09:04:00.439Z"
+            },
+            {
+              "id": "5ad6793f-5bcc-4924-856d-b8875b00c008",
+              "code": "FASKES-E2E-1792289893321",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-18T02:18:13.326Z"
+            },
+            {
+              "id": "bac92339-b9a6-4342-af73-b12d6e73c7d6",
+              "code": "FASKES-E2E-1792289924940",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-18T02:18:44.943Z"
+            },
+            {
+              "id": "47583ae6-5ac4-4728-b522-cc5651ad4388",
+              "code": "FASKES-E2E-1792210215586",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-17T04:10:15.589Z"
+            },
+            {
+              "id": "4d03a29d-62b5-4c6d-8a3f-ee0b4fcf24db",
+              "code": "FASKES-E2E-1792629429435",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-22T00:37:09.440Z"
+            },
+            {
+              "id": "9e3c18e1-1e8e-4b26-aa6e-3d3dc20b361c",
+              "code": "FASKES-E2E-1792307106762",
+              "name": "Puskesmas Kebayoran",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-998877",
+              "createdAt": "2026-10-18T07:05:06.766Z"
+            },
+            {
+              "id": "1690121f-3a35-4cab-a1a5-a0027130dd2d",
+              "code": "FASKES-TCK-1792629459880",
+              "name": "Puskesmas Kebon Sirih",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-1234-5678",
+              "createdAt": "2026-10-22T00:37:40.056Z"
+            },
+            {
+              "id": "7c90fcac-3f46-4bbb-a87b-738fb93ce973",
+              "code": "FASKES-TCK-1792636312087",
+              "name": "Puskesmas Kebon Sirih",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-1234-5678",
+              "createdAt": "2026-10-22T02:31:52.354Z"
+            },
+            {
+              "id": "dd9d89bb-47c6-4f55-82ca-48580a929a6d",
+              "code": "FASKES-TCK-1792350485543",
+              "name": "Puskesmas Kebon Sirih",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-1234-5678",
+              "createdAt": "2026-10-18T19:08:05.812Z"
+            },
+            {
+              "id": "d22dc072-f58c-498b-9193-30dae7bde7a7",
+              "code": "FASKES-TCK-1792380403155",
+              "name": "Puskesmas Kebon Sirih",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-1234-5678",
+              "createdAt": "2026-10-19T03:26:43.475Z"
+            },
+            {
+              "id": "b457da4d-7a9b-4073-be3b-39ddcfdbb9db",
+              "code": "FASKES-TCK-1792630241018",
+              "name": "Puskesmas Kebon Sirih",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-1234-5678",
+              "createdAt": "2026-10-22T00:50:41.176Z"
+            },
+            {
+              "id": "7d3956e9-4ea6-4a35-9202-6704df8077f9",
+              "code": "FASKES-TCK-1792634910537",
+              "name": "Puskesmas Kebon Sirih",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-1234-5678",
+              "createdAt": "2026-10-22T02:08:30.816Z"
+            },
+            {
+              "id": "72b8687b-f86b-44f3-a928-410e8b201327",
+              "code": "FASKES-TCK-1792379315957",
+              "name": "Puskesmas Kebon Sirih",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-1234-5678",
+              "createdAt": "2026-10-19T03:08:36.241Z"
+            },
+            {
+              "id": "1ef5755b-f31a-4a40-8ba9-6ad3fd58efa3",
+              "code": "FASKES-TCK-1792630890405",
+              "name": "Puskesmas Kebon Sirih",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-1234-5678",
+              "createdAt": "2026-10-22T01:01:30.702Z"
+            },
+            {
+              "id": "ec31a357-15da-4ec5-8bf6-d4b867a23cb3",
+              "code": "FASKES-TCK-1792630204117",
+              "name": "Puskesmas Kebon Sirih",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-1234-5678",
+              "createdAt": "2026-10-22T00:50:04.284Z"
+            },
+            {
+              "id": "003540da-891f-41f7-8709-85c1da29e515",
+              "code": "FASKES-TCK-1792637967567",
+              "name": "Puskesmas Kebon Sirih",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-1234-5678",
+              "createdAt": "2026-10-22T02:59:27.878Z"
+            },
+            {
+              "id": "ad49a6fb-455e-45de-a44f-7246410668e7",
+              "code": "FASKES-TCK-1792628269134",
+              "name": "Puskesmas Kebon Sirih",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-1234-5678",
+              "createdAt": "2026-10-22T00:17:49.329Z"
+            },
+            {
+              "id": "c94bca88-74be-47c7-852a-50dcaca28b24",
+              "code": "FASKES-TCK-1792628096592",
+              "name": "Puskesmas Kebon Sirih",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-1234-5678",
+              "createdAt": "2026-10-22T00:14:56.822Z"
+            },
+            {
+              "id": "45655d9a-dab5-4110-aabe-f003dd13ea13",
+              "code": "FASKES-TCK-1792389302061",
+              "name": "Puskesmas Kebon Sirih",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-1234-5678",
+              "createdAt": "2026-10-19T05:55:02.308Z"
+            },
+            {
+              "id": "18279f0a-67c7-45c2-8ece-39c2bd967f4e",
+              "code": "FASKES-TCK-1792630061050",
+              "name": "Puskesmas Kebon Sirih",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-1234-5678",
+              "createdAt": "2026-10-22T00:47:41.230Z"
+            },
+            {
+              "id": "599fd274-e9ce-4a6c-8622-f8d4cd47b5a8",
+              "code": "FASKES-TCK-1792350388261",
+              "name": "Puskesmas Kebon Sirih",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-1234-5678",
+              "createdAt": "2026-10-18T19:06:28.432Z"
+            },
+            {
+              "id": "ff9a61d7-2007-428e-832f-b917444e4ed3",
+              "code": "FASKES-TCK-1792384334264",
+              "name": "Puskesmas Kebon Sirih",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-1234-5678",
+              "createdAt": "2026-10-19T04:32:14.579Z"
+            },
+            {
+              "id": "83a9e038-d504-4f88-bb09-18d84510e1b4",
+              "code": "FASKES-TCK-1792630121428",
+              "name": "Puskesmas Kebon Sirih",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-1234-5678",
+              "createdAt": "2026-10-22T00:48:41.589Z"
+            },
+            {
+              "id": "6ff75e3e-bb94-46a8-93f0-6ca3bc9e1a34",
+              "code": "FASKES-TCK-1792633631239",
+              "name": "Puskesmas Kebon Sirih",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "0811-1234-5678",
+              "createdAt": "2026-10-22T01:47:11.502Z"
+            },
+            {
+              "id": "9e2aa826-e5da-4368-8ad6-397c5b5978f8",
+              "code": "FASKES-RBAC-OTHER-1792633552432",
+              "name": "Puskesmas Lain",
+              "district": "Jakarta Barat",
+              "emergencyPhone": "021-999888",
+              "createdAt": "2026-10-22T01:45:52.433Z"
+            },
+            {
+              "id": "c5b56874-6c17-4bd8-a568-5afabe17ff4a",
+              "code": "FASKES-RBAC-OTHER-1792637944787",
+              "name": "Puskesmas Lain",
+              "district": "Jakarta Barat",
+              "emergencyPhone": "021-999888",
+              "createdAt": "2026-10-22T02:59:04.788Z"
+            },
+            {
+              "id": "0068d202-cf31-45d3-b13b-e4130a1d2ecd",
+              "code": "FASKES-RBAC-OTHER-1792633616041",
+              "name": "Puskesmas Lain",
+              "district": "Jakarta Barat",
+              "emergencyPhone": "021-999888",
+              "createdAt": "2026-10-22T01:46:56.041Z"
+            },
+            {
+              "id": "7dc82ceb-330d-478f-91f3-80013ee5613f",
+              "code": "FASKES-RBAC-OTHER-1792634897383",
+              "name": "Puskesmas Lain",
+              "district": "Jakarta Barat",
+              "emergencyPhone": "021-999888",
+              "createdAt": "2026-10-22T02:08:17.383Z"
+            },
+            {
+              "id": "5992b116-a7df-43fe-919e-4ccd9d093a8e",
+              "code": "FASKES-RBAC-OTHER-1792636296142",
+              "name": "Puskesmas Lain",
+              "district": "Jakarta Barat",
+              "emergencyPhone": "021-999888",
+              "createdAt": "2026-10-22T02:31:36.142Z"
+            },
+            {
+              "id": "37b6e22a-6d9c-483b-9382-25dc0eb51050",
+              "code": "FASKES-RBAC-OTHER-1792633596114",
+              "name": "Puskesmas Lain",
+              "district": "Jakarta Barat",
+              "emergencyPhone": "021-999888",
+              "createdAt": "2026-10-22T01:46:36.115Z"
+            },
+            {
+              "id": "f9216abd-39a0-4838-a277-6d58f4824a42",
+              "code": "FASKES-P4-1792630056416",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-22T00:47:36.572Z"
+            },
+            {
+              "id": "80f4913b-47d0-4cf9-b57f-a99100b6af96",
+              "code": "FASKES-P4-1792350475206",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-18T19:07:55.475Z"
+            },
+            {
+              "id": "73da799c-878e-45ab-b565-720efb5679e4",
+              "code": "FASKES-P4-1792379325991",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-19T03:08:46.221Z"
+            },
+            {
+              "id": "cd432eaa-a71f-4de0-9a7a-8779842a164e",
+              "code": "FASKES-P4-1792379288300",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-19T03:08:08.496Z"
+            },
+            {
+              "id": "e750046f-3066-4079-8bee-cfb20eddb4a0",
+              "code": "FASKES-P4-1792628262099",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-22T00:17:42.585Z"
+            },
+            {
+              "id": "e07ef0a7-e48d-4081-8688-be4b80b24cb2",
+              "code": "FASKES-P4-1792227737376",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-17T09:02:17.640Z"
+            },
+            {
+              "id": "d7473ee8-bfd9-440a-8fa9-ad1e7d47d309",
+              "code": "FASKES-P4-1792289935305",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-18T02:18:55.736Z"
+            },
+            {
+              "id": "5ad00ea7-cb54-4d67-9466-8fa3b1eb486d",
+              "code": "FASKES-P4-1792630233950",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-22T00:50:34.217Z"
+            },
+            {
+              "id": "1147f6a1-2be5-4a5e-b53a-bf0c68a5afc9",
+              "code": "FASKES-P4-1792380398521",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-19T03:26:38.862Z"
+            },
+            {
+              "id": "bb1817f4-1c05-4b9f-b491-c373277e2650",
+              "code": "FASKES-P4-1792636308300",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-22T02:31:48.584Z"
+            },
+            {
+              "id": "6066c836-3d33-45b1-b491-8854343f9eaf",
+              "code": "FASKES-P4-1792384295844",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-19T04:31:36.168Z"
+            },
+            {
+              "id": "9f759b10-36d5-483d-a4ba-15b597224f37",
+              "code": "FASKES-P4-1792219683064",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-17T06:48:03.343Z"
+            },
+            {
+              "id": "0d9ddd71-26eb-464b-9e29-ca18771016d5",
+              "code": "FASKES-P4-1792384329953",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-19T04:32:10.260Z"
+            },
+            {
+              "id": "2a279359-e038-4a49-a3d0-bb1f2d2ac55c",
+              "code": "FASKES-P4-1792634900869",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-22T02:08:21.057Z"
+            },
+            {
+              "id": "f3712ef6-967f-4d90-8bd7-4500b3e5a478",
+              "code": "FASKES-P4-1792630114551",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-22T00:48:34.710Z"
+            },
+            {
+              "id": "5b606cd1-1376-4988-8de4-e410064af5b4",
+              "code": "FASKES-P4-1792633620455",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-22T01:47:00.726Z"
+            },
+            {
+              "id": "0a1e8b78-eaad-4479-b51a-5e1fdc31b004",
+              "code": "FASKES-P4-1792210182974",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-17T04:09:43.134Z"
+            },
+            {
+              "id": "bece09a5-ed1f-4874-9a18-e0c0e0473b56",
+              "code": "FASKES-P4-1792389298124",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-19T05:54:58.395Z"
+            },
+            {
+              "id": "14e92c2d-1287-41ea-954d-371baeaab8f3",
+              "code": "FASKES-P4-1792637949420",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-22T02:59:09.688Z"
+            },
+            {
+              "id": "22e4127d-0c84-47c1-b3c8-c9a94f3ce17c",
+              "code": "FASKES-P4-1792227836938",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-17T09:03:57.185Z"
+            },
+            {
+              "id": "69feb82d-8391-4c77-bd3c-b4f3ddb98865",
+              "code": "FASKES-P4-1792307166924",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-18T07:06:07.217Z"
+            },
+            {
+              "id": "76d53646-66df-46b7-b55b-98ef61343bbc",
+              "code": "FASKES-P4-1792628087660",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-22T00:14:47.820Z"
+            },
+            {
+              "id": "ca5bd30a-8eca-45d1-81f4-2056b6683d05",
+              "code": "FASKES-P4-1792218994587",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-17T06:36:34.869Z"
+            },
+            {
+              "id": "069b3de4-e8bc-4496-8f1a-03a1aad0ca69",
+              "code": "FASKES-P4-1792308928381",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-18T07:35:28.661Z"
+            },
+            {
+              "id": "b74e5918-6aa2-47e5-900c-b3b3f288d145",
+              "code": "FASKES-P4-1792630197430",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-22T00:49:57.595Z"
+            },
+            {
+              "id": "ece4de6a-1e75-4362-8a89-dc353059698c",
+              "code": "FASKES-P4-1792307100001",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-18T07:05:00.266Z"
+            },
+            {
+              "id": "1bdf2909-66de-439c-822f-467b171cc3d2",
+              "code": "FASKES-P4-1792630879502",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-22T01:01:19.763Z"
+            },
+            {
+              "id": "724a8a75-75c4-4130-a02c-8eafc1da5d77",
+              "code": "FASKES-P4-1792309023886",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-18T07:37:04.149Z"
+            },
+            {
+              "id": "0e9071a6-700f-419e-8457-00fc749bb648",
+              "code": "FASKES-P4-1792629450416",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-22T00:37:30.608Z"
+            },
+            {
+              "id": "30da1162-ca01-442b-8007-83a5f113f9ec",
+              "code": "FASKES-P4-1792210213251",
+              "name": "Puskesmas Matraman",
+              "district": "Jakarta Timur",
+              "emergencyPhone": "021-554433",
+              "createdAt": "2026-10-17T04:10:13.414Z"
+            },
+            {
+              "id": "97cc517a-0274-4a14-98c3-3cb5b1d01b2d",
+              "code": "FASKES-RBAC-1792379306565",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-19T03:08:26.569Z"
+            },
+            {
+              "id": "90e242df-e488-41da-b700-8a32ba47e2ea",
+              "code": "FASKES-RBAC-1792210134341",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-17T04:08:54.343Z"
+            },
+            {
+              "id": "ee39c4d2-f0f8-450b-b8c3-95dec9017b01",
+              "code": "FASKES-RBAC-1792210163418",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-17T04:09:23.420Z"
+            },
+            {
+              "id": "2742da20-d635-4def-8016-9de626707c0b",
+              "code": "FASKES-RBAC-1792210180490",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-17T04:09:40.492Z"
+            },
+            {
+              "id": "b04042a0-9fe6-46b8-b64d-8e1de3a7cc49",
+              "code": "FASKES-RBAC-1792210208594",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-17T04:10:08.597Z"
+            },
+            {
+              "id": "0183e61b-ae11-4d39-9318-7a1e396014b1",
+              "code": "FASKES-RBAC-1792218910734",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-17T06:35:10.738Z"
+            },
+            {
+              "id": "22a631df-f0af-431d-a03e-a300332bd010",
+              "code": "FASKES-RBAC-1792218990207",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-17T06:36:30.211Z"
+            },
+            {
+              "id": "daa3b27e-d5de-4ca6-bba4-5c651e208f8f",
+              "code": "FASKES-RBAC-1792219674758",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-17T06:47:54.763Z"
+            },
+            {
+              "id": "6e0f0ac1-5c24-4d2d-a846-6a769c02676e",
+              "code": "FASKES-RBAC-1792222854444",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-17T07:40:54.447Z"
+            },
+            {
+              "id": "4fa9166d-024d-4f54-9c9d-dc9caa333249",
+              "code": "FASKES-RBAC-1792227731738",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-17T09:02:11.742Z"
+            },
+            {
+              "id": "ba779a75-c6c5-4815-9a52-37f4a91cc29e",
+              "code": "FASKES-RBAC-1792227814342",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-17T09:03:34.345Z"
+            },
+            {
+              "id": "e1e4bcd4-a9c5-4ef3-8a5e-1a4f34467762",
+              "code": "FASKES-RBAC-1792227829794",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-17T09:03:49.799Z"
+            },
+            {
+              "id": "6ebe594b-d76c-4ca5-b92e-eabcf2beb265",
+              "code": "FASKES-RBAC-1792289919631",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-18T02:18:39.636Z"
+            },
+            {
+              "id": "46e25b98-eaa3-4380-9822-9133ba92bacf",
+              "code": "FASKES-RBAC-1792307095763",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-18T07:04:55.767Z"
+            },
+            {
+              "id": "5679e1b4-15db-4477-9cc5-c8ac96d22b65",
+              "code": "FASKES-RBAC-1792307158596",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-18T07:05:58.600Z"
+            },
+            {
+              "id": "13ce241a-562e-4b58-a183-be5a4d894ab3",
+              "code": "FASKES-RBAC-1792308920350",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-18T07:35:20.354Z"
+            },
+            {
+              "id": "6fcc91de-d7e8-4a33-90a4-585c66b01eba",
+              "code": "FASKES-RBAC-1792309015969",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-18T07:36:55.974Z"
+            },
+            {
+              "id": "f72ba7f7-2a38-4aee-92eb-71b5e3360b54",
+              "code": "FASKES-RBAC-1792350467095",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-18T19:07:47.099Z"
+            },
+            {
+              "id": "1cd61ca2-6eec-496f-a5a5-7cb7630926d1",
+              "code": "FASKES-RBAC-1792380245721",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-19T03:24:05.725Z"
+            },
+            {
+              "id": "2e716738-4a16-46ac-86f3-ea49fa07175d",
+              "code": "FASKES-RBAC-1792380346526",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-19T03:25:46.528Z"
+            },
+            {
+              "id": "4ca80bf3-d8eb-4de9-8344-a36fd9b6acfd",
+              "code": "FASKES-RBAC-1792380393633",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-19T03:26:33.638Z"
+            },
+            {
+              "id": "72e73498-7245-41fd-83c9-52cf4242e68b",
+              "code": "FASKES-RBAC-1792384324999",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-19T04:32:05.003Z"
+            },
+            {
+              "id": "7a80697c-1581-4b13-89b8-c0ab80efe86c",
+              "code": "FASKES-RBAC-1792389291126",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-19T05:54:51.129Z"
+            },
+            {
+              "id": "ddba1f86-2473-4fcc-86e5-055e568b157b",
+              "code": "FASKES-RBAC-1792628090131",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T00:14:50.133Z"
+            },
+            {
+              "id": "0a27d61c-8487-4f81-abc8-03f0317c4ed3",
+              "code": "FASKES-RBAC-1792628256341",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T00:17:36.349Z"
+            },
+            {
+              "id": "41185002-8dc2-4dc9-802a-585e14e055ea",
+              "code": "FASKES-RBAC-1792629447649",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T00:37:27.652Z"
+            },
+            {
+              "id": "eefde682-46b0-42f0-91b9-673d129323db",
+              "code": "FASKES-RBAC-1792630053945",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T00:47:33.947Z"
+            },
+            {
+              "id": "19efa89d-4808-41a3-b3b5-82645095f76b",
+              "code": "FASKES-RBAC-1792630111972",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T00:48:31.974Z"
+            },
+            {
+              "id": "956f8675-959b-4b23-af49-9ec5acf46c6d",
+              "code": "FASKES-RBAC-1792630194857",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T00:49:54.860Z"
+            },
+            {
+              "id": "0be7aa59-5580-415e-8bb4-1d488c7264c6",
+              "code": "FASKES-RBAC-1792630228753",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T00:50:28.757Z"
+            },
+            {
+              "id": "694538ba-52cb-44e1-b8b7-638c2c1481e2",
+              "code": "FASKES-RBAC-1792630875277",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T01:01:15.281Z"
+            },
+            {
+              "id": "6f0b285a-5522-4126-84a9-11868c484b22",
+              "code": "FASKES-RBAC-1792633552404",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T01:45:52.411Z"
+            },
+            {
+              "id": "b9dbe6b5-cf31-4397-b9c3-ab80180b4e0b",
+              "code": "FASKES-RBAC-1792633596093",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T01:46:36.096Z"
+            },
+            {
+              "id": "ed598bba-53e7-458a-89b3-cadb19d943cd",
+              "code": "FASKES-RBAC-1792633616025",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T01:46:56.029Z"
+            },
+            {
+              "id": "2f3c2416-88b5-46d0-86e2-076604d7494a",
+              "code": "FASKES-RBAC-1792634897368",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T02:08:17.371Z"
+            },
+            {
+              "id": "dabf66d2-52b1-46dd-be93-6d1f760ef3d7",
+              "code": "FASKES-RBAC-1792636296127",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T02:31:36.131Z"
+            },
+            {
+              "id": "ff0af4af-ae48-44ee-b68f-db674d8cb45e",
+              "code": "FASKES-RBAC-1792637944773",
+              "name": "Puskesmas Menteng",
+              "district": "Jakarta Pusat",
+              "emergencyPhone": "021-123456",
+              "createdAt": "2026-10-22T02:59:04.776Z"
+            },
+            {
+              "id": "28fb147c-dd95-4949-be81-bc91e866e3dd",
+              "code": "FASKES-P3-1792630116953",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-22T00:48:37.128Z"
+            },
+            {
+              "id": "b32a6ac0-5f5f-4cb4-8e4f-29118b9c32bb",
+              "code": "FASKES-P3-1792633624198",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-22T01:47:04.465Z"
+            },
+            {
+              "id": "29849749-3c18-4a06-adb9-1775d233b897",
+              "code": "FASKES-P3-1792630058806",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-22T00:47:38.977Z"
+            },
+            {
+              "id": "d13cbabc-d67b-4cdf-919b-2befee797e97",
+              "code": "FASKES-P3-1792629455149",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-22T00:37:35.321Z"
+            },
+            {
+              "id": "f32a6633-ace3-413e-b86f-9b8b5fe08f52",
+              "code": "FASKES-P3-1792628266259",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-22T00:17:46.639Z"
+            },
+            {
+              "id": "73b35fe6-ab5a-43dd-8be6-519185ca4422",
+              "code": "FASKES-P3-1792628093717",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-22T00:14:53.907Z"
+            },
+            {
+              "id": "70879db7-5157-430c-bcf9-01dbe5a3e116",
+              "code": "FASKES-P3-1792218999258",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-17T06:36:39.685Z"
+            },
+            {
+              "id": "88065b50-d9d2-4c78-af4d-653d21a2397f",
+              "code": "FASKES-P3-1792389294519",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-19T05:54:54.769Z"
+            },
+            {
+              "id": "a7ac9651-815a-4fd7-bbfb-f831a74dc5a4",
+              "code": "FASKES-P3-1792384338206",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-19T04:32:18.526Z"
+            },
+            {
+              "id": "3998b1e1-de08-4ac9-8501-080cfcc586b2",
+              "code": "FASKES-P3-1792634903940",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-22T02:08:24.171Z"
+            },
+            {
+              "id": "8380d186-3b3f-46a6-b407-9e5a03857132",
+              "code": "FASKES-P3-1792380389656",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-19T03:26:29.906Z"
+            },
+            {
+              "id": "57f1caae-5b53-42a9-b632-3a335f9d57db",
+              "code": "FASKES-P3-1792379311152",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-19T03:08:31.535Z"
+            },
+            {
+              "id": "4bdef078-3bb8-437a-83ce-c6efce5de92f",
+              "code": "FASKES-P3-1792350471413",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-18T19:07:51.699Z"
+            },
+            {
+              "id": "c78be313-5425-45e9-9d5e-1ad2280d1b44",
+              "code": "FASKES-P3-1792309020211",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-18T07:37:00.492Z"
+            },
+            {
+              "id": "0138950f-4967-4b74-acac-32625680f6c2",
+              "code": "FASKES-P3-1792210211071",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-17T04:10:11.231Z"
+            },
+            {
+              "id": "df5cd523-1c72-4e71-a6ac-ff29349e6590",
+              "code": "FASKES-P3-1792308924592",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-18T07:35:24.897Z"
+            },
+            {
+              "id": "271bd2f4-1940-47f2-a635-657408acf3f2",
+              "code": "FASKES-P3-1792636300719",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-22T02:31:40.997Z"
+            },
+            {
+              "id": "70c2d1b5-4333-43d2-80b9-9e356c172f33",
+              "code": "FASKES-P3-1792307163028",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-18T07:06:03.302Z"
+            },
+            {
+              "id": "66911453-d866-4679-a12f-48b5c448b3ab",
+              "code": "FASKES-P3-1792307141862",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-18T07:05:42.182Z"
+            },
+            {
+              "id": "114751bb-69b6-4b14-ad2b-1cea1d1d08dc",
+              "code": "FASKES-P3-1792307091267",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-18T07:04:51.536Z"
+            },
+            {
+              "id": "01456742-9906-4f94-87a1-3096c0483a59",
+              "code": "FASKES-P3-1792305025011",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-18T06:30:25.272Z"
+            },
+            {
+              "id": "3eb8f45e-4bd6-4de6-a71c-e609a65971d9",
+              "code": "FASKES-P3-1792289928613",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-18T02:18:49.034Z"
+            },
+            {
+              "id": "c8be0898-207d-413b-b886-c5f044904245",
+              "code": "FASKES-P3-1792210178166",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-17T04:09:38.326Z"
+            },
+            {
+              "id": "2d98ce3a-e0e4-4e15-8459-3f8f30927dcc",
+              "code": "FASKES-P3-1792227833564",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-17T09:03:53.800Z"
+            },
+            {
+              "id": "8f37aa7b-dc7f-4048-aa9c-2318aeb23514",
+              "code": "FASKES-P3-1792227733941",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-17T09:02:14.217Z"
+            },
+            {
+              "id": "c507ea08-ff00-49fe-bbaa-c06caa3258d6",
+              "code": "FASKES-P3-1792630883220",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-22T01:01:23.489Z"
+            },
+            {
+              "id": "c6ba5af0-1ef2-45ed-9000-171e172bc4e7",
+              "code": "FASKES-P3-1792637960508",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-22T02:59:20.778Z"
+            },
+            {
+              "id": "853b0e82-8354-4c8e-a7e2-831d4e3c9035",
+              "code": "FASKES-P3-1792630238120",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-22T00:50:38.385Z"
+            },
+            {
+              "id": "bfd221e0-5e53-4157-b5f9-a3c654a071fd",
+              "code": "FASKES-P3-1792219679192",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-17T06:47:59.472Z"
+            },
+            {
+              "id": "635e34e9-2031-42ac-a22e-7304f00ceee6",
+              "code": "FASKES-P3-1792630199839",
+              "name": "Puskesmas Tebet",
+              "district": "Jakarta Selatan",
+              "emergencyPhone": "021-889900",
+              "createdAt": "2026-10-22T00:50:00.005Z"
+            }
+          ]

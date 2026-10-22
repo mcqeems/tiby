@@ -1,0 +1,59 @@
+info:
+  name: Delete Facility by Id (api/facilities/:id) [ADMIN]
+  type: http
+  seq: 5
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/api/facilities/:id"
+  params:
+    - name: id
+      value: f60466e8-b546-46e0-a43e-6b6beebac841
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Delete Facility by Id (200)
+    request:
+      url: "{{baseUrl}}/api/facilities/:id"
+      method: DELETE
+      params:
+        - name: id
+          value: f60466e8-b546-46e0-a43e-6b6beebac841
+          type: path
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "57"
+        - name: etag
+          value: W/"39-k3J4MxvrTZ1SOf8QB0HUcb2OVDg"
+        - name: date
+          value: Thu, 22 Oct 2026 14:07:46 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            "success": true,
+            "message": "Facility 'Nama Baru' deleted"
+          }
