@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useSession, type TibyUser } from "@/lib/auth-client";
 import { usersApi } from "@/lib/api/users";
+import { consentApi } from "@/lib/api/consent"; // ✅ Import API Consent
 import { usePopup } from "@/components/ui/popup-provider";
 import PublicLoading from "@/components/ui/public-loading";
 import {
@@ -16,9 +17,9 @@ import {
   Lock,
   Mail,
   ShieldCheck,
+  ShieldAlert, // ✅ Tambahan untuk ikon privasi
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-
 
 const ROLE_LABEL: Record<string, string> = {
   ADMIN: "Admin",
@@ -34,7 +35,6 @@ const roleLabel = (role?: string | null) =>
 const inputCls =
   "peer h-11 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-11 text-sm text-tiby-ink placeholder:text-gray-400 shadow-[0_1px_2px_rgba(16,24,40,0.03)] transition hover:border-tiby-teal-200 focus:border-tiby-teal-600 focus:outline-none focus:ring-4 focus:ring-tiby-teal-600/10";
 
-/** Hanya indikator visual; aturan validasi sebenarnya tetap di handleChangePassword. */
 function getPasswordStrength(pw: string) {
   if (!pw) return { score: 0, label: "", bar: "bg-gray-200", text: "" };
 
@@ -133,14 +133,24 @@ function PasswordField({
           aria-pressed={visible}
           className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-tiby-ink"
         >
-          {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {visible ? (
+            <EyeOff className="h-4 w-4" />
+          ) : (
+            <Eye className="h-4 w-4" />
+          )}
         </button>
       </div>
     </div>
   );
 }
 
-function Requirement({ met, children }: { met: boolean; children: React.ReactNode }) {
+function Requirement({
+  met,
+  children,
+}: {
+  met: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <li
       className={`inline-flex items-center gap-1.5 text-xs transition-colors ${
@@ -159,16 +169,18 @@ function Requirement({ met, children }: { met: boolean; children: React.ReactNod
   );
 }
 
-
 export default function ProfileView() {
   const { data: session, isPending } = useSession();
-  const { notify } = usePopup();
+  const { notify, confirm } = usePopup();
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // ✅ State untuk Pencabutan Izin
+  const [revoking, setRevoking] = useState(false);
 
   if (isPending) return <PublicLoading fullScreen message="Memuat profil..." />;
 
@@ -227,7 +239,6 @@ export default function ProfileView() {
         confirmLabel: "Tutup",
       });
 
-      // Reset form
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -247,13 +258,54 @@ export default function ProfileView() {
     }
   };
 
+  // ✅ Fungsi Pencabutan Persetujuan
+  const handleRevokeConsent = async () => {
+    const isConfirmed = await confirm({
+      variant: "danger",
+      badgeText: "Peringatan Privasi",
+      title: "Cabut Persetujuan Data?",
+      description:
+        "Jika dicabut, petugas dan PMO tidak bisa lagi memantau pengobatan Anda. Anda akan diarahkan kembali ke halaman persetujuan.",
+      confirmLabel: "Ya, Cabut Izin",
+      cancelLabel: "Batal",
+    });
+
+    if (!isConfirmed) return;
+
+    try {
+      setRevoking(true);
+      await consentApi.revoke(
+        "Dicabut mandiri oleh pengguna melalui halaman profil",
+      );
+
+      await notify({
+        variant: "success",
+        title: "Persetujuan Dicabut",
+        description: "Anda telah mencabut izin berbagi data. Mengalihkan...",
+        confirmLabel: "Tutup",
+      });
+
+      // Reload halaman agar Layout membaca ulang status consent dan melempar ke /consent
+      window.location.reload();
+    } catch (err: unknown) {
+      await notify({
+        variant: "danger",
+        title: "Gagal Mencabut",
+        description:
+          err instanceof Error ? err.message : "Terjadi kesalahan pada server.",
+        confirmLabel: "Tutup",
+      });
+      setRevoking(false);
+    }
+  };
+
   const toggleVisible = () => setShowPassword(!showPassword);
   const strength = getPasswordStrength(newPassword);
   const lengthOk = newPassword.length >= 8;
   const matchOk = confirmPassword !== "" && confirmPassword === newPassword;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 pb-24 md:pb-10">
+    <div className="mx-auto max-w-3xl space-y-6 md:pb-10">
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight text-tiby-ink">
           Profil Saya
@@ -291,9 +343,7 @@ export default function ProfileView() {
           </div>
 
           <dl
-            className={`mt-6 grid gap-3 ${
-              user.email ? "sm:grid-cols-3" : "sm:grid-cols-2"
-            }`}
+            className={`mt-6 grid gap-3 ${user.email ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
           >
             <InfoItem
               icon={AtSign}
@@ -328,10 +378,7 @@ export default function ProfileView() {
           </div>
         </header>
 
-        <form
-          onSubmit={handleChangePassword}
-          className="space-y-5 p-6 sm:p-8"
-        >
+        <form onSubmit={handleChangePassword} className="space-y-5 p-6 sm:p-8">
           <PasswordField
             id="current-password"
             label="Password Saat Ini"
@@ -366,7 +413,6 @@ export default function ProfileView() {
             />
           </div>
 
-          {/* Kekuatan password + syarat */}
           <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
             <div className="flex items-center justify-between gap-3">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-tiby-muted">
@@ -414,6 +460,47 @@ export default function ProfileView() {
             </button>
           </div>
         </form>
+      </section>
+
+      {/* ✅ SECTION BARU: Privasi & Keamanan Data */}
+      <section className="overflow-hidden rounded-2xl border border-red-200 bg-white shadow-xs">
+        <header className="flex items-center gap-3 border-b border-red-100 bg-red-50/50 px-6 py-4 sm:px-8">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-red-600 shadow-sm ring-1 ring-red-100">
+            <ShieldAlert className="h-[18px] w-[18px]" />
+          </span>
+          <div>
+            <h3 className="font-heading text-base font-semibold leading-tight text-red-900">
+              Privasi & Keamanan Data
+            </h3>
+            <p className="mt-0.5 text-xs text-red-700/80">
+              Kelola izin berbagi data pengobatan Anda.
+            </p>
+          </div>
+        </header>
+
+        <div className="p-6 sm:p-8 space-y-4">
+          <p className="text-sm text-tiby-muted leading-relaxed">
+            Saat ini Anda telah memberikan izin kepada Fasilitas Kesehatan dan
+            PMO untuk memantau status kepatuhan minum obat Anda. Jika Anda
+            mencabut izin ini, fitur pendampingan akan dinonaktifkan dan data
+            Anda tidak akan lagi terlihat oleh mereka.
+          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2">
+            <button
+              type="button"
+              onClick={handleRevokeConsent}
+              disabled={revoking}
+              className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-6 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-70"
+            >
+              {revoking ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ShieldAlert className="h-4 w-4" />
+              )}
+              {revoking ? "Memproses..." : "Cabut Persetujuan Data"}
+            </button>
+          </div>
+        </div>
       </section>
     </div>
   );
