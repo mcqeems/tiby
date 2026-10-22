@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useSession, type TibyUser } from "@/lib/auth-client";
 import { usersApi } from "@/lib/api/users";
 import { consentApi } from "@/lib/api/consent";
-import { facilitiesApi } from "@/lib/api/facilities";
-import type { FacilityItem } from "@/lib/types/facilities";
 import { usePopup } from "@/components/ui/popup-provider";
 import PublicLoading from "@/components/ui/public-loading";
+// Import FamilyContactsCard (hanya akan dirender untuk Pasien)
+import FamilyContactsCard from "@/app/pasien/profile/components/family-contacts-card";
+
 import {
   AtSign,
   Check,
@@ -20,10 +21,8 @@ import {
   Mail,
   ShieldCheck,
   ShieldAlert,
-
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-
 
 const ROLE_LABEL: Record<string, string> = {
   ADMIN: "Admin",
@@ -177,9 +176,7 @@ export default function ProfileView() {
   const [loading, setLoading] = useState(false);
   const [revoking, setRevoking] = useState(false);
 
-
   const user = session?.user as TibyUser | undefined;
-
 
   if (isPending) return <PublicLoading fullScreen message="Memuat profil..." />;
 
@@ -293,8 +290,7 @@ export default function ProfileView() {
   const lengthOk = newPassword.length >= 8;
   const matchOk = confirmPassword !== "" && confirmPassword === newPassword;
 
-  // ✅ FIX 3: Hapus "|| user.role === PATIENT" karena TibyUser hanya punya "PASIEN"
-  const isPasien = user.role === "PASIEN";
+const isPasien = user.role === "PASIEN";
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-24 md:pb-10">
@@ -356,7 +352,10 @@ export default function ProfileView() {
         </div>
       </section>
 
-    
+      {/* ✅ 2. KARTU KONTAK KELUARGA (HANYA UNTUK PASIEN) */}
+      {isPasien && <FamilyContactsCard patientId={user.id} />}
+
+      {/* ─── 3. KARTU UBAH PASSWORD ───────────────────────────────────── */}
       <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
         <header className="flex items-center gap-3 border-b border-gray-100 bg-linear-to-r from-tiby-teal-50/70 to-white px-6 py-4 sm:px-8">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-tiby-teal-700 shadow-sm ring-1 ring-tiby-teal-100">
@@ -456,34 +455,32 @@ export default function ProfileView() {
         </form>
       </section>
 
-      {/* ─── 4. KARTU PRIVASI & KEAMANAN DATA ─────────────────────────── */}
-      <section className="overflow-hidden rounded-2xl border border-red-200 bg-white shadow-xs">
-        <header className="flex items-center gap-3 border-b border-red-100 bg-red-50/50 px-6 py-4 sm:px-8">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-red-600 shadow-sm ring-1 ring-red-100">
-            <ShieldAlert className="h-[18px] w-[18px]" />
-          </span>
-          <div>
-            <h3 className="font-heading text-base font-semibold leading-tight text-red-900">
-              Privasi & Keamanan Data
-            </h3>
-            <p className="mt-0.5 text-xs text-red-700/80">
-              Kelola izin berbagi data pengobatan Anda.
+      {/* ─── 4. KARTU PRIVASI & KEAMANAN DATA (KHUSUS PASIEN) ─────────── */}
+      {isPasien && (
+        <section className="overflow-hidden rounded-2xl border border-red-200 bg-white shadow-xs">
+          <header className="flex items-center gap-3 border-b border-red-100 bg-red-50/50 px-6 py-4 sm:px-8">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-red-600 shadow-sm ring-1 ring-red-100">
+              <ShieldAlert className="h-[18px] w-[18px]" />
+            </span>
+            <div>
+              <h3 className="font-heading text-base font-semibold leading-tight text-red-900">
+                Privasi & Keamanan Data
+              </h3>
+              <p className="mt-0.5 text-xs text-red-700/80">
+                Kelola izin berbagi data pengobatan Anda.
+              </p>
+            </div>
+          </header>
+
+          <div className="p-6 sm:p-8 space-y-4">
+            <p className="text-sm text-tiby-muted leading-relaxed">
+              Saat ini Anda telah memberikan izin kepada Fasilitas Kesehatan dan
+              sistem Tiby untuk memproses data pendampingan. Jika Anda mencabut
+              izin ini, fitur pendampingan akan dinonaktifkan dan data Anda
+              tidak akan lagi terlihat oleh petugas.
             </p>
-          </div>
-        </header>
 
-        <div className="p-6 sm:p-8 space-y-4">
-          <p className="text-sm text-tiby-muted leading-relaxed">
-            Saat ini Anda telah memberikan izin kepada Fasilitas Kesehatan dan
-            sistem Tiby untuk memproses data pendampingan.
-            {isPasien
-              ? " Jika Anda mencabut izin ini, fitur pendampingan akan dinonaktifkan dan data Anda tidak akan lagi terlihat oleh petugas."
-              : " Sebagai PMO, izin pendampingan diatur oleh Fasilitas Kesehatan. Anda tidak dapat mencabut izin ini secara mandiri."}
-          </p>
-
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2">
-            {/* ✅ Tombol HANYA muncul untuk Pasien */}
-            {isPasien ? (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2">
               <button
                 type="button"
                 onClick={handleRevokeConsent}
@@ -497,16 +494,10 @@ export default function ProfileView() {
                 )}
                 {revoking ? "Memproses..." : "Cabut Persetujuan Data"}
               </button>
-            ) : (
-              <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 text-xs text-tiby-muted w-full">
-                <strong>Informasi:</strong> Jika Anda ingin berhenti menjadi
-                pendamping (PMO) untuk pasien ini, silakan hubungi petugas
-                Fasilitas Kesehatan yang menugaskan Anda.
-              </div>
-            )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 }
