@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-// ✅ Tambahkan LucideIcon di sini
 import {
   ArrowLeft,
   CheckCircle2,
@@ -16,13 +15,20 @@ import {
   Users,
   KeyRound,
   FileText,
+  Eye,
+  EyeOff,
+  X,
+  Loader2,
   type LucideIcon,
 } from "lucide-react";
 
 import { faskesApi } from "@/lib/api/faskes";
+import { usersApi } from "@/lib/api/users";
+import { usePopup } from "@/components/ui/popup-provider"; // ✅ Import Popup
 import type {
   RiskSortedPatientItem,
   PatientHistoryItem,
+  PatientPmo,
 } from "@/lib/types/faskes";
 
 // ─── UTILITY & SHARED COMPONENTS ─────────────────────────────────────────────
@@ -49,7 +55,6 @@ function Avatar({
   );
 }
 
-// ✅ FIX ESLINT: Ganti 'any' menjadi 'LucideIcon'
 function DetailCard({
   icon: Icon,
   title,
@@ -94,12 +99,28 @@ function InfoRow({
 
 export default function PatientDetailPage() {
   const params = useParams();
-  const patientId = params.id as string;
+  const patientId = params.id as string; // = treatment plan id
+  const { notify, confirm } = usePopup(); // ✅ Inisialisasi Popup
 
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [summary, setSummary] = useState<RiskSortedPatientItem | null>(null);
   const [history, setHistory] = useState<PatientHistoryItem[]>([]);
+
+  // Menyimpan ID User untuk Reset Password
+  const [patientUserId, setPatientUserId] = useState<string | null>(null);
+  const [pmoUserId, setPmoUserId] = useState<string | null>(null);
+  const [userIdLoading, setUserIdLoading] = useState(false);
+
+  // State untuk Modal Reset Password
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetTarget, setResetTarget] = useState<"PASIEN" | "PMO" | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+
+  const pmo: PatientPmo | null = summary?.pmo ?? null;
 
   useEffect(() => {
     let active = true;
@@ -123,6 +144,36 @@ export default function PatientDetailPage() {
           setSummary(patientData);
           setHistory(historyRes.items || []);
         }
+
+        // ✅ Lookup userId Pasien dan PMO sekaligus
+        if (patientData.username) {
+          setUserIdLoading(true);
+          try {
+            const allUsers = await usersApi.getAll();
+
+            // Cari ID Pasien
+            const foundPatient = allUsers.find(
+              (u) => u.username === patientData.username && u.role === "PASIEN",
+            );
+            if (active) setPatientUserId(foundPatient?.id ?? null);
+
+            // Cari ID PMO (jika ada)
+            if (patientData.pmo?.username) {
+              const foundPmo = allUsers.find(
+                (u) =>
+                  u.username === patientData.pmo?.username && u.role === "PMO",
+              );
+              if (active) setPmoUserId(foundPmo?.id ?? null);
+            }
+          } catch {
+            if (active) {
+              setPatientUserId(null);
+              setPmoUserId(null);
+            }
+          } finally {
+            if (active) setUserIdLoading(false);
+          }
+        }
       } catch (err: unknown) {
         if (active) {
           setErrorMsg(
@@ -140,6 +191,84 @@ export default function PatientDetailPage() {
     };
   }, [patientId]);
 
+  // ✅ Buka Modal dengan Target (PASIEN atau PMO)
+  const openResetModal = (target: "PASIEN" | "PMO") => {
+    setResetTarget(target);
+    setNewPassword("");
+    setConfirmPassword("");
+    setShowPassword(false);
+    setResetOpen(true);
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (newPassword.length < 8) {
+      return notify({
+        variant: "warning",
+        title: "Password Terlalu Pendek",
+        description: "Password minimal 8 karakter.",
+        confirmLabel: "Mengerti",
+      });
+    }
+    if (newPassword !== confirmPassword) {
+      return notify({
+        variant: "warning",
+        title: "Konfirmasi Tidak Cocok",
+        description: "Pastikan konfirmasi password sama dengan password baru.",
+        confirmLabel: "Mengerti",
+      });
+    }
+
+    const targetId = resetTarget === "PASIEN" ? patientUserId : pmoUserId;
+    if (!targetId) {
+      return notify({
+        variant: "danger",
+        title: "User ID Tidak Ditemukan",
+        description: "Data pengguna ini belum tersinkronisasi dengan baik.",
+        confirmLabel: "Tutup",
+      });
+    }
+
+    // Konfirmasi sebelum mengeksekusi
+    const isConfirmed = await confirm({
+      variant: "warning",
+      badgeText: "Reset Password",
+      title: `Reset Password ${resetTarget === "PASIEN" ? "Pasien" : "PMO"}?`,
+      description: `Password untuk ${resetTarget === "PASIEN" ? summary?.patientName : pmo?.fullName} akan diganti dengan yang baru.`,
+      confirmLabel: "Ya, Reset",
+      cancelLabel: "Batal",
+    });
+
+    if (!isConfirmed) return;
+
+    try {
+      setResetLoading(true);
+      await usersApi.resetPassword(targetId, newPassword);
+
+      setResetOpen(false);
+      await notify({
+        variant: "success",
+        badgeText: "Berhasil",
+        title: "Password Direset",
+        description: `Password ${resetTarget === "PASIEN" ? "Pasien" : "PMO"} berhasil diperbarui.`,
+        confirmLabel: "Tutup",
+      });
+    } catch (err: unknown) {
+      await notify({
+        variant: "danger",
+        badgeText: "Gagal",
+        title: "Reset Password Gagal",
+        description:
+          err instanceof Error ? err.message : "Terjadi kesalahan pada server.",
+        confirmLabel: "Tutup",
+      });
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  // ─── Loading state ────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="space-y-5 max-w-5xl mx-auto pb-10">
@@ -161,6 +290,7 @@ export default function PatientDetailPage() {
     );
   }
 
+  // ─── Error state ──────────────────────────────────────────────────────
   if (errorMsg || !summary) {
     return (
       <div className="max-w-3xl mx-auto mt-10">
@@ -198,6 +328,7 @@ export default function PatientDetailPage() {
         Daftar Pasien
       </Link>
 
+      {/* ─── Header ────────────────────────────────────────────────── */}
       <header
         className={`flex flex-col gap-4 rounded-2xl border bg-white p-5 shadow-xs sm:flex-row sm:items-center sm:justify-between sm:p-6 ${isHighRisk ? "border-red-200" : "border-gray-200"}`}
       >
@@ -226,11 +357,7 @@ export default function PatientDetailPage() {
             </span>
           )}
           <span
-            className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-bold ${
-              isHighRisk
-                ? "bg-red-50 text-red-700 border-red-200"
-                : "bg-tiby-teal-50 text-tiby-teal-700 border-tiby-teal-200"
-            }`}
+            className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-bold ${isHighRisk ? "bg-red-50 text-red-700 border-red-200" : "bg-tiby-teal-50 text-tiby-teal-700 border-tiby-teal-200"}`}
           >
             {isHighRisk && <ShieldAlert className="w-3 h-3" />} Skor Risiko:{" "}
             {summary.riskScore}
@@ -238,6 +365,7 @@ export default function PatientDetailPage() {
         </div>
       </header>
 
+      {/* ─── Stat Cards ────────────────────────────────────────────── */}
       <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <li className="rounded-2xl border border-gray-200 bg-white p-4 shadow-2xs">
           <div className="flex items-center justify-between">
@@ -313,6 +441,7 @@ export default function PatientDetailPage() {
         </li>
       </ul>
 
+      {/* ─── Main Grid ─────────────────────────────────────────────── */}
       <div className="grid gap-5 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <DetailCard
@@ -398,26 +527,64 @@ export default function PatientDetailPage() {
             </dl>
           </DetailCard>
 
-          <DetailCard icon={Users} title="Pengawas (PMO)">
-            <div className="mb-4 flex items-center gap-3 rounded-xl bg-gray-50 p-3">
-              <Avatar name="Pengawas" size="sm" />
-              <div className="min-w-0">
-                <p className="truncate text-[13px] font-semibold text-tiby-ink">
-                  Pengawas Terdaftar
+          {/* ─── PMO Card dengan Tombol Reset ───────────────────── */}
+          <DetailCard
+            icon={Users}
+            title="Pengawas (PMO)"
+            aside={
+              pmo?.isPrimary ? (
+                <span className="rounded-full bg-tiby-teal-50 px-2 py-0.5 text-[10px] font-bold text-tiby-teal-700 border border-tiby-teal-100 uppercase">
+                  Primary
+                </span>
+              ) : undefined
+            }
+          >
+            {pmo ? (
+              <>
+                <div className="mb-4 flex items-center gap-3 rounded-xl bg-gray-50 p-3">
+                  <Avatar name={pmo.fullName} size="sm" />
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] font-semibold text-tiby-ink">
+                      {pmo.fullName}
+                    </p>
+                    <p className="truncate font-mono text-[11px] text-tiby-muted">
+                      @{pmo.username}
+                    </p>
+                  </div>
+                </div>
+                <dl className="space-y-3 mb-4">
+                  <InfoRow label="Hubungan">{pmo.relationship || "-"}</InfoRow>
+                  <InfoRow label="WhatsApp">
+                    {pmo.whatsappNumber || "-"}
+                  </InfoRow>
+                </dl>
+                {/* ✅ Tombol Reset Password PMO */}
+                <button
+                  onClick={() => openResetModal("PMO")}
+                  disabled={!pmoUserId || userIdLoading}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-[11px] font-semibold text-tiby-ink transition hover:border-tiby-teal-200 hover:bg-tiby-teal-50 disabled:opacity-50"
+                >
+                  <KeyRound className="h-3.5 w-3.5" /> Reset Password PMO
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col items-center py-6 text-center">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+                  <Users className="h-5 w-5" />
+                </span>
+                <p className="mt-2 text-sm font-semibold text-tiby-ink">
+                  Belum ada PMO
                 </p>
-                <p className="truncate font-mono text-[11px] text-tiby-muted">
-                  @pmo_{summary.username}
+                <p className="mt-1 text-xs text-tiby-muted">
+                  Pasien belum menautkan pengawas minum obat.
                 </p>
               </div>
-            </div>
-            <dl className="space-y-3">
-              <InfoRow label="Hubungan">Keluarga</InfoRow>
-              <InfoRow label="WhatsApp">-</InfoRow>
-            </dl>
+            )}
           </DetailCard>
 
-          <DetailCard icon={KeyRound} title="Akses Akun">
-            <dl className="space-y-3">
+          {/* ─── Akses Akun Pasien ──────────────────────────────── */}
+          <DetailCard icon={KeyRound} title="Akses Akun Pasien">
+            <dl className="space-y-3 mb-4">
               <InfoRow label="Username">
                 <span className="font-mono">@{summary.username}</span>
               </InfoRow>
@@ -430,12 +597,115 @@ export default function PatientDetailPage() {
                 </span>
               </InfoRow>
             </dl>
-            <button className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-tiby-ink transition hover:border-tiby-teal-200 hover:bg-tiby-teal-50">
-              <KeyRound className="h-4 w-4" /> Kelola Akses & Reset Password
+            {/* ✅ Tombol Reset Password Pasien */}
+            <button
+              onClick={() => openResetModal("PASIEN")}
+              disabled={!patientUserId || userIdLoading}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-tiby-ink transition hover:border-tiby-teal-200 hover:bg-tiby-teal-50 disabled:opacity-50"
+            >
+              {userIdLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <KeyRound className="h-4 w-4" />
+              )}
+              Reset Password Pasien
             </button>
           </DetailCard>
         </div>
       </div>
+
+      {/* ─── MODAL RESET PASSWORD (Dinamis untuk Pasien & PMO) ────────── */}
+      {resetOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+              <div className="flex items-center gap-2">
+                <KeyRound className="h-4 w-4 text-tiby-teal-600" />
+                <h3 className="font-heading text-sm font-semibold text-tiby-ink">
+                  Reset Password —{" "}
+                  {resetTarget === "PASIEN"
+                    ? summary.patientName
+                    : pmo?.fullName}
+                </h3>
+              </div>
+              <button
+                onClick={() => !resetLoading && setResetOpen(false)}
+                className="rounded-lg p-1 text-tiby-muted hover:bg-gray-100 disabled:opacity-50"
+                disabled={resetLoading}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleResetPassword} className="space-y-4 p-5">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-tiby-ink">
+                  Password Baru
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Minimal 8 karakter"
+                    autoComplete="new-password"
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2 pr-10 text-sm text-tiby-ink outline-none transition focus:border-tiby-teal-400 focus:ring-2 focus:ring-tiby-teal-100"
+                    disabled={resetLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-tiby-muted hover:bg-gray-100"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-tiby-ink">
+                  Konfirmasi Password
+                </label>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Ulangi password baru"
+                  autoComplete="new-password"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-tiby-ink outline-none transition focus:border-tiby-teal-400 focus:ring-2 focus:ring-tiby-teal-100"
+                  disabled={resetLoading}
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setResetOpen(false)}
+                  disabled={resetLoading}
+                  className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-xs font-semibold text-tiby-ink hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={resetLoading}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-tiby-teal-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-tiby-teal-700 disabled:opacity-60"
+                >
+                  {resetLoading && (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  )}
+                  {resetLoading ? "Menyimpan..." : "Simpan Password"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

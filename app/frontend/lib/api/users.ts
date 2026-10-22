@@ -1,7 +1,11 @@
 // lib/api/users.ts
 import { apiFetch } from "./client";
 
-// Tipe untuk response GET /api/users
+export interface ResetPasswordResponse {
+  success: boolean;
+  message: string;
+}
+
 export interface UserItem {
   id: string;
   username: string;
@@ -11,7 +15,6 @@ export interface UserItem {
   facilityId?: string | null;
 }
 
-// Tipe untuk payload POST /api/users
 export interface CreateUserPayload {
   username: string;
   email: string;
@@ -35,12 +38,10 @@ export const usersApi = {
     return apiFetch<UserItem>("/api/users/me", { method: "GET" });
   },
 
-  // ✅ Ganti any[] dengan UserItem[]
   async getAll(): Promise<UserItem[]> {
     return apiFetch<UserItem[]>("/api/users", { method: "GET" });
   },
 
-  // ✅ Ganti any dengan CreateUserPayload
   async createUser(dto: CreateUserPayload) {
     return apiFetch<UserItem>("/api/users", {
       method: "POST",
@@ -59,7 +60,7 @@ export const usersApi = {
   },
 
   async resetPassword(userId: string, newPassword: string) {
-    return apiFetch<{ success: boolean; message: string }>(
+    return apiFetch<ResetPasswordResponse>(
       `/api/users/${userId}/reset-password`,
       {
         method: "POST",

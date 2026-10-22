@@ -105,3 +105,10 @@ export interface PatientHistoryResponse {
   page: number;
   limit: number;
 }
+
+
+export interface PatientDetail extends RiskSortedPatientItem {
+  userId?: string;           
+}
+
+export type PatientPmo = NonNullable<RiskSortedPatientItem["pmo"]>;
