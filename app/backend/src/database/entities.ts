@@ -16,6 +16,7 @@ import { FacilityAlert } from "../modules/alerts/entities/facility-alert.entity.
 import { PatientStatusHistory } from "../modules/patients/entities/patient-status-history.entity.js";
 import { NotificationLog } from "../modules/whatsapp/entities/notification-log.entity.js";
 import { AuditLog } from "../modules/internal/audit/entities/audit-log.entity.js";
+import { EducationCard } from "../modules/education/entities/education-card.entity.js";
 
 export const entities = [
   AuthUser,
@@ -36,6 +37,7 @@ export const entities = [
   PatientStatusHistory,
   NotificationLog,
   AuditLog,
+  EducationCard,
 ];
 
 export {
@@ -57,4 +59,5 @@ export {
   PatientStatusHistory,
   NotificationLog,
   AuditLog,
+  EducationCard,
 };

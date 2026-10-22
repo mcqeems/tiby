@@ -129,6 +129,17 @@ export const AlertSeverities = ["INFO", "WARNING", "HIGH"] as const;
 export const AlertSeveritySchema = z.enum(AlertSeverities);
 export type AlertSeverity = z.infer<typeof AlertSeveritySchema>;
 
+// Education
+export const EducationCategories = [
+  "ADHERENCE",
+  "SIDE_EFFECTS",
+  "NUTRITION",
+  "STIGMA",
+  "GENERAL",
+] as const;
+export const EducationCategorySchema = z.enum(EducationCategories);
+export type EducationCategory = z.infer<typeof EducationCategorySchema>;
+
 // Longitudinal History Event Types
 export const PatientStatusEventTypes = [
   "STATE_TRANSITION",
