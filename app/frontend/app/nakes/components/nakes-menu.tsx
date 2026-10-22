@@ -1,7 +1,7 @@
 "use client";
 
 import type { SidebarItem } from "@/components/layout/universal-sidebar";
-import { Home, Users, UserPlus, UserCircle, FileText } from "lucide-react";
+import { Home, Users, UserPlus, UserCircle, FileText, BookOpen } from "lucide-react";
 
 export const nakesMenuItems: SidebarItem[] = [
   {
@@ -23,6 +23,11 @@ export const nakesMenuItems: SidebarItem[] = [
     label: "Tiket Tindak Lanjut",
     href: "/nakes/tiket",
     icon: <FileText className="w-5 md:w-4 h-5 md:h-4" />,
+  },
+  {
+    label: "Kelola Edukasi",
+    href: "/nakes/edukasi",
+    icon: <BookOpen className="w-5 md:w-4 h-5 md:h-4" />,
   },
   {
     label: "Profil Saya",

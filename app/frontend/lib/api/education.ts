@@ -1,51 +1,51 @@
 import { apiFetch } from "./client";
 
-export interface EducationCardManaged {
+export type EducationCategory =
+  | "ADHERENCE"
+  | "SIDE_EFFECTS"
+  | "NUTRITION"
+  | "STIGMA"
+  | "GENERAL";
+export type EducationPhase = "INTENSIF" | "LANJUTAN";
+
+export interface EducationItem {
   id: string;
   facilityId: string | null;
   title: string;
   summary: string;
   contentMarkdown: string;
-  category: string;
-  phase: string;
+  category: EducationCategory;
+  phase: EducationPhase;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface CreateEducationCardPayload {
+export interface CreateEducationDto {
   title: string;
   summary: string;
   contentMarkdown: string;
-  category: string;
-  phase: "INTENSIF" | "LANJUTAN";
-  sortOrder?: number;
-  facilityId?: string | null;
+  category: EducationCategory;
+  phase: EducationPhase;
+  sortOrder: number;
 }
 
 export const educationApi = {
-  async getDaily(phase?: string): Promise<{
-    cards: Array<{
-      id: string;
-      title: string;
-      summary: string;
-      contentMarkdown: string;
-      category: string;
-      phase?: string;
-    }>;
-  }> {
+  // Untuk Pasien & PMO
+  async getDaily(phase?: string): Promise<{ cards: EducationItem[] }> {
     const qs = phase ? `?phase=${encodeURIComponent(phase)}` : "";
-    return apiFetch(`/api/education/daily${qs}`, {
+    return apiFetch<{ cards: EducationItem[] }>(`/api/education/daily${qs}`, {
       method: "GET",
     });
   },
 
-  async list(): Promise<EducationCardManaged[]> {
-    return apiFetch<EducationCardManaged[]>("/api/education", { method: "GET" });
+  // Untuk Nakes
+  async getAll(): Promise<EducationItem[]> {
+    return apiFetch<EducationItem[]>("/api/education", { method: "GET" });
   },
 
-  async create(dto: CreateEducationCardPayload): Promise<EducationCardManaged> {
-    return apiFetch<EducationCardManaged>("/api/education", {
+  async create(dto: CreateEducationDto): Promise<EducationItem> {
+    return apiFetch<EducationItem>("/api/education", {
       method: "POST",
       body: JSON.stringify(dto),
     });
@@ -53,15 +53,20 @@ export const educationApi = {
 
   async update(
     id: string,
-    dto: Partial<CreateEducationCardPayload>,
-  ): Promise<EducationCardManaged> {
-    return apiFetch<EducationCardManaged>(`/api/education/${id}`, {
+    dto: Partial<CreateEducationDto>,
+  ): Promise<EducationItem> {
+    return apiFetch<EducationItem>(`/api/education/${id}`, {
       method: "PATCH",
       body: JSON.stringify(dto),
     });
   },
 
   async remove(id: string): Promise<{ success: boolean; message: string }> {
-    return apiFetch(`/api/education/${id}`, { method: "DELETE" });
+    return apiFetch<{ success: boolean; message: string }>(
+      `/api/education/${id}`,
+      {
+        method: "DELETE",
+      },
+    );
   },
 };
