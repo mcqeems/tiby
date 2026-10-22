@@ -1,0 +1,85 @@
+info:
+  name: Edit User (api/users/:id)  [NAKES]
+  type: http
+  seq: 6
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/users/:id"
+  params:
+    - name: id
+      value: UAAXQ1l80jCSl7xfLoD1mvCQ1VMuFrVd
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+      //   "fullName": ""
+      //   "email": "",
+        "whatsappNumber": "0888888888"
+      //   "role": "", // "ADMIN", "NAKES", "PMO", "PASIEN" (ADMIN ONLY)
+      //   "facilityId": ""
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Edit User (200)
+    request:
+      url: "{{baseUrl}}/api/users/:id"
+      method: PATCH
+      params:
+        - name: id
+          value: UAAXQ1l80jCSl7xfLoD1mvCQ1VMuFrVd
+          type: path
+      body:
+        type: json
+        data: |-
+          {
+          //   "fullName": ""
+          //   "email": "",
+            "whatsappNumber": "0888888888"
+          //   "role": "", // "ADMIN", "NAKES", "PMO", "PASIEN" (ADMIN ONLY)
+          //   "facilityId": ""
+          }
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "268"
+        - name: etag
+          value: W/"10c-tJx8al2CFIbshP+ZLZsQXCAfB2s"
+        - name: date
+          value: Thu, 22 Oct 2026 02:25:05 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            "id": "UAAXQ1l80jCSl7xfLoD1mvCQ1VMuFrVd",
+            "username": "pasien_budi_dca6",
+            "email": "pasien_budi_dca6@users.tiby.internal",
+            "name": "Budi Santoso",
+            "role": "PASIEN",
+            "whatsappNumber": "0888888888",
+            "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+            "facility": "Puskesmas Gambir"
+          }

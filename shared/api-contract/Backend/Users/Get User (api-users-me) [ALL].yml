@@ -33,11 +33,11 @@ examples:
         - name: content-type
           value: application/json; charset=utf-8
         - name: content-length
-          value: "172"
+          value: "270"
         - name: etag
-          value: W/"ac-L0GOU8tYaC3KmvUVm3pY5ugJplw"
+          value: W/"10e-ARCUA97TJ7ENiWTqoNjy8PA/y6I"
         - name: date
-          value: Sat, 17 Oct 2026 10:25:46 GMT
+          value: Thu, 22 Oct 2026 02:25:10 GMT
         - name: connection
           value: keep-alive
         - name: keep-alive
@@ -46,10 +46,12 @@ examples:
         type: json
         data: |-
           {
-            "id": "hO7jnpiFKHgj611i6AFeAEDbotSYfXUM",
-            "username": "ucup",
-            "email": "ucup@gmail.com",
-            "name": "Ucup Kasep",
-            "role": "PASIEN",
-            "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e"
+            "id": "UgauJizBDX1A7uXHEWyMkv9srkyZWhLz",
+            "username": "nakes_rini_d29a",
+            "email": "nakes_rini_d29a@users.tiby.internal",
+            "name": "dr. Rini Suryani",
+            "role": "NAKES",
+            "whatsappNumber": "08123456789",
+            "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+            "facility": "Puskesmas Gambir"
           }

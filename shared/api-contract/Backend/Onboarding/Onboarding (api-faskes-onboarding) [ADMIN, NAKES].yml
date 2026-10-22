@@ -11,15 +11,16 @@ http:
     data: |-
       {
         "patient": {
-          "fullName": "Ujang Surasep",
-          "username": "ujangsurasep",
+          "fullName": "Ujang Suraseppp",
+          "username": "ujangsuraseppp",
           "whatsappNumber": "08812312345"
         },
         "pmo": {
-          "fullName": "Ujang Kekep",
-          "username": "ujangkekep",
-          "whatsappNumber": "08812312345",
-      //     "relationship": "KELUARGA" | "KADER" | "NAKES" (required)
+          "id": "1XYV4ah9JMKx5NdvxH6wS20SO2PnJSUt",
+          //     "fullName": "Ujang Kekep",
+          //     "username": "ujangkekep",
+          //     "whatsappNumber": "08812312345",
+          //     "relationship": "KELUARGA" | "KADER" | "NAKES" (required)
           "relationship": "NAKES"
         },
         "familyContact": { // optional secondary contact
@@ -29,12 +30,11 @@ http:
         },
         "regimenCode": "FDC-4",
         "dailyPillQuota": 4,
-      //   "reminderTimeLocal": "string (required, format 'HH:mm', e.g. '08:00')",
+        //   "reminderTimeLocal": "string (required, format 'HH:mm', e.g. '08:00')",
         "reminderTimeLocal": "08:00",
-      //   "timezone": "string (optional, default: 'Asia/Jakarta')",
-      //   "startDate": "string (required, format 'YYYY-MM-DD')"
-        "startDate": "2026-10-17"
-
+        //   "timezone": "string (optional, default: 'Asia/Jakarta')",
+        //   "startDate": "string (required, format 'YYYY-MM-DD')"
+        "startDate": "2026-10-22"
       }
   auth: inherit
 
@@ -113,4 +113,73 @@ examples:
             "pmoPassword": "1b5e3585A1!",
             "patientUserId": "koMUsjaDd510j9PIJL87ava43WqyO4In",
             "pmoUserId": "xRngvEttNSoq1HiByMmaGVgBFOdUUUDr"
+          }
+  - name: Onboarding Existing PMO (201)
+    request:
+      url: "{{baseUrl}}/api/faskes/onboarding"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "patient": {
+              "fullName": "Ujang Suraseppp",
+              "username": "ujangsuraseppp",
+              "whatsappNumber": "08812312345"
+            },
+            "pmo": {
+              "id": "1XYV4ah9JMKx5NdvxH6wS20SO2PnJSUt",
+              //     "fullName": "Ujang Kekep",
+              //     "username": "ujangkekep",
+              //     "whatsappNumber": "08812312345",
+              //     "relationship": "KELUARGA" | "KADER" | "NAKES" (required)
+              "relationship": "NAKES"
+            },
+            "familyContact": { // optional secondary contact
+              "fullName": "Udin Surasep",
+              "whatsappNumber": "08812312345",
+              "notifyOnEscalation": true
+            },
+            "regimenCode": "FDC-4",
+            "dailyPillQuota": 4,
+            //   "reminderTimeLocal": "string (required, format 'HH:mm', e.g. '08:00')",
+            "reminderTimeLocal": "08:00",
+            //   "timezone": "string (optional, default: 'Asia/Jakarta')",
+            //   "startDate": "string (required, format 'YYYY-MM-DD')"
+            "startDate": "2026-10-22"
+          }
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "292"
+        - name: etag
+          value: W/"124-NxoehtICy2lGSm08HTu1r8WxuoQ"
+        - name: date
+          value: Thu, 22 Oct 2026 02:00:48 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            "treatmentPlanId": "9f1cdce6-d18c-437a-ac1a-d71eadef0120",
+            "patientUsername": "ujangsuraseppp",
+            "patientPassword": "fa12abb4A1!",
+            "pmoUsername": "pmo_ratna_d29a",
+            "pmoPassword": null,
+            "patientUserId": "JYhd32kaV6CyucvVrTuZHFuz8Ro0aJ2a",
+            "pmoUserId": "1XYV4ah9JMKx5NdvxH6wS20SO2PnJSUt",
+            "pmoCreated": false
           }

@@ -1,0 +1,83 @@
+info:
+  name: Create Education (api/education) [NAKES]
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/education"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Mengapa Obat Harus Diminum Setiap Hari?",
+        "summary": "Konsistensi adalah kunci kesembuhan total.",
+        "contentMarkdown": "### Disiplin Minum Obat\nMinum obat setiap hari...",
+        "category": "ADHERENCE", // ADHERENCE | SIDE_EFFECTS | NUTRITION | STIGMA | GENERAL
+        "phase": "INTENSIF", // INTENSIF | LANJUTAN
+        "sortOrder": 2
+      //   "facilityId": null // Only for Admin
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Create Education (201)
+    request:
+      url: "{{baseUrl}}/api/education"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "title": "Mengapa Obat Harus Diminum Setiap Hari?",
+            "summary": "Konsistensi adalah kunci kesembuhan total.",
+            "contentMarkdown": "### Disiplin Minum Obat\nMinum obat setiap hari...",
+            "category": "ADHERENCE", // ADHERENCE | SIDE_EFFECTS | NUTRITION | STIGMA | GENERAL
+            "phase": "INTENSIF", // INTENSIF | LANJUTAN
+            "sortOrder": 2
+          //   "facilityId": null // Only for Admin
+          }
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "407"
+        - name: etag
+          value: W/"197-RPeIi1Almwas+Bl4942BrOUyoKs"
+        - name: date
+          value: Thu, 22 Oct 2026 02:37:40 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            "id": "30a0aa98-fc5a-47b0-9256-f939e780d5b4",
+            "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+            "title": "Mengapa Obat Harus Diminum Setiap Hari?",
+            "summary": "Konsistensi adalah kunci kesembuhan total.",
+            "contentMarkdown": "### Disiplin Minum Obat\nMinum obat setiap hari...",
+            "category": "ADHERENCE",
+            "phase": "INTENSIF",
+            "sortOrder": 2,
+            "createdAt": "2026-10-22T02:37:40.689Z",
+            "updatedAt": "2026-10-22T02:37:40.689Z"
+          }

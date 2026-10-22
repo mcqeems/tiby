@@ -1,0 +1,109 @@
+info:
+  name: Get Educations (api/education) [NAKES]
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/education"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Get Educations (200)
+    request:
+      url: "{{baseUrl}}/api/education"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "2800"
+        - name: etag
+          value: W/"af0-x3fO0UHvOweWpPWOGZCjX2CzWUk"
+        - name: date
+          value: Thu, 22 Oct 2026 02:29:40 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          [
+            {
+              "id": "5dbc9161-d4b7-4058-a23c-ad94a69e879f",
+              "facilityId": null,
+              "title": "Mengapa Obat Harus Diminum Setiap Hari Tanpa Putus?",
+              "summary": "Konsistensi adalah kunci utama kesembuhan total dan pencegahan kekebalan obat.",
+              "contentMarkdown": "### Disiplin Minum Obat Bersama Pandu\nTerapi pengobatan membutuhkan waktu beberapa bulan agar kuman dapat dihilangkan secara menyeluruh. Meminum obat secara teratur setiap hari menjaga kadar obat tetap optimal di dalam tubuh.\n\n**Tips Sehari-hari:**\n- Tetapkan alarm harian pada jam yang sama setiap pagi atau malam.\n- Minta PMO (Pendamping Minum Obat) untuk saling menyemangati.\n- Jika ada keluhan ringan, segera laporkan lewat fitur check-in Pandu.",
+              "category": "ADHERENCE",
+              "phase": "INTENSIF",
+              "sortOrder": 0,
+              "createdAt": "2026-10-22T02:06:49.222Z",
+              "updatedAt": "2026-10-22T02:06:49.222Z"
+            },
+            {
+              "id": "4d286183-d6f4-4b76-a047-f21d3b37031c",
+              "facilityId": null,
+              "title": "Memasuki Tahap Lanjutan: Jangan Lengah!",
+              "summary": "Badan sudah terasa segar, namun pengobatan harus dituntaskan hingga tuntas.",
+              "contentMarkdown": "### Selamat Memasuki Tahap Lanjutan!\nBanyak sahabat Pandu merasa tubuhnya sudah sehat pada tahap ini. Namun, kuman yang sedang 'tertidur' harus dipastikan benar-benar tuntas.\n\nTetaplah bersemangat dan rutin menyelesaikan jadwal terapi Anda bersama Pandu hingga dinyatakan tuntas oleh dokter puskesmas!",
+              "category": "ADHERENCE",
+              "phase": "LANJUTAN",
+              "sortOrder": 0,
+              "createdAt": "2026-10-22T02:06:49.222Z",
+              "updatedAt": "2026-10-22T02:06:49.222Z"
+            },
+            {
+              "id": "dca6bf8c-e439-4596-98c5-fb17546e96f8",
+              "facilityId": null,
+              "title": "Kartu Global Diperbarui",
+              "summary": "Berlaku semua faskes",
+              "contentMarkdown": "### Isi global",
+              "category": "STIGMA",
+              "phase": "LANJUTAN",
+              "sortOrder": 0,
+              "createdAt": "2026-10-22T02:07:56.397Z",
+              "updatedAt": "2026-10-22T02:07:56.460Z"
+            },
+            {
+              "id": "ab52d7d1-4475-45d6-9cbd-d1fc5e511347",
+              "facilityId": null,
+              "title": "Kartu Global Diperbarui",
+              "summary": "Berlaku semua faskes",
+              "contentMarkdown": "### Isi global",
+              "category": "STIGMA",
+              "phase": "LANJUTAN",
+              "sortOrder": 0,
+              "createdAt": "2026-10-22T02:08:36.297Z",
+              "updatedAt": "2026-10-22T02:08:36.366Z"
+            },
+            {
+              "id": "c4ed725c-892c-406b-a774-eedcfffd734a",
+              "facilityId": null,
+              "title": "Mengenal Perubahan Warna Air Seni yang Wajar",
+              "summary": "Warna air kencing kemerahan atau oranye adalah tanda alami salah satu obat bekerja.",
+              "contentMarkdown": "### Air Seni Berwarna Kemerahan?\nJangan khawatir! Salah satu komponen obat (Rifampisin) memang secara alami menyebabkan air seni, keringat, atau air mata berwarna merah atau oranye.\n\nIni adalah efek samping yang **sangat wajar dan tidak berbahaya**. Tetap minum air putih yang cukup dan lanjutkan minum obat sesuai anjuran petugas kesehatan.",
+              "category": "SIDE_EFFECTS",
+              "phase": "INTENSIF",
+              "sortOrder": 1,
+              "createdAt": "2026-10-22T02:06:49.222Z",
+              "updatedAt": "2026-10-22T02:06:49.222Z"
+            }
+          ]
