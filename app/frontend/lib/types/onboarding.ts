@@ -42,7 +42,8 @@ export interface OnboardingCredentials {
   patientUsername: string;
   patientPassword: string;
   pmoUsername: string;
-  pmoPassword: string;
+  pmoPassword: string | null;
   patientUserId: string;
   pmoUserId: string;
+  pmoCreated: boolean;
 }

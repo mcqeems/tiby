@@ -30,12 +30,21 @@ export const PatientOnboardingInputSchema = z.object({
   whatsappNumber: z.string().min(8).max(20),
 });
 
-export const PmoOnboardingInputSchema = z.object({
-  fullName: z.string().min(2),
-  username: z.string().min(3).max(30),
-  whatsappNumber: z.string().min(8).max(20),
-  relationship: PmoRelationshipSchema,
-});
+export const PmoOnboardingInputSchema = z.union([
+  // Reference an already-registered PMO by user id — only the relationship is new.
+  z.object({
+    id: z.string().min(1),
+    relationship: PmoRelationshipSchema,
+  }),
+  // Create a brand-new PMO account.
+  z.object({
+    fullName: z.string().min(2),
+    username: z.string().min(3).max(30),
+    whatsappNumber: z.string().min(8).max(20),
+    relationship: PmoRelationshipSchema,
+  }),
+]);
+export type PmoOnboardingInput = z.infer<typeof PmoOnboardingInputSchema>;
 
 export const FamilyContactInputSchema = z.object({
   fullName: z.string().min(2),
@@ -72,9 +81,10 @@ export const OnboardingCredentialsSchema = z.object({
   patientUsername: z.string(),
   patientPassword: z.string(),
   pmoUsername: z.string(),
-  pmoPassword: z.string(),
+  pmoPassword: z.string().nullable(),
   patientUserId: z.string(),
   pmoUserId: z.string(),
+  pmoCreated: z.boolean(),
 });
 export type OnboardingCredentials = z.infer<typeof OnboardingCredentialsSchema>;
 

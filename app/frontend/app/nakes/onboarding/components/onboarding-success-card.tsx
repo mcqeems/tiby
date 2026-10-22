@@ -39,7 +39,7 @@ function CredentialCard({
   role: string;
   caption: string;
   username: string;
-  password: string;
+  password: string | null;
   copyLabel: string;
   copied: boolean;
   onCopy: () => void;
@@ -77,7 +77,7 @@ function CredentialCard({
             Password
           </dt>
           <dd className="min-w-0 truncate rounded-md bg-tiby-teal-50 px-2 py-0.5 font-mono text-[13px] font-semibold text-tiby-teal-700 select-all">
-            {password}
+            {password ?? "Tidak berubah"}
           </dd>
         </div>
       </dl>
@@ -234,15 +234,25 @@ export default function OnboardingSuccessCard({
 
           <CredentialCard
             icon={Users}
-            role="Akun PMO (Pengawas)"
-            caption="Untuk memantau kepatuhan minum obat"
+            role={
+              credentials.pmoCreated
+                ? "Akun PMO (Pengawas)"
+                : "PMO Terhubung (Akun Lama)"
+            }
+            caption={
+              credentials.pmoCreated
+                ? "Untuk memantau kepatuhan minum obat"
+                : "Akun PMO sudah ada — password tidak berubah"
+            }
             username={credentials.pmoUsername}
             password={credentials.pmoPassword}
             copyLabel="Salin Akun PMO"
             copied={copiedKey === "pmo"}
             onCopy={() =>
               copyToClipboard(
-                `Akun Tiby PMO:\nUsername: ${credentials.pmoUsername}\nPassword: ${credentials.pmoPassword}`,
+                credentials.pmoCreated
+                  ? `Akun Tiby PMO:\nUsername: ${credentials.pmoUsername}\nPassword: ${credentials.pmoPassword}`
+                  : `Akun Tiby PMO:\nUsername: ${credentials.pmoUsername}`,
                 "pmo",
               )
             }

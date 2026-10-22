@@ -90,16 +90,72 @@ export class OnboardingService {
       });
     }
 
-    const existingPmo = await this.userRepo.findOneBy({ username: dto.pmo.username });
-    if (existingPmo) {
-      throw new BadRequestException({
-        code: "BAD_REQUEST",
-        message: `Username '${dto.pmo.username}' is already taken`,
-      });
-    }
-
     const patientPassword = generatePassword();
-    const pmoPassword = generatePassword();
+
+    // Resolve the PMO: either an existing account referenced by id, or a new one.
+    let pmoUserId: string;
+    let pmoUsername: string;
+    let pmoPassword: string | null = null;
+    let pmoCreated = false;
+
+    if ("id" in dto.pmo) {
+      const existingPmo = await this.userRepo.findOneBy({ id: dto.pmo.id });
+      if (!existingPmo) {
+        throw new NotFoundException({
+          code: "NOT_FOUND",
+          message: "PMO user not found",
+        });
+      }
+      if (existingPmo.role !== "PMO") {
+        throw new BadRequestException({
+          code: "BAD_REQUEST",
+          message: "Selected user is not a PMO",
+        });
+      }
+      if (existingPmo.facilityId && existingPmo.facilityId !== facilityId) {
+        throw new BadRequestException({
+          code: "BAD_REQUEST",
+          message: "Selected PMO belongs to a different facility",
+        });
+      }
+
+      pmoUserId = existingPmo.id;
+      pmoUsername = existingPmo.username ?? "";
+    } else {
+      const existingPmo = await this.userRepo.findOneBy({ username: dto.pmo.username });
+      if (existingPmo) {
+        throw new BadRequestException({
+          code: "BAD_REQUEST",
+          message: `Username '${dto.pmo.username}' is already taken`,
+        });
+      }
+
+      pmoPassword = generatePassword();
+
+      // Create PMO Account via Better Auth
+      const pmoAuth = await auth.api.createUser({
+        body: {
+          name: dto.pmo.fullName,
+          email: `${dto.pmo.username}@users.tiby.internal`,
+          password: pmoPassword,
+          role: "PMO",
+          data: {
+            username: dto.pmo.username,
+            displayUsername: dto.pmo.username,
+            facility_id: facilityId,
+            full_name_encrypted: dto.pmo.fullName,
+            whatsapp_encrypted: dto.pmo.whatsappNumber,
+            whatsapp_hash: hashPhone(dto.pmo.whatsappNumber),
+            whatsapp_verified: false,
+            must_confirm_consent: true,
+          },
+        },
+      });
+
+      pmoUserId = pmoAuth.user.id;
+      pmoUsername = dto.pmo.username;
+      pmoCreated = true;
+    }
 
     // 1. Create Patient Account via Better Auth
     const patientAuth = await auth.api.createUser({
@@ -115,26 +171,6 @@ export class OnboardingService {
           full_name_encrypted: dto.patient.fullName,
           whatsapp_encrypted: dto.patient.whatsappNumber,
           whatsapp_hash: hashPhone(dto.patient.whatsappNumber),
-          whatsapp_verified: false,
-          must_confirm_consent: true,
-        },
-      },
-    });
-
-    // 2. Create PMO Account via Better Auth
-    const pmoAuth = await auth.api.createUser({
-      body: {
-        name: dto.pmo.fullName,
-        email: `${dto.pmo.username}@users.tiby.internal`,
-        password: pmoPassword,
-        role: "PMO",
-        data: {
-          username: dto.pmo.username,
-          displayUsername: dto.pmo.username,
-          facility_id: facilityId,
-          full_name_encrypted: dto.pmo.fullName,
-          whatsapp_encrypted: dto.pmo.whatsappNumber,
-          whatsapp_hash: hashPhone(dto.pmo.whatsappNumber),
           whatsapp_verified: false,
           must_confirm_consent: true,
         },
@@ -167,7 +203,7 @@ export class OnboardingService {
     await this.pmoRepo.save(
       this.pmoRepo.create({
         treatmentPlanId: plan.id,
-        pmoUserId: pmoAuth.user.id,
+        pmoUserId,
         relationship: dto.pmo.relationship,
         isPrimary: true,
         active: true,
@@ -214,7 +250,8 @@ export class OnboardingService {
         targetId: plan.id,
         metadataJson: {
           patientUserId: patientAuth.user.id,
-          pmoUserId: pmoAuth.user.id,
+          pmoUserId,
+          pmoMode: pmoCreated ? "new" : "existing",
           regimenCode: dto.regimenCode,
         },
       }),
@@ -224,10 +261,11 @@ export class OnboardingService {
       treatmentPlanId: plan.id,
       patientUsername: dto.patient.username,
       patientPassword,
-      pmoUsername: dto.pmo.username,
+      pmoUsername,
       pmoPassword,
       patientUserId: patientAuth.user.id,
-      pmoUserId: pmoAuth.user.id,
+      pmoUserId,
+      pmoCreated,
     };
   }
 

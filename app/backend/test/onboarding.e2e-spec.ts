@@ -8,6 +8,7 @@ import { auth } from "../src/auth/auth.config.js";
 import { AuthUser } from "../src/auth/entities/auth-user.entity.js";
 import { Facility } from "../src/entities/facility.entity.js";
 import { TreatmentPlan } from "../src/modules/patients/entities/treatment-plan.entity.js";
+import { PmoAssignment } from "../src/modules/patients/entities/pmo-assignment.entity.js";
 import { FacilityAlert } from "../src/modules/alerts/entities/facility-alert.entity.js";
 
 describe("Phase 2: Auth, Consent, and Faskes Onboarding (e2e)", () => {
@@ -26,6 +27,8 @@ describe("Phase 2: Auth, Consent, and Faskes Onboarding (e2e)", () => {
     userId: string;
   };
   let pmoUsername: string;
+  let pmoUserId: string;
+  let secondPatientUserId: string;
   let patientCookie: string[];
 
   beforeAll(async () => {
@@ -82,8 +85,14 @@ describe("Phase 2: Auth, Consent, and Faskes Onboarding (e2e)", () => {
 
   afterAll(async () => {
     // Cleanup
+    if (secondPatientUserId) {
+      await dataSource.getRepository(AuthUser).delete({ id: secondPatientUserId });
+    }
     if (patientCredentials?.userId) {
       await dataSource.getRepository(AuthUser).delete({ id: patientCredentials.userId });
+    }
+    if (pmoUserId) {
+      await dataSource.getRepository(AuthUser).delete({ id: pmoUserId });
     }
     if (nakesUserId) {
       await dataSource.getRepository(AuthUser).delete({ id: nakesUserId });
@@ -138,6 +147,8 @@ describe("Phase 2: Auth, Consent, and Faskes Onboarding (e2e)", () => {
       treatmentPlanId: res.body.treatmentPlanId,
       userId: res.body.patientUserId,
     };
+    pmoUserId = res.body.pmoUserId;
+    expect(res.body.pmoCreated).toBe(true);
 
     // Check TreatmentPlan state is initially PENDING
     const planRepo = dataSource.getRepository(TreatmentPlan);
@@ -247,6 +258,70 @@ describe("Phase 2: Auth, Consent, and Faskes Onboarding (e2e)", () => {
     expect(res.status).toBe(200);
     const ids = res.body.items.map((p: any) => p.id);
     expect(ids).toContain(patientCredentials.treatmentPlanId);
+  });
+
+
+  it("5c. Nakes onboards a second patient reusing the existing PMO account", async () => {
+    const timestamp = Date.now();
+    const secondPatientUsername = `pasien2_${timestamp}`;
+
+    const res = await request(app.getHttpServer())
+      .post("/api/faskes/onboarding")
+      .set("Cookie", nakesCookie)
+      .send({
+        patient: {
+          fullName: "Siti Aminah",
+          username: secondPatientUsername,
+          whatsappNumber: "081299998888",
+        },
+        pmo: {
+          id: pmoUserId,
+          relationship: "KADER",
+        },
+        regimenCode: "FDC-4",
+        dailyPillQuota: 4,
+        reminderTimeLocal: "08:00",
+        timezone: "Asia/Jakarta",
+        startDate: "2026-10-17",
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.pmoCreated).toBe(false);
+    expect(res.body.pmoPassword).toBeNull();
+    expect(res.body.pmoUserId).toBe(pmoUserId);
+    expect(res.body.pmoUsername).toBe(pmoUsername);
+    expect(res.body.patientPassword).toBeDefined();
+
+    secondPatientUserId = res.body.patientUserId;
+
+    // the new plan is assigned to the same PMO with the new relationship
+    const assignment = await dataSource.getRepository(PmoAssignment).findOneBy({
+      treatmentPlanId: res.body.treatmentPlanId,
+      pmoUserId,
+      active: true,
+    });
+    expect(assignment).toBeDefined();
+    expect(assignment?.relationship).toBe("KADER");
+  });
+
+  it("5d. Onboarding rejects an existing PMO id that does not exist", async () => {
+    const res = await request(app.getHttpServer())
+      .post("/api/faskes/onboarding")
+      .set("Cookie", nakesCookie)
+      .send({
+        patient: {
+          fullName: "Ghost Patient",
+          username: `ghost_${Date.now()}`,
+          whatsappNumber: "081200000000",
+        },
+        pmo: { id: "00000000-0000-0000-0000-000000000000", relationship: "KELUARGA" },
+        regimenCode: "FDC-4",
+        dailyPillQuota: 4,
+        reminderTimeLocal: "08:00",
+        startDate: "2026-10-17",
+      });
+
+    expect(res.status).toBe(404);
   });
 
   it("6. Nakes requests OCR draft via POST /api/faskes/onboarding/ocr", async () => {
