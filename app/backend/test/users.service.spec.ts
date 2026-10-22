@@ -13,7 +13,7 @@ describe("UsersService Unit Tests", () => {
     mockUserRepo = {
       findOneBy: vi.fn(),
       findOne: vi.fn(),
-      createQueryBuilder: vi.fn(),
+      find: vi.fn(),
     };
     mockFacilityRepo = {
       findOneBy: vi.fn(),
@@ -255,6 +255,50 @@ describe("UsersService Unit Tests", () => {
           { newPassword: "new_password_123" },
         ),
       ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe("listUsers", () => {
+    it("scopes NAKES to their facility and joins the facility relation", async () => {
+      mockUserRepo.find.mockResolvedValue([]);
+
+      await service.listUsers({ id: "nakes-1", role: "NAKES", facilityId: "faskes-1" });
+
+      expect(mockUserRepo.find).toHaveBeenCalledWith({
+        where: { facilityId: "faskes-1" },
+        relations: { facility: true },
+        order: { id: "ASC" },
+      });
+    });
+
+    it("does not scope ADMIN to a facility", async () => {
+      mockUserRepo.find.mockResolvedValue([]);
+
+      await service.listUsers({ id: "admin-1", role: "ADMIN" });
+
+      expect(mockUserRepo.find).toHaveBeenCalledWith({
+        where: {},
+        relations: { facility: true },
+        order: { id: "ASC" },
+      });
+    });
+
+    it("maps the joined facility name onto the summary", async () => {
+      mockUserRepo.find.mockResolvedValue([
+        {
+          id: "u-1",
+          username: "budi",
+          email: "b@x",
+          name: "Budi",
+          role: "PASIEN",
+          facilityId: "faskes-1",
+          facility: { name: "Puskesmas Gampang" },
+        },
+      ]);
+
+      const res = await service.listUsers({ id: "admin-1", role: "ADMIN" });
+
+      expect(res[0].facility).toBe("Puskesmas Gampang");
     });
   });
 });

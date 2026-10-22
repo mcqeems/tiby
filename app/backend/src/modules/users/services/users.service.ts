@@ -259,16 +259,14 @@ export class UsersService {
     role: string;
     facilityId?: string | null;
   }): Promise<UserSummary[]> {
-    const qb = this.userRepo
-      .createQueryBuilder('u')
-      .leftJoinAndSelect('u.facility', 'facility');
-
-    if (caller.role === 'NAKES' && caller.facilityId) {
-      qb.where('u.facilityId = :facilityId', { facilityId: caller.facilityId });
-    }
-
-    qb.orderBy('u.id', 'ASC');
-    const users = await qb.getMany();
+    const users = await this.userRepo.find({
+      where:
+        caller.role === 'NAKES' && caller.facilityId
+          ? { facilityId: caller.facilityId }
+          : {},
+      relations: { facility: true },
+      order: { id: 'ASC' },
+    });
 
     return users.map((user) => ({
       id: user.id,

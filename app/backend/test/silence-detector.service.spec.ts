@@ -17,7 +17,7 @@ describe("SilenceDetectorService Unit Tests", () => {
       save: vi.fn((data) => Promise.resolve(data)),
     };
     mockCheckInRepo = {
-      findOne: vi.fn(),
+      find: vi.fn().mockResolvedValue([]),
     };
     mockHistoryRepo = {
       create: vi.fn((data) => data),
@@ -55,7 +55,7 @@ describe("SilenceDetectorService Unit Tests", () => {
       consecutiveSilenceDays: 0,
     };
     mockPlanRepo.find.mockResolvedValue([plan]);
-    mockCheckInRepo.findOne.mockResolvedValue(null); // missed check-in
+    mockCheckInRepo.find.mockResolvedValue([]); // missed check-in
 
     const res = await service.runMidnightSilenceCheck("2026-10-15");
     expect(res.processed).toBe(1);
@@ -106,7 +106,7 @@ describe("SilenceDetectorService Unit Tests", () => {
       riskScore: 0,
     };
     mockPlanRepo.find.mockResolvedValue([plan]);
-    mockCheckInRepo.findOne.mockResolvedValue(null);
+    mockCheckInRepo.find.mockResolvedValue([]);
 
     await service.runMidnightSilenceCheck("2026-10-15");
 
@@ -134,7 +134,7 @@ describe("SilenceDetectorService Unit Tests", () => {
       riskScore: 15,
     };
     mockPlanRepo.find.mockResolvedValue([plan]);
-    mockCheckInRepo.findOne.mockResolvedValue(null);
+    mockCheckInRepo.find.mockResolvedValue([]);
 
     await service.runMidnightSilenceCheck("2026-10-15");
 
@@ -169,5 +169,29 @@ describe("SilenceDetectorService Unit Tests", () => {
         recipientRole: "PMO",
       }),
     );
+  });
+
+  it("batches the fulfilled check-in lookup into a single query for all plans", async () => {
+    const plans = [
+      { id: "plan-1", patientState: "AKTIF", currentStreak: 3, consecutiveSilenceDays: 0, facilityId: "f1" },
+      { id: "plan-2", patientState: "AKTIF", currentStreak: 0, consecutiveSilenceDays: 0, facilityId: "f1" },
+    ];
+    mockPlanRepo.find.mockResolvedValue(plans);
+    // plan-1 already checked in, plan-2 did not
+    mockCheckInRepo.find.mockResolvedValue([{ treatmentPlanId: "plan-1" }]);
+
+    const res = await service.runMidnightSilenceCheck("2026-10-15");
+
+    // one batched query, not one per plan
+    expect(mockCheckInRepo.find).toHaveBeenCalledTimes(1);
+    expect(mockCheckInRepo.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ checkInDate: "2026-10-15", isDoseFulfilled: true }),
+        select: { treatmentPlanId: true },
+      }),
+    );
+    expect(res.silenced).toBe(1);
+    expect(plans[0].consecutiveSilenceDays).toBe(0); // fulfilled -> untouched
+    expect(plans[1].consecutiveSilenceDays).toBe(1); // missed -> incremented
   });
 });

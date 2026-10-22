@@ -83,6 +83,8 @@ export class PatientsService {
     const nakes = await this.userRepo.findOneBy({ id: nakesUserId });
     const facilityId = nakes?.facilityId;
 
+    // Query Builder is required here: the PMO-name search below is an EXISTS
+    // correlated subquery, which the Repository API cannot express.
     const qb = this.planRepo
       .createQueryBuilder('plan')
       .leftJoinAndSelect('plan.patientUser', 'patient');
@@ -266,14 +268,11 @@ export class PatientsService {
     patientOrPlanId: string,
     dto: CreatePmoFollowUpDto,
   ): Promise<PmoFollowUpResponse> {
-    let plan = await this.planRepo.findOne({
-      where: { patientUserId: patientOrPlanId },
-    });
-    if (!plan) {
-      plan = await this.planRepo.findOne({
-        where: { id: patientOrPlanId },
-      });
-    }
+    // Two lookups, not `where: [{...}, {...}]`: `id` is a uuid column while
+    // patientOrPlanId may be a non-uuid patient id, which Postgres rejects.
+    const plan =
+      (await this.planRepo.findOneBy({ patientUserId: patientOrPlanId })) ??
+      (await this.planRepo.findOneBy({ id: patientOrPlanId }));
     if (!plan) {
       throw new NotFoundException({
         code: 'NOT_FOUND',

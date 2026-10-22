@@ -16,7 +16,7 @@ describe("PatientsService Unit Tests", () => {
 
   beforeEach(() => {
     mockPlanRepo = {
-      findOne: vi.fn(),
+      findOneBy: vi.fn(),
       createQueryBuilder: vi.fn(),
     };
     mockHistoryRepo = {
@@ -54,7 +54,7 @@ describe("PatientsService Unit Tests", () => {
 
   describe("createPmoFollowUp", () => {
     it("logs PMO outreach notes", async () => {
-      mockPlanRepo.findOne.mockResolvedValue({
+      mockPlanRepo.findOneBy.mockResolvedValue({
         id: "plan-1",
         patientUserId: "patient-1",
         patientState: "AKTIF",
@@ -87,7 +87,7 @@ describe("PatientsService Unit Tests", () => {
     });
 
     it("throws NotFoundException when the treatment plan does not exist", async () => {
-      mockPlanRepo.findOne.mockResolvedValue(null);
+      mockPlanRepo.findOneBy.mockResolvedValue(null);
 
       await expect(
         service.createPmoFollowUp("pmo-1", "missing", {
@@ -98,7 +98,7 @@ describe("PatientsService Unit Tests", () => {
     });
 
     it("throws NotFoundException when the PMO is not assigned to the patient", async () => {
-      mockPlanRepo.findOne.mockResolvedValue({ id: "plan-1", patientUserId: "patient-1" });
+      mockPlanRepo.findOneBy.mockResolvedValue({ id: "plan-1", patientUserId: "patient-1" });
       mockPmoRepo.findOne.mockResolvedValue(null);
 
       await expect(

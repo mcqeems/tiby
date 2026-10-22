@@ -50,16 +50,25 @@ export class SilenceDetectorService {
 
     let silenced = 0;
 
-    for (const plan of activePlans) {
-      const fulfilledCheckIn = await this.checkInRepo.findOne({
-        where: {
-          treatmentPlanId: plan.id,
-          checkInDate: dateToCheck,
-          isDoseFulfilled: true,
-        },
-      });
+    // Batch the fulfilled-check-in lookup: one query for all active plans
+    // instead of one per plan inside the loop.
+    const planIds = activePlans.map((p) => p.id);
+    const fulfilledCheckIns = planIds.length
+      ? await this.checkInRepo.find({
+          where: {
+            treatmentPlanId: In(planIds),
+            checkInDate: dateToCheck,
+            isDoseFulfilled: true,
+          },
+          select: { treatmentPlanId: true },
+        })
+      : [];
+    const fulfilledPlanIds = new Set(
+      fulfilledCheckIns.map((c) => c.treatmentPlanId),
+    );
 
-      if (!fulfilledCheckIn) {
+    for (const plan of activePlans) {
+      if (!fulfilledPlanIds.has(plan.id)) {
         silenced++;
         const previousStreak = plan.currentStreak;
         const previousState = plan.patientState;

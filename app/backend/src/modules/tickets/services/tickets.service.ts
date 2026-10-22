@@ -143,30 +143,24 @@ export class TicketsService {
     const nakes = await this.userRepo.findOneBy({ id: nakesUserId });
     const facilityId = nakes?.facilityId;
 
-    const qb = this.ticketRepo
-      .createQueryBuilder("ticket")
-      .leftJoinAndSelect("ticket.treatmentPlan", "plan")
-      .leftJoinAndSelect("plan.patientUser", "patient");
-
-    if (facilityId) {
-      qb.andWhere("ticket.facilityId = :facilityId", { facilityId });
-    }
-
-    if (query.status) {
-      qb.andWhere("ticket.status = :status", { status: query.status });
-    }
-
-    if (query.priority) {
-      qb.andWhere("ticket.priority = :priority", { priority: query.priority });
-    }
-
-    qb.orderBy("ticket.openedAt", "DESC");
-
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
-    qb.skip((page - 1) * limit).take(limit);
 
-    const [tickets, total] = await qb.getManyAndCount();
+    const [tickets, total] = await this.ticketRepo.findAndCount({
+      where: {
+        ...(facilityId ? { facilityId } : {}),
+        ...(query.status ? { status: query.status } : {}),
+        ...(query.priority ? { priority: query.priority } : {}),
+      },
+      relations: {
+        treatmentPlan: {
+          patientUser: true,
+        },
+      },
+      order: { openedAt: "DESC" },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
 
     const items: TicketDetail[] = tickets.map((t) => ({
       id: t.id,

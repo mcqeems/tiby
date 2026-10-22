@@ -17,6 +17,7 @@ describe("ConsentService Unit Tests", () => {
       find: vi.fn(),
       create: vi.fn((data) => data),
       save: vi.fn((data) => Promise.resolve(data)),
+      update: vi.fn().mockResolvedValue({ affected: 1 }),
       upsert: vi.fn().mockResolvedValue({}),
     };
     mockUserRepo = {
@@ -136,9 +137,7 @@ describe("ConsentService Unit Tests", () => {
     it("marks records revoked, sets mustConfirmConsent=true, transitions plan to DIPANTAU_TERBATAS, creates warning alert", async () => {
       const user = { id: "user-1", role: "PASIEN", mustConfirmConsent: false };
       mockUserRepo.findOneBy.mockResolvedValue(user);
-
-      const activeRecord = { id: "rec-1", userId: "user-1", scope: "PATIENT_DATA_SHARE", revokedAt: null };
-      mockConsentRepo.find.mockResolvedValue([activeRecord]);
+      mockConsentRepo.find.mockResolvedValue([]);
 
       const plan = {
         id: "plan-1",
@@ -151,7 +150,10 @@ describe("ConsentService Unit Tests", () => {
 
       await service.revokeConsent("user-1", { reason: "Tidak ingin berbagi data" });
 
-      expect(activeRecord.revokedAt).toBeDefined();
+      expect(mockConsentRepo.update).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: "user-1" }),
+        expect.objectContaining({ revokedAt: expect.any(Date) }),
+      );
       expect(user.mustConfirmConsent).toBe(true);
       expect(plan.patientState).toBe("DIPANTAU_TERBATAS");
 

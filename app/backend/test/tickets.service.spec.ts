@@ -15,7 +15,7 @@ describe("TicketsService Unit Tests", () => {
       findOne: vi.fn(),
       create: vi.fn((data) => ({ id: "ticket-new", ...data })),
       save: vi.fn((data) => Promise.resolve({ id: "ticket-new", ...data })),
-      createQueryBuilder: vi.fn(),
+      findAndCount: vi.fn(),
     };
     mockUserRepo = {
       findOneBy: vi.fn(),
@@ -218,6 +218,39 @@ describe("TicketsService Unit Tests", () => {
         }),
       );
       expect(res.status).toBe("RESOLVED_CLOSED");
+    });
+  });
+
+  describe("listTickets", () => {
+    it("scopes to the nakes facility and applies filters via the repository API", async () => {
+      mockUserRepo.findOneBy.mockResolvedValue({ id: "nakes-1", facilityId: "faskes-1" });
+      mockTicketRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.listTickets("nakes-1", {
+        status: "OPEN",
+        priority: "HIGH",
+        page: 1,
+        limit: 20,
+      } as any);
+
+      expect(mockTicketRepo.findAndCount).toHaveBeenCalledWith({
+        where: { facilityId: "faskes-1", status: "OPEN", priority: "HIGH" },
+        relations: { treatmentPlan: { patientUser: true } },
+        order: { openedAt: "DESC" },
+        skip: 0,
+        take: 20,
+      });
+    });
+
+    it("omits the facility filter when the nakes has no facility", async () => {
+      mockUserRepo.findOneBy.mockResolvedValue({ id: "nakes-1", facilityId: null });
+      mockTicketRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.listTickets("nakes-1", {} as any);
+
+      expect(mockTicketRepo.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({ where: {} }),
+      );
     });
   });
 });

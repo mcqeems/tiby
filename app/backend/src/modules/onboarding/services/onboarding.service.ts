@@ -62,7 +62,10 @@ export class OnboardingService {
     // Resolve facility (use Nakes facility or fallback to first facility)
     let facilityId = nakes.facilityId;
     if (!facilityId) {
-      let facility = await this.facilityRepo.findOne({ where: {} });
+      let facility = await this.facilityRepo.findOne({
+        where: {},
+        order: { createdAt: "ASC" },
+      });
       if (!facility) {
         facility = await this.facilityRepo.save(
           this.facilityRepo.create({

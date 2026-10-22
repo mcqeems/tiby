@@ -10,14 +10,47 @@ describe("AlertsService Unit Tests", () => {
   beforeEach(() => {
     mockAlertRepo = {
       findOne: vi.fn(),
+      findAndCount: vi.fn(),
       save: vi.fn((data) => Promise.resolve(data)),
-      createQueryBuilder: vi.fn(),
     };
     mockUserRepo = {
       findOneBy: vi.fn(),
     };
 
     service = new AlertsService(mockAlertRepo, mockUserRepo);
+  });
+
+  describe("listAlerts", () => {
+    it("scopes to the nakes facility and applies filters via the repository API", async () => {
+      mockUserRepo.findOneBy.mockResolvedValue({ id: "nakes-1", facilityId: "faskes-1" });
+      mockAlertRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.listAlerts("nakes-1", {
+        unreadOnly: true,
+        severity: "HIGH",
+        page: 2,
+        limit: 10,
+      } as any);
+
+      expect(mockAlertRepo.findAndCount).toHaveBeenCalledWith({
+        where: { facilityId: "faskes-1", isRead: false, severity: "HIGH" },
+        relations: { treatmentPlan: { patientUser: true } },
+        order: { createdAt: "DESC" },
+        skip: 10,
+        take: 10,
+      });
+    });
+
+    it("omits the facility filter when the nakes has no facility", async () => {
+      mockUserRepo.findOneBy.mockResolvedValue({ id: "nakes-1", facilityId: null });
+      mockAlertRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.listAlerts("nakes-1", {} as any);
+
+      expect(mockAlertRepo.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({ where: {} }),
+      );
+    });
   });
 
   describe("markAlertRead", () => {

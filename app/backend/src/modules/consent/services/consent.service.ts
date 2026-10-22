@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { ConsentRecord } from '../entities/consent-record.entity.js';
 import { AuthUser } from '../../../auth/entities/auth-user.entity.js';
 import { TreatmentPlan } from '../../patients/entities/treatment-plan.entity.js';
@@ -141,17 +141,11 @@ export class ConsentService {
       });
     }
 
-    // Mark active consent records as revoked
-    const activeRecords = await this.consentRepo.find({
-      where: { userId },
-    });
-    const now = new Date();
-    for (const r of activeRecords) {
-      if (!r.revokedAt) {
-        r.revokedAt = now;
-        await this.consentRepo.save(r);
-      }
-    }
+    // Revoke all still-active consent records in a single statement
+    await this.consentRepo.update(
+      { userId, revokedAt: IsNull() },
+      { revokedAt: new Date() },
+    );
 
     user.mustConfirmConsent = true;
     await this.userRepo.save(user);

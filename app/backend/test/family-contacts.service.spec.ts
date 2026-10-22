@@ -18,7 +18,7 @@ describe("FamilyContactsService Unit Tests", () => {
     };
 
     mockPlanRepo = {
-      findOne: vi.fn(),
+      findOneBy: vi.fn(),
     };
 
     mockPmoRepo = {
@@ -34,7 +34,7 @@ describe("FamilyContactsService Unit Tests", () => {
 
   describe("resolvePlan & Authorization", () => {
     it("throws NotFoundException if plan cannot be found", async () => {
-      mockPlanRepo.findOne.mockResolvedValue(null);
+      mockPlanRepo.findOneBy.mockResolvedValue(null);
 
       await expect(
         service.listFamilyContacts({ id: "user-1", role: "PASIEN" }, "invalid-id"),
@@ -42,7 +42,7 @@ describe("FamilyContactsService Unit Tests", () => {
     });
 
     it("throws ForbiddenException if PASIEN accesses another patient's contacts", async () => {
-      mockPlanRepo.findOne.mockResolvedValue({
+      mockPlanRepo.findOneBy.mockResolvedValue({
         id: "plan-1",
         patientUserId: "patient-other",
         facilityId: "fac-1",
@@ -54,7 +54,7 @@ describe("FamilyContactsService Unit Tests", () => {
     });
 
     it("throws ForbiddenException if PMO is not assigned to the plan", async () => {
-      mockPlanRepo.findOne.mockResolvedValue({
+      mockPlanRepo.findOneBy.mockResolvedValue({
         id: "plan-1",
         patientUserId: "patient-1",
         facilityId: "fac-1",
@@ -67,7 +67,7 @@ describe("FamilyContactsService Unit Tests", () => {
     });
 
     it("throws ForbiddenException if NAKES accesses patient outside their facility", async () => {
-      mockPlanRepo.findOne.mockResolvedValue({
+      mockPlanRepo.findOneBy.mockResolvedValue({
         id: "plan-1",
         patientUserId: "patient-1",
         facilityId: "fac-1",
@@ -90,7 +90,7 @@ describe("FamilyContactsService Unit Tests", () => {
     };
 
     it("allows assigned PMO to add a family contact", async () => {
-      mockPlanRepo.findOne.mockResolvedValue(validPlan);
+      mockPlanRepo.findOneBy.mockResolvedValue(validPlan);
       mockPmoRepo.findOne.mockResolvedValue({ id: "assign-1" });
 
       const res = await service.createFamilyContact(
@@ -115,7 +115,7 @@ describe("FamilyContactsService Unit Tests", () => {
     });
 
     it("allows PASIEN to list their own family contacts", async () => {
-      mockPlanRepo.findOne.mockResolvedValue(validPlan);
+      mockPlanRepo.findOneBy.mockResolvedValue(validPlan);
       mockFamilyRepo.find.mockResolvedValue([
         {
           id: "contact-1",
@@ -139,7 +139,7 @@ describe("FamilyContactsService Unit Tests", () => {
     });
 
     it("forbids PMO from deleting family contacts", async () => {
-      mockPlanRepo.findOne.mockResolvedValue(validPlan);
+      mockPlanRepo.findOneBy.mockResolvedValue(validPlan);
       mockPmoRepo.findOne.mockResolvedValue({ id: "assign-1" });
 
       await expect(
@@ -152,7 +152,7 @@ describe("FamilyContactsService Unit Tests", () => {
     });
 
     it("allows NAKES from same facility to delete a contact", async () => {
-      mockPlanRepo.findOne.mockResolvedValue(validPlan);
+      mockPlanRepo.findOneBy.mockResolvedValue(validPlan);
       mockFamilyRepo.findOne.mockResolvedValue({
         id: "contact-1",
         treatmentPlanId: "plan-1",
@@ -166,6 +166,27 @@ describe("FamilyContactsService Unit Tests", () => {
 
       expect(res.success).toBe(true);
       expect(mockFamilyRepo.delete).toHaveBeenCalledWith({ id: "contact-1" });
+    });
+  });
+
+  describe("resolvePlan id handling", () => {
+    it("does not pass a non-uuid patient id to the uuid `id` column in a single query", async () => {
+      // Regression guard: `where: [{ patientUserId }, { id }]` makes Postgres
+      // cast the patient id to uuid and fail with a 500.
+      mockPlanRepo.findOneBy
+        .mockResolvedValueOnce({ id: "plan-1", patientUserId: "patient-abc", facilityId: "f1" })
+        .mockResolvedValueOnce(null);
+      mockFamilyRepo.find.mockResolvedValue([]);
+
+      const caller = { id: "patient-abc", role: "PASIEN" };
+      const res = await service.listFamilyContacts(caller, "patient-abc");
+
+      expect(Array.isArray(res)).toBe(true);
+      // second lookup never happens once the first matches
+      expect(mockPlanRepo.findOneBy).toHaveBeenCalledTimes(1);
+      expect(mockPlanRepo.findOneBy).toHaveBeenCalledWith({
+        patientUserId: "patient-abc",
+      });
     });
   });
 });

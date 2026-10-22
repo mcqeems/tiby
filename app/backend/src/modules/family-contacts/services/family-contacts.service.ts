@@ -31,14 +31,11 @@ export class FamilyContactsService {
   ) {}
 
   private async resolvePlan(patientOrPlanId: string): Promise<TreatmentPlan> {
-    let plan = await this.planRepo.findOne({
-      where: { patientUserId: patientOrPlanId },
-    });
-    if (!plan) {
-      plan = await this.planRepo.findOne({
-        where: { id: patientOrPlanId },
-      });
-    }
+    // Two lookups, not `where: [{...}, {...}]`: `id` is a uuid column while
+    // patientOrPlanId may be a non-uuid patient id, which Postgres rejects.
+    const plan =
+      (await this.planRepo.findOneBy({ patientUserId: patientOrPlanId })) ??
+      (await this.planRepo.findOneBy({ id: patientOrPlanId }));
     if (!plan) {
       throw new NotFoundException({
         code: "NOT_FOUND",

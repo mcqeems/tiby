@@ -27,30 +27,24 @@ export class AlertsService {
     const nakes = await this.userRepo.findOneBy({ id: nakesUserId });
     const facilityId = nakes?.facilityId;
 
-    const qb = this.alertRepo
-      .createQueryBuilder("alert")
-      .leftJoinAndSelect("alert.treatmentPlan", "plan")
-      .leftJoinAndSelect("plan.patientUser", "patient");
-
-    if (facilityId) {
-      qb.andWhere("alert.facilityId = :facilityId", { facilityId });
-    }
-
-    if (query.unreadOnly) {
-      qb.andWhere("alert.isRead = false");
-    }
-
-    if (query.severity) {
-      qb.andWhere("alert.severity = :severity", { severity: query.severity });
-    }
-
-    qb.orderBy("alert.createdAt", "DESC");
-
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
-    qb.skip((page - 1) * limit).take(limit);
 
-    const [alerts, total] = await qb.getManyAndCount();
+    const [alerts, total] = await this.alertRepo.findAndCount({
+      where: {
+        ...(facilityId ? { facilityId } : {}),
+        ...(query.unreadOnly ? { isRead: false } : {}),
+        ...(query.severity ? { severity: query.severity } : {}),
+      },
+      relations: {
+        treatmentPlan: {
+          patientUser: true,
+        },
+      },
+      order: { createdAt: "DESC" },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
 
     const items: FacilityAlertDto[] = alerts.map((a) => ({
       id: a.id,
