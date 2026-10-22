@@ -79,7 +79,7 @@ describe("Phase 2: Auth, Consent, and Faskes Onboarding (e2e)", () => {
       });
 
     expect(loginRes.status).toBe(200);
-    nakesCookie = loginRes.headers["set-cookie"] as string[];
+    nakesCookie = loginRes.get("Set-Cookie")!;
     expect(nakesCookie).toBeDefined();
   });
 
@@ -168,7 +168,7 @@ describe("Phase 2: Auth, Consent, and Faskes Onboarding (e2e)", () => {
       });
 
     expect(loginRes.status).toBe(200);
-    patientCookie = loginRes.headers["set-cookie"] as string[];
+    patientCookie = loginRes.get("Set-Cookie")!;
     expect(patientCookie).toBeDefined();
 
     const consentStatusRes = await request(app.getHttpServer())

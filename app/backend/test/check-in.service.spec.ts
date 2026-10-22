@@ -146,6 +146,7 @@ describe("CheckInService Unit Tests", () => {
         fallbackButtons: {
           medicationStatus: "BELUM_MINUM",
           pillsTakenCount: 0,
+          hasComplaints: false,
           selectedComplaints: [],
         },
       });

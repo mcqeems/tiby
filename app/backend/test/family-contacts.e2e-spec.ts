@@ -64,7 +64,7 @@ describe("Dedicated Family Contacts API (e2e)", () => {
     const nakesLogin = await request(app.getHttpServer())
       .post("/api/auth/sign-in")
       .send({ username: `nakes_fc_${suffix}`, password: pw });
-    nakesCookie = nakesLogin.headers["set-cookie"];
+    nakesCookie = nakesLogin.get("Set-Cookie")!;
 
     // 3. PASIEN
     const pasienAuth = await auth.api.createUser({
@@ -85,7 +85,7 @@ describe("Dedicated Family Contacts API (e2e)", () => {
     const pasienLogin = await request(app.getHttpServer())
       .post("/api/auth/sign-in")
       .send({ username: `pasien_fc_${suffix}`, password: pw });
-    patientCookie = pasienLogin.headers["set-cookie"];
+    patientCookie = pasienLogin.get("Set-Cookie")!;
 
     // 4. PMO
     const pmoAuth = await auth.api.createUser({
@@ -105,7 +105,7 @@ describe("Dedicated Family Contacts API (e2e)", () => {
     const pmoLogin = await request(app.getHttpServer())
       .post("/api/auth/sign-in")
       .send({ username: `pmo_fc_${suffix}`, password: pw });
-    pmoCookie = pmoLogin.headers["set-cookie"];
+    pmoCookie = pmoLogin.get("Set-Cookie")!;
 
     // 5. Treatment Plan
     const planRepo = dataSource.getRepository(TreatmentPlan);

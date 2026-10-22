@@ -51,6 +51,7 @@ describe("PushService Unit Tests", () => {
         "user-1",
         {
           endpoint: "https://fcm.googleapis.com/fcm/send/sub-new-123",
+          expirationTime: null,
           keys: {
             p256dh: "key-p256dh",
             auth: "key-auth",
@@ -85,6 +86,7 @@ describe("PushService Unit Tests", () => {
         "user-2",
         {
           endpoint: "https://fcm.googleapis.com/fcm/send/sub-existing",
+          expirationTime: null,
           keys: {
             p256dh: "new-p256dh",
             auth: "new-auth",

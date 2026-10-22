@@ -78,6 +78,7 @@ describe("OnboardingService Unit Tests", () => {
           regimenCode: "FDC-4",
           dailyPillQuota: 4,
           reminderTimeLocal: "08:00",
+        timezone: "Asia/Jakarta",
           startDate: "2026-10-16",
         }),
       ).rejects.toThrow(BadRequestException);
@@ -100,6 +101,7 @@ describe("OnboardingService Unit Tests", () => {
         regimenCode: "FDC-4",
         dailyPillQuota: 4,
         reminderTimeLocal: "08:00",
+        timezone: "Asia/Jakarta",
         startDate: "2026-10-16",
       });
 
@@ -166,6 +168,7 @@ describe("OnboardingService Unit Tests", () => {
         regimenCode: "FDC-4",
         dailyPillQuota: 4,
         reminderTimeLocal: "08:00",
+        timezone: "Asia/Jakarta",
         startDate: "2026-10-16",
       } as any);
 
@@ -199,6 +202,7 @@ describe("OnboardingService Unit Tests", () => {
           regimenCode: "FDC-4",
           dailyPillQuota: 4,
           reminderTimeLocal: "08:00",
+        timezone: "Asia/Jakarta",
           startDate: "2026-10-16",
         } as any),
       ).rejects.toThrow(NotFoundException);
@@ -217,6 +221,7 @@ describe("OnboardingService Unit Tests", () => {
           regimenCode: "FDC-4",
           dailyPillQuota: 4,
           reminderTimeLocal: "08:00",
+        timezone: "Asia/Jakarta",
           startDate: "2026-10-16",
         } as any),
       ).rejects.toThrow(BadRequestException);
@@ -240,6 +245,7 @@ describe("OnboardingService Unit Tests", () => {
           regimenCode: "FDC-4",
           dailyPillQuota: 4,
           reminderTimeLocal: "08:00",
+        timezone: "Asia/Jakarta",
           startDate: "2026-10-16",
         } as any),
       ).rejects.toThrow(BadRequestException);

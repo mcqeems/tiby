@@ -63,7 +63,11 @@ describe("Education Cards CRUD (e2e)", () => {
     );
     otherFacilityId = otherFacility.id;
 
-    const mk = async (role: string, label: string, facilityId?: string) => {
+    const mk = async (
+      role: "ADMIN" | "NAKES" | "PMO" | "PASIEN",
+      label: string,
+      facilityId?: string,
+    ) => {
       const username = `${label}_${ts}`;
       const res = await auth.api.createUser({
         body: {
@@ -96,7 +100,7 @@ describe("Education Cards CRUD (e2e)", () => {
         .post("/api/auth/sign-in")
         .send({ username, password: pw });
       expect(res.status).toBe(200);
-      return res.headers["set-cookie"] as string[];
+      return res.get("Set-Cookie")!;
     };
 
     adminCookie = await login(admin.username);

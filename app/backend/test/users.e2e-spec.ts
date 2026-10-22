@@ -80,7 +80,7 @@ describe("Users & RBAC Password Management (e2e)", () => {
       .post("/api/auth/sign-in")
       .send({ username: adminUsername, password: defaultPw });
     expect(adminLogin.status).toBe(200);
-    adminCookie = adminLogin.headers["set-cookie"];
+    adminCookie = adminLogin.get("Set-Cookie")!;
 
     // 4. Admin creates NAKES user
     const createNakesRes = await request(app.getHttpServer())
@@ -116,7 +116,7 @@ describe("Users & RBAC Password Management (e2e)", () => {
       .post("/api/auth/sign-in")
       .send({ email: `${nakesUsername}@users.tiby.internal`, password: defaultPw });
     expect(nakesLogin.status).toBe(200);
-    nakesCookie = nakesLogin.headers["set-cookie"];
+    nakesCookie = nakesLogin.get("Set-Cookie")!;
 
     // 6. NAKES creates PASIEN user
     const createPasienRes = await request(app.getHttpServer())
@@ -137,7 +137,7 @@ describe("Users & RBAC Password Management (e2e)", () => {
       .post("/api/auth/sign-in")
       .send({ identifier: pasienUsername, password: defaultPw });
     expect(pasienLogin.status).toBe(200);
-    pasienCookie = pasienLogin.headers["set-cookie"];
+    pasienCookie = pasienLogin.get("Set-Cookie")!;
   });
 
   afterAll(async () => {

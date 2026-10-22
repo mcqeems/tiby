@@ -70,7 +70,7 @@ describe("TicketsService Unit Tests", () => {
 
       const res = await service.createTicket(
         { id: "patient-1", role: "PASIEN" },
-        { reason: "Mual dan pusing" },
+        { reason: "Mual dan pusing", priority: "HIGH" },
       );
 
       expect(res.triggerSource).toBe("MANUAL_PATIENT");
@@ -126,7 +126,7 @@ describe("TicketsService Unit Tests", () => {
       await expect(
         service.createTicket(
           { id: "pmo-unassigned", role: "PMO" },
-          { treatmentPlanId: "plan-1", reason: "Pasien mengeluh" },
+          { treatmentPlanId: "plan-1", reason: "Pasien mengeluh", priority: "HIGH" },
         ),
       ).rejects.toThrow(ForbiddenException);
     });
@@ -135,7 +135,7 @@ describe("TicketsService Unit Tests", () => {
       await expect(
         service.createTicket(
           { id: "nakes-1", role: "NAKES", facilityId: "fac-1" },
-          { reason: "Missing plan id" },
+          { reason: "Missing plan id", priority: "HIGH" },
         ),
       ).rejects.toThrow(BadRequestException);
     });

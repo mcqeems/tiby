@@ -65,7 +65,7 @@ describe("Intervention Tickets Lifecycle (e2e)", () => {
     const nLogin = await request(app.getHttpServer())
       .post("/api/auth/sign-in")
       .send({ username: `nakes_tck_${suffix}`, password: pw });
-    nakesCookie = nLogin.headers["set-cookie"];
+    nakesCookie = nLogin.get("Set-Cookie")!;
 
     // 3. PASIEN
     const pasienAuth = await auth.api.createUser({
@@ -86,7 +86,7 @@ describe("Intervention Tickets Lifecycle (e2e)", () => {
     const pLogin = await request(app.getHttpServer())
       .post("/api/auth/sign-in")
       .send({ username: `pasien_tck_${suffix}`, password: pw });
-    patientCookie = pLogin.headers["set-cookie"];
+    patientCookie = pLogin.get("Set-Cookie")!;
 
     // 4. PMO
     const pmoAuth = await auth.api.createUser({
@@ -106,7 +106,7 @@ describe("Intervention Tickets Lifecycle (e2e)", () => {
     const pmoLogin = await request(app.getHttpServer())
       .post("/api/auth/sign-in")
       .send({ username: `pmo_tck_${suffix}`, password: pw });
-    pmoCookie = pmoLogin.headers["set-cookie"];
+    pmoCookie = pmoLogin.get("Set-Cookie")!;
 
     // 5. Treatment Plan
     const planRepo = dataSource.getRepository(TreatmentPlan);

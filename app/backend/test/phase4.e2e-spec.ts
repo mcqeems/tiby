@@ -155,21 +155,21 @@ describe("Phase 4: Silence, Tickets, Alerts, History, & Web Push (e2e)", () => {
       .post("/api/auth/sign-in")
       .send({ username: nakesUsername, password: nakesPassword });
     expect(nLogin.status).toBe(200);
-    nakesCookie = nLogin.headers["set-cookie"] as string[];
+    nakesCookie = nLogin.get("Set-Cookie")!;
 
     // Login Patient
     const pLogin = await request(app.getHttpServer())
       .post("/api/auth/sign-in")
       .send({ username: patientUsername, password: patientPassword });
     expect(pLogin.status).toBe(200);
-    patientCookie = pLogin.headers["set-cookie"] as string[];
+    patientCookie = pLogin.get("Set-Cookie")!;
 
     // Login PMO
     const pmoLogin = await request(app.getHttpServer())
       .post("/api/auth/sign-in")
       .send({ username: pmoUsername, password: pmoPassword });
     expect(pmoLogin.status).toBe(200);
-    pmoCookie = pmoLogin.headers["set-cookie"] as string[];
+    pmoCookie = pmoLogin.get("Set-Cookie")!;
   });
 
   afterAll(async () => {

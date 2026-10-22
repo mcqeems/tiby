@@ -188,21 +188,21 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
       .post("/api/auth/sign-in")
       .send({ username: patient1Username, password: patient1Password });
     expect(p1Login.status).toBe(200);
-    patient1Cookie = p1Login.headers["set-cookie"] as string[];
+    patient1Cookie = p1Login.get("Set-Cookie")!;
 
     // Login PMO 1
     const pmoLogin = await request(app.getHttpServer())
       .post("/api/auth/sign-in")
       .send({ username: pmo1Username, password: pmo1Password });
     expect(pmoLogin.status).toBe(200);
-    pmo1Cookie = pmoLogin.headers["set-cookie"] as string[];
+    pmo1Cookie = pmoLogin.get("Set-Cookie")!;
 
     // Login Patient 2
     const p2Login = await request(app.getHttpServer())
       .post("/api/auth/sign-in")
       .send({ username: patient2Username, password: patient2Password });
     expect(p2Login.status).toBe(200);
-    patient2Cookie = p2Login.headers["set-cookie"] as string[];
+    patient2Cookie = p2Login.get("Set-Cookie")!;
   });
 
   afterAll(async () => {
