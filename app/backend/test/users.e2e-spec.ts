@@ -18,6 +18,8 @@ describe("Users & RBAC Password Management (e2e)", () => {
 
   let nakesUserId: string;
   let pasienUserId: string;
+  let otherFacilityId: string;
+  let outsiderPasienId: string;
 
   const adminUsername = `admin_${Date.now()}`;
   const nakesUsername = `nakes_${Date.now()}`;
@@ -46,6 +48,17 @@ describe("Users & RBAC Password Management (e2e)", () => {
       }),
     );
     facilityId = facility.id;
+
+    // 1b. A second facility with its own PASIEN, to prove facility scoping
+    const otherFacility = await facilityRepo.save(
+      facilityRepo.create({
+        code: `FASKES-RBAC-OTHER-${Date.now()}`,
+        name: "Puskesmas Lain",
+        district: "Jakarta Barat",
+        emergencyPhone: "021-999888",
+      }),
+    );
+    otherFacilityId = otherFacility.id;
 
     // 2. Admin User
     await auth.api.createUser({
@@ -83,6 +96,20 @@ describe("Users & RBAC Password Management (e2e)", () => {
     expect(createNakesRes.status).toBe(201);
     expect(createNakesRes.body.facility).toBe("Puskesmas Menteng");
     nakesUserId = createNakesRes.body.id;
+
+    // 4b. Admin creates a PASIEN in the OTHER facility
+    const createOutsiderRes = await request(app.getHttpServer())
+      .post("/api/users")
+      .set("Cookie", adminCookie)
+      .send({
+        username: `outsider_${Date.now()}`,
+        password: defaultPw,
+        fullName: "Outsider Pasien",
+        role: "PASIEN",
+        facilityId: otherFacilityId,
+      });
+    expect(createOutsiderRes.status).toBe(201);
+    outsiderPasienId = createOutsiderRes.body.id;
 
     // 5. Login as NAKES using unified /api/auth/sign-in (with email)
     const nakesLogin = await request(app.getHttpServer())
@@ -189,6 +216,84 @@ describe("Users & RBAC Password Management (e2e)", () => {
         .send({ username: pasienUsername, password: "new_pw_pasien_123" });
       expect(loginCheck.status).toBe(200);
     });
+  });
+
+
+  describe("Edit User (PATCH /api/users/:id)", () => {
+    it("allows NAKES to edit a PASIEN in their own facility", async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/api/users/${pasienUserId}`)
+        .set("Cookie", nakesCookie)
+        .send({ fullName: "Pasien Diperbarui", whatsappNumber: "081277778888" });
+
+      expect(res.status).toBe(200);
+      expect(res.body.fullName ?? res.body.name).toBe("Pasien Diperbarui");
+      expect(res.body.facility).toBe("Puskesmas Menteng");
+
+      // persisted
+      const me = await request(app.getHttpServer())
+        .get("/api/users/me")
+        .set("Cookie", pasienCookie);
+      expect(me.body.name).toBe("Pasien Diperbarui");
+    });
+
+    it("forbids NAKES from editing a PASIEN in another facility", async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/api/users/${outsiderPasienId}`)
+        .set("Cookie", nakesCookie)
+        .send({ fullName: "Illegal Edit" });
+
+      expect(res.status).toBe(403);
+    });
+
+    it("forbids NAKES from editing another NAKES account", async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/api/users/${nakesUserId}`)
+        .set("Cookie", nakesCookie)
+        .send({ fullName: "Illegal Self Edit" });
+
+      expect(res.status).toBe(403);
+    });
+
+    it("forbids NAKES from promoting a PASIEN to NAKES", async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/api/users/${pasienUserId}`)
+        .set("Cookie", nakesCookie)
+        .send({ role: "NAKES" });
+
+      expect(res.status).toBe(403);
+    });
+
+    it("allows ADMIN to edit any user, including a NAKES", async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/api/users/${nakesUserId}`)
+        .set("Cookie", adminCookie)
+        .send({ fullName: "dr. Nakes Diperbarui" });
+
+      expect(res.status).toBe(200);
+      expect(res.body.name).toBe("dr. Nakes Diperbarui");
+    });
+
+    it("forbids PASIEN from editing anyone", async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/api/users/${pasienUserId}`)
+        .set("Cookie", pasienCookie)
+        .send({ fullName: "Nope" });
+
+      expect(res.status).toBe(403);
+    });
+
+    it("returns 404 for an unknown target user", async () => {
+      const res = await request(app.getHttpServer())
+        .patch("/api/users/00000000-0000-0000-0000-000000000000")
+        .set("Cookie", adminCookie)
+        .send({ fullName: "Ghost" });
+
+      expect(res.status).toBe(404);
+    });
+
+    // Note: the e2e harness does not register the global StandardSchema pipe
+    // (main.ts does), so body validation is covered by the schema itself.
   });
 
   describe("Hierarchical Password Reset", () => {

@@ -22,6 +22,14 @@ export interface CreateUserPayload {
   whatsappNumber?: string;
 }
 
+export interface UpdateUserPayload {
+  fullName?: string;
+  email?: string;
+  whatsappNumber?: string | null;
+  role?: string;
+  facilityId?: string | null;
+}
+
 export const usersApi = {
   async getMe() {
     return apiFetch<UserItem>("/api/users/me", { method: "GET" });
@@ -58,5 +66,12 @@ export const usersApi = {
         body: JSON.stringify({ newPassword }),
       },
     );
+  },
+
+  async update(userId: string, dto: UpdateUserPayload) {
+    return apiFetch<UserItem>(`/api/users/${userId}`, {
+      method: "PATCH",
+      body: JSON.stringify(dto),
+    });
   },
 };

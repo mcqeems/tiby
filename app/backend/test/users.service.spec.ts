@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { ForbiddenException, BadRequestException } from "@nestjs/common";
+import {
+  ForbiddenException,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
 import { UsersService } from "../src/modules/users/services/users.service.js";
 import { auth } from "../src/auth/auth.config.js";
 
@@ -255,6 +259,227 @@ describe("UsersService Unit Tests", () => {
           { newPassword: "new_password_123" },
         ),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it("forbids a facility-less NAKES from resetting a facility-less account", async () => {
+      // Regression: `target.facilityId === caller.facilityId` is true for null === null.
+      mockUserRepo.findOneBy.mockResolvedValueOnce({
+        id: "pasien-orphan",
+        role: "PASIEN",
+        facilityId: null,
+        username: "pasien_orphan",
+      });
+
+      await expect(
+        service.resetUserPassword(
+          { id: "nakes-1", role: "NAKES", facilityId: null },
+          "pasien-orphan",
+          { newPassword: "new_password_123" },
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe("updateUser", () => {
+    function mockTarget(overrides: Record<string, unknown> = {}) {
+      const target = {
+        id: "pasien-1",
+        role: "PASIEN",
+        facilityId: "fac-1",
+        username: "pasien_budi",
+        email: "budi@users.tiby.internal",
+        name: "Budi",
+        ...overrides,
+      };
+      mockUserRepo.findOne.mockResolvedValueOnce(target);
+      return target;
+    }
+
+    it("allows ADMIN to edit any user and writes through the auth adapter", async () => {
+      mockTarget({ role: "NAKES" });
+      const ctx = await auth.$context;
+      const spyUpdateUser = vi
+        .spyOn(ctx.internalAdapter, "updateUser")
+        .mockResolvedValue({} as any);
+      mockUserRepo.findOne.mockResolvedValueOnce({
+        id: "nakes-2",
+        username: "nakes_dua",
+        email: "n@x",
+        name: "Nakes Dua",
+        role: "NAKES",
+        facilityId: "fac-1",
+        facility: { name: "Puskesmas A" },
+      });
+
+      const res = await service.updateUser(
+        { id: "admin-1", role: "ADMIN" },
+        "nakes-2",
+        { fullName: "Nakes Baru", whatsappNumber: "0812999" },
+      );
+
+      expect(spyUpdateUser).toHaveBeenCalledWith(
+        "nakes-2",
+        expect.objectContaining({
+          name: "Nakes Baru",
+          full_name_encrypted: "Nakes Baru",
+          whatsapp_encrypted: "0812999",
+        }),
+      );
+      expect(res.facility).toBe("Puskesmas A");
+    });
+
+    it("allows NAKES to edit PASIEN in their facility", async () => {
+      mockTarget();
+      const ctx = await auth.$context;
+      const spyUpdateUser = vi
+        .spyOn(ctx.internalAdapter, "updateUser")
+        .mockResolvedValue({} as any);
+      mockUserRepo.findOne.mockResolvedValueOnce({
+        id: "pasien-1",
+        username: "pasien_budi",
+        email: "b@x",
+        name: "Budi Baru",
+        role: "PASIEN",
+        facilityId: "fac-1",
+        facility: null,
+      });
+
+      await service.updateUser(
+        { id: "nakes-1", role: "NAKES", facilityId: "fac-1" },
+        "pasien-1",
+        { fullName: "Budi Baru" },
+      );
+
+      expect(spyUpdateUser).toHaveBeenCalledWith(
+        "pasien-1",
+        expect.objectContaining({ name: "Budi Baru" }),
+      );
+    });
+
+    it("forbids NAKES from editing users in another facility", async () => {
+      mockTarget({ facilityId: "fac-other" });
+
+      await expect(
+        service.updateUser(
+          { id: "nakes-1", role: "NAKES", facilityId: "fac-1" },
+          "pasien-1",
+          { fullName: "Nope" },
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it("forbids NAKES from editing another NAKES (same or higher role)", async () => {
+      mockTarget({ role: "NAKES" });
+
+      await expect(
+        service.updateUser(
+          { id: "nakes-1", role: "NAKES", facilityId: "fac-1" },
+          "nakes-2",
+          { fullName: "Nope" },
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it("forbids NAKES from promoting a PASIEN to NAKES", async () => {
+      mockTarget();
+
+      await expect(
+        service.updateUser(
+          { id: "nakes-1", role: "NAKES", facilityId: "fac-1" },
+          "pasien-1",
+          { role: "NAKES" },
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it("forbids NAKES from moving a user to another facility", async () => {
+      mockTarget();
+
+      await expect(
+        service.updateUser(
+          { id: "nakes-1", role: "NAKES", facilityId: "fac-1" },
+          "pasien-1",
+          { facilityId: "fac-other" },
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it("allows NAKES to switch PASIEN to PMO", async () => {
+      mockTarget();
+      const ctx = await auth.$context;
+      const spyUpdateUser = vi
+        .spyOn(ctx.internalAdapter, "updateUser")
+        .mockResolvedValue({} as any);
+      mockUserRepo.findOne.mockResolvedValueOnce({
+        id: "pasien-1",
+        username: "pasien_budi",
+        email: "b@x",
+        name: "Budi",
+        role: "PMO",
+        facilityId: "fac-1",
+        facility: null,
+      });
+
+      await service.updateUser(
+        { id: "nakes-1", role: "NAKES", facilityId: "fac-1" },
+        "pasien-1",
+        { role: "PMO" },
+      );
+
+      expect(spyUpdateUser).toHaveBeenCalledWith(
+        "pasien-1",
+        expect.objectContaining({ role: "PMO" }),
+      );
+    });
+
+    it("forbids PASIEN and PMO from editing anyone", async () => {
+      mockTarget();
+
+      await expect(
+        service.updateUser(
+          { id: "pasien-9", role: "PASIEN" },
+          "pasien-1",
+          { fullName: "Nope" },
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it("rejects an email that is already in use", async () => {
+      mockTarget();
+      mockUserRepo.findOneBy.mockResolvedValueOnce({ id: "someone-else" });
+
+      await expect(
+        service.updateUser(
+          { id: "admin-1", role: "ADMIN" },
+          "pasien-1",
+          { email: "taken@users.tiby.internal" },
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("rejects an unknown facility id", async () => {
+      mockTarget({ role: "NAKES" });
+      mockFacilityRepo.findOneBy.mockResolvedValueOnce(null);
+
+      await expect(
+        service.updateUser(
+          { id: "admin-1", role: "ADMIN" },
+          "nakes-2",
+          { facilityId: "00000000-0000-0000-0000-000000000000" },
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("throws NotFoundException when the target does not exist", async () => {
+      mockUserRepo.findOne.mockResolvedValueOnce(null);
+
+      await expect(
+        service.updateUser(
+          { id: "admin-1", role: "ADMIN" },
+          "ghost",
+          { fullName: "Nope" },
+        ),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

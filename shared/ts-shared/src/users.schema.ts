@@ -27,6 +27,19 @@ export const ResetUserPasswordSchema = z.object({
 });
 export type ResetUserPasswordDto = z.infer<typeof ResetUserPasswordSchema>;
 
+export const UpdateUserSchema = z
+  .object({
+    fullName: z.string().min(2).optional(),
+    email: z.email().max(50).optional(),
+    whatsappNumber: z.string().min(8).max(20).nullable().optional(),
+    role: UserRoleSchema.optional(),
+    facilityId: z.uuid().nullable().optional(),
+  })
+  .refine((o) => Object.keys(o).length > 0, {
+    message: "At least one field must be provided",
+  });
+export type UpdateUserDto = z.infer<typeof UpdateUserSchema>;
+
 export const UserSummarySchema = z.object({
   id: z.string(),
   username: z.string().nullable(),

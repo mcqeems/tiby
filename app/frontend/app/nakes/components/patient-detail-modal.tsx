@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { api } from "@/lib/api";
+import { usersApi } from "@/lib/api/users";
 import { usePopup } from "@/components/ui/popup-provider";
 import {
   X,
@@ -105,20 +106,10 @@ export default function PatientDetailModal({
     const tempPassword = generateTempPassword();
 
     try {
-      // Menembak API update/reset password jika tersedia di lib/api
-      const usersApi = api.users as Record<string, unknown>;
-      if (typeof usersApi?.resetPassword === "function" && targetUserId) {
-        await (
-          usersApi.resetPassword as (id: string, pw: string) => Promise<unknown>
-        )(targetUserId, tempPassword);
-      } else if (typeof usersApi?.update === "function" && targetUserId) {
-        await (
-          usersApi.update as (
-            id: string,
-            data: Record<string, unknown>,
-          ) => Promise<unknown>
-        )(targetUserId, { password: tempPassword });
+      if (!targetUserId) {
+        throw new Error("Target user id is missing");
       }
+      await usersApi.resetPassword(targetUserId, tempPassword);
 
       setNewPasswordInfo({
         role: target === "PASIEN" ? "Pasien" : "PMO",

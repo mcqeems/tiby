@@ -15,12 +15,48 @@ import type {
   CreateUserDto,
   ChangeOwnPasswordDto,
   ResetUserPasswordDto,
+  UpdateUserDto,
   UserSummary,
 } from '@tiby/ts-shared';
 
 function hashPhone(phone: string): string {
   const digits = phone.replace(/\D/g, '');
   return createHash('sha256').update(digits).digest('hex');
+}
+
+const MANAGEABLE_ROLES = ['PASIEN', 'PMO'] as const;
+
+/**
+ * Shared authorization rule for editing / resetting another user's account.
+ * ADMIN: any user. NAKES: PASIEN and PMO within their own facility only.
+ */
+function assertCanManage(
+  caller: { id: string; role: string; facilityId?: string | null },
+  target: { role: string; facilityId: string | null },
+): void {
+  if (caller.role === 'ADMIN') return;
+
+  if (caller.role === 'NAKES') {
+    // A caller without a facility must not match facility-less targets.
+    if (!caller.facilityId || target.facilityId !== caller.facilityId) {
+      throw new ForbiddenException({
+        code: 'FORBIDDEN',
+        message: 'Faskes can only manage users within their own facility',
+      });
+    }
+    if (!MANAGEABLE_ROLES.includes(target.role as (typeof MANAGEABLE_ROLES)[number])) {
+      throw new ForbiddenException({
+        code: 'FORBIDDEN',
+        message: 'Faskes can only manage pasien and pmo accounts',
+      });
+    }
+    return;
+  }
+
+  throw new ForbiddenException({
+    code: 'FORBIDDEN',
+    message: 'Insufficient permissions to manage other users',
+  });
 }
 
 @Injectable()
@@ -205,30 +241,7 @@ export class UsersService {
       });
     }
 
-    if (caller.role === 'ADMIN') {
-      // ADMIN can reset any account's password
-    } else if (caller.role === 'NAKES') {
-      // Faskes can reset its own password, or PASIEN/PMO in their own facility
-      if (targetUser.id === caller.id) {
-        // self reset
-      } else if (
-        (targetUser.role === 'PASIEN' || targetUser.role === 'PMO') &&
-        targetUser.facilityId === caller.facilityId
-      ) {
-        // authorized
-      } else {
-        throw new ForbiddenException({
-          code: 'FORBIDDEN',
-          message:
-            'Faskes can only reset passwords for pasien and pmo in their own facility',
-        });
-      }
-    } else {
-      throw new ForbiddenException({
-        code: 'FORBIDDEN',
-        message: "You are not authorized to reset other users' passwords",
-      });
-    }
+    assertCanManage(caller, targetUser);
 
     const ctx = await auth.$context;
     const newHash = await ctx.password.hash(dto.newPassword);
@@ -252,6 +265,102 @@ export class UsersService {
       success: true,
       message: `Password for user '${targetUser.username}' successfully reset`,
     };
+  }
+
+  async updateUser(
+    caller: { id: string; role: string; facilityId?: string | null },
+    targetUserId: string,
+    dto: UpdateUserDto,
+  ): Promise<UserSummary> {
+    const targetUser = await this.userRepo.findOne({
+      where: { id: targetUserId },
+      relations: { facility: true },
+    });
+    if (!targetUser) {
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Target user not found',
+      });
+    }
+
+    assertCanManage(caller, targetUser);
+
+    // NAKES must not escalate roles or move users across facilities.
+    if (caller.role === 'NAKES') {
+      if (
+        dto.role &&
+        !MANAGEABLE_ROLES.includes(dto.role as (typeof MANAGEABLE_ROLES)[number])
+      ) {
+        throw new ForbiddenException({
+          code: 'FORBIDDEN',
+          message: 'Faskes can only assign pasien and pmo roles',
+        });
+      }
+      if (dto.facilityId !== undefined && dto.facilityId !== caller.facilityId) {
+        throw new ForbiddenException({
+          code: 'FORBIDDEN',
+          message: 'Cannot move users to another facility',
+        });
+      }
+    }
+
+    // Validate a requested facility exists (ADMIN may reassign).
+    if (dto.facilityId) {
+      const facility = await this.facilityRepo.findOneBy({ id: dto.facilityId });
+      if (!facility) {
+        throw new NotFoundException({
+          code: 'NOT_FOUND',
+          message: 'Facility not found',
+        });
+      }
+    }
+
+    if (dto.email && dto.email !== targetUser.email) {
+      const emailTaken = await this.userRepo.findOneBy({ email: dto.email });
+      if (emailTaken) {
+        throw new BadRequestException({
+          code: 'BAD_REQUEST',
+          message: `Email '${dto.email}' is already in use`,
+        });
+      }
+    }
+
+    // Write through Better Auth's adapter, the same layer createUser uses, so
+    // PII columns keep one storage format (the TypeORM transformer would
+    // otherwise re-encrypt every column on save).
+    const ctx = await auth.$context;
+    const data: Record<string, unknown> = {};
+
+    if (dto.fullName !== undefined) {
+      data.name = dto.fullName;
+      data.full_name_encrypted = dto.fullName;
+    }
+    if (dto.email !== undefined) data.email = dto.email;
+    if (dto.whatsappNumber !== undefined) {
+      data.whatsapp_encrypted = dto.whatsappNumber;
+      data.whatsapp_hash = dto.whatsappNumber ? hashPhone(dto.whatsappNumber) : null;
+    }
+    if (dto.role !== undefined) data.role = dto.role;
+    if (dto.facilityId !== undefined) data.facility_id = dto.facilityId;
+
+    await ctx.internalAdapter.updateUser(targetUserId, data);
+
+    await this.auditRepo.save(
+      this.auditRepo.create({
+        actorUserId: caller.id,
+        actorRole: caller.role,
+        action: 'USER_UPDATE',
+        targetEntity: 'users',
+        targetId: targetUserId,
+        metadataJson: {
+          targetRole: targetUser.role,
+          targetUsername: targetUser.username,
+          changedFields: Object.keys(dto),
+        },
+      }),
+    );
+
+    return this.getMe(targetUserId);
   }
 
   async listUsers(caller: {

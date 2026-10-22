@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Body,
   Param,
   Req,
@@ -16,9 +17,11 @@ import {
   CreateUserSchema,
   ChangeOwnPasswordSchema,
   ResetUserPasswordSchema,
+  UpdateUserSchema,
   type CreateUserDto,
   type ChangeOwnPasswordDto,
   type ResetUserPasswordDto,
+  type UpdateUserDto,
   type UserSummary,
   type UserRole,
 } from '@tiby/ts-shared';
@@ -79,6 +82,17 @@ export class UsersController {
   async listUsers(@Req() req: AuthenticatedRequest): Promise<UserSummary[]> {
     const caller = this.extractCaller(req);
     return this.usersService.listUsers(caller);
+  }
+
+  @Patch(':id')
+  @Roles(['ADMIN', 'NAKES'])
+  async updateUser(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') targetUserId: string,
+    @Body({ schema: UpdateUserSchema }) body: UpdateUserDto,
+  ): Promise<UserSummary> {
+    const caller = this.extractCaller(req);
+    return this.usersService.updateUser(caller, targetUserId, body);
   }
 
   @Post(':id/reset-password')
