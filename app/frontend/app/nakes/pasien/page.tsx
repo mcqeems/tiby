@@ -1,8 +1,12 @@
-"use client";
-
-import Link from "next/link";
-import { UserPlus } from "lucide-react";
 import PatientsTable from "./components/patients-table";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Daftar Pasien Nakes",
+  description:
+    "Pantau status risiko dan kepatuhan seluruh pasien TBC di fasilitas kesehatan Anda.",
+  robots: "noindex, nofollow",
+};
 
 export default function NakesPasienPage() {
   return (

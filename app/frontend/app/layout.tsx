@@ -20,10 +20,27 @@ const fredoka = Fredoka({
 });
 
 export const metadata: Metadata = {
-  title: "Tiby",
-  description: "Pendamping Harianmu",
+  title: {
+    template: "%s | Tiby",
+    default: "Tiby - Pendamping Cerdas Pengobatan TBC",
+  },
+  description:
+    "Aplikasi pendamping harian pasien TBC berbasis suara. Pantau kepatuhan minum obat, kelola jadwal, dan dapatkan edukasi kesehatan yang aman dan terpercaya.",
+  keywords: [
+    "TBC",
+    "tuberkulosis",
+    "kesehatan",
+    "pendamping obat",
+    "aplikasi kesehatan",
+    "pengobatan TBC",
+  ],
+  authors: [{ name: "Team Argon" }],
+  openGraph: {
+    title: "Tiby - Pendamping Cerdas Pengobatan TBC",
+    description: "Aplikasi pendamping harian pasien TBC berbasis suara.",
+    type: "website",
+  },
 };
-
 export default function RootLayout({
   children,
 }: {

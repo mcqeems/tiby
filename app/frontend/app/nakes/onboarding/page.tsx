@@ -1,6 +1,13 @@
-"use client";
-
+import { Metadata } from "next";
 import OnboardingForm from "./components/onboarding-form";
+
+export const metadata: Metadata = {
+  title: "Onboarding Pasien Baru",
+  description:
+    "Daftarkan pasien TBC baru, tetapkan PMO, dan rencanakan regimen terapi obat secara otomatis.",
+  robots: "noindex, nofollow", // Halaman medis privat, jangan di-index Google
+};
+
 
 export default function NakesOnboardingPage() {
   return (

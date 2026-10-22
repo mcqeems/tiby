@@ -1,4 +1,12 @@
 import TicketList from "./components/ticket-list";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Tiket Tindak Lanjut",
+  description:
+    "Kelola tiket eskalasi pasien berisiko dan catat tindak lanjut medis.",
+  robots: "noindex, nofollow",
+};
 
 export default function NakesTiketPage() {
   return (
