@@ -6,9 +6,12 @@ import type {
   PatientStatusHistoryList,
   RiskSortedPatientList,
 } from "@tiby/ts-shared";
+// ✅ Import tipe FaskesTicket dan FaskesAlert dari folder types kita
+import type { FaskesTicket, FaskesAlert } from "../types/faskes";
 import { apiFetch } from "./client";
 
 export const faskesApi = {
+  // ─── 1. MANAJEMEN PASIEN ──────────────────────────────────────────────────
   async getPatients(
     query: Partial<ListPatientsQuery> = {},
   ): Promise<RiskSortedPatientList> {
@@ -22,9 +25,7 @@ export const faskesApi = {
     const qs = searchParams.toString();
     return apiFetch<RiskSortedPatientList>(
       `/api/faskes/patients${qs ? `?${qs}` : ""}`,
-      {
-        method: "GET",
-      },
+      { method: "GET" },
     );
   },
 
@@ -35,12 +36,11 @@ export const faskesApi = {
   ): Promise<PatientStatusHistoryList> {
     return apiFetch<PatientStatusHistoryList>(
       `/api/faskes/patients/${treatmentPlanId}/history?page=${page}&limit=${limit}`,
-      {
-        method: "GET",
-      },
+      { method: "GET" },
     );
   },
 
+  // ─── 2. ONBOARDING (Pendaftaran Pasien Baru) ──────────────────────────────
   async onboard(dto: CreateOnboardingDto): Promise<OnboardingCredentials> {
     return apiFetch<OnboardingCredentials>("/api/faskes/onboarding", {
       method: "POST",
@@ -54,6 +54,97 @@ export const faskesApi = {
     return apiFetch<OcrOnboardingDraft>("/api/faskes/onboarding/ocr", {
       method: "POST",
       body: formData,
+    });
+  },
+
+  async getTickets(
+    params: {
+      status?: string;
+      priority?: string;
+      page?: number;
+      limit?: number;
+    } = {},
+  ): Promise<{
+    items: FaskesTicket[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const searchParams = new URLSearchParams();
+    if (params.status) searchParams.set("status", params.status);
+    if (params.priority) searchParams.set("priority", params.priority);
+    if (params.page) searchParams.set("page", String(params.page));
+    if (params.limit) searchParams.set("limit", String(params.limit));
+
+    const qs = searchParams.toString();
+    return apiFetch<{
+      items: FaskesTicket[];
+      total: number;
+      page: number;
+      limit: number;
+    }>(`/api/faskes/tickets${qs ? `?${qs}` : ""}`, { method: "GET" });
+  },
+
+  async getTicketById(id: string): Promise<FaskesTicket> {
+    return apiFetch<FaskesTicket>(`/api/faskes/tickets/${id}`, {
+      method: "GET",
+    });
+  },
+
+  async createTicket(dto: {
+    treatmentPlanId: string;
+    priority?: "HIGH" | "CRITICAL";
+    reason: string;
+  }): Promise<FaskesTicket> {
+    return apiFetch<FaskesTicket>("/api/faskes/tickets", {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  async closeTicket(
+    id: string,
+    dto: { resolutionReason: string; resolutionNotes: string },
+  ): Promise<FaskesTicket> {
+    return apiFetch<FaskesTicket>(`/api/faskes/tickets/${id}/close`, {
+      method: "PATCH",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  // ─── 4. NOTIFIKASI / ALERTS ───────────────────────────────────────────────
+  async getAlerts(
+    params: {
+      unreadOnly?: boolean;
+      severity?: string;
+      page?: number;
+      limit?: number;
+    } = {},
+  ): Promise<{
+    items: FaskesAlert[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const searchParams = new URLSearchParams();
+    if (params.unreadOnly !== undefined)
+      searchParams.set("unreadOnly", String(params.unreadOnly));
+    if (params.severity) searchParams.set("severity", params.severity);
+    if (params.page) searchParams.set("page", String(params.page));
+    if (params.limit) searchParams.set("limit", String(params.limit));
+
+    const qs = searchParams.toString();
+    return apiFetch<{
+      items: FaskesAlert[];
+      total: number;
+      page: number;
+      limit: number;
+    }>(`/api/faskes/alerts${qs ? `?${qs}` : ""}`, { method: "GET" });
+  },
+
+  async markAlertAsRead(id: string): Promise<FaskesAlert> {
+    return apiFetch<FaskesAlert>(`/api/faskes/alerts/${id}/read`, {
+      method: "PATCH",
     });
   },
 };

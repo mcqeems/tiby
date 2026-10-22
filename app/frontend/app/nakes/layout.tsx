@@ -6,6 +6,7 @@ import type { TibyUser } from "@/lib/auth-client";
 import UniversalSidebar from "@/components/layout/universal-sidebar";
 import PageHeader from "@/components/layout/page-header"; // <--- Impor PageHeader di sini
 import { nakesMenuItems } from "./components/nakes-menu";
+import NakesNotificationBell from "./components/nakes-notification-bell";
 
 export default function NakesLayout({
   children,
@@ -26,8 +27,15 @@ export default function NakesLayout({
           roleTitle="Tenaga Kesehatan"
           items={nakesMenuItems}
         />
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 pb-24 md:pb-8">
-          <PageHeader /> {/* <--- Otomatis tampil di setiap halaman Nakes */}
+        <main className="relative flex-1 overflow-y-auto p-6 md:p-8 pb-24 md:pb-8">
+          <div className="absolute top-4 right-6 md:top-4 md:right-8 z-10">
+            <NakesNotificationBell />
+          </div>
+
+          <div className="mb-6 pr-14">
+            <PageHeader />
+          </div>
+
           {children}
         </main>
       </div>
