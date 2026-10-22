@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { FacilityAlert } from "./entities/facility-alert.entity.js";
-import { AuthUser } from "../../auth/entities/auth-user.entity.js";
+import { FacilityAlert } from "../entities/facility-alert.entity.js";
+import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
 import type {
   ListAlertsQuery,
   FacilityAlertList,

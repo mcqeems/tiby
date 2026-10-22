@@ -6,9 +6,9 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { createHash } from "node:crypto";
-import { FamilyContact } from "./entities/family-contact.entity.js";
-import { TreatmentPlan } from "../patients/entities/treatment-plan.entity.js";
-import { PmoAssignment } from "../patients/entities/pmo-assignment.entity.js";
+import { FamilyContact } from "../entities/family-contact.entity.js";
+import { TreatmentPlan } from "../../patients/entities/treatment-plan.entity.js";
+import { PmoAssignment } from "../../patients/entities/pmo-assignment.entity.js";
 import type {
   FamilyContactInput,
   FamilyContactItem,

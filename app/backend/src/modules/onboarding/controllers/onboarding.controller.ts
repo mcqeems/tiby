@@ -1,9 +1,7 @@
 import {
   Controller,
   Post,
-  Get,
   Body,
-  Query,
   Req,
   UseGuards,
   UseInterceptors,
@@ -20,12 +18,9 @@ import { Roles } from "../../../common/decorators/roles.decorator.js";
 import type { AuthenticatedRequest } from "../../../common/types/auth-request.type.js";
 import {
   CreateOnboardingSchema,
-  ListPatientsQuerySchema,
   type CreateOnboardingDto,
   type OnboardingCredentials,
   type OcrOnboardingDraft,
-  type ListPatientsQuery,
-  type RiskSortedPatientList,
 } from "@tiby/ts-shared";
 
 @Controller("faskes")
@@ -73,15 +68,5 @@ export class OnboardingController {
     file?: Express.Multer.File,
   ): Promise<OcrOnboardingDraft> {
     return this.onboardingService.extractOcr(file);
-  }
-
-  @Get("patients")
-  @Roles(["NAKES"])
-  async listPatients(
-    @Req() req: AuthenticatedRequest,
-    @Query({ schema: ListPatientsQuerySchema }) query: ListPatientsQuery,
-  ): Promise<RiskSortedPatientList> {
-    const nakesUserId = this.extractUserId(req);
-    return this.onboardingService.listPatients(nakesUserId, query);
   }
 }

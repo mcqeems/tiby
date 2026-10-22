@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { AiClientService } from "../src/modules/ai-client/ai-client.service.js";
+import { AiClientService } from "../src/modules/internal/ai-client/ai-client.service.js";
 
 describe("AiClientService Unit Tests", () => {
   const service = new AiClientService();

@@ -352,39 +352,4 @@ describe("CheckInService Unit Tests", () => {
       );
     });
   });
-
-  describe("createPmoFollowUp", () => {
-    it("logs PMO outreach notes and adds additional family contact if provided", async () => {
-      mockPlanRepo.findOne.mockResolvedValue({
-        id: "plan-1",
-        patientUserId: "patient-1",
-        patientState: "AKTIF",
-        currentStreak: 5,
-      });
-
-      mockPmoRepo.findOne.mockResolvedValue({
-        id: "pmo-assign-1",
-        treatmentPlanId: "plan-1",
-        pmoUserId: "pmo-1",
-        active: true,
-      });
-
-      const res = await service.createPmoFollowUp("pmo-1", "patient-1", {
-        actionTaken: "KUNJUNGAN_RUMAH",
-        notes: "Pasien minum obat dengan baik",
-      });
-
-      expect(res.success).toBe(true);
-      expect(res.notes).toBe("Pasien minum obat dengan baik");
-      expect(mockHistoryRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          treatmentPlanId: "plan-1",
-          eventType: "PMO_OUTREACH",
-          actorUserId: "pmo-1",
-          actorRole: "PMO",
-          reasonOrSummary: "Pasien minum obat dengan baik",
-        }),
-      );
-    });
-  });
 });

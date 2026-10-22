@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { NotFoundException } from "@nestjs/common";
-import { AlertsService } from "../src/modules/alerts/alerts.service.js";
+import { AlertsService } from "../src/modules/alerts/services/alerts.service.js";
 
 describe("AlertsService Unit Tests", () => {
   let service: AlertsService;

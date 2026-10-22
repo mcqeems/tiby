@@ -12,6 +12,7 @@
     "better-auth": "^1.7.11",
     "@tiby/ts-shared": "workspace:*",
     "lottie-web": "^5.13.0",
+    "lucide-react": "^0.548.0",
     "next": "16.4.2",
     "react": "19.3.0",
     "react-dom": "19.3.0"

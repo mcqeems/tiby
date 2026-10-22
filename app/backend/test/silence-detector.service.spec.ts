@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { SilenceDetectorService } from "../src/modules/escalation/services/silence-detector.service.js";
+import { SilenceDetectorService } from "../src/modules/internal/escalation/services/silence-detector.service.js";
 
 describe("SilenceDetectorService Unit Tests", () => {
   let service: SilenceDetectorService;

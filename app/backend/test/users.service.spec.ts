@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ForbiddenException, BadRequestException } from "@nestjs/common";
-import { UsersService } from "../src/modules/users/users.service.js";
+import { UsersService } from "../src/modules/users/services/users.service.js";
 import { auth } from "../src/auth/auth.config.js";
 
 describe("UsersService Unit Tests", () => {

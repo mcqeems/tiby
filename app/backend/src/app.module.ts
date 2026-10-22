@@ -16,12 +16,11 @@ import { PushModule } from "./modules/push/push.module.js";
 import { WhatsappModule } from "./modules/whatsapp/whatsapp.module.js";
 import { TicketsModule } from "./modules/tickets/tickets.module.js";
 import { AlertsModule } from "./modules/alerts/alerts.module.js";
-import { FacilitiesModule } from "./modules/facilities/facilities.module.js";
 import { PatientsModule } from "./modules/patients/patients.module.js";
 import { FamilyContactsModule } from "./modules/family-contacts/family-contacts.module.js";
-import { EscalationModule } from "./modules/escalation/escalation.module.js";
+import { EscalationModule } from "./modules/internal/escalation/escalation.module.js";
 import { EducationModule } from "./modules/education/education.module.js";
-import { AuditModule } from "./modules/audit/audit.module.js";
+import { AuditModule } from "./modules/internal/audit/audit.module.js";
 import { UsersModule } from "./modules/users/users.module.js";
 
 @Module({
@@ -52,7 +51,6 @@ import { UsersModule } from "./modules/users/users.module.js";
     WhatsappModule,
     TicketsModule,
     AlertsModule,
-    FacilitiesModule,
     PatientsModule,
     FamilyContactsModule,
     EscalationModule,

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { PushService } from "../src/modules/push/push.service.js";
+import { PushService } from "../src/modules/push/services/push.service.js";
 import webpush from "web-push";
 
 describe("PushService Unit Tests", () => {

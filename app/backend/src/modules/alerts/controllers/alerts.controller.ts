@@ -8,10 +8,10 @@ import {
   UseGuards,
   UnauthorizedException,
 } from "@nestjs/common";
-import { AlertsService } from "./alerts.service.js";
-import { RolesGuard } from "../../common/guards/roles.guard.js";
-import { Roles } from "../../common/decorators/roles.decorator.js";
-import type { AuthenticatedRequest } from "../../common/types/auth-request.type.js";
+import { AlertsService } from "../services/alerts.service.js";
+import { RolesGuard } from "../../../common/guards/roles.guard.js";
+import { Roles } from "../../../common/decorators/roles.decorator.js";
+import type { AuthenticatedRequest } from "../../../common/types/auth-request.type.js";
 import {
   ListAlertsQuerySchema,
   type ListAlertsQuery,

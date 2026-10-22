@@ -13,8 +13,6 @@ describe("OnboardingService Unit Tests", () => {
   let mockFacilityRepo: any;
   let mockHistoryRepo: any;
   let mockAuditRepo: any;
-  let mockCheckInRepo: any;
-  let mockPushRepo: any;
 
   beforeEach(() => {
     mockUserRepo = {
@@ -47,12 +45,6 @@ describe("OnboardingService Unit Tests", () => {
       create: vi.fn((data) => data),
       save: vi.fn((data) => Promise.resolve(data)),
     };
-    mockCheckInRepo = {
-      findOne: vi.fn(),
-    };
-    mockPushRepo = {
-      countBy: vi.fn().mockResolvedValue(0),
-    };
 
     service = new OnboardingService(
       mockUserRepo,
@@ -62,8 +54,6 @@ describe("OnboardingService Unit Tests", () => {
       mockFacilityRepo,
       mockHistoryRepo,
       mockAuditRepo,
-      mockCheckInRepo,
-      mockPushRepo,
     );
   });
 

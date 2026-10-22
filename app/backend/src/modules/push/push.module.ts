@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { PushController } from "./push.controller.js";
-import { PushService } from "./push.service.js";
+import { PushController } from "./controllers/push.controller.js";
+import { PushService } from "./services/push.service.js";
 import { PushSubscription } from "./entities/push-subscription.entity.js";
 import { TreatmentPlan } from "../patients/entities/treatment-plan.entity.js";
 import { PatientStatusHistory } from "../patients/entities/patient-status-history.entity.js";

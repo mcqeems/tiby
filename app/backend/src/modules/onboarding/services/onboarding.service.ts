@@ -6,21 +6,14 @@ import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
 import { TreatmentPlan } from "../../patients/entities/treatment-plan.entity.js";
 import { PmoAssignment } from "../../patients/entities/pmo-assignment.entity.js";
 import { FamilyContact } from "../../family-contacts/entities/family-contact.entity.js";
-import { Facility } from "../../facilities/entities/facility.entity.js";
+import { Facility } from "../../../entities/facility.entity.js";
 import { PatientStatusHistory } from "../../patients/entities/patient-status-history.entity.js";
-import { AuditLog } from "../../audit/entities/audit-log.entity.js";
-import { DailyCheckIn } from "../../check-ins/entities/daily-check-in.entity.js";
-import { PushSubscription } from "../../push/entities/push-subscription.entity.js";
+import { AuditLog } from "../../internal/audit/entities/audit-log.entity.js";
 import { auth } from "../../../auth/auth.config.js";
 import type {
   CreateOnboardingDto,
   OnboardingCredentials,
   OcrOnboardingDraft,
-  ListPatientsQuery,
-  RiskSortedPatientList,
-  RiskSortedPatientItem,
-  PatientState,
-  TreatmentPhase,
 } from "@tiby/ts-shared";
 
 function hashPhone(phone: string): string {
@@ -55,10 +48,6 @@ export class OnboardingService {
     private readonly historyRepo: Repository<PatientStatusHistory>,
     @InjectRepository(AuditLog)
     private readonly auditRepo: Repository<AuditLog>,
-    @InjectRepository(DailyCheckIn)
-    private readonly checkInRepo: Repository<DailyCheckIn>,
-    @InjectRepository(PushSubscription)
-    private readonly pushRepo: Repository<PushSubscription>,
   ) {}
 
   async createOnboarding(
@@ -286,92 +275,4 @@ export class OnboardingService {
     };
   }
 
-  async listPatients(
-    nakesUserId: string,
-    query: ListPatientsQuery,
-  ): Promise<RiskSortedPatientList> {
-    const nakes = await this.userRepo.findOneBy({ id: nakesUserId });
-    const facilityId = nakes?.facilityId;
-
-    const qb = this.planRepo
-      .createQueryBuilder("plan")
-      .leftJoinAndSelect("plan.patientUser", "patient")
-      .where("1=1");
-
-    if (facilityId) {
-      qb.andWhere("plan.facilityId = :facilityId", { facilityId });
-    }
-
-    if (query.state) {
-      qb.andWhere("plan.patientState = :state", { state: query.state });
-    }
-
-    if (query.phase) {
-      qb.andWhere("plan.phase = :phase", { phase: query.phase });
-    }
-
-    if (query.search) {
-      qb.andWhere("(patient.name ILIKE :search OR patient.username ILIKE :search)", {
-        search: `%${query.search}%`,
-      });
-    }
-
-    qb.orderBy("plan.riskScore", "DESC")
-      .addOrderBy("plan.consecutiveSilenceDays", "DESC")
-      .addOrderBy("plan.createdAt", "DESC");
-
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    qb.skip((page - 1) * limit).take(limit);
-
-    const [plans, total] = await qb.getManyAndCount();
-
-    const todayStr = new Date().toISOString().slice(0, 10);
-
-    const items: RiskSortedPatientItem[] = await Promise.all(
-      plans.map(async (p) => {
-        const todayLockedCheckIn = await this.checkInRepo.findOne({
-          where: {
-            treatmentPlanId: p.id,
-            checkInDate: todayStr,
-            isDoseFulfilled: true,
-          },
-        });
-
-        const lastCheckIn = await this.checkInRepo.findOne({
-          where: { treatmentPlanId: p.id, isDoseFulfilled: true },
-          order: { checkInDate: "DESC" },
-        });
-
-        const pushCount = await this.pushRepo.countBy({ userId: p.patientUserId });
-
-        return {
-          id: p.id,
-          patientUserId: p.patientUserId,
-          patientName: p.patientUser?.name || "Pasien",
-          username: p.patientUser?.username || "",
-          patientState: p.patientState as PatientState,
-          phase: p.phase as TreatmentPhase,
-          regimenCode: p.regimenCode,
-          dailyPillQuota: p.dailyPillQuota,
-          currentStreak: p.currentStreak,
-          consecutiveSilenceDays: p.consecutiveSilenceDays,
-          riskScore: p.riskScore,
-          lastCheckInDate: lastCheckIn?.checkInDate || null,
-          todayCheckInLocked: Boolean(todayLockedCheckIn),
-          startDate: p.startDate,
-          targetEndDate: p.targetEndDate,
-          whatsappVerified: Boolean(p.patientUser?.whatsappVerified),
-          pushSubscribed: pushCount > 0,
-        };
-      }),
-    );
-
-    return {
-      items,
-      total,
-      page,
-      limit,
-    };
-  }
 }

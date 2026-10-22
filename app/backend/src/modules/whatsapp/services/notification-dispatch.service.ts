@@ -2,13 +2,13 @@ import { Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { NotificationTriggerEvent } from "../../common/events/notification-trigger.event.js";
-import { NotificationLog } from "./entities/notification-log.entity.js";
-import { TreatmentPlan } from "../patients/entities/treatment-plan.entity.js";
-import { PmoAssignment } from "../patients/entities/pmo-assignment.entity.js";
-import { AuthUser } from "../../auth/entities/auth-user.entity.js";
-import { PushService } from "../push/push.service.js";
-import { WahaClientService } from "./services/waha-client.service.js";
+import { NotificationTriggerEvent } from "../../../common/events/notification-trigger.event.js";
+import { NotificationLog } from "../entities/notification-log.entity.js";
+import { TreatmentPlan } from "../../patients/entities/treatment-plan.entity.js";
+import { PmoAssignment } from "../../patients/entities/pmo-assignment.entity.js";
+import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
+import { PushService } from "../../push/services/push.service.js";
+import { WahaClientService } from "./waha-client.service.js";
 
 function getMessageForCircumstance(circumstance: string, custom?: string): { title: string; body: string } {
   switch (circumstance) {
@@ -65,8 +65,8 @@ function getMessageForCircumstance(circumstance: string, custom?: string): { tit
 }
 
 @Injectable()
-export class NotificationsService {
-  private readonly logger = new Logger(NotificationsService.name);
+export class NotificationDispatchService {
+  private readonly logger = new Logger(NotificationDispatchService.name);
 
   constructor(
     @InjectRepository(NotificationLog)

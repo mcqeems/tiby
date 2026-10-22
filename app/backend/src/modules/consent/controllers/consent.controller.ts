@@ -9,10 +9,10 @@ import {
   UseGuards,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ConsentService } from './consent.service.js';
-import { RolesGuard } from '../../common/guards/roles.guard.js';
-import { Roles } from '../../common/decorators/roles.decorator.js';
-import type { AuthenticatedRequest } from '../../common/types/auth-request.type.js';
+import { ConsentService } from '../services/consent.service.js';
+import { RolesGuard } from '../../../common/guards/roles.guard.js';
+import { Roles } from '../../../common/decorators/roles.decorator.js';
+import type { AuthenticatedRequest } from '../../../common/types/auth-request.type.js';
 import {
   GrantConsentSchema,
   RevokeConsentSchema,

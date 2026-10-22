@@ -6,12 +6,10 @@ import { AuthUser } from "../../auth/entities/auth-user.entity.js";
 import { TreatmentPlan } from "../patients/entities/treatment-plan.entity.js";
 import { PmoAssignment } from "../patients/entities/pmo-assignment.entity.js";
 import { FamilyContact } from "../family-contacts/entities/family-contact.entity.js";
-import { Facility } from "../facilities/entities/facility.entity.js";
+import { Facility } from "../../entities/facility.entity.js";
 import { FacilityAlert } from "../alerts/entities/facility-alert.entity.js";
 import { PatientStatusHistory } from "../patients/entities/patient-status-history.entity.js";
-import { AuditLog } from "../audit/entities/audit-log.entity.js";
-import { DailyCheckIn } from "../check-ins/entities/daily-check-in.entity.js";
-import { PushSubscription } from "../push/entities/push-subscription.entity.js";
+import { AuditLog } from "../internal/audit/entities/audit-log.entity.js";
 
 @Module({
   imports: [
@@ -24,8 +22,6 @@ import { PushSubscription } from "../push/entities/push-subscription.entity.js";
       FacilityAlert,
       PatientStatusHistory,
       AuditLog,
-      DailyCheckIn,
-      PushSubscription,
     ]),
   ],
   controllers: [OnboardingController],

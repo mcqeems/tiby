@@ -9,10 +9,10 @@ import {
   UseGuards,
   UnauthorizedException,
 } from '@nestjs/common';
-import { FamilyContactsService } from './family-contacts.service.js';
-import { RolesGuard } from '../../common/guards/roles.guard.js';
-import { Roles } from '../../common/decorators/roles.decorator.js';
-import type { AuthenticatedRequest } from '../../common/types/auth-request.type.js';
+import { FamilyContactsService } from '../services/family-contacts.service.js';
+import { RolesGuard } from '../../../common/guards/roles.guard.js';
+import { Roles } from '../../../common/decorators/roles.decorator.js';
+import type { AuthenticatedRequest } from '../../../common/types/auth-request.type.js';
 import {
   FamilyContactInputSchema,
   type FamilyContactInput,

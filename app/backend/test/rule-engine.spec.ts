@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { RuleEngineService } from "../src/modules/rule-engine/rule-engine.service.js";
+import { RuleEngineService } from "../src/modules/internal/rule-engine/rule-engine.service.js";
 
 describe("RuleEngineService", () => {
   const service = new RuleEngineService();

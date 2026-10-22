@@ -7,7 +7,7 @@ import {
   JoinColumn,
   Index,
 } from "typeorm";
-import { DailyCheckIn } from "../../check-ins/entities/daily-check-in.entity.js";
+import { DailyCheckIn } from "../../../check-ins/entities/daily-check-in.entity.js";
 
 @Entity("safety_evaluations")
 export class SafetyEvaluation {

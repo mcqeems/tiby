@@ -8,15 +8,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DailyCheckIn } from '../entities/daily-check-in.entity.js';
-import { SafetyEvaluation } from '../../rule-engine/entities/safety-evaluation.entity.js';
+import { SafetyEvaluation } from '../../internal/rule-engine/entities/safety-evaluation.entity.js';
 import { TreatmentPlan } from '../../patients/entities/treatment-plan.entity.js';
 import { PmoAssignment } from '../../patients/entities/pmo-assignment.entity.js';
 import { InterventionTicket } from '../../tickets/entities/intervention-ticket.entity.js';
 import { FacilityAlert } from '../../alerts/entities/facility-alert.entity.js';
 import { PatientStatusHistory } from '../../patients/entities/patient-status-history.entity.js';
-import { AuditLog } from '../../audit/entities/audit-log.entity.js';
-import { AiClientService } from '../../ai-client/ai-client.service.js';
-import { RuleEngineService } from '../../rule-engine/rule-engine.service.js';
+import { AuditLog } from '../../internal/audit/entities/audit-log.entity.js';
+import { AiClientService } from '../../internal/ai-client/ai-client.service.js';
+import { RuleEngineService } from '../../internal/rule-engine/rule-engine.service.js';
 import { NotificationTriggerEvent } from '../../../common/events/notification-trigger.event.js';
 import type {
   AiAudioExtractionResponse,
@@ -24,10 +24,6 @@ import type {
   SubmitCheckInDto,
   TextExtractRequest,
   MedicationStatus,
-  PmoPatientStatusList,
-  CreatePmoFollowUpDto,
-  PmoFollowUpResponse,
-  SafetyVerdict,
 } from '@tiby/ts-shared';
 
 @Injectable()
@@ -453,114 +449,6 @@ export class CheckInService {
       message: verdictResult.responseMessage,
       matchedRules: verdictResult.matchedRuleCodes,
       submittedAt: checkIn.submittedAt.toISOString(),
-    };
-  }
-
-  async getPmoPatients(pmoUserId: string): Promise<PmoPatientStatusList> {
-    const assignments = await this.pmoRepo.find({
-      where: { pmoUserId, active: true },
-      relations: {
-        treatmentPlan: {
-          patientUser: true,
-        },
-      },
-    });
-
-    const todayStr = new Date().toISOString().slice(0, 10);
-
-    const patients = await Promise.all(
-      assignments.map(async (a) => {
-        const plan = a.treatmentPlan;
-        const lockedCheckIn = await this.checkInRepo.findOne({
-          where: {
-            treatmentPlanId: plan.id,
-            checkInDate: todayStr,
-            isDoseFulfilled: true,
-          },
-        });
-
-        const latestCheckIn = await this.checkInRepo.findOne({
-          where: { treatmentPlanId: plan.id, checkInDate: todayStr },
-          order: { attemptNumber: 'DESC' },
-        });
-
-        let todayVerdict: SafetyVerdict | null = null;
-        if (lockedCheckIn) {
-          const ev = await this.evalRepo.findOneBy({
-            checkInId: lockedCheckIn.id,
-          });
-          todayVerdict = (ev?.verdict as SafetyVerdict) ?? 'TERKENDALI';
-        } else if (latestCheckIn) {
-          const ev = await this.evalRepo.findOneBy({
-            checkInId: latestCheckIn.id,
-          });
-          todayVerdict = (ev?.verdict as SafetyVerdict) ?? 'PERLU_PERHATIAN';
-        }
-
-        return {
-          treatmentPlanId: plan.id,
-          patientName: plan.patientUser?.name || 'Pasien',
-          isLockedToday: Boolean(lockedCheckIn),
-          todayVerdict,
-          currentStreak: plan.currentStreak,
-          phase: plan.phase,
-          consecutiveSilenceDays: plan.consecutiveSilenceDays,
-        };
-      }),
-    );
-
-    return patients;
-  }
-
-  async createPmoFollowUp(
-    pmoUserId: string,
-    patientOrPlanId: string,
-    dto: CreatePmoFollowUpDto,
-  ): Promise<PmoFollowUpResponse> {
-    let plan = await this.planRepo.findOne({
-      where: { patientUserId: patientOrPlanId },
-    });
-    if (!plan) {
-      plan = await this.planRepo.findOne({
-        where: { id: patientOrPlanId },
-      });
-    }
-    if (!plan) {
-      throw new NotFoundException({
-        code: 'NOT_FOUND',
-        message: 'Treatment plan not found for patient',
-      });
-    }
-
-    const assignment = await this.pmoRepo.findOne({
-      where: { treatmentPlanId: plan.id, pmoUserId, active: true },
-    });
-    if (!assignment) {
-      throw new NotFoundException({
-        code: 'NOT_FOUND',
-        message: 'PMO is not assigned to this patient',
-      });
-    }
-
-    const history = await this.historyRepo.save(
-      this.historyRepo.create({
-        treatmentPlanId: plan.id,
-        eventType: 'PMO_OUTREACH',
-        previousState: plan.patientState,
-        newState: plan.patientState,
-        previousStreak: plan.currentStreak,
-        newStreak: plan.currentStreak,
-        actorUserId: pmoUserId,
-        actorRole: 'PMO',
-        reasonOrSummary: dto.notes,
-        metadataJson: { actionTaken: dto.actionTaken },
-      }),
-    );
-
-    return {
-      success: true,
-      followUpId: history.id,
-      notes: dto.notes,
     };
   }
 }

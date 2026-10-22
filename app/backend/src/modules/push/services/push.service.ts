@@ -8,10 +8,10 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import webpush from "web-push";
 import { randomUUID } from "node:crypto";
-import { PushSubscription } from "./entities/push-subscription.entity.js";
-import { TreatmentPlan } from "../patients/entities/treatment-plan.entity.js";
-import { PatientStatusHistory } from "../patients/entities/patient-status-history.entity.js";
-import { AuthUser } from "../../auth/entities/auth-user.entity.js";
+import { PushSubscription } from "../entities/push-subscription.entity.js";
+import { TreatmentPlan } from "../../patients/entities/treatment-plan.entity.js";
+import { PatientStatusHistory } from "../../patients/entities/patient-status-history.entity.js";
+import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
 import type {
   PushSubscriptionPayload,
   PushSubscriptionStatus,

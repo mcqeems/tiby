@@ -5,7 +5,7 @@ import request from "supertest";
 import { DataSource } from "typeorm";
 import { AppModule } from "../src/app.module.js";
 import { auth } from "../src/auth/auth.config.js";
-import { Facility } from "../src/modules/facilities/entities/facility.entity.js";
+import { Facility } from "../src/entities/facility.entity.js";
 
 describe("Users & RBAC Password Management (e2e)", () => {
   let app: INestApplication;

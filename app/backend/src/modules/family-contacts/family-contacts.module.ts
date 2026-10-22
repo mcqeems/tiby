@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { FamilyContactsController } from "./family-contacts.controller.js";
-import { FamilyContactsService } from "./family-contacts.service.js";
+import { FamilyContactsController } from "./controllers/family-contacts.controller.js";
+import { FamilyContactsService } from "./services/family-contacts.service.js";
 import { FamilyContact } from "./entities/family-contact.entity.js";
 import { TreatmentPlan } from "../patients/entities/treatment-plan.entity.js";
 import { PmoAssignment } from "../patients/entities/pmo-assignment.entity.js";

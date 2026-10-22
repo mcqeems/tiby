@@ -7,10 +7,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { createHash } from 'node:crypto';
-import { AuthUser } from '../../auth/entities/auth-user.entity.js';
-import { Facility } from '../facilities/entities/facility.entity.js';
-import { AuditLog } from '../audit/entities/audit-log.entity.js';
-import { auth } from '../../auth/auth.config.js';
+import { AuthUser } from '../../../auth/entities/auth-user.entity.js';
+import { Facility } from '../../../entities/facility.entity.js';
+import { AuditLog } from '../../internal/audit/entities/audit-log.entity.js';
+import { auth } from '../../../auth/auth.config.js';
 import type {
   CreateUserDto,
   ChangeOwnPasswordDto,

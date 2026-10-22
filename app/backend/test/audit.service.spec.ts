@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { AuditService } from "../src/modules/audit/audit.service.js";
+import { AuditService } from "../src/modules/internal/audit/audit.service.js";
 
 describe("AuditService Unit Tests", () => {
   let service: AuditService;

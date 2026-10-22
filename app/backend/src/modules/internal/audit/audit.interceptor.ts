@@ -7,7 +7,7 @@ import {
 import { Observable } from "rxjs";
 import { tap } from "rxjs/operators";
 import { AuditService } from "./audit.service.js";
-import type { AuthenticatedRequest } from "../../common/types/auth-request.type.js";
+import type { AuthenticatedRequest } from "../../../common/types/auth-request.type.js";
 
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
