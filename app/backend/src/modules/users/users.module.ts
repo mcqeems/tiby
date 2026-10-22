@@ -3,7 +3,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { UsersController } from "./controllers/users.controller.js";
 import { UsersService } from "./services/users.service.js";
 import { AuthUser } from "../../auth/entities/auth-user.entity.js";
-import { Facility } from "../../entities/facility.entity.js";
+import { Facility } from "../facilities/entities/facilities.entity.js";
 import { AuditLog } from "../internal/audit/entities/audit-log.entity.js";
 
 @Module({

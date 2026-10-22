@@ -11,7 +11,7 @@ import {
 } from "typeorm";
 import { EncryptedColumnTransformer } from "../../database/transformers/encrypted-column.transformer.js";
 import type { PushSubscription } from "../../modules/push/entities/push-subscription.entity.js";
-import { Facility } from "../../entities/facility.entity.js";
+import { Facility } from "../../modules/facilities/entities/facilities.entity.js";
 
 @Entity("users")
 export class AuthUser {

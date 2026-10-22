@@ -6,7 +6,7 @@ import { DataSource } from "typeorm";
 import { AppModule } from "../src/app.module.js";
 import { auth } from "../src/auth/auth.config.js";
 import { AuthUser } from "../src/auth/entities/auth-user.entity.js";
-import { Facility } from "../src/entities/facility.entity.js";
+import { Facility } from "../src/modules/facilities/entities/facilities.entity.js";
 import { TreatmentPlan } from "../src/modules/patients/entities/treatment-plan.entity.js";
 import { PmoAssignment } from "../src/modules/patients/entities/pmo-assignment.entity.js";
 import { FacilityAlert } from "../src/modules/alerts/entities/facility-alert.entity.js";

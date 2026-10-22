@@ -8,7 +8,7 @@ import {
   JoinColumn,
   Index,
 } from "typeorm";
-import { Facility } from "../../../entities/facility.entity.js";
+import { Facility } from "../../facilities/entities/facilities.entity.js";
 import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
 
 /**

@@ -3,7 +3,7 @@ import { DataSource } from "typeorm";
 import { AppDataSource } from "../src/database/data-source.js";
 import { AuthUser } from "../src/auth/entities/auth-user.entity.js";
 import { PushSubscription } from "../src/modules/push/entities/push-subscription.entity.js";
-import { Facility } from "../src/entities/facility.entity.js";
+import { Facility } from "../src/modules/facilities/entities/facilities.entity.js";
 import { TreatmentPlan } from "../src/modules/patients/entities/treatment-plan.entity.js";
 import { DailyCheckIn } from "../src/modules/check-ins/entities/daily-check-in.entity.js";
 

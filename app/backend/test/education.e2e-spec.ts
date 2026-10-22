@@ -5,7 +5,7 @@ import request from "supertest";
 import { DataSource } from "typeorm";
 import { AppModule } from "../src/app.module.js";
 import { auth } from "../src/auth/auth.config.js";
-import { Facility } from "../src/entities/facility.entity.js";
+import { Facility } from "../src/modules/facilities/entities/facilities.entity.js";
 import { EducationCard } from "../src/modules/education/entities/education-card.entity.js";
 
 describe("Education Cards CRUD (e2e)", () => {

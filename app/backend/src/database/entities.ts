@@ -3,7 +3,7 @@ import { AuthSession } from "../auth/entities/auth-session.entity.js";
 import { AuthAccount } from "../auth/entities/auth-account.entity.js";
 import { AuthVerification } from "../auth/entities/auth-verification.entity.js";
 import { PushSubscription } from "../modules/push/entities/push-subscription.entity.js";
-import { Facility } from "../entities/facility.entity.js";
+import { Facility } from "../modules/facilities/entities/facilities.entity.js";
 import { ConsentRecord } from "../modules/consent/entities/consent-record.entity.js";
 import { TreatmentPlan } from "../modules/patients/entities/treatment-plan.entity.js";
 import { PmoAssignment } from "../modules/patients/entities/pmo-assignment.entity.js";
