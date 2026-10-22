@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { pmoApi } from "@/lib/api/pmo";
 import PublicLoading from "@/components/ui/public-loading";
-import { User, Activity, Flame, ClipboardCheck } from "lucide-react";
+import PmoFollowUpModal from "./components/pmo-follow-up-modal"; // ✅ Import Modal
+import {
+  User,
+  Activity,
+  Flame,
+  ClipboardCheck,
+  MessageSquarePlus,
+} from "lucide-react";
 
 interface PmoPatient {
   treatmentPlanId: string;
@@ -20,26 +27,37 @@ export default function PmoPatientsPage() {
   const [patients, setPatients] = useState<PmoPatient[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchPatients() {
-      try {
-        const res = await pmoApi.getPatients();
+  // ✅ State untuk Modal Follow Up
+  const [selectedPatient, setSelectedPatient] = useState<PmoPatient | null>(
+    null,
+  );
 
-        // ✅ FIX: Ganti 'any' dengan tipe yang spesifik
-        // Kita asumsikan jika bukan array, maka respons berbentuk { items: PmoPatient[] }
-        const patientList = Array.isArray(res)
+  const fetchPatients = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await pmoApi.getPatients();
+      setPatients(
+        Array.isArray(res)
           ? res
-          : (res as { items?: PmoPatient[] }).items || [];
-
-        setPatients(patientList);
-      } catch (err) {
-        console.error("Gagal memuat pasien:", err);
-      } finally {
-        setLoading(false);
-      }
+          : (res as { items?: PmoPatient[] }).items || [],
+      );
+    } catch (err) {
+      console.error("Gagal memuat pasien:", err);
+    } finally {
+      setLoading(false);
     }
-    fetchPatients();
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    const timer = setTimeout(() => {
+      if (active) fetchPatients();
+    }, 0);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [fetchPatients]);
 
   if (loading)
     return (
@@ -100,7 +118,16 @@ export default function PmoPatientsPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              {/* ✅ Kumpulan Tombol Aksi PMO */}
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setSelectedPatient(patient)}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-tiby-ink shadow-sm hover:bg-gray-50 transition"
+                >
+                  <MessageSquarePlus className="w-4 h-4 text-tiby-teal-600" />
+                  Catat Tindak Lanjut
+                </button>
+
                 <Link
                   href={`/pmo/check-in?patientId=${patient.treatmentPlanId}&patientName=${encodeURIComponent(patient.patientName)}`}
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-tiby-teal-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-tiby-teal-700 transition"
@@ -112,6 +139,19 @@ export default function PmoPatientsPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* ✅ Render Modal Jika Ada Pasien Terpilih */}
+      {selectedPatient && (
+        <PmoFollowUpModal
+          patientId={selectedPatient.treatmentPlanId}
+          patientName={selectedPatient.patientName}
+          onClose={() => setSelectedPatient(null)}
+          onSuccess={() => {
+            setSelectedPatient(null);
+            fetchPatients(); // Refresh data setelah simpan
+          }}
+        />
       )}
     </div>
   );
