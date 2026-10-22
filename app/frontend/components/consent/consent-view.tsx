@@ -9,27 +9,6 @@ import PublicLoading from "@/components/ui/public-loading";
 import { ShieldCheck, FileText, Check } from "lucide-react";
 import type { ConsentStatus, ConsentScope } from "@/lib/types/consent";
 
-const AVAILABLE_SCOPES = [
-  {
-    id: "PATIENT_DATA_SHARE" as ConsentScope,
-    title: "Berbagi Data Pengobatan",
-    description:
-      "Mengizinkan petugas fasilitas kesehatan melihat status kepatuhan dan keluhan Anda.",
-  },
-  {
-    id: "PMO_STATUS_ONLY" as ConsentScope,
-    title: "Pemantauan oleh PMO",
-    description:
-      "Mengizinkan Pengawas Menelan Obat (PMO) Anda melihat status kepatuhan harian (tanpa isi percakapan).",
-  },
-  {
-    id: "STT_AUDIO_PROCESSING" as ConsentScope,
-    title: "Pemrosesan Suara AI",
-    description:
-      "Mengizinkan Pandu memproses rekaman suara Anda untuk mendeteksi keluhan secara otomatis.",
-  },
-];
-
 export default function ConsentView({
   role = "PASIEN",
 }: {
@@ -42,9 +21,42 @@ export default function ConsentView({
   const [status, setStatus] = useState<ConsentStatus | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // State form
   const [selectedScopes, setSelectedScopes] = useState<ConsentScope[]>([]);
   const [scheduleConfirmed, setScheduleConfirmed] = useState(false);
+
+  // ✅ 1. BEDAKAN TEKS BERDASARKAN ROLE
+  const isPmo = role === "PMO";
+
+  const pageTitle = isPmo
+    ? "Persetujuan Pengawas (PMO)"
+    : "Mari Jaga Privasi Anda";
+  const pageDesc = isPmo
+    ? "Sebagai Pengawas Menelan Obat (PMO), Anda akan membantu memantau kepatuhan pasien. Mohon setujui ketentuan berikut."
+    : "Demi keamanan dan kenyamanan Anda, Pandu membutuhkan persetujuan Anda terkait data pengobatan.";
+
+  const scopesList = [
+    {
+      id: "PATIENT_DATA_SHARE" as ConsentScope,
+      title: isPmo ? "Akses Data Pasien" : "Berbagi Data Pengobatan",
+      description: isPmo
+        ? "Mengizinkan saya melihat status kepatuhan dan keluhan pasien yang saya dampingi."
+        : "Mengizinkan petugas fasilitas kesehatan melihat status kepatuhan dan keluhan Anda.",
+    },
+    {
+      id: "PMO_STATUS_ONLY" as ConsentScope,
+      title: isPmo ? "Penerimaan Notifikasi Darurat" : "Pemantauan oleh PMO",
+      description: isPmo
+        ? "Mengizinkan saya menerima notifikasi WhatsApp jika pasien lupa minum obat atau berisiko putus obat."
+        : "Mengizinkan Pengawas Menelan Obat (PMO) Anda melihat status kepatuhan harian (tanpa isi percakapan).",
+    },
+    {
+      id: "STT_AUDIO_PROCESSING" as ConsentScope,
+      title: isPmo ? "Laporan Suara (Mewakili)" : "Pemrosesan Suara AI",
+      description: isPmo
+        ? "Mengizinkan saya menggunakan fitur suara untuk melaporkan kondisi pasien jika pasien tidak bisa melapor sendiri."
+        : "Mengizinkan Pandu memproses rekaman suara Anda untuk mendeteksi keluhan secara otomatis.",
+    },
+  ];
 
   useEffect(() => {
     let active = true;
@@ -52,7 +64,6 @@ export default function ConsentView({
       try {
         const res = await consentApi.getStatus();
         if (active) {
-          // ✅ FIX: Memastikan tipe data sesuai
           setStatus(res as ConsentStatus);
           if (res.scopes) {
             setSelectedScopes(res.scopes as ConsentScope[]);
@@ -63,7 +74,7 @@ export default function ConsentView({
           await notify({
             variant: "danger",
             title: "Gagal Memuat Data",
-            description: "Tidak dapat mengambil status persetujuan Anda.",
+            description: "Tidak dapat mengambil status persetujuan.",
             confirmLabel: "Tutup",
           });
         }
@@ -89,8 +100,7 @@ export default function ConsentView({
         variant: "warning",
         badgeText: "Validasi",
         title: "Persetujuan Belum Lengkap",
-        description:
-          "Anda harus mencentang ketiga izin di atas agar Pandu dapat bekerja maksimal.",
+        description: "Anda harus mencentang ketiga izin di atas.",
         confirmLabel: "Mengerti",
       });
     }
@@ -99,28 +109,24 @@ export default function ConsentView({
         variant: "warning",
         badgeText: "Validasi",
         title: "Konfirmasi Jadwal",
-        description:
-          "Anda harus mengonfirmasi jadwal minum obat terlebih dahulu.",
+        description: "Anda harus mengonfirmasi jadwal minum obat.",
         confirmLabel: "Mengerti",
       });
     }
 
     try {
       setSubmitting(true);
-      // ✅ Mengirim array of string (di-cast agar sesuai tipe)
       await consentApi.grant(selectedScopes as string[], scheduleConfirmed);
 
       await notify({
         variant: "success",
         badgeText: "Persetujuan Aktif",
         title: "Terima Kasih!",
-        description:
-          "Data Anda kini aman dan Pandu siap mendampingi pengobatan Anda.",
+        description: "Data Anda kini aman dan sistem siap digunakan.",
         confirmLabel: "Mulai Gunakan Aplikasi",
       });
 
-      // Redirect ke halaman utama sesuai role
-      router.replace(role === "PMO" ? "/pmo" : "/pasien");
+      router.replace(isPmo ? "/pmo" : "/pasien");
     } catch (err: unknown) {
       await notify({
         variant: "danger",
@@ -140,7 +146,7 @@ export default function ConsentView({
       badgeText: "Peringatan",
       title: "Cabut Persetujuan?",
       description:
-        "Jika dicabut, petugas dan PMO tidak bisa lagi memantau pengobatan Anda. Fitur pendampingan akan dinonaktifkan.",
+        "Jika dicabut, Anda tidak bisa lagi mengakses fitur pendampingan.",
       confirmLabel: "Ya, Cabut",
       cancelLabel: "Batal",
     });
@@ -150,14 +156,12 @@ export default function ConsentView({
     try {
       setSubmitting(true);
       await consentApi.revoke("Dicabut mandiri oleh pengguna");
-
       await notify({
         variant: "success",
         title: "Persetujuan Dicabut",
-        description: "Anda telah mencabut izin berbagi data.",
+        description: "Anda telah mencabut izin.",
         confirmLabel: "Tutup",
       });
-
       window.location.reload();
     } catch (err: unknown) {
       await notify({
@@ -177,6 +181,7 @@ export default function ConsentView({
       <PublicLoading fullScreen message="Memeriksa status persetujuan..." />
     );
 
+  // ─── TAMPILAN JIKA SUDAH SETUJU ───
   if (status?.active) {
     return (
       <div className="max-w-2xl mx-auto py-10 space-y-6 text-center animate-in fade-in">
@@ -198,7 +203,7 @@ export default function ConsentView({
             month: "long",
             year: "numeric",
           })}
-          . Pandu siap mendampingi Anda.
+          .
         </p>
         <div className="pt-6">
           <button
@@ -206,7 +211,7 @@ export default function ConsentView({
             disabled={submitting}
             className="text-xs font-semibold text-red-600 hover:text-red-700 underline underline-offset-4"
           >
-            {submitting ? "Memproses..." : "Cabut Persetujuan Privasi"}
+            {submitting ? "Memproses..." : "Cabut Persetujuan"}
           </button>
         </div>
       </div>
@@ -214,23 +219,20 @@ export default function ConsentView({
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pb-20">
+    <div className="max-w-2xl mx-auto space-y-6">
       <div className="text-center space-y-3">
         <div className="w-32 h-32 mx-auto relative">
           <Image
-            src="/mascot/empathy/empathy.webp"
+            src="/mascot/empathy/empathy.png"
             alt="Privasi"
             fill
             className="object-contain"
           />
         </div>
         <h1 className="text-2xl font-heading font-bold text-tiby-ink">
-          Sebelum Memulai, <br /> Mari Jaga Privasi Anda
+          {pageTitle}
         </h1>
-        <p className="text-sm text-tiby-muted max-w-md mx-auto">
-          Demi keamanan dan kenyamanan Anda, Pandu membutuhkan persetujuan Anda
-          terkait data pengobatan.
-        </p>
+        <p className="text-sm text-tiby-muted max-w-md mx-auto">{pageDesc}</p>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-2xs space-y-4">
@@ -241,7 +243,8 @@ export default function ConsentView({
           </h2>
         </div>
 
-        {AVAILABLE_SCOPES.map((scope) => (
+        {/* ✅ Gunakan scopesList yang dinamis */}
+        {scopesList.map((scope) => (
           <label
             key={scope.id}
             className="flex items-start gap-4 p-3 rounded-2xl hover:bg-gray-50 cursor-pointer transition"
@@ -292,8 +295,9 @@ export default function ConsentView({
                 Konfirmasi Jadwal Pengobatan
               </p>
               <p className="text-xs text-tiby-muted mt-0.5 leading-relaxed">
-                Saya mengonfirmasi bahwa jadwal dan dosis obat yang tertera di
-                aplikasi sudah sesuai dengan anjuran dokter.
+                {isPmo
+                  ? "Saya mengonfirmasi bahwa saya akan membantu mengingatkan jadwal minum obat pasien sesuai dengan anjuran dokter."
+                  : "Saya mengonfirmasi bahwa jadwal dan dosis obat yang tertera di aplikasi sudah sesuai dengan anjuran dokter."}
               </p>
             </div>
           </label>

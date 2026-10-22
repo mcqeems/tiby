@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession, type TibyUser } from "@/lib/auth-client";
 import { usersApi } from "@/lib/api/users";
-import { consentApi } from "@/lib/api/consent"; // ✅ Import API Consent
+import { consentApi } from "@/lib/api/consent";
+import { facilitiesApi } from "@/lib/api/facilities";
+import type { FacilityItem } from "@/lib/types/facilities";
 import { usePopup } from "@/components/ui/popup-provider";
 import PublicLoading from "@/components/ui/public-loading";
 import {
@@ -17,16 +19,17 @@ import {
   Lock,
   Mail,
   ShieldCheck,
-  ShieldAlert, // ✅ Tambahan untuk ikon privasi
+  ShieldAlert,
+
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+
 
 const ROLE_LABEL: Record<string, string> = {
   ADMIN: "Admin",
   NAKES: "Tenaga Kesehatan",
   PMO: "PMO",
   PASIEN: "Pasien",
-  PATIENT: "Pasien",
 };
 
 const roleLabel = (role?: string | null) =>
@@ -37,14 +40,12 @@ const inputCls =
 
 function getPasswordStrength(pw: string) {
   if (!pw) return { score: 0, label: "", bar: "bg-gray-200", text: "" };
-
   let score = 0;
   if (pw.length >= 8) score += 1;
   if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score += 1;
   if (/\d/.test(pw)) score += 1;
   if (/[^A-Za-z0-9]/.test(pw) || pw.length >= 12) score += 1;
   if (pw.length < 8) score = Math.min(score, 1);
-
   const levels = [
     { label: "Lemah", bar: "bg-red-500", text: "text-red-600" },
     { label: "Lemah", bar: "bg-red-500", text: "text-red-600" },
@@ -76,9 +77,7 @@ function InfoItem({
           {label}
         </dt>
         <dd
-          className={`truncate text-[13px] font-semibold text-tiby-ink ${
-            mono ? "font-mono" : ""
-          }`}
+          className={`truncate text-[13px] font-semibold text-tiby-ink ${mono ? "font-mono" : ""}`}
         >
           {value}
         </dd>
@@ -153,14 +152,10 @@ function Requirement({
 }) {
   return (
     <li
-      className={`inline-flex items-center gap-1.5 text-xs transition-colors ${
-        met ? "font-semibold text-emerald-700" : "text-tiby-muted"
-      }`}
+      className={`inline-flex items-center gap-1.5 text-xs transition-colors ${met ? "font-semibold text-emerald-700" : "text-tiby-muted"}`}
     >
       <span
-        className={`flex h-4 w-4 items-center justify-center rounded-full transition-colors ${
-          met ? "bg-emerald-500 text-white" : "bg-gray-200 text-transparent"
-        }`}
+        className={`flex h-4 w-4 items-center justify-center rounded-full transition-colors ${met ? "bg-emerald-500 text-white" : "bg-gray-200 text-transparent"}`}
       >
         <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
       </span>
@@ -168,6 +163,8 @@ function Requirement({
     </li>
   );
 }
+
+// ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
 
 export default function ProfileView() {
   const { data: session, isPending } = useSession();
@@ -178,13 +175,13 @@ export default function ProfileView() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  // ✅ State untuk Pencabutan Izin
   const [revoking, setRevoking] = useState(false);
 
-  if (isPending) return <PublicLoading fullScreen message="Memuat profil..." />;
 
   const user = session?.user as TibyUser | undefined;
+
+
+  if (isPending) return <PublicLoading fullScreen message="Memuat profil..." />;
 
   if (!user) {
     return (
@@ -207,7 +204,6 @@ export default function ProfileView() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (newPassword.length < 8) {
       return notify({
         variant: "warning",
@@ -216,7 +212,6 @@ export default function ProfileView() {
         confirmLabel: "Mengerti",
       });
     }
-
     if (newPassword !== confirmPassword) {
       return notify({
         variant: "warning",
@@ -229,7 +224,6 @@ export default function ProfileView() {
     try {
       setLoading(true);
       await usersApi.changePassword(currentPassword, newPassword);
-
       await notify({
         variant: "success",
         badgeText: "Keamanan Akun",
@@ -238,7 +232,6 @@ export default function ProfileView() {
           "Gunakan password baru Anda untuk login di sesi berikutnya.",
         confirmLabel: "Tutup",
       });
-
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -258,7 +251,6 @@ export default function ProfileView() {
     }
   };
 
-  // ✅ Fungsi Pencabutan Persetujuan
   const handleRevokeConsent = async () => {
     const isConfirmed = await confirm({
       variant: "danger",
@@ -277,15 +269,12 @@ export default function ProfileView() {
       await consentApi.revoke(
         "Dicabut mandiri oleh pengguna melalui halaman profil",
       );
-
       await notify({
         variant: "success",
         title: "Persetujuan Dicabut",
         description: "Anda telah mencabut izin berbagi data. Mengalihkan...",
         confirmLabel: "Tutup",
       });
-
-      // Reload halaman agar Layout membaca ulang status consent dan melempar ke /consent
       window.location.reload();
     } catch (err: unknown) {
       await notify({
@@ -304,8 +293,11 @@ export default function ProfileView() {
   const lengthOk = newPassword.length >= 8;
   const matchOk = confirmPassword !== "" && confirmPassword === newPassword;
 
+  // ✅ FIX 3: Hapus "|| user.role === PATIENT" karena TibyUser hanya punya "PASIEN"
+  const isPasien = user.role === "PASIEN";
+
   return (
-    <div className="mx-auto max-w-3xl space-y-6 md:pb-10">
+    <div className="mx-auto max-w-3xl space-y-6 pb-24 md:pb-10">
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight text-tiby-ink">
           Profil Saya
@@ -315,6 +307,7 @@ export default function ProfileView() {
         </p>
       </div>
 
+      {/* ─── 1. KARTU PROFIL UTAMA ─────────────────────────────────────── */}
       <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
         <div className="relative h-28 overflow-hidden bg-linear-to-r from-tiby-teal-600 to-tiby-teal-700 sm:h-32">
           <span
@@ -363,6 +356,7 @@ export default function ProfileView() {
         </div>
       </section>
 
+    
       <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
         <header className="flex items-center gap-3 border-b border-gray-100 bg-linear-to-r from-tiby-teal-50/70 to-white px-6 py-4 sm:px-8">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-tiby-teal-700 shadow-sm ring-1 ring-tiby-teal-100">
@@ -462,7 +456,7 @@ export default function ProfileView() {
         </form>
       </section>
 
-      {/* ✅ SECTION BARU: Privasi & Keamanan Data */}
+      {/* ─── 4. KARTU PRIVASI & KEAMANAN DATA ─────────────────────────── */}
       <section className="overflow-hidden rounded-2xl border border-red-200 bg-white shadow-xs">
         <header className="flex items-center gap-3 border-b border-red-100 bg-red-50/50 px-6 py-4 sm:px-8">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-red-600 shadow-sm ring-1 ring-red-100">
@@ -481,24 +475,35 @@ export default function ProfileView() {
         <div className="p-6 sm:p-8 space-y-4">
           <p className="text-sm text-tiby-muted leading-relaxed">
             Saat ini Anda telah memberikan izin kepada Fasilitas Kesehatan dan
-            PMO untuk memantau status kepatuhan minum obat Anda. Jika Anda
-            mencabut izin ini, fitur pendampingan akan dinonaktifkan dan data
-            Anda tidak akan lagi terlihat oleh mereka.
+            sistem Tiby untuk memproses data pendampingan.
+            {isPasien
+              ? " Jika Anda mencabut izin ini, fitur pendampingan akan dinonaktifkan dan data Anda tidak akan lagi terlihat oleh petugas."
+              : " Sebagai PMO, izin pendampingan diatur oleh Fasilitas Kesehatan. Anda tidak dapat mencabut izin ini secara mandiri."}
           </p>
+
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2">
-            <button
-              type="button"
-              onClick={handleRevokeConsent}
-              disabled={revoking}
-              className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-6 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-70"
-            >
-              {revoking ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <ShieldAlert className="h-4 w-4" />
-              )}
-              {revoking ? "Memproses..." : "Cabut Persetujuan Data"}
-            </button>
+            {/* ✅ Tombol HANYA muncul untuk Pasien */}
+            {isPasien ? (
+              <button
+                type="button"
+                onClick={handleRevokeConsent}
+                disabled={revoking}
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-6 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-70"
+              >
+                {revoking ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ShieldAlert className="h-4 w-4" />
+                )}
+                {revoking ? "Memproses..." : "Cabut Persetujuan Data"}
+              </button>
+            ) : (
+              <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 text-xs text-tiby-muted w-full">
+                <strong>Informasi:</strong> Jika Anda ingin berhenti menjadi
+                pendamping (PMO) untuk pasien ini, silakan hubungi petugas
+                Fasilitas Kesehatan yang menugaskan Anda.
+              </div>
+            )}
           </div>
         </div>
       </section>
