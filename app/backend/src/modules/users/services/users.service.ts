@@ -44,7 +44,11 @@ function assertCanManage(
         message: 'Faskes can only manage users within their own facility',
       });
     }
-    if (!MANAGEABLE_ROLES.includes(target.role as (typeof MANAGEABLE_ROLES)[number])) {
+    if (
+      !MANAGEABLE_ROLES.includes(
+        target.role as (typeof MANAGEABLE_ROLES)[number],
+      )
+    ) {
       throw new ForbiddenException({
         code: 'FORBIDDEN',
         message: 'Faskes can only manage pasien and pmo accounts',
@@ -173,6 +177,7 @@ export class UsersService {
       username: dto.username,
       name: dto.fullName,
       role: dto.role,
+      whatsappNumber: dto.whatsappNumber,
       facilityId: targetFacilityId,
       facility: targetFacilityName,
     };
@@ -289,14 +294,19 @@ export class UsersService {
     if (caller.role === 'NAKES') {
       if (
         dto.role &&
-        !MANAGEABLE_ROLES.includes(dto.role as (typeof MANAGEABLE_ROLES)[number])
+        !MANAGEABLE_ROLES.includes(
+          dto.role as (typeof MANAGEABLE_ROLES)[number],
+        )
       ) {
         throw new ForbiddenException({
           code: 'FORBIDDEN',
           message: 'Faskes can only assign pasien and pmo roles',
         });
       }
-      if (dto.facilityId !== undefined && dto.facilityId !== caller.facilityId) {
+      if (
+        dto.facilityId !== undefined &&
+        dto.facilityId !== caller.facilityId
+      ) {
         throw new ForbiddenException({
           code: 'FORBIDDEN',
           message: 'Cannot move users to another facility',
@@ -306,7 +316,9 @@ export class UsersService {
 
     // Validate a requested facility exists (ADMIN may reassign).
     if (dto.facilityId) {
-      const facility = await this.facilityRepo.findOneBy({ id: dto.facilityId });
+      const facility = await this.facilityRepo.findOneBy({
+        id: dto.facilityId,
+      });
       if (!facility) {
         throw new NotFoundException({
           code: 'NOT_FOUND',
@@ -338,7 +350,9 @@ export class UsersService {
     if (dto.email !== undefined) data.email = dto.email;
     if (dto.whatsappNumber !== undefined) {
       data.whatsapp_encrypted = dto.whatsappNumber;
-      data.whatsapp_hash = dto.whatsappNumber ? hashPhone(dto.whatsappNumber) : null;
+      data.whatsapp_hash = dto.whatsappNumber
+        ? hashPhone(dto.whatsappNumber)
+        : null;
     }
     if (dto.role !== undefined) data.role = dto.role;
     if (dto.facilityId !== undefined) data.facility_id = dto.facilityId;
@@ -405,6 +419,7 @@ export class UsersService {
       email: user.email,
       name: user.name,
       role: user.role,
+      whatsappNumber: user.whatsappEncrypted!,
       facilityId: user.facilityId,
       facility: user.facility?.name ?? null,
     };

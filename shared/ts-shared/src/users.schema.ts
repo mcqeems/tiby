@@ -6,13 +6,16 @@ export const CreateUserSchema = z.object({
     .string()
     .min(3)
     .max(30)
-    .regex(/^[a-zA-Z0-9_-]+$/, "Username may only contain letters, numbers, underscores, and dashes"),
+    .regex(
+      /^[a-zA-Z0-9_-]+$/,
+      "Username may only contain letters, numbers, underscores, and dashes",
+    ),
   email: z.email().max(50).optional(),
   password: z.string().min(8, "Password must be at least 8 characters"),
   fullName: z.string().min(2),
   role: UserRoleSchema,
   facilityId: z.uuid().optional(),
-  whatsappNumber: z.string().min(8).max(20).optional(),
+  whatsappNumber: z.string().min(4).max(30).optional(),
 });
 export type CreateUserDto = z.infer<typeof CreateUserSchema>;
 
@@ -31,7 +34,7 @@ export const UpdateUserSchema = z
   .object({
     fullName: z.string().min(2).optional(),
     email: z.email().max(50).optional(),
-    whatsappNumber: z.string().min(8).max(20).nullable().optional(),
+    whatsappNumber: z.string().min(4).max(30).nullable().optional(),
     role: UserRoleSchema.optional(),
     facilityId: z.uuid().nullable().optional(),
   })
@@ -46,8 +49,9 @@ export const UserSummarySchema = z.object({
   email: z.email().optional(),
   name: z.string(),
   role: z.string(),
+  whatsappNumber: z.string().optional(),
   facilityId: z.string().nullable().optional(),
-  facility: z.string().nullable().optional()
+  facility: z.string().nullable().optional(),
 });
 export type UserSummary = z.infer<typeof UserSummarySchema>;
 
