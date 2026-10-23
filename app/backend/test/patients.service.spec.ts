@@ -221,4 +221,59 @@ describe("PatientsService Unit Tests", () => {
       expect(params).toEqual({ search: "%sri%" });
     });
   });
+
+  describe("getPatientHistory", () => {
+    const historyRow = {
+      id: "history-1",
+      treatmentPlanId: "plan-1",
+      eventType: "CHECK_IN_LOCKED",
+      previousState: "AKTIF",
+      newState: "AKTIF",
+      previousStreak: 0,
+      newStreak: 1,
+      actorRole: "PASIEN",
+      reasonOrSummary: "Dose fulfilled",
+      metadataJson: null,
+      createdAt: new Date("2026-10-22T08:00:00Z"),
+    };
+
+    it("returns the timeline when the plan is in the NAKES facility", async () => {
+      mockUserRepo.findOneBy.mockResolvedValue({ id: "nakes-1", facilityId: "faskes-1" });
+      mockPlanRepo.findOneBy.mockResolvedValue({ id: "plan-1", facilityId: "faskes-1" });
+      mockHistoryRepo.findAndCount.mockResolvedValue([[historyRow], 1]);
+
+      const res = await service.getPatientHistory("nakes-1", "plan-1", 1, 10);
+
+      expect(res.total).toBe(1);
+      expect(res.items[0].eventType).toBe("CHECK_IN_LOCKED");
+    });
+
+    it("hides a plan from another facility with a 404", async () => {
+      mockUserRepo.findOneBy.mockResolvedValue({ id: "nakes-1", facilityId: "faskes-1" });
+      mockPlanRepo.findOneBy.mockResolvedValue({ id: "plan-9", facilityId: "faskes-2" });
+
+      await expect(
+        service.getPatientHistory("nakes-1", "plan-9"),
+      ).rejects.toThrow(NotFoundException);
+      expect(mockHistoryRepo.findAndCount).not.toHaveBeenCalled();
+    });
+
+    it("hides everything from a NAKES without a facility", async () => {
+      mockUserRepo.findOneBy.mockResolvedValue({ id: "nakes-1", facilityId: null });
+      mockPlanRepo.findOneBy.mockResolvedValue({ id: "plan-1", facilityId: null });
+
+      await expect(
+        service.getPatientHistory("nakes-1", "plan-1"),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("returns 404 for an unknown plan", async () => {
+      mockUserRepo.findOneBy.mockResolvedValue({ id: "nakes-1", facilityId: "faskes-1" });
+      mockPlanRepo.findOneBy.mockResolvedValue(null);
+
+      await expect(
+        service.getPatientHistory("nakes-1", "ghost"),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
 });

@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, type FindOptionsWhere } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DailyCheckIn } from '../entities/daily-check-in.entity.js';
 import { SafetyEvaluation } from '../../internal/rule-engine/entities/safety-evaluation.entity.js';
@@ -24,6 +24,10 @@ import type {
   SubmitCheckInDto,
   TextExtractRequest,
   MedicationStatus,
+  SafetyVerdict,
+  ListCheckInsQuery,
+  CheckInList,
+  CheckInListItem,
 } from '@tiby/ts-shared';
 
 @Injectable()
@@ -120,6 +124,118 @@ export class CheckInService {
         message: 'Check-in for today is already completed and locked.',
       });
     }
+  }
+
+  /**
+   * Role-scoped read of daily check-ins.
+   * PASIEN -> own plans, PMO -> assigned plans, NAKES -> plans in their
+   * facility, ADMIN -> every facility.
+   */
+  async listCheckIns(
+    caller: { id: string; role: string; facilityId?: string | null },
+    query: ListCheckInsQuery,
+  ): Promise<CheckInList> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+
+    const planIds = await this.resolveVisiblePlanIds(caller);
+
+    // `In([])` is a footgun; short-circuit instead.
+    if (planIds && planIds.length === 0) {
+      return { items: [], total: 0, page, limit };
+    }
+
+    if (query.treatmentPlanId) {
+      if (planIds && !planIds.includes(query.treatmentPlanId)) {
+        throw new NotFoundException({
+          code: 'NOT_FOUND',
+          message: 'Treatment plan not found',
+        });
+      }
+    }
+
+    const where: FindOptionsWhere<DailyCheckIn> = {};
+    if (planIds) where.treatmentPlanId = In(planIds);
+    if (query.treatmentPlanId) where.treatmentPlanId = query.treatmentPlanId;
+
+    const [records, total] = await this.checkInRepo.findAndCount({
+      where,
+      relations: { treatmentPlan: { patientUser: true, facility: true } },
+      order: { checkInDate: 'DESC', submittedAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    // One batched lookup, never one query per row.
+    const evalRows = records.length
+      ? await this.evalRepo.find({
+          where: { checkInId: In(records.map((r) => r.id)) },
+        })
+      : [];
+    const verdictByCheckIn = new Map(
+      evalRows.map((e) => [e.checkInId, e.verdict as SafetyVerdict]),
+    );
+
+    const items: CheckInListItem[] = records.map((r) => ({
+      id: r.id,
+      treatmentPlanId: r.treatmentPlanId,
+      patientUserId: r.treatmentPlan.patientUserId,
+      patientName: r.treatmentPlan.patientUser?.name || 'Pasien',
+      facilityId: r.treatmentPlan.facilityId,
+      facilityName: r.treatmentPlan.facility?.name || '',
+      checkInDate: r.checkInDate,
+      attemptNumber: r.attemptNumber,
+      reportedByRole: r.reportedByRole,
+      inputMode: r.inputMode,
+      medicationStatus: r.medicationStatus as MedicationStatus,
+      pillsTakenCount: r.pillsTakenCount,
+      isDoseFulfilled: r.isDoseFulfilled,
+      sttConfidence: r.sttConfidence,
+      submittedAt: r.submittedAt.toISOString(),
+      verdict: verdictByCheckIn.get(r.id) ?? null,
+    }));
+
+    return { items, total, page, limit };
+  }
+
+  /**
+   * `null` means "no plan restriction" (ADMIN). An empty array means the
+   * caller legitimately has no visible plans.
+   */
+  private async resolveVisiblePlanIds(caller: {
+    id: string;
+    role: string;
+    facilityId?: string | null;
+  }): Promise<string[] | null> {
+    if (caller.role === 'ADMIN') return null;
+
+    if (caller.role === 'PASIEN') {
+      const plans = await this.planRepo.find({
+        where: { patientUserId: caller.id },
+        select: { id: true },
+      });
+      return plans.map((p) => p.id);
+    }
+
+    if (caller.role === 'PMO') {
+      const assignments = await this.pmoRepo.find({
+        where: { pmoUserId: caller.id, active: true },
+        select: { treatmentPlanId: true },
+      });
+      return assignments.map((a) => a.treatmentPlanId);
+    }
+
+    if (caller.role === 'NAKES') {
+      // Guard the missing facility first: `null === null` must not match all.
+      if (!caller.facilityId) return [];
+      const plans = await this.planRepo.find({
+        where: { facilityId: caller.facilityId },
+        select: { id: true },
+      });
+      return plans.map((p) => p.id);
+    }
+
+    return [];
   }
 
   async extractAudioPreview(

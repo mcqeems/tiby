@@ -9,6 +9,7 @@ import { AuthUser } from "../src/auth/entities/auth-user.entity.js";
 import { Facility } from "../src/modules/facilities/entities/facilities.entity.js";
 import { TreatmentPlan } from "../src/modules/patients/entities/treatment-plan.entity.js";
 import { PmoAssignment } from "../src/modules/patients/entities/pmo-assignment.entity.js";
+import { DailyCheckIn } from "../src/modules/check-ins/entities/daily-check-in.entity.js";
 import { InterventionTicket } from "../src/modules/tickets/entities/intervention-ticket.entity.js";
 
 describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
@@ -38,6 +39,16 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
   let patient2Password = "P3PatientPass123!";
   let patient2Cookie: string[];
   let plan2Id: string;
+
+  // Cross-facility visibility fixtures
+  let facilityBId: string;
+  let nakesACookie: string[];
+  let nakesBId: string;
+  let nakesBCookie: string[];
+  let adminId: string;
+  let adminCookie: string[];
+  let patient3Id: string;
+  let plan3Id: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -203,6 +214,123 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
       .send({ username: patient2Username, password: patient2Password });
     expect(p2Login.status).toBe(200);
     patient2Cookie = p2Login.get("Set-Cookie")!;
+
+    // Login Nakes A (facility A)
+    const nakesALogin = await request(app.getHttpServer())
+      .post("/api/auth/sign-in")
+      .send({ username: nakesUsername, password: "NakesPassword123!" });
+    expect(nakesALogin.status).toBe(200);
+    nakesACookie = nakesALogin.get("Set-Cookie")!;
+
+    // Facility B + its own nakes, patient and check-in
+    const facilityB = await facilityRepo.save(
+      facilityRepo.create({
+        code: `FASKES-P3B-${timestamp}`,
+        name: "Puskesmas Bandung",
+        district: "Bandung",
+        emergencyPhone: "022-112233",
+      }),
+    );
+    facilityBId = facilityB.id;
+
+    const nakesBUsername = `nakes_p3b_${timestamp}`;
+    const nakesBAuth = await auth.api.createUser({
+      body: {
+        name: "Perawat Bandung",
+        email: `${nakesBUsername}@users.tiby.internal`,
+        password: "NakesPassword123!",
+        role: "NAKES",
+        data: {
+          username: nakesBUsername,
+          displayUsername: nakesBUsername,
+          facility_id: facilityBId,
+          must_confirm_consent: false,
+        },
+      },
+    });
+    nakesBId = nakesBAuth.user.id;
+
+    const patient3Username = `pasien_p3b_${timestamp}`;
+    const p3Auth = await auth.api.createUser({
+      body: {
+        name: "Citra Bandung",
+        email: `${patient3Username}@users.tiby.internal`,
+        password: "P3PatientPass123!",
+        role: "PASIEN",
+        data: {
+          username: patient3Username,
+          displayUsername: patient3Username,
+          facility_id: facilityBId,
+          must_confirm_consent: false,
+        },
+      },
+    });
+    patient3Id = p3Auth.user.id;
+
+    const plan3 = await planRepo.save(
+      planRepo.create({
+        patientUserId: patient3Id,
+        facilityId: facilityBId,
+        registeredByNakesId: nakesBId,
+        phase: "INTENSIF",
+        patientState: "AKTIF",
+        regimenCode: "FDC-4",
+        dailyPillQuota: 4,
+        reminderTimeLocal: "08:00",
+        timezone: "Asia/Jakarta",
+        startDate: "2026-10-16",
+        targetEndDate: "2027-04-16",
+        currentStreak: 2,
+        consecutiveSilenceDays: 0,
+        riskScore: 0,
+      }),
+    );
+    plan3Id = plan3.id;
+
+    const checkInRepo = dataSource.getRepository(DailyCheckIn);
+    await checkInRepo.save(
+      checkInRepo.create({
+        treatmentPlanId: plan3Id,
+        checkInDate: "2026-10-21",
+        attemptNumber: 1,
+        reportedByUserId: patient3Id,
+        reportedByRole: "PASIEN",
+        inputMode: "VOICE_STT",
+        medicationStatus: "SUDAH_MINUM",
+        pillsTakenCount: 4,
+        isDoseFulfilled: true,
+      }),
+    );
+
+    // ADMIN (super admin, no facility)
+    const adminUsername = `admin_p3_${timestamp}`;
+    const adminAuth = await auth.api.createUser({
+      body: {
+        name: "Super Admin",
+        email: `${adminUsername}@users.tiby.internal`,
+        password: "AdminPassword123!",
+        role: "ADMIN",
+        data: {
+          username: adminUsername,
+          displayUsername: adminUsername,
+          facility_id: null,
+          must_confirm_consent: false,
+        },
+      },
+    });
+    adminId = adminAuth.user.id;
+
+    const nakesBLogin = await request(app.getHttpServer())
+      .post("/api/auth/sign-in")
+      .send({ username: nakesBUsername, password: "NakesPassword123!" });
+    expect(nakesBLogin.status).toBe(200);
+    nakesBCookie = nakesBLogin.get("Set-Cookie")!;
+
+    const adminLogin = await request(app.getHttpServer())
+      .post("/api/auth/sign-in")
+      .send({ username: adminUsername, password: "AdminPassword123!" });
+    expect(adminLogin.status).toBe(200);
+    adminCookie = adminLogin.get("Set-Cookie")!;
   });
 
   afterAll(async () => {
@@ -211,6 +339,12 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
     if (pmo1Id) await userRepo.delete({ id: pmo1Id });
     if (patient2Id) await userRepo.delete({ id: patient2Id });
     if (nakesId) await userRepo.delete({ id: nakesId });
+    if (patient3Id) await userRepo.delete({ id: patient3Id });
+    if (nakesBId) await userRepo.delete({ id: nakesBId });
+    if (adminId) await userRepo.delete({ id: adminId });
+    if (facilityBId) {
+      await dataSource.getRepository(Facility).delete({ id: facilityBId });
+    }
     await app.close();
   });
 
@@ -369,5 +503,97 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
     expect(ticket?.priority).toBe("CRITICAL");
     expect(ticket?.status).toBe("OPEN");
     expect(ticket?.pmoNotes).toContain("BATUK_DARAH");
+  });
+
+  it("8. PASIEN lists only their own check-ins, never the transcript", async () => {
+    const res = await request(app.getHttpServer())
+      .get("/api/check-ins")
+      .set("Cookie", patient1Cookie);
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBeGreaterThanOrEqual(1);
+    expect(
+      res.body.items.every((i: any) => i.treatmentPlanId === plan1Id),
+    ).toBe(true);
+    for (const item of res.body.items) {
+      expect(item.rawTranscriptEncrypted).toBeUndefined();
+      expect(item.extractedFactsJson).toBeUndefined();
+      expect(item.patientName).toBe("Ahmad Dahlan");
+      expect(item.facilityId).toBe(facilityId);
+    }
+  });
+
+  it("9. PMO lists only check-ins of patients assigned to them", async () => {
+    const res = await request(app.getHttpServer())
+      .get("/api/check-ins")
+      .set("Cookie", pmo1Cookie);
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBeGreaterThanOrEqual(1);
+    expect(
+      res.body.items.every((i: any) => i.treatmentPlanId === plan1Id),
+    ).toBe(true);
+    expect(
+      res.body.items.some((i: any) => i.treatmentPlanId === plan2Id),
+    ).toBe(false);
+  });
+
+  it("10. NAKES lists every check-in in their own facility only", async () => {
+    const own = await request(app.getHttpServer())
+      .get("/api/check-ins")
+      .set("Cookie", nakesACookie);
+
+    expect(own.status).toBe(200);
+    const planIds = own.body.items.map((i: any) => i.treatmentPlanId);
+    expect(planIds).toContain(plan1Id);
+    expect(planIds).toContain(plan2Id);
+    expect(planIds).not.toContain(plan3Id);
+
+    const other = await request(app.getHttpServer())
+      .get("/api/check-ins")
+      .set("Cookie", nakesBCookie);
+
+    expect(other.status).toBe(200);
+    expect(other.body.items.every((i: any) => i.treatmentPlanId === plan3Id)).toBe(
+      true,
+    );
+    expect(other.body.items.every((i: any) => i.facilityId === facilityBId)).toBe(
+      true,
+    );
+  });
+
+  it("11. NAKES cannot filter check-ins down to another facility's plan", async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/check-ins?treatmentPlanId=${plan3Id}`)
+      .set("Cookie", nakesACookie);
+
+    expect(res.status).toBe(404);
+  });
+
+  it("12. ADMIN lists check-ins across every facility", async () => {
+    const res = await request(app.getHttpServer())
+      .get("/api/check-ins?limit=100")
+      .set("Cookie", adminCookie);
+
+    expect(res.status).toBe(200);
+    const planIds = res.body.items.map((i: any) => i.treatmentPlanId);
+    expect(planIds).toContain(plan1Id);
+    expect(planIds).toContain(plan2Id);
+    expect(planIds).toContain(plan3Id);
+  });
+
+  it("13. NAKES cannot read another facility's patient timeline", async () => {
+    const forbidden = await request(app.getHttpServer())
+      .get(`/api/faskes/patients/${plan3Id}/history`)
+      .set("Cookie", nakesACookie);
+
+    expect(forbidden.status).toBe(404);
+
+    const allowed = await request(app.getHttpServer())
+      .get(`/api/faskes/patients/${plan1Id}/history`)
+      .set("Cookie", nakesACookie);
+
+    expect(allowed.status).toBe(200);
+    expect(allowed.body.items.length).toBeGreaterThanOrEqual(1);
   });
 });

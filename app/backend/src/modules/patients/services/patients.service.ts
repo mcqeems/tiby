@@ -43,10 +43,22 @@ export class PatientsService {
   ) {}
 
   async getPatientHistory(
+    nakesUserId: string,
     treatmentPlanId: string,
     page = 1,
     limit = 50,
   ): Promise<PatientStatusHistoryList> {
+    // A NAKES may only read plans in their own facility. 404 (not 403) so the
+    // endpoint never reveals whether a plan exists elsewhere.
+    const nakes = await this.userRepo.findOneBy({ id: nakesUserId });
+    const plan = await this.planRepo.findOneBy({ id: treatmentPlanId });
+    if (!nakes?.facilityId || !plan || plan.facilityId !== nakes.facilityId) {
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Treatment plan not found',
+      });
+    }
+
     const [records, total] = await this.historyRepo.findAndCount({
       where: { treatmentPlanId },
       order: { createdAt: 'DESC' },

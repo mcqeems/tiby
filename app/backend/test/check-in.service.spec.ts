@@ -24,18 +24,21 @@ describe("CheckInService Unit Tests", () => {
   beforeEach(() => {
     mockCheckInRepo = {
       findOne: vi.fn(),
+      findAndCount: vi.fn(),
       countBy: vi.fn().mockResolvedValue(0),
       create: vi.fn((data) => ({ id: "checkin-1", ...data, submittedAt: new Date() })),
       save: vi.fn((data) => Promise.resolve({ id: "checkin-1", ...data, submittedAt: new Date() })),
     };
     mockEvalRepo = {
       findOneBy: vi.fn(),
+      find: vi.fn().mockResolvedValue([]),
       create: vi.fn((data) => data),
       save: vi.fn((data) => Promise.resolve(data)),
     };
     mockPlanRepo = {
       findOne: vi.fn(),
       findOneBy: vi.fn(),
+      find: vi.fn().mockResolvedValue([]),
       save: vi.fn((data) => Promise.resolve(data)),
     };
     mockPmoRepo = {
@@ -351,6 +354,139 @@ describe("CheckInService Unit Tests", () => {
           recipientRole: "PMO",
         }),
       );
+    });
+  });
+
+  describe("listCheckIns", () => {
+    const record = (overrides: Record<string, unknown> = {}) => ({
+      id: "checkin-1",
+      treatmentPlanId: "plan-1",
+      checkInDate: "2026-10-22",
+      attemptNumber: 1,
+      reportedByRole: "PASIEN",
+      inputMode: "VOICE_STT",
+      medicationStatus: "SUDAH_MINUM",
+      pillsTakenCount: 4,
+      isDoseFulfilled: true,
+      sttConfidence: 0.9,
+      submittedAt: new Date("2026-10-22T08:00:00Z"),
+      rawTranscriptEncrypted: "rahasia",
+      extractedFactsJson: { symptoms: ["BATUK_DARAH"] },
+      treatmentPlan: {
+        patientUserId: "patient-1",
+        facilityId: "faskes-1",
+        patientUser: { name: "Ahmad" },
+        facility: { name: "Puskesmas Tebet" },
+      },
+      ...overrides,
+    });
+
+    it("scopes a PASIEN to their own treatment plans", async () => {
+      mockPlanRepo.find.mockResolvedValue([{ id: "plan-1" }]);
+      mockCheckInRepo.findAndCount.mockResolvedValue([[record()], 1]);
+
+      const res = await service.listCheckIns(
+        { id: "patient-1", role: "PASIEN" },
+        {} as any,
+      );
+
+      expect(mockPlanRepo.find).toHaveBeenCalledWith({
+        where: { patientUserId: "patient-1" },
+        select: { id: true },
+      });
+      const where = mockCheckInRepo.findAndCount.mock.calls[0][0].where;
+      expect(where.treatmentPlanId.value).toEqual(["plan-1"]);
+      expect(res.total).toBe(1);
+      expect(res.items[0].patientName).toBe("Ahmad");
+      expect(res.items[0].facilityName).toBe("Puskesmas Tebet");
+    });
+
+    it("returns an empty page for a PASIEN without a plan", async () => {
+      mockPlanRepo.find.mockResolvedValue([]);
+
+      const res = await service.listCheckIns(
+        { id: "patient-1", role: "PASIEN" },
+        {} as any,
+      );
+
+      expect(res).toEqual({ items: [], total: 0, page: 1, limit: 20 });
+      expect(mockCheckInRepo.findAndCount).not.toHaveBeenCalled();
+    });
+
+    it("scopes a PMO to active assignments only", async () => {
+      mockPmoRepo.find.mockResolvedValue([{ treatmentPlanId: "plan-1" }]);
+      mockCheckInRepo.findAndCount.mockResolvedValue([[record()], 1]);
+
+      await service.listCheckIns({ id: "pmo-1", role: "PMO" }, {} as any);
+
+      expect(mockPmoRepo.find).toHaveBeenCalledWith({
+        where: { pmoUserId: "pmo-1", active: true },
+        select: { treatmentPlanId: true },
+      });
+    });
+
+    it("scopes a NAKES to their facility", async () => {
+      mockPlanRepo.find.mockResolvedValue([{ id: "plan-1" }]);
+      mockCheckInRepo.findAndCount.mockResolvedValue([[record()], 1]);
+
+      await service.listCheckIns(
+        { id: "nakes-1", role: "NAKES", facilityId: "faskes-1" },
+        {} as any,
+      );
+
+      expect(mockPlanRepo.find).toHaveBeenCalledWith({
+        where: { facilityId: "faskes-1" },
+        select: { id: true },
+      });
+    });
+
+    it("returns an empty page for a NAKES without a facility", async () => {
+      const res = await service.listCheckIns(
+        { id: "nakes-1", role: "NAKES", facilityId: null },
+        {} as any,
+      );
+
+      expect(res).toEqual({ items: [], total: 0, page: 1, limit: 20 });
+      expect(mockCheckInRepo.findAndCount).not.toHaveBeenCalled();
+    });
+
+    it("does not scope an ADMIN", async () => {
+      mockCheckInRepo.findAndCount.mockResolvedValue([[record()], 1]);
+
+      await service.listCheckIns({ id: "admin-1", role: "ADMIN" }, {} as any);
+
+      expect(mockPlanRepo.find).not.toHaveBeenCalled();
+      const where = mockCheckInRepo.findAndCount.mock.calls[0][0].where;
+      expect(where.treatmentPlanId).toBeUndefined();
+    });
+
+    it("rejects a treatmentPlanId outside the caller's scope", async () => {
+      mockPlanRepo.find.mockResolvedValue([{ id: "plan-1" }]);
+
+      await expect(
+        service.listCheckIns(
+          { id: "nakes-1", role: "NAKES", facilityId: "faskes-1" },
+          { treatmentPlanId: "plan-999" } as any,
+        ),
+      ).rejects.toThrow(NotFoundException);
+      expect(mockCheckInRepo.findAndCount).not.toHaveBeenCalled();
+    });
+
+    it("never exposes transcript or extracted facts", async () => {
+      mockCheckInRepo.findAndCount.mockResolvedValue([[record()], 1]);
+      mockEvalRepo.find.mockResolvedValue([
+        { checkInId: "checkin-1", verdict: "PERLU_PERHATIAN" },
+      ]);
+
+      const res = await service.listCheckIns(
+        { id: "admin-1", role: "ADMIN" },
+        {} as any,
+      );
+
+      expect(res.items[0]).not.toHaveProperty("rawTranscriptEncrypted");
+      expect(res.items[0]).not.toHaveProperty("extractedFactsJson");
+      expect(res.items[0].verdict).toBe("PERLU_PERHATIAN");
+      expect(mockEvalRepo.find).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -4,6 +4,7 @@ import {
   MedicationStatusSchema,
   SafetyVerdictSchema,
 } from "./enums.js";
+import { PaginationQuerySchema } from "./faskes.schema.js";
 
 export const AiAudioExtractionResponseSchema = z.object({
   transcript: z.string(),
@@ -69,6 +70,44 @@ export const CheckInVerdictResponseSchema = z.object({
   submittedAt: z.string(),
 });
 export type CheckInVerdictResponse = z.infer<typeof CheckInVerdictResponseSchema>;
+
+export const ListCheckInsQuerySchema = PaginationQuerySchema.extend({
+  treatmentPlanId: z.uuid().optional(),
+});
+export type ListCheckInsQuery = z.infer<typeof ListCheckInsQuerySchema>;
+
+/**
+ * Read model for daily check-ins. Deliberately excludes the transcript and
+ * the extracted facts so PMO never receives symptom detail (ADR zero-stigma /
+ * transcript-blindness invariant).
+ */
+export const CheckInListItemSchema = z.object({
+  id: z.uuid(),
+  treatmentPlanId: z.uuid(),
+  patientUserId: z.string(),
+  patientName: z.string(),
+  facilityId: z.uuid(),
+  facilityName: z.string(),
+  checkInDate: z.string(),
+  attemptNumber: z.number().int().positive(),
+  reportedByRole: z.string(),
+  inputMode: z.string(),
+  medicationStatus: MedicationStatusSchema,
+  pillsTakenCount: z.number().int().nonnegative().nullable(),
+  isDoseFulfilled: z.boolean(),
+  sttConfidence: z.number().nullable(),
+  submittedAt: z.string(),
+  verdict: SafetyVerdictSchema.nullable(),
+});
+export type CheckInListItem = z.infer<typeof CheckInListItemSchema>;
+
+export const CheckInListSchema = z.object({
+  items: z.array(CheckInListItemSchema),
+  total: z.number(),
+  page: z.number(),
+  limit: z.number(),
+});
+export type CheckInList = z.infer<typeof CheckInListSchema>;
 
 export const PmoPatientStatusItemSchema = z.object({
   treatmentPlanId: z.uuid(),

@@ -1,6 +1,8 @@
 import {
   Controller,
+  Get,
   Post,
+  Query,
   Body,
   Req,
   UseGuards,
@@ -21,10 +23,13 @@ import type { AuthenticatedRequest } from '../../../common/types/auth-request.ty
 import {
   SubmitCheckInSchema,
   TextExtractRequestSchema,
+  ListCheckInsQuerySchema,
   type SubmitCheckInDto,
   type TextExtractRequest,
   type AiAudioExtractionResponse,
   type CheckInVerdictResponse,
+  type ListCheckInsQuery,
+  type CheckInList,
   type UserRole,
 } from '@tiby/ts-shared';
 
@@ -36,6 +41,7 @@ export class CheckInController {
   private extractUser(req: AuthenticatedRequest): {
     userId: string;
     role: UserRole;
+    facilityId: string | null;
   } {
     const user = req.session?.user ?? req.user;
     if (!user?.id) {
@@ -44,7 +50,24 @@ export class CheckInController {
         message: 'Authentication session required',
       });
     }
-    return { userId: user.id, role: user.role };
+    return {
+      userId: user.id,
+      role: user.role,
+      facilityId: user.facility_id ?? user.facilityId ?? null,
+    };
+  }
+
+  @Get()
+  @Roles(['ADMIN', 'NAKES', 'PMO', 'PASIEN'])
+  async listCheckIns(
+    @Req() req: AuthenticatedRequest,
+    @Query({ schema: ListCheckInsQuerySchema }) query: ListCheckInsQuery,
+  ): Promise<CheckInList> {
+    const { userId, role, facilityId } = this.extractUser(req);
+    return this.checkInService.listCheckIns(
+      { id: userId, role, facilityId },
+      query,
+    );
   }
 
   @Post('audio-extract')

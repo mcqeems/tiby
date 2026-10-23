@@ -58,10 +58,12 @@ export class PatientsController {
   @Get("faskes/patients/:id/history")
   @Roles(["NAKES"])
   async getPatientHistory(
+    @Req() req: AuthenticatedRequest,
     @Param("id") treatmentPlanId: string,
     @Query({ schema: PaginationQuerySchema }) query: PaginationQuery,
   ): Promise<PatientStatusHistoryList> {
     return this.patientsService.getPatientHistory(
+      this.extractUserId(req),
       treatmentPlanId,
       query.page ?? 1,
       query.limit ?? 50,
