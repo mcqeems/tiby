@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { signIn, type TibyUser, ROLE_PATHS } from "@/lib/auth-client";
+import {
+  signIn,
+  type TibyUser,
+  ROLE_PATHS,
+  useSession,
+} from "@/lib/auth-client";
 import MascotAnimation from "@/components/mascot-animation";
-
 
 function AtIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
@@ -92,12 +96,21 @@ export default function LoginView() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const prefillUsername = searchParams.get("prefill") || "";
+  const { data: session, isPending } = useSession();
 
   const [username, setUsername] = useState(prefillUsername);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!isPending && session?.user) {
+      const user = session.user as TibyUser;
+      const role = (user.role || "PASIEN").toUpperCase();
+      router.replace(ROLE_PATHS[role] ?? "/pasien");
+    }
+  }, [session, isPending, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,10 +139,20 @@ export default function LoginView() {
     }
   };
 
+  if (isPending || session) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-tiby-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-tiby-teal-100 border-t-tiby-teal-600 rounded-full animate-spin" />
+          <p className="text-sm font-medium text-tiby-muted">Mengalihkan...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-tiby-white px-5 py-6">
       <div className="w-full max-w-85">
-        {/* Header & Mascot */}
         <div className="flex flex-col items-center text-center">
           <MascotAnimation size={95} className="mb-2" />
           <h1 className="font-heading text-2xl font-600 text-tiby-ink tracking-tight">
@@ -140,7 +163,6 @@ export default function LoginView() {
           </p>
         </div>
 
-        {/* Frameless Form */}
         <form onSubmit={handleSubmit} className="mt-6 space-y-3.5">
           <div>
             <label
@@ -190,7 +212,9 @@ export default function LoginView() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                aria-label={
+                  showPassword ? "Sembunyikan password" : "Tampilkan password"
+                }
                 className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-tiby-muted hover:text-tiby-teal-700 transition-colors focus:outline-none focus:text-tiby-teal-700 cursor-pointer"
               >
                 {showPassword ? <EyeOffIcon /> : <EyeIcon />}
@@ -238,5 +262,3 @@ export default function LoginView() {
     </div>
   );
 }
-
-
