@@ -6,6 +6,16 @@ import {
 } from "./enums.js";
 import { PaginationQuerySchema } from "./faskes.schema.js";
 
+/** Transcript-only response from the audio endpoint; facts come later via JSON. */
+export const AiAudioTranscriptResponseSchema = z
+  .object({
+    transcript: z.string(),
+  })
+  .passthrough();
+export type AiAudioTranscriptResponse = z.infer<
+  typeof AiAudioTranscriptResponseSchema
+>;
+
 export const AiAudioExtractionResponseSchema = z.object({
   transcript: z.string(),
   medicationTaken: MedicationStatusSchema,
@@ -23,12 +33,17 @@ export const TextExtractRequestSchema = z.object({
 });
 export type TextExtractRequest = z.infer<typeof TextExtractRequestSchema>;
 
+/**
+ * Voice fact set. Only the transcript is required: when the client submits a
+ * transcript without facts, the backend asks the AI service to extract them.
+ * Pre-extracted fields stay accepted so older clients keep working.
+ */
 export const ConfirmedCheckInFactsSchema = z.object({
-  transcript: z.string().optional(),
-  medicationStatus: MedicationStatusSchema,
-  pillsTakenCount: z.number().int().nonnegative().nullable(),
-  symptoms: z.array(z.string()).default([]),
-  intentToStop: z.boolean().default(false),
+  transcript: z.string().min(1),
+  medicationStatus: MedicationStatusSchema.optional(),
+  pillsTakenCount: z.number().int().nonnegative().nullable().optional(),
+  symptoms: z.array(z.string()).optional(),
+  intentToStop: z.boolean().optional(),
   confidence: z.number().min(0).max(1).optional(),
 });
 export type ConfirmedCheckInFacts = z.infer<typeof ConfirmedCheckInFactsSchema>;
@@ -73,6 +88,12 @@ export type CheckInVerdictResponse = z.infer<typeof CheckInVerdictResponseSchema
 
 export const ListCheckInsQuerySchema = PaginationQuerySchema.extend({
   treatmentPlanId: z.uuid().optional(),
+  medicationStatus: MedicationStatusSchema.optional(),
+  isDoseFulfilled: z.stringbool().optional(),
+  from: z.iso.date().optional(),
+  to: z.iso.date().optional(),
+  /** ADMIN only: restrict the cross-facility list to one facility. */
+  facilityId: z.uuid().optional(),
 });
 export type ListCheckInsQuery = z.infer<typeof ListCheckInsQuerySchema>;
 

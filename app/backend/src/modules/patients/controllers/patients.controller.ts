@@ -16,11 +16,11 @@ import { ConsentGuard } from "../../../common/guards/consent.guard.js";
 import { Roles } from "../../../common/decorators/roles.decorator.js";
 import type { AuthenticatedRequest } from "../../../common/types/auth-request.type.js";
 import {
-  PaginationQuerySchema,
+  PatientHistoryQuerySchema,
   ListPatientsQuerySchema,
   CreatePmoFollowUpSchema,
   PmoPatientStatusItemSchema,
-  type PaginationQuery,
+  type PatientHistoryQuery,
   type ListPatientsQuery,
   type PatientStatusHistoryList,
   type RiskSortedPatientList,
@@ -60,13 +60,14 @@ export class PatientsController {
   async getPatientHistory(
     @Req() req: AuthenticatedRequest,
     @Param("id") treatmentPlanId: string,
-    @Query({ schema: PaginationQuerySchema }) query: PaginationQuery,
+    @Query({ schema: PatientHistoryQuerySchema }) query: PatientHistoryQuery,
   ): Promise<PatientStatusHistoryList> {
     return this.patientsService.getPatientHistory(
       this.extractUserId(req),
       treatmentPlanId,
       query.page ?? 1,
       query.limit ?? 50,
+      query.eventType,
     );
   }
 

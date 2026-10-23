@@ -244,11 +244,9 @@ export default function OnboardingForm() {
 
     setLoadingUsers(true);
     try {
-      // ✅ FIX 4: Panggil usersApi.getAll()
-      const users = await usersApi.getAll();
-      setExistingUsers(
-        (users as ExistingUser[]).filter((u) => u.role === "PMO"),
-      );
+      // ✅ FIX 4: Panggil usersApi.list()
+      const res = await usersApi.list({ role: "PMO", limit: 100 });
+      setExistingUsers(res.items as ExistingUser[]);
     } catch {
       setExistingUsers([]);
     } finally {

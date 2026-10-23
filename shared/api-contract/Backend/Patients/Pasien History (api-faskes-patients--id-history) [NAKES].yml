@@ -15,7 +15,12 @@ http:
     - name: limit
       value: ""
       type: query
-      description: "Default: 50, Max: 100"
+      description: "Default: 20, Max: 100"
+      disabled: true
+    - name: eventType
+      value: ""
+      type: query
+      description: "STATE_TRANSITION | CHECK_IN_LOCKED | CHECK_IN_INCOMPLETE_RETRY | STREAK_RESET | TICKET_OPENED | TICKET_AUTO_CLOSED | TICKET_RESOLVED | CONSENT_CHANGED | WHATSAPP_CONNECTED | PUSH_SUBSCRIBED | PMO_OUTREACH"
       disabled: true
     - name: id
       value: a0f0c34d-b119-408f-8ede-98a35920f2ea
@@ -44,7 +49,12 @@ examples:
         - name: limit
           value: ""
           type: query
-          description: "Default: 50, Max: 100"
+          description: "Default: 20, Max: 100"
+          disabled: true
+        - name: eventType
+          value: ""
+          type: query
+          description: "STATE_TRANSITION | CHECK_IN_LOCKED | CHECK_IN_INCOMPLETE_RETRY | STREAK_RESET | TICKET_OPENED | TICKET_AUTO_CLOSED | TICKET_RESOLVED | CONSENT_CHANGED | WHATSAPP_CONNECTED | PUSH_SUBSCRIBED | PMO_OUTREACH"
           disabled: true
         - name: id
           value: a0f0c34d-b119-408f-8ede-98a35920f2ea

@@ -2,17 +2,19 @@ import { useState, useRef } from "react";
 import { checkInsApi } from "@/lib/api/check-in";
 import { usePopup } from "@/components/ui/popup-provider";
 import type {
-  SubmitCheckInPayload,
-  FallbackButtonsPayload,
+  AiAudioTranscriptResponse,
+  CheckInStep,
   CheckInState,
   MedicationStatus,
 } from "@/lib/types/check-in";
+import type { SubmitCheckInPayload } from "@/lib/types/check-in";
 
 export function useCheckIn() {
   const { confirm, notify } = usePopup();
   const [state, setState] = useState<CheckInState>({
     step: "record",
     audioBlob: null,
+    transcript: "",
     extractedData: null,
     verdict: null,
   });
@@ -71,8 +73,11 @@ export function useCheckIn() {
 
   const processAudio = async (blob: Blob, treatmentPlanId?: string) => {
     try {
-      const res = await checkInsApi.extractAudio(blob, treatmentPlanId);
-      setState((s) => ({ ...s, extractedData: res, step: "review" }));
+      const res: AiAudioTranscriptResponse = await checkInsApi.extractAudio(
+        blob,
+        treatmentPlanId,
+      );
+      setState((s) => ({ ...s, transcript: res.transcript, step: "review" }));
     } catch {
       await notify({
         variant: "danger",
@@ -93,23 +98,11 @@ export function useCheckIn() {
     try {
       updateStep("loading");
 
-      const extractRes =
-        editedTranscript !== state.extractedData?.transcript
-          ? await checkInsApi.extractText({ editedTranscript, treatmentPlanId })
-          : state.extractedData;
-
-      if (!extractRes) throw new Error("Data ekstraksi tidak ditemukan.");
-
       const payload: SubmitCheckInPayload = {
         inputMode: "VOICE_STT",
         treatmentPlanId, // ✅ Masukkan ID Pasien
         confirmedFacts: {
-          transcript: extractRes.transcript,
-          medicationStatus: extractRes.medicationTaken as MedicationStatus,
-          pillsTakenCount: extractRes.pillsTakenCount ?? 0,
-          symptoms: extractRes.symptoms,
-          intentToStop: extractRes.intentToStopOrRefuse,
-          confidence: extractRes.extractionConfidence,
+          transcript: editedTranscript,
         },
       };
 
@@ -206,6 +199,7 @@ export function useCheckIn() {
       setState({
         step: "record",
         audioBlob: null,
+        transcript: "",
         extractedData: null,
         verdict: null,
       }),

@@ -174,9 +174,9 @@ export default function CheckInView({
             />
           )}
 
-          {state.step === "review" && state.extractedData && (
+          {state.step === "review" && (
             <CheckInReview
-              data={state.extractedData}
+              transcript={state.transcript}
               onSubmit={(text: string) =>
                 submitVoice(text, selectedPatientId || undefined)
               }

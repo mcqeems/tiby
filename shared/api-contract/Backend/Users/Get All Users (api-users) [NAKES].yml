@@ -6,6 +6,32 @@ info:
 http:
   method: GET
   url: "{{baseUrl}}/api/users"
+  params:
+    - name: page
+      value: ""
+      type: query
+      description: "Default: 1"
+      disabled: true
+    - name: limit
+      value: ""
+      type: query
+      description: "Default: 20, Max: 100"
+      disabled: true
+    - name: role
+      value: ""
+      type: query
+      description: "Comma-separated: PASIEN,PMO,NAKES,ADMIN"
+      disabled: true
+    - name: search
+      value: ""
+      type: query
+      description: "matches name, username, or email"
+      disabled: true
+    - name: facilityId
+      value: ""
+      type: query
+      description: "uuid — ADMIN only"
+      disabled: true
   auth: inherit
 
 settings:
@@ -20,6 +46,32 @@ examples:
     request:
       url: "{{baseUrl}}/api/users"
       method: GET
+      params:
+        - name: page
+          value: ""
+          type: query
+          description: "Default: 1"
+          disabled: true
+        - name: limit
+          value: ""
+          type: query
+          description: "Default: 20, Max: 100"
+          disabled: true
+        - name: role
+          value: ""
+          type: query
+          description: "Comma-separated: PASIEN,PMO,NAKES,ADMIN"
+          disabled: true
+        - name: search
+          value: ""
+          type: query
+          description: "matches name, username, or email"
+          disabled: true
+        - name: facilityId
+          value: ""
+          type: query
+          description: "uuid — ADMIN only"
+          disabled: true
     response:
       status: 200
       statusText: OK
@@ -33,11 +85,11 @@ examples:
         - name: content-type
           value: application/json; charset=utf-8
         - name: content-length
-          value: "216"
+          value: "2134"
         - name: etag
-          value: W/"d8-KI9pb8Ecl0ppeLVB8ayVLrZLZJM"
+          value: W/"856-HQBgdW6Y6n1BdVfi/WXECSGgdoc"
         - name: date
-          value: Sat, 17 Oct 2026 10:27:21 GMT
+          value: Fri, 23 Oct 2026 04:03:03 GMT
         - name: connection
           value: keep-alive
         - name: keep-alive
@@ -45,13 +97,91 @@ examples:
       body:
         type: json
         data: |-
-          [
-            {
-              "id": "1ssVNVY3nu4dNW72WzRiovX9RrPaKnMU",
-              "username": "nakes_1792210134186",
-              "email": "nakes_1792210134186@users.tiby.internal",
-              "name": "dr. Nakes E2E",
-              "role": "NAKES",
-              "facilityId": "90e242df-e488-41da-b700-8a32ba47e2ea"
-            }
-          ]
+          {
+            "items": [
+              {
+                "id": "JYhd32kaV6CyucvVrTuZHFuz8Ro0aJ2a",
+                "username": "ujangsuraseppp",
+                "email": "ujangsuraseppp@users.tiby.internal",
+                "name": "Ujang Suraseppp",
+                "role": "PASIEN",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "facility": "Puskesmas Gambir"
+              },
+              {
+                "id": "hO7jnpiFKHgj611i6AFeAEDbotSYfXUM",
+                "username": "ucup",
+                "email": "ucup@gmail.com",
+                "name": "Ucup Kasep",
+                "role": "PASIEN",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "facility": "Puskesmas Gambir"
+              },
+              {
+                "id": "MIWaLpJSaL4CuGd89Pf6uH7B18EIuoej",
+                "username": "mustafa_kamal",
+                "email": "mustafa_kamal@users.tiby.internal",
+                "name": "Mustafa Kamal",
+                "role": "PASIEN",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "facility": "Puskesmas Gambir"
+              },
+              {
+                "id": "1XYV4ah9JMKx5NdvxH6wS20SO2PnJSUt",
+                "username": "pmo_ratna_d29a",
+                "email": "pmo_ratna_d29a@users.tiby.internal",
+                "name": "Ratna Dewi",
+                "role": "PMO",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "facility": "Puskesmas Gambir"
+              },
+              {
+                "id": "0ehKGWIZgdFr6IXIXv13X1wRB8cyHofD",
+                "username": "pasien_budi_d29a",
+                "email": "pasien_budi_d29a@users.tiby.internal",
+                "name": "Budi Santoso",
+                "role": "PASIEN",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "facility": "Puskesmas Gambir"
+              },
+              {
+                "id": "UgauJizBDX1A7uXHEWyMkv9srkyZWhLz",
+                "username": "nakes_rini_d29a",
+                "email": "nakes_rini_d29a@users.tiby.internal",
+                "name": "dr. Rini Suryani",
+                "role": "NAKES",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "facility": "Puskesmas Gambir"
+              },
+              {
+                "id": "oLl2HQECkXIGl0S2QTppfddRz3J68Z3I",
+                "username": "pmo_ratna_dca6",
+                "email": "pmo_ratna_dca6@users.tiby.internal",
+                "name": "Ratna Dewi",
+                "role": "PMO",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "facility": "Puskesmas Gambir"
+              },
+              {
+                "id": "UAAXQ1l80jCSl7xfLoD1mvCQ1VMuFrVd",
+                "username": "pasien_budi_dca6",
+                "email": "pasien_budi_dca6@users.tiby.internal",
+                "name": "Budi Santoso",
+                "role": "PASIEN",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "facility": "Puskesmas Gambir"
+              },
+              {
+                "id": "BbXB5l7PqmWhwEjQxqRXvt5xVQqHPVbO",
+                "username": "nakes_rini_dca6",
+                "email": "nakes_rini_dca6@users.tiby.internal",
+                "name": "dr. Rini Suryani",
+                "role": "NAKES",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "facility": "Puskesmas Gambir"
+              }
+            ],
+            "total": 9,
+            "page": 1,
+            "limit": 20
+          }

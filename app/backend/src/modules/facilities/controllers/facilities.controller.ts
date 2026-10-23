@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   Req,
   UseGuards,
   UnauthorizedException,
@@ -17,9 +18,12 @@ import type { AuthenticatedRequest } from "../../../common/types/auth-request.ty
 import {
   CreateFacilitySchema,
   UpdateFacilitySchema,
+  ListFacilitiesQuerySchema,
   type CreateFacilityDto,
   type UpdateFacilityDto,
   type FacilityItem,
+  type FacilityListResponse,
+  type ListFacilitiesQuery,
   type UserRole,
 } from "@tiby/ts-shared";
 
@@ -45,8 +49,10 @@ export class FacilitiesController {
 
   @Get()
   @Roles(["ADMIN", "NAKES", "PMO", "PASIEN"])
-  async listFacilities(): Promise<FacilityItem[]> {
-    return this.facilitiesService.listFacilities();
+  async listFacilities(
+    @Query({ schema: ListFacilitiesQuerySchema }) query: ListFacilitiesQuery,
+  ): Promise<FacilityListResponse> {
+    return this.facilitiesService.listFacilities(query);
   }
 
   @Get(":id")

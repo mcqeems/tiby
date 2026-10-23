@@ -3,9 +3,17 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, type FindOptionsWhere } from 'typeorm';
+import {
+  Between,
+  In,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  Repository,
+  type FindOptionsWhere,
+} from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DailyCheckIn } from '../entities/daily-check-in.entity.js';
 import { SafetyEvaluation } from '../../internal/rule-engine/entities/safety-evaluation.entity.js';
@@ -20,6 +28,7 @@ import { RuleEngineService } from '../../internal/rule-engine/rule-engine.servic
 import { NotificationTriggerEvent } from '../../../common/events/notification-trigger.event.js';
 import type {
   AiAudioExtractionResponse,
+  AiAudioTranscriptResponse,
   CheckInVerdictResponse,
   SubmitCheckInDto,
   TextExtractRequest,
@@ -138,6 +147,15 @@ export class CheckInService {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
 
+    // Validate params before the empty-scope short-circuit: a forbidden
+    // filter must 403 regardless of whether the caller has visible plans.
+    if (query.facilityId && caller.role !== 'ADMIN') {
+      throw new ForbiddenException({
+        code: 'FORBIDDEN',
+        message: 'Only ADMIN may filter by facility',
+      });
+    }
+
     const planIds = await this.resolveVisiblePlanIds(caller);
 
     // `In([])` is a footgun; short-circuit instead.
@@ -157,11 +175,25 @@ export class CheckInService {
     const where: FindOptionsWhere<DailyCheckIn> = {};
     if (planIds) where.treatmentPlanId = In(planIds);
     if (query.treatmentPlanId) where.treatmentPlanId = query.treatmentPlanId;
+    if (query.medicationStatus) where.medicationStatus = query.medicationStatus;
+    if (query.isDoseFulfilled !== undefined) {
+      where.isDoseFulfilled = query.isDoseFulfilled;
+    }
+    if (query.from && query.to) {
+      where.checkInDate = Between(query.from, query.to);
+    } else if (query.from) {
+      where.checkInDate = MoreThanOrEqual(query.from);
+    } else if (query.to) {
+      where.checkInDate = LessThanOrEqual(query.to);
+    }
+    if (query.facilityId) {
+      where.treatmentPlan = { facilityId: query.facilityId };
+    }
 
     const [records, total] = await this.checkInRepo.findAndCount({
       where,
       relations: { treatmentPlan: { patientUser: true, facility: true } },
-      order: { checkInDate: 'DESC', submittedAt: 'DESC' },
+      order: { checkInDate: 'DESC', submittedAt: 'DESC', id: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
     });
@@ -243,12 +275,12 @@ export class CheckInService {
     role: string,
     file: Express.Multer.File,
     treatmentPlanId?: string,
-  ): Promise<AiAudioExtractionResponse> {
+  ): Promise<AiAudioTranscriptResponse> {
     const today = new Date().toISOString().slice(0, 10);
     const plan = await this.resolvePlan(userId, role, treatmentPlanId);
     await this.checkIsLockedToday(plan.id, today);
 
-    return this.aiClientService.extractFromAudio(
+    return this.aiClientService.transcribeFromAudio(
       file.buffer,
       file.originalname,
       file.mimetype,
@@ -284,18 +316,31 @@ export class CheckInService {
     let rawTranscript: string | null = null;
 
     if (dto.inputMode === 'VOICE_STT') {
-      if (!dto.confirmedFacts) {
+      if (!dto.confirmedFacts?.transcript) {
         throw new BadRequestException({
           code: 'BAD_REQUEST',
-          message: 'confirmedFacts required for VOICE_STT mode',
+          message: 'confirmedFacts.transcript required for VOICE_STT mode',
         });
       }
-      medicationStatus = dto.confirmedFacts.medicationStatus;
-      pillsTakenCount = dto.confirmedFacts.pillsTakenCount;
-      symptoms = dto.confirmedFacts.symptoms ?? [];
-      intentToStop = Boolean(dto.confirmedFacts.intentToStop);
-      confidence = dto.confirmedFacts.confidence ?? 0.95;
-      rawTranscript = dto.confirmedFacts.transcript ?? null;
+      rawTranscript = dto.confirmedFacts.transcript;
+      // Facts are extracted from the confirmed transcript unless the client
+      // already sent them; extraction always happens in the AI service.
+      if (dto.confirmedFacts.medicationStatus) {
+        medicationStatus = dto.confirmedFacts.medicationStatus;
+        pillsTakenCount = dto.confirmedFacts.pillsTakenCount ?? null;
+        symptoms = dto.confirmedFacts.symptoms ?? [];
+        intentToStop = Boolean(dto.confirmedFacts.intentToStop);
+        confidence = dto.confirmedFacts.confidence ?? 0.95;
+      } else {
+        const extraction = await this.aiClientService.extractFromText(
+          dto.confirmedFacts.transcript,
+        );
+        medicationStatus = extraction.medicationTaken;
+        pillsTakenCount = extraction.pillsTakenCount;
+        symptoms = extraction.symptoms ?? [];
+        intentToStop = extraction.intentToStopOrRefuse;
+        confidence = extraction.extractionConfidence;
+      }
     } else {
       if (!dto.fallbackButtons) {
         throw new BadRequestException({

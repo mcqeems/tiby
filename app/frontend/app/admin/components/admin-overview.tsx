@@ -24,19 +24,16 @@ export default function AdminOverview() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [facilities, users] = await Promise.all([
-          facilitiesApi.getAll(),
-          usersApi.getAll(),
+        const [facilities, users, nakes] = await Promise.all([
+          facilitiesApi.list({ limit: 1 }),
+          usersApi.list({ limit: 1 }),
+          usersApi.list({ role: "NAKES", limit: 1 }),
         ]);
 
-const nakesCount = users.filter(
-  (u: { role: string }) => u.role === "NAKES",
-).length;
-
         setStats({
-          totalFacilities: facilities.length,
-          totalNakes: nakesCount,
-          totalUsers: users.length,
+          totalFacilities: facilities.total,
+          totalNakes: nakes.total,
+          totalUsers: users.total,
         });
       } catch (err) {
         console.error("Gagal load data admin", err);

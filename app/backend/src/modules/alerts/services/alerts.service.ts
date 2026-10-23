@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { ILike, Repository, type FindOptionsWhere } from "typeorm";
 import { FacilityAlert } from "../entities/facility-alert.entity.js";
 import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
 import type {
@@ -30,18 +30,37 @@ export class AlertsService {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
 
+    // A NAKES without a facility must not page through every facility.
+    if (!facilityId) {
+      return { items: [], total: 0, page, limit };
+    }
+
+    // Filters are ANDed with the facility scope, never ORed.
+    const base: FindOptionsWhere<FacilityAlert> = {
+      facilityId,
+      ...(query.unreadOnly ? { isRead: false } : {}),
+      ...(query.severity ? { severity: query.severity } : {}),
+    };
+    const term = query.search?.trim();
+    const where: FindOptionsWhere<FacilityAlert>[] = term
+      ? [
+          { ...base, treatmentPlan: { patientUser: { name: ILike(`%${term}%`) } } },
+          {
+            ...base,
+            treatmentPlan: { patientUser: { username: ILike(`%${term}%`) } },
+          },
+        ]
+      : [base];
+
     const [alerts, total] = await this.alertRepo.findAndCount({
-      where: {
-        ...(facilityId ? { facilityId } : {}),
-        ...(query.unreadOnly ? { isRead: false } : {}),
-        ...(query.severity ? { severity: query.severity } : {}),
-      },
+      where,
       relations: {
         treatmentPlan: {
           patientUser: true,
         },
       },
-      order: { createdAt: "DESC" },
+      // `id` tie-break keeps offset pages stable when createdAt ties.
+      order: { createdAt: "DESC", id: "DESC" },
       skip: (page - 1) * limit,
       take: limit,
     });

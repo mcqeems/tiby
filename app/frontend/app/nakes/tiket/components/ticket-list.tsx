@@ -5,10 +5,21 @@ import { faskesApi } from "@/lib/api/faskes";
 import type { FaskesTicket } from "@/lib/types/faskes";
 import PublicLoading from "@/components/ui/public-loading";
 import TicketResolveModal from "./ticket-resolve-modal";
-import { Clock, CheckCircle2, RefreshCw, FileText } from "lucide-react";
+import {
+  Clock,
+  CheckCircle2,
+  RefreshCw,
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+
+const LIMIT = 20;
 
 export default function TicketList() {
   const [tickets, setTickets] = useState<FaskesTicket[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -23,14 +34,17 @@ export default function TicketList() {
     try {
       const res = await faskesApi.getTickets({
         status: filterStatus === "ALL" ? undefined : filterStatus,
+        page,
+        limit: LIMIT,
       });
       setTickets(res.items || []);
+      setTotal(res.total || 0);
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "Gagal memuat tiket.");
     } finally {
       setLoading(false);
     }
-  }, [filterStatus]);
+  }, [filterStatus, page]);
 
   useEffect(() => {
     let active = true;
@@ -49,7 +63,10 @@ export default function TicketList() {
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(e) => {
+              setFilterStatus(e.target.value);
+              setPage(1);
+            }}
             className="h-10 rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm font-semibold text-tiby-ink focus:outline-none focus:ring-2 focus:ring-tiby-teal-600 w-full sm:w-48 cursor-pointer"
           >
             <option value="ALL">Semua Status</option>
@@ -177,6 +194,39 @@ export default function TicketList() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {total > 0 && (
+        <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-5 py-3">
+          <span className="text-xs text-tiby-muted">
+            Menampilkan <strong>{(page - 1) * LIMIT + 1}</strong> -{" "}
+            <strong>{Math.min(page * LIMIT, total)}</strong> dari{" "}
+            <strong>{total}</strong> tiket
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1 || loading}
+              className="p-1.5 rounded-lg border border-gray-200 bg-white text-tiby-ink disabled:opacity-50 hover:bg-gray-50 cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-xs font-medium text-tiby-ink px-2">
+              Hal {page} / {Math.ceil(total / LIMIT) || 1}
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                setPage((p) => Math.min(Math.ceil(total / LIMIT), p + 1))
+              }
+              disabled={page >= Math.ceil(total / LIMIT) || loading}
+              className="p-1.5 rounded-lg border border-gray-200 bg-white text-tiby-ink disabled:opacity-50 hover:bg-gray-50 cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
 

@@ -14,20 +14,19 @@ from typing import Any
 from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import ValidationError
 
 from contracts import (
     AiAudioExtractionResponse,
     ApiError,
-    AudioExtractionResponse,
     CheckInRequest,
     GuidanceRequest,
     GuidanceResponse,
+    TranscriptResponse,
 )
 from errors import api_error
 from extraction.mapper import to_backend_extraction
-from extraction.service import extract_audio
 from extraction.service import extract_check_in as run_extraction
+from extraction.service import transcribe_audio
 from guidance.retrieval import SQLiteRetriever
 from guidance.service import GroundedAnswerer, pack_evidence
 from onboarding_ocr import router as onboarding_ocr_router
@@ -35,7 +34,6 @@ from providers.base import (
     ProviderConfigurationError,
     ProviderError,
     ProviderTimeoutError,
-    TranscriptionError,
 )
 from providers.factory import (
     extraction_service,
@@ -60,21 +58,17 @@ AUDIO_ERRORS: dict[int | str, dict[str, Any]] = {
         "description": "Audio file is empty or exceeds the 10 MB limit.",
     },
     415: {"model": ApiError, "description": "Unsupported audio content type."},
-    422: {
-        "model": ApiError,
-        "description": "Transcribed text does not fit the check-in transcript limits.",
-    },
     502: {
         "model": ApiError,
-        "description": "Transcription or extraction provider failed.",
+        "description": "Transcription provider failed.",
     },
     503: {
         "model": ApiError,
-        "description": "Transcription or extraction provider is not configured on the server.",
+        "description": "Transcription provider is not configured on the server.",
     },
     504: {
         "model": ApiError,
-        "description": "Transcription or extraction provider timed out.",
+        "description": "Transcription provider timed out.",
     },
 }
 
@@ -194,25 +188,26 @@ async def guidance_endpoint(
 
 @app.post(
     "/ai/extractions/check-in/audio",
-    response_model=AudioExtractionResponse,
+    response_model=TranscriptResponse,
     response_model_exclude_unset=True,
     responses=AUDIO_ERRORS,
 )
 @app.post(
     "/audio/extract",
-    response_model=AudioExtractionResponse,
+    response_model=TranscriptResponse,
     response_model_exclude_unset=True,
     responses=AUDIO_ERRORS,
     include_in_schema=False,
 )
 async def extract_audio_endpoint(
     audio: UploadFile = File(...),  # noqa: B008 - FastAPI requires File metadata here.
-) -> AudioExtractionResponse | JSONResponse:
-    """Transcribe an uploaded check-in audio file, then extract facts.
+) -> TranscriptResponse | JSONResponse:
+    """Transcribe an uploaded check-in audio file.
 
-    Limits and content types come from the active transcriber; a transcription
-    that exceeds the check-in transcript contract is rejected with 422 rather
-    than silently truncated.
+    The response carries the transcript only: facts are extracted in a second,
+    JSON call (``/ai/extractions/check-in``) after the patient confirms or
+    corrects the transcript. Every other outcome is a JSON body, errors
+    included, so the bridge never has to parse prose.
     """
     transcriber = transcription_service()
     if audio.content_type not in transcriber.supported_content_types:
@@ -223,29 +218,14 @@ async def extract_audio_endpoint(
             413, "INVALID_REQUEST", "Audio must be between 1 byte and 10 MB."
         )
     try:
-        transcription, result = await extract_audio(
-            transcriber,
-            extraction_service(),
-            content,
-            audio.filename or "check-in.wav",
-        )
-    except ValidationError:
-        return api_error(
-            422,
-            "INVALID_REQUEST",
-            "The transcription exceeds the supported transcript length.",
+        transcription = await transcribe_audio(
+            transcriber, content, audio.filename or "check-in.wav"
         )
     except ProviderConfigurationError as exc:
         return api_error(503, "INTERNAL", str(exc))
     except ProviderTimeoutError as exc:
         return api_error(504, "PROVIDER_TIMEOUT", str(exc))
-    except TranscriptionError:
-        return api_error(502, "EXTRACTION_FAILED", "Speech transcription failed.")
+    # TranscriptionError is a ProviderError; keep the message the same either way.
     except ProviderError:
-        return api_error(502, "EXTRACTION_FAILED", "Fact extraction failed.")
-    adapted = to_backend_extraction(transcription.text, result)
-    return AudioExtractionResponse(
-        **adapted.model_dump(exclude_unset=True),
-        transcription_provider=transcription.provider,
-        transcription_model=transcription.model,
-    )
+        return api_error(502, "EXTRACTION_FAILED", "Speech transcription failed.")
+    return TranscriptResponse(transcript=transcription.text)

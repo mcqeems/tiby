@@ -14,10 +14,7 @@ http:
     type: json
     data: |-
       {
-      //   "code": "PUSK-002",
         "name": "Nama Baru"
-      //   "district": "Jakarta Selatan",
-      //   "emergencyPhone": "021-999"
       }
   auth: inherit
 
@@ -41,10 +38,7 @@ examples:
         type: json
         data: |-
           {
-          //   "code": "PUSK-002",
             "name": "Nama Baru"
-          //   "district": "Jakarta Selatan",
-          //   "emergencyPhone": "021-999"
           }
     response:
       status: 200
@@ -79,3 +73,17 @@ examples:
             "emergencyPhone": "0811-2233-4455",
             "createdAt": "2026-10-22T14:04:12.821Z"
           }
+
+docs: |-
+  # Notes
+
+  All fields are optional; at least one must be provided.
+
+  | field | notes |
+  |---|---|
+  | `code` | Unique. `409 Conflict` if another facility already uses it. |
+  | `name` | |
+  | `district` | |
+  | `emergencyPhone` | |
+
+  `NAKES` may only patch its own facility (`403` otherwise). `ADMIN` may patch any.

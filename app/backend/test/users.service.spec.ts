@@ -18,6 +18,7 @@ describe("UsersService Unit Tests", () => {
       findOneBy: vi.fn(),
       findOne: vi.fn(),
       find: vi.fn(),
+      findAndCount: vi.fn().mockResolvedValue([[], 0]),
     };
     mockFacilityRepo = {
       findOneBy: vi.fn(),
@@ -484,46 +485,113 @@ describe("UsersService Unit Tests", () => {
   });
 
   describe("listUsers", () => {
-    it("scopes NAKES to their facility and joins the facility relation", async () => {
-      mockUserRepo.find.mockResolvedValue([]);
+    it("scopes NAKES to their facility and paginates", async () => {
+      await service.listUsers(
+        { id: "nakes-1", role: "NAKES", facilityId: "faskes-1" },
+        { page: 2, limit: 10 } as any,
+      );
 
-      await service.listUsers({ id: "nakes-1", role: "NAKES", facilityId: "faskes-1" });
-
-      expect(mockUserRepo.find).toHaveBeenCalledWith({
-        where: { facilityId: "faskes-1" },
+      expect(mockUserRepo.findAndCount).toHaveBeenCalledWith({
+        where: [{ facilityId: "faskes-1" }],
         relations: { facility: true },
-        order: { id: "ASC" },
+        order: { createdAt: "DESC", id: "DESC" },
+        skip: 10,
+        take: 10,
       });
     });
 
     it("does not scope ADMIN to a facility", async () => {
-      mockUserRepo.find.mockResolvedValue([]);
+      await service.listUsers({ id: "admin-1", role: "ADMIN" }, {} as any);
 
-      await service.listUsers({ id: "admin-1", role: "ADMIN" });
-
-      expect(mockUserRepo.find).toHaveBeenCalledWith({
-        where: {},
+      expect(mockUserRepo.findAndCount).toHaveBeenCalledWith({
+        where: [{}],
         relations: { facility: true },
-        order: { id: "ASC" },
+        order: { createdAt: "DESC", id: "DESC" },
+        skip: 0,
+        take: 20,
       });
     });
 
+    it("filters by a role list", async () => {
+      await service.listUsers({ id: "admin-1", role: "ADMIN" }, {
+        role: ["NAKES", "ADMIN"],
+      } as any);
+
+      const where = mockUserRepo.findAndCount.mock.calls[0][0].where;
+      expect(where[0].role.value).toEqual(["NAKES", "ADMIN"]);
+    });
+
+    it("returns an empty page for a NAKES without a facility", async () => {
+      const res = await service.listUsers(
+        { id: "nakes-1", role: "NAKES", facilityId: null },
+        {} as any,
+      );
+
+      expect(res).toEqual({ items: [], total: 0, page: 1, limit: 20 });
+      expect(mockUserRepo.findAndCount).not.toHaveBeenCalled();
+    });
+
     it("maps the joined facility name onto the summary", async () => {
-      mockUserRepo.find.mockResolvedValue([
-        {
-          id: "u-1",
-          username: "budi",
-          email: "b@x",
-          name: "Budi",
-          role: "PASIEN",
-          facilityId: "faskes-1",
-          facility: { name: "Puskesmas Gampang" },
-        },
+      mockUserRepo.findAndCount.mockResolvedValue([
+        [
+          {
+            id: "u-1",
+            username: "budi",
+            email: "b@x",
+            name: "Budi",
+            role: "PASIEN",
+            facilityId: "faskes-1",
+            facility: { name: "Puskesmas Gampang" },
+          },
+        ],
+        1,
       ]);
 
-      const res = await service.listUsers({ id: "admin-1", role: "ADMIN" });
+      const res = await service.listUsers(
+        { id: "admin-1", role: "ADMIN" },
+        {} as any,
+      );
 
-      expect(res[0].facility).toBe("Puskesmas Gampang");
+      expect(res.total).toBe(1);
+      expect(res.items[0].facility).toBe("Puskesmas Gampang");
+    });
+  });
+  describe("listUsers filtering", () => {
+    it("searches name, username and email", async () => {
+      mockUserRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.listUsers(
+        { id: "admin-1", role: "ADMIN" },
+        { search: "budi" } as any,
+      );
+
+      const where = mockUserRepo.findAndCount.mock.calls[0][0].where;
+      expect(where).toHaveLength(3);
+      expect(where[0].name.value).toBe("%budi%");
+      expect(where[1].username.value).toBe("%budi%");
+      expect(where[2].email.value).toBe("%budi%");
+    });
+
+    it("applies an ADMIN facility filter", async () => {
+      mockUserRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.listUsers(
+        { id: "admin-1", role: "ADMIN" },
+        { facilityId: "faskes-9" } as any,
+      );
+
+      const where = mockUserRepo.findAndCount.mock.calls[0][0].where;
+      expect(where[0]).toEqual({ facilityId: "faskes-9" });
+    });
+
+    it("forbids a NAKES from filtering by another facility", async () => {
+      await expect(
+        service.listUsers(
+          { id: "nakes-1", role: "NAKES", facilityId: "faskes-1" },
+          { facilityId: "faskes-9" } as any,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockUserRepo.findAndCount).not.toHaveBeenCalled();
     });
   });
 });

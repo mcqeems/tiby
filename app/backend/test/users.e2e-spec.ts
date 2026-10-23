@@ -182,7 +182,9 @@ describe("Users & RBAC Password Management (e2e)", () => {
         .get("/api/users")
         .set("Cookie", nakesCookie);
       expect(listRes.status).toBe(200);
-      const foundNakes = listRes.body.find((u: any) => u.id === nakesUserId);
+      const foundNakes = listRes.body.items.find(
+        (u: any) => u.id === nakesUserId,
+      );
       expect(foundNakes?.facility).toBe("Puskesmas Menteng");
     });
   });
@@ -345,6 +347,38 @@ describe("Users & RBAC Password Management (e2e)", () => {
         .post("/api/auth/sign-in")
         .send({ email: `${nakesUsername}@users.tiby.internal`, password: "admin_reset_nakes_123" });
       expect(loginCheck.status).toBe(200);
+    });
+  });
+  describe("User list filtering", () => {
+    it("searches users by username", async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/users?search=${nakesUsername}`)
+        .set("Cookie", adminCookie);
+
+      expect(res.status).toBe(200);
+      const found = res.body.items.find(
+        (u: any) => u.username === nakesUsername,
+      );
+      expect(found).toBeDefined();
+    });
+
+    it("forbids a NAKES from filtering by another facility", async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/users?facilityId=${otherFacilityId}`)
+        .set("Cookie", nakesCookie);
+
+      expect(res.status).toBe(403);
+    });
+
+    it("lets ADMIN filter users by facility", async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/users?facilityId=${otherFacilityId}&limit=100`)
+        .set("Cookie", adminCookie);
+
+      expect(res.status).toBe(200);
+      expect(
+        res.body.items.every((u: any) => u.facilityId === otherFacilityId),
+      ).toBe(true);
     });
   });
 });

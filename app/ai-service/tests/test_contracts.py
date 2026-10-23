@@ -1,7 +1,20 @@
 import pytest
 from pydantic import ValidationError
 
-from contracts import CheckInRequest, CheckInResponse
+from contracts import CheckInRequest, CheckInResponse, TranscriptResponse
+
+
+def test_transcript_response_carries_the_transcript_only():
+    response = TranscriptResponse(transcript="Sudah minum obat.")
+
+    assert response.transcript == "Sudah minum obat."
+    with pytest.raises(ValidationError):
+        TranscriptResponse(transcript="Sudah minum obat.", medicationTaken="SUDAH_MINUM")
+
+
+def test_transcript_response_rejects_an_empty_transcript():
+    with pytest.raises(ValidationError):
+        TranscriptResponse(transcript="")
 
 
 def test_request_accepts_indonesian_transcript_and_default_language():

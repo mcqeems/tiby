@@ -16,11 +16,17 @@ import {
   MapPin,
   Phone,
   Hash,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+
+const LIMIT = 12;
 
 export default function FacilityManager() {
   const { notify, confirm } = usePopup();
   const [facilities, setFacilities] = useState<FacilityItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
   // Modal State
@@ -39,8 +45,9 @@ export default function FacilityManager() {
   const fetchFacilities = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await facilitiesApi.getAll();
-      setFacilities(res || []);
+      const res = await facilitiesApi.list({ page, limit: LIMIT });
+      setFacilities(res.items || []);
+      setTotal(res.total || 0);
     } catch {
       await notify({
         variant: "danger",
@@ -51,7 +58,7 @@ export default function FacilityManager() {
     } finally {
       setLoading(false);
     }
-  }, [notify]);
+  }, [notify, page]);
 
   useEffect(() => {
     let active = true;
@@ -160,7 +167,10 @@ export default function FacilityManager() {
     }
   };
 
-  if (loading) return <PublicLoading message="Memuat data faskes..." />;
+  if (loading && facilities.length === 0)
+    return <PublicLoading message="Memuat data faskes..." />;
+
+  const totalPages = Math.ceil(total / LIMIT);
 
   return (
     <div className="space-y-5">
@@ -242,6 +252,37 @@ export default function FacilityManager() {
           ))
         )}
       </div>
+
+      {total > 0 && (
+        <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-5 py-3">
+          <span className="text-xs text-tiby-muted">
+            Menampilkan <strong>{(page - 1) * LIMIT + 1}</strong> -{" "}
+            <strong>{Math.min(page * LIMIT, total)}</strong> dari{" "}
+            <strong>{total}</strong> data
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1 || loading}
+              className="p-1.5 rounded-lg border border-gray-200 bg-white text-tiby-ink disabled:opacity-50 hover:bg-gray-50 cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-xs font-medium text-tiby-ink px-2">
+              Hal {page} / {totalPages || 1}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages || loading}
+              className="p-1.5 rounded-lg border border-gray-200 bg-white text-tiby-ink disabled:opacity-50 hover:bg-gray-50 cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* MODAL FORM */}
       {isModalOpen && (

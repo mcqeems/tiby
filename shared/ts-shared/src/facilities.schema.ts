@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PaginationQuerySchema } from "./faskes.schema.js";
 
 export const FacilityItemSchema = z.object({
   id: z.uuid(),
@@ -9,6 +10,19 @@ export const FacilityItemSchema = z.object({
   createdAt: z.string(),
 });
 export type FacilityItem = z.infer<typeof FacilityItemSchema>;
+
+export const FacilityListResponseSchema = z.object({
+  items: z.array(FacilityItemSchema),
+  total: z.number(),
+  page: z.number(),
+  limit: z.number(),
+});
+export type FacilityListResponse = z.infer<typeof FacilityListResponseSchema>;
+
+export const ListFacilitiesQuerySchema = PaginationQuerySchema.extend({
+  search: z.string().optional(),
+});
+export type ListFacilitiesQuery = z.infer<typeof ListFacilitiesQuerySchema>;
 
 export const CreateFacilitySchema = z.object({
   code: z.string().min(1).max(50),

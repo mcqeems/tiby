@@ -1,16 +1,26 @@
 import { Injectable, Logger } from "@nestjs/common";
-import type { AiAudioExtractionResponse, MedicationStatus } from "@tiby/ts-shared";
+import type {
+  AiAudioExtractionResponse,
+  AiAudioTranscriptResponse,
+  MedicationStatus,
+} from "@tiby/ts-shared";
 
 @Injectable()
 export class AiClientService {
   private readonly logger = new Logger(AiClientService.name);
   private readonly baseUrl = process.env.AI_SERVICE_URL || "http://localhost:8000";
 
-  async extractFromAudio(
+  /**
+   * Bridge step 1: audio in, transcript out.
+   *
+   * The AI service answers with the transcript only; facts come from
+   * {@link extractFromText} once the patient has confirmed the text.
+   */
+  async transcribeFromAudio(
     audioBuffer: Buffer,
     filename: string,
     mimetype: string,
-  ): Promise<AiAudioExtractionResponse> {
+  ): Promise<AiAudioTranscriptResponse> {
     try {
       const formData = new FormData();
       const blob = new Blob([new Uint8Array(audioBuffer)], { type: mimetype });
@@ -23,22 +33,20 @@ export class AiClientService {
       });
 
       if (res.ok) {
-        return (await res.json()) as AiAudioExtractionResponse;
+        return (await res.json()) as AiAudioTranscriptResponse;
       }
+      this.logger.warn(
+        `AI Service transcription failed with ${res.status}. Using fallback transcript.`,
+      );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`AI Service offline or failed: ${msg}. Using fallback mock extraction.`);
+      this.logger.warn(`AI Service offline or failed: ${msg}. Using fallback transcript.`);
     }
 
     // Heuristic fallback for offline local testing
     return {
-      transcript: "Halo Pandu, saya sudah minum 4 butir obat pagi ini dan tidak ada keluhan.",
-      medicationTaken: "SUDAH_MINUM",
-      pillsTakenCount: 4,
-      symptoms: [],
-      intentToStopOrRefuse: false,
-      extractionConfidence: 0.92,
-      emotionalSentiment: "positive",
+      transcript:
+        "Halo Pandu, saya sudah minum 4 butir obat pagi ini dan tidak ada keluhan.",
     };
   }
 

@@ -218,11 +218,13 @@ export default function PatientDetailPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [summary, setSummary] = useState<RiskSortedPatientItem | null>(null);
   const [history, setHistory] = useState<PatientHistoryItem[]>([]);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [loadingMoreHistory, setLoadingMoreHistory] = useState(false);
 
   // State User ID untuk Reset Password
   const [patientUserId, setPatientUserId] = useState<string | null>(null);
   const [pmoUserId, setPmoUserId] = useState<string | null>(null);
-  const [userIdLoading, setUserIdLoading] = useState(false);
 
   // State Modal Reset Password
   const [resetOpen, setResetOpen] = useState(false);
@@ -250,8 +252,11 @@ export default function PatientDetailPage() {
         setErrorMsg(null);
 
         const historyRes = await faskesApi.getPatientHistory(patientId, 1, 50);
-        const listRes = await faskesApi.getPatients({ limit: 100 });
-        const patientData = listRes.items?.find((p) => p.id === patientId);
+        const listRes = await faskesApi.getPatients({
+          treatmentPlanId: patientId,
+          limit: 1,
+        });
+        const patientData = listRes.items?.[0];
 
         if (!patientData) {
           if (active) setErrorMsg("Data pasien tidak ditemukan.");
@@ -261,30 +266,13 @@ export default function PatientDetailPage() {
         if (active) {
           setSummary(patientData);
           setHistory(historyRes.items || []);
+          setHistoryTotal(historyRes.total || 0);
+          setHistoryPage(1);
         }
 
-        if (patientData.username) {
-          setUserIdLoading(true);
-          try {
-            const allUsers = await usersApi.getAll();
-            const foundPatient = allUsers.find(
-              (u) => u.username === patientData.username && u.role === "PASIEN",
-            );
-            if (active) setPatientUserId(foundPatient?.id ?? null);
-
-            if (patientData.pmo?.username) {
-              const foundPmo = allUsers.find(
-                (u) =>
-                  u.username === patientData.pmo?.username && u.role === "PMO",
-              );
-              if (active) setPmoUserId(foundPmo?.id ?? null);
-            }
-          } catch {
-            // Abaikan
-          } finally {
-            if (active) setUserIdLoading(false);
-          }
-        }
+        // Both ids already ship in the patient payload; no user lookup needed.
+        setPatientUserId(patientData.patientUserId ?? null);
+        setPmoUserId(patientData.pmo?.userId ?? null);
       } catch (err: unknown) {
         if (active)
           setErrorMsg(
@@ -605,6 +593,33 @@ export default function PatientDetailPage() {
               emptyMessage="Belum ada aktivitas sistem."
             />
           </DetailCard>
+
+          {historyTotal > history.length && (
+            <button
+              type="button"
+              onClick={async () => {
+                setLoadingMoreHistory(true);
+                try {
+                  const nextPage = historyPage + 1;
+                  const res = await faskesApi.getPatientHistory(
+                    patientId,
+                    nextPage,
+                    50,
+                  );
+                  setHistory((prev) => [...prev, ...(res.items || [])]);
+                  setHistoryPage(nextPage);
+                } finally {
+                  setLoadingMoreHistory(false);
+                }
+              }}
+              disabled={loadingMoreHistory}
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-tiby-ink hover:bg-gray-50 disabled:opacity-50"
+            >
+              {loadingMoreHistory
+                ? "Memuat..."
+                : `Muat lebih banyak (${history.length} dari ${historyTotal})`}
+            </button>
+          )}
         </div>
 
         {/* ─── KANAN: SIDEBAR INFO & RESET PW ─── */}
@@ -635,7 +650,7 @@ export default function PatientDetailPage() {
                 </div>
                 <button
                   onClick={() => openResetModal("PMO")}
-                  disabled={!pmoUserId || userIdLoading}
+                  disabled={!pmoUserId}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-tiby-ink transition hover:border-tiby-teal-200 hover:bg-tiby-teal-50 disabled:opacity-50"
                 >
                   <KeyRound className="h-4 w-4" /> Reset Password PMO
@@ -657,14 +672,10 @@ export default function PatientDetailPage() {
             </dl>
             <button
               onClick={() => openResetModal("PASIEN")}
-              disabled={!patientUserId || userIdLoading}
+              disabled={!patientUserId}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-tiby-ink transition hover:border-tiby-teal-200 hover:bg-tiby-teal-50 disabled:opacity-50"
             >
-              {userIdLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <KeyRound className="h-4 w-4" />
-              )}
+              <KeyRound className="h-4 w-4" />
               Reset Password Pasien
             </button>
           </DetailCard>

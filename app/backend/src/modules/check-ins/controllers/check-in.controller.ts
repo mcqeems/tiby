@@ -27,6 +27,7 @@ import {
   type SubmitCheckInDto,
   type TextExtractRequest,
   type AiAudioExtractionResponse,
+  type AiAudioTranscriptResponse,
   type CheckInVerdictResponse,
   type ListCheckInsQuery,
   type CheckInList,
@@ -97,7 +98,7 @@ export class CheckInController {
     )
     file?: Express.Multer.File,
     @Body('treatmentPlanId') treatmentPlanId?: string,
-  ): Promise<AiAudioExtractionResponse> {
+  ): Promise<AiAudioTranscriptResponse> {
     if (!file) {
       throw new BadRequestException({
         code: 'BAD_REQUEST',

@@ -1,5 +1,5 @@
 info:
-  name: Delete Family Contact (api/patients/:id/family-contacts/:contactId) [ALL]
+  name: Delete Family Contact (api/patients/:id/family-contacts/:contactId) [NAKES, PASIEN]
   type: http
   seq: 6
 

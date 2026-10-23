@@ -19,6 +19,9 @@ export const EnvSchema = z.object({
 
   AI_SERVICE_URL: z.string().default("http://localhost:8000"),
 
+  // Comma-separated browser origins allowed in production (CORS + prod deployments).
+  WEB_URL: z.string().default("http://localhost:3000"),
+
   WAHA_ENABLED: z
     .string()
     .optional()

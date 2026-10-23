@@ -386,4 +386,48 @@ describe("Phase 4: Silence, Tickets, Alerts, History, & Web Push (e2e)", () => {
     expect(eventTypes).toContain("STREAK_RESET");
     expect(eventTypes).toContain("TICKET_AUTO_CLOSED");
   });
+  it("9. filters tickets and alerts by patient name", async () => {
+    const ticketMatch = await request(app.getHttpServer())
+      .get("/api/faskes/tickets?search=hendra")
+      .set("Cookie", nakesCookie);
+
+    expect(ticketMatch.status).toBe(200);
+    expect(ticketMatch.body.items.length).toBeGreaterThanOrEqual(1);
+    expect(
+      ticketMatch.body.items.every(
+        (t: any) => t.patientName === "Hendra Wijaya",
+      ),
+    ).toBe(true);
+
+    const ticketMiss = await request(app.getHttpServer())
+      .get("/api/faskes/tickets?search=zzzznomatch")
+      .set("Cookie", nakesCookie);
+
+    expect(ticketMiss.status).toBe(200);
+    expect(ticketMiss.body.total).toBe(0);
+
+    const alertMatch = await request(app.getHttpServer())
+      .get("/api/faskes/alerts?search=hendra")
+      .set("Cookie", nakesCookie);
+
+    expect(alertMatch.status).toBe(200);
+    expect(alertMatch.body.items.length).toBeGreaterThanOrEqual(1);
+    expect(
+      alertMatch.body.items.every(
+        (a: any) => a.patientName === "Hendra Wijaya",
+      ),
+    ).toBe(true);
+  });
+
+  it("10. filters the patient timeline by event type", async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/faskes/patients/${planId}/history?eventType=STREAK_RESET`)
+      .set("Cookie", nakesCookie);
+
+    expect(res.status).toBe(200);
+    expect(res.body.items.length).toBeGreaterThanOrEqual(1);
+    expect(
+      res.body.items.every((i: any) => i.eventType === "STREAK_RESET"),
+    ).toBe(true);
+  });
 });

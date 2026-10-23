@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
 } from "@nestjs/common";
 import { CheckInService } from "../src/modules/check-ins/services/check-in.service.js";
 
@@ -63,7 +64,7 @@ describe("CheckInService Unit Tests", () => {
       save: vi.fn((data) => Promise.resolve(data)),
     };
     mockAiClient = {
-      extractFromAudio: vi.fn(),
+      transcribeFromAudio: vi.fn(),
       extractFromText: vi.fn(),
     };
     mockRuleEngine = {
@@ -224,6 +225,81 @@ describe("CheckInService Unit Tests", () => {
       expect(res.redoRequiredToday).toBe(false);
       expect(plan.currentStreak).toBe(3); // 2 + 1
       expect(mockPlanRepo.save).toHaveBeenCalledWith(plan);
+      // Client-supplied facts win: the AI service is not asked again.
+      expect(mockAiClient.extractFromText).not.toHaveBeenCalled();
+    });
+
+    it("extracts facts from the confirmed transcript when the client sends none", async () => {
+      const plan = {
+        id: "plan-1",
+        patientUserId: "user-1",
+        facilityId: "faskes-1",
+        dailyPillQuota: 4,
+        currentStreak: 2,
+        consecutiveSilenceDays: 0,
+        patientState: "AKTIF",
+      };
+      mockPlanRepo.findOne.mockResolvedValue(plan);
+      mockCheckInRepo.findOne.mockResolvedValue(null);
+      mockAiClient.extractFromText.mockResolvedValue({
+        transcript: "Sudah minum 4 pil.",
+        medicationTaken: "SUDAH_MINUM",
+        pillsTakenCount: 4,
+        symptoms: [],
+        intentToStopOrRefuse: false,
+        extractionConfidence: 0.93,
+      });
+
+      mockRuleEngine.evaluate.mockReturnValue({
+        verdict: "TERKENDALI",
+        isDoseFulfilled: true,
+        redoRequiredToday: false,
+        matchedRuleCodes: ["RULE_DOSE_FULFILLED_NO_SYMPTOMS"],
+        failSafeTriggered: false,
+        failSafeReason: null,
+        responseMessage: "Luar biasa! Obat lengkap.",
+      });
+
+      const res = await service.submitCheckIn("user-1", "PASIEN", {
+        inputMode: "VOICE_STT",
+        confirmedFacts: { transcript: "Sudah minum 4 pil." },
+      });
+
+      expect(mockAiClient.extractFromText).toHaveBeenCalledWith("Sudah minum 4 pil.");
+      expect(mockRuleEngine.evaluate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          medicationStatus: "SUDAH_MINUM",
+          pillsTakenCount: 4,
+          extractionConfidence: 0.93,
+        }),
+      );
+      expect(mockCheckInRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          rawTranscriptEncrypted: "Sudah minum 4 pil.",
+        }),
+      );
+      expect(res.verdict).toBe("TERKENDALI");
+    });
+
+    it("rejects VOICE_STT submissions without a transcript", async () => {
+      const plan = {
+        id: "plan-1",
+        patientUserId: "user-1",
+        facilityId: "faskes-1",
+        dailyPillQuota: 4,
+        currentStreak: 2,
+        consecutiveSilenceDays: 0,
+        patientState: "AKTIF",
+      };
+      mockPlanRepo.findOne.mockResolvedValue(plan);
+      mockCheckInRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.submitCheckIn("user-1", "PASIEN", {
+          inputMode: "VOICE_STT",
+          confirmedFacts: { transcript: "" },
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -487,6 +563,75 @@ describe("CheckInService Unit Tests", () => {
       expect(res.items[0]).not.toHaveProperty("extractedFactsJson");
       expect(res.items[0].verdict).toBe("PERLU_PERHATIAN");
       expect(mockEvalRepo.find).toHaveBeenCalledTimes(1);
+    });
+  });
+  describe("listCheckIns filtering", () => {
+    it("applies medication status and dose filters", async () => {
+      mockCheckInRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.listCheckIns(
+        { id: "admin-1", role: "ADMIN" },
+        { medicationStatus: "BELUM_MINUM", isDoseFulfilled: false } as any,
+      );
+
+      const where = mockCheckInRepo.findAndCount.mock.calls[0][0].where;
+      expect(where.medicationStatus).toBe("BELUM_MINUM");
+      expect(where.isDoseFulfilled).toBe(false);
+    });
+
+    it("builds a closed date range from from/to", async () => {
+      mockCheckInRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.listCheckIns(
+        { id: "admin-1", role: "ADMIN" },
+        { from: "2026-10-01", to: "2026-10-31" } as any,
+      );
+
+      const range = mockCheckInRepo.findAndCount.mock.calls[0][0].where.checkInDate;
+      expect(range.type).toBe("between");
+      expect(range.value).toEqual(["2026-10-01", "2026-10-31"]);
+    });
+
+    it("supports a single-sided date bound", async () => {
+      mockCheckInRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.listCheckIns(
+        { id: "admin-1", role: "ADMIN" },
+        { from: "2026-10-01" } as any,
+      );
+      expect(
+        mockCheckInRepo.findAndCount.mock.calls[0][0].where.checkInDate.type,
+      ).toBe("moreThanOrEqual");
+
+      await service.listCheckIns(
+        { id: "admin-1", role: "ADMIN" },
+        { to: "2026-10-31" } as any,
+      );
+      expect(
+        mockCheckInRepo.findAndCount.mock.calls[1][0].where.checkInDate.type,
+      ).toBe("lessThanOrEqual");
+    });
+
+    it("forbids a non-ADMIN facility filter", async () => {
+      await expect(
+        service.listCheckIns(
+          { id: "nakes-1", role: "NAKES", facilityId: "faskes-1" },
+          { facilityId: "faskes-9" } as any,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockCheckInRepo.findAndCount).not.toHaveBeenCalled();
+    });
+
+    it("applies an ADMIN facility filter", async () => {
+      mockCheckInRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.listCheckIns(
+        { id: "admin-1", role: "ADMIN" },
+        { facilityId: "faskes-9" } as any,
+      );
+
+      const where = mockCheckInRepo.findAndCount.mock.calls[0][0].where;
+      expect(where.treatmentPlan).toEqual({ facilityId: "faskes-9" });
     });
   });
 });

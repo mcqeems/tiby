@@ -3,6 +3,8 @@ import {
   PushSubscriptionPayloadSchema,
   WhatsappConnectChallengeSchema,
   AiAudioExtractionResponseSchema,
+  AiAudioTranscriptResponseSchema,
+  ConfirmedCheckInFactsSchema,
   SubmitCheckInSchema,
   CheckInVerdictResponseSchema,
   GrantConsentSchema,
@@ -34,6 +36,32 @@ describe("@tiby/ts-shared contracts", () => {
     };
     const parsed = WhatsappConnectChallengeSchema.safeParse(valid);
     expect(parsed.success).toBe(true);
+  });
+
+  it("validates AiAudioTranscriptResponseSchema", () => {
+    const parsed = AiAudioTranscriptResponseSchema.safeParse({
+      transcript: "Saya sudah minum 3 obat pagi ini",
+    });
+    expect(parsed.success).toBe(true);
+    expect(
+      AiAudioTranscriptResponseSchema.safeParse({
+        transcript: "Saya sudah minum 3 obat pagi ini",
+        medicationTaken: "SUDAH_MINUM",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("requires only the transcript in ConfirmedCheckInFactsSchema", () => {
+    const parsed = ConfirmedCheckInFactsSchema.safeParse({
+      transcript: "Saya sudah minum 3 obat pagi ini",
+    });
+    expect(parsed.success).toBe(true);
+    expect(
+      SubmitCheckInSchema.safeParse({
+        inputMode: "VOICE_STT",
+        confirmedFacts: { transcript: "Saya sudah minum 3 obat pagi ini" },
+      }).success,
+    ).toBe(true);
   });
 
   it("validates AiAudioExtractionResponseSchema", () => {

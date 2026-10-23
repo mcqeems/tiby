@@ -1,17 +1,14 @@
-"use client";
-
 import { useState } from "react";
 import Image from "next/image"; // ✅ Import Image
 import { ArrowRight, Edit3, CheckCircle2 } from "lucide-react";
-import type { AiAudioExtractionResponse } from "@tiby/ts-shared";
 
 interface CheckInReviewProps {
-  data: AiAudioExtractionResponse;
+  transcript: string;
   onSubmit: (editedText: string) => void;
 }
 
-export default function CheckInReview({ data, onSubmit }: CheckInReviewProps) {
-  const [text, setText] = useState(data.transcript);
+export default function CheckInReview({ transcript, onSubmit }: CheckInReviewProps) {
+  const [text, setText] = useState(transcript);
   const [isEditing, setIsEditing] = useState(false);
 
   return (
@@ -32,12 +29,13 @@ export default function CheckInReview({ data, onSubmit }: CheckInReviewProps) {
             Konfirmasi Laporanmu
           </h2>
           <p className="text-xs text-tiby-muted">
-            Pastikan Pandu mendengar dengan benar.
+            Pastikan transkripnya benar, lalu kirim. Pandu akan mengekstrak isi
+            laporan di langkah berikutnya.
           </p>
         </div>
       </div>
 
-      {/* Kotak Transkrip (Sisa kode sama) */}
+      {/* Kotak Transkrip */}
       <div className="bg-tiby-teal-50 border border-tiby-teal-100 rounded-2xl p-5 space-y-4 shadow-2xs">
         {isEditing ? (
           <textarea
@@ -60,30 +58,6 @@ export default function CheckInReview({ data, onSubmit }: CheckInReviewProps) {
             <Edit3 className="w-3.5 h-3.5" />
             {isEditing ? "Simpan Perubahan" : "Ubah Teks"}
           </button>
-        </div>
-      </div>
-
-      {/* Ringkasan Ekstraksi AI */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white border border-gray-200 rounded-xl p-3 text-center shadow-2xs">
-          <p className="text-[10px] text-tiby-muted uppercase font-semibold tracking-wider mb-1">
-            Status Obat
-          </p>
-          <p
-            className={`font-bold text-sm ${data.medicationTaken === "SUDAH_MINUM" ? "text-emerald-600" : "text-amber-600"}`}
-          >
-            {data.medicationTaken === "SUDAH_MINUM"
-              ? "Sudah Minum"
-              : "Belum Minum"}
-          </p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-3 text-center shadow-2xs">
-          <p className="text-[10px] text-tiby-muted uppercase font-semibold tracking-wider mb-1">
-            Jumlah Pil
-          </p>
-          <p className="font-bold text-tiby-ink text-sm">
-            {data.pillsTakenCount} Butir
-          </p>
         </div>
       </div>
 

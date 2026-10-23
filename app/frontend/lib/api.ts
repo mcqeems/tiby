@@ -1,5 +1,6 @@
 import type {
   AiAudioExtractionResponse,
+  AiAudioTranscriptResponse,
   CheckInVerdictResponse,
   SubmitCheckInDto,
   TextExtractRequest,
@@ -73,14 +74,14 @@ export const api = {
     async extractAudio(
       audioBlob: Blob,
       treatmentPlanId?: string,
-    ): Promise<AiAudioExtractionResponse> {
+    ): Promise<AiAudioTranscriptResponse> {
       const formData = new FormData();
       formData.append("audio", audioBlob, "recording.webm");
       if (treatmentPlanId) {
         formData.append("treatmentPlanId", treatmentPlanId);
       }
 
-      return apiFetch<AiAudioExtractionResponse>(
+      return apiFetch<AiAudioTranscriptResponse>(
         "/api/check-ins/audio-extract",
         {
           method: "POST",
@@ -285,58 +286,4 @@ export const api = {
       });
     },
   },
-  // Facilities APIs (Master Faskes untuk Admin)
-  facilities: {
-    async getAll(): Promise<FacilityItem[]> {
-      return apiFetch<FacilityItem[]>("/api/facilities", {
-        method: "GET",
-      });
-    },
-
-    async create(dto: CreateFacilityDto): Promise<FacilityItem> {
-      return apiFetch<FacilityItem>("/api/facilities", {
-        method: "POST",
-        body: JSON.stringify(dto),
-      });
-    },
-
-    async update(
-      id: string,
-      dto: Partial<CreateFacilityDto>,
-    ): Promise<FacilityItem> {
-      return apiFetch<FacilityItem>(`/api/facilities/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(dto),
-      });
-    },
-
-    async remove(id: string): Promise<{ success: boolean; message?: string }> {
-      return apiFetch(`/api/facilities/${id}`, {
-        method: "DELETE",
-      });
-    },
-  },
 };
-
-
-export interface FacilityItem {
-  id: string;
-  code: string;
-  name: string;
-  type: "PUSKESMAS" | "RUMAH_SAKIT" | "KLINIK";
-  province: string;
-  city: string;
-  address?: string;
-  phone?: string;
-  createdAt?: string;
-}
-
-export interface CreateFacilityDto {
-  code: string;
-  name: string;
-  type: "PUSKESMAS" | "RUMAH_SAKIT" | "KLINIK";
-  province: string;
-  city: string;
-  address?: string;
-  phone?: string;
-}

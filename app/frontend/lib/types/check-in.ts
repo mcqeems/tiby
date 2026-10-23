@@ -1,7 +1,4 @@
-import type {
-  AiAudioExtractionResponse,
-  CheckInVerdictResponse,
-} from "@tiby/ts-shared";
+import type { CheckInVerdictResponse } from "@tiby/ts-shared";
 
 // Tipe UI State
 export type CheckInStep =
@@ -15,7 +12,8 @@ export type CheckInStep =
 export interface CheckInState {
   step: CheckInStep;
   audioBlob: Blob | null;
-  extractedData: AiAudioExtractionResponse | null;
+  transcript: string;
+  extractedData: null;
   verdict: CheckInVerdictResponse | null;
 }
 
@@ -34,11 +32,11 @@ export interface SubmitCheckInPayload {
   treatmentPlanId?: string;
   confirmedFacts?: {
     transcript: string;
-    medicationStatus: MedicationStatus;
-    pillsTakenCount: number;
-    symptoms: string[];
-    intentToStop: boolean;
-    confidence: number;
+    medicationStatus?: MedicationStatus;
+    pillsTakenCount?: number | null;
+    symptoms?: string[];
+    intentToStop?: boolean;
+    confidence?: number;
   };
   fallbackButtons?: FallbackButtonsPayload;
 }

@@ -40,6 +40,13 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
   let patient2Cookie: string[];
   let plan2Id: string;
 
+  // Patient 4 (voice transcript -> backend extraction, isolated from the red-flag fixture)
+  let patient4Id: string;
+  let patient4Username = `pasien_voice_${timestamp}`;
+  let patient4Password = "P3PatientPass123!";
+  let patient4Cookie: string[];
+  let plan4Id: string;
+
   // Cross-facility visibility fixtures
   let facilityBId: string;
   let nakesACookie: string[];
@@ -302,6 +309,50 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
       }),
     );
 
+    // Patient 4: voice check-in whose day must stay untouched until its own
+    // test, so the red-flag fixture (patient 2) can still lock a full dose.
+    const p4Auth = await auth.api.createUser({
+      body: {
+        name: "Dewi Lestari",
+        email: `${patient4Username}@users.tiby.internal`,
+        password: patient4Password,
+        role: "PASIEN",
+        data: {
+          username: patient4Username,
+          displayUsername: patient4Username,
+          facility_id: facilityId,
+          must_confirm_consent: false,
+        },
+      },
+    });
+    patient4Id = p4Auth.user.id;
+
+    const plan4 = await planRepo.save(
+      planRepo.create({
+        patientUserId: patient4Id,
+        facilityId,
+        registeredByNakesId: nakesId,
+        phase: "INTENSIF",
+        patientState: "AKTIF",
+        regimenCode: "FDC-4",
+        dailyPillQuota: 4,
+        reminderTimeLocal: "08:00",
+        timezone: "Asia/Jakarta",
+        startDate: "2026-10-16",
+        targetEndDate: "2027-04-16",
+        currentStreak: 3,
+        consecutiveSilenceDays: 0,
+        riskScore: 0,
+      }),
+    );
+    plan4Id = plan4.id;
+
+    const p4Login = await request(app.getHttpServer())
+      .post("/api/auth/sign-in")
+      .send({ username: patient4Username, password: patient4Password });
+    expect(p4Login.status).toBe(200);
+    patient4Cookie = p4Login.get("Set-Cookie")!;
+
     // ADMIN (super admin, no facility)
     const adminUsername = `admin_p3_${timestamp}`;
     const adminAuth = await auth.api.createUser({
@@ -338,6 +389,7 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
     if (patient1Id) await userRepo.delete({ id: patient1Id });
     if (pmo1Id) await userRepo.delete({ id: pmo1Id });
     if (patient2Id) await userRepo.delete({ id: patient2Id });
+    if (patient4Id) await userRepo.delete({ id: patient4Id });
     if (nakesId) await userRepo.delete({ id: nakesId });
     if (patient3Id) await userRepo.delete({ id: patient3Id });
     if (nakesBId) await userRepo.delete({ id: nakesBId });
@@ -348,7 +400,7 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
     await app.close();
   });
 
-  it("1. Audio extract preview endpoint parses audio (stateless)", async () => {
+  it("1. Audio extract preview endpoint returns the transcript only (stateless)", async () => {
     const audioBuffer = Buffer.from("mock audio bytes for Pandu STT");
 
     const res = await request(app.getHttpServer())
@@ -358,9 +410,10 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
 
     expect(res.status).toBe(201);
     expect(res.body.transcript).toBeDefined();
-    expect(res.body.medicationTaken).toBe("SUDAH_MINUM");
-    expect(res.body.pillsTakenCount).toBe(4);
-    expect(res.body.extractionConfidence).toBeGreaterThan(0.7);
+    // Facts are extracted from the edited transcript later, never with the audio.
+    expect(res.body.medicationTaken).toBeUndefined();
+    expect(res.body.pillsTakenCount).toBeUndefined();
+    expect(res.body.extractionConfidence).toBeUndefined();
   });
 
   it("2. Text extract re-extraction parses edited transcript (stateless)", async () => {
@@ -427,6 +480,34 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
     // Verify TreatmentPlan has streak incremented to 1
     const plan = await dataSource.getRepository(TreatmentPlan).findOneBy({ id: plan1Id });
     expect(plan?.currentStreak).toBe(1);
+  });
+
+  it("4b. Voice submit accepts a confirmed transcript without facts (backend extracts)", async () => {
+    const res = await request(app.getHttpServer())
+      .post("/api/check-ins/audio-extract")
+      .set("Cookie", patient4Cookie)
+      .attach("audio", Buffer.from("mock audio bytes for Pandu STT"), "voice_checkin.webm")
+      .field("treatmentPlanId", plan4Id);
+
+    expect(res.status).toBe(201);
+    expect(Object.keys(res.body)).toEqual(["transcript"]);
+
+    const submit = await request(app.getHttpServer())
+      .post("/api/check-ins")
+      .set("Cookie", patient4Cookie)
+      .send({
+        inputMode: "VOICE_STT",
+        confirmedFacts: { transcript: res.body.transcript },
+      });
+
+    expect(submit.status).toBe(201);
+    expect(submit.body.verdict).toBe("TERKENDALI");
+    expect(submit.body.isDoseFulfilled).toBe(true);
+
+    const stored = await dataSource
+      .getRepository(DailyCheckIn)
+      .findOneBy({ treatmentPlanId: plan4Id });
+    expect(stored?.rawTranscriptEncrypted).toBe(res.body.transcript);
   });
 
   it("5. Same-day second check-in is rejected with 409 Conflict (CHECK_IN_ALREADY_LOCKED)", async () => {
@@ -595,5 +676,52 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
 
     expect(allowed.status).toBe(200);
     expect(allowed.body.items.length).toBeGreaterThanOrEqual(1);
+  });
+  it("14. filters check-ins by medication status and date range", async () => {
+    const byStatus = await request(app.getHttpServer())
+      .get("/api/check-ins?medicationStatus=SUDAH_MINUM")
+      .set("Cookie", patient1Cookie);
+
+    expect(byStatus.status).toBe(200);
+    expect(byStatus.body.items.length).toBeGreaterThanOrEqual(1);
+    expect(
+      byStatus.body.items.every(
+        (i: any) => i.medicationStatus === "SUDAH_MINUM",
+      ),
+    ).toBe(true);
+
+    const inRange = await request(app.getHttpServer())
+      .get("/api/check-ins?from=2000-01-01&to=2100-01-01")
+      .set("Cookie", patient1Cookie);
+
+    expect(inRange.status).toBe(200);
+    expect(inRange.body.total).toBeGreaterThanOrEqual(1);
+
+    const outOfRange = await request(app.getHttpServer())
+      .get("/api/check-ins?from=1990-01-01&to=1990-12-31")
+      .set("Cookie", patient1Cookie);
+
+    expect(outOfRange.status).toBe(200);
+    expect(outOfRange.body.total).toBe(0);
+  });
+
+  it("15. NAKES cannot filter check-ins by another facility", async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/check-ins?facilityId=${facilityBId}`)
+      .set("Cookie", nakesACookie);
+
+    expect(res.status).toBe(403);
+  });
+
+  it("16. ADMIN filters check-ins by facility", async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/check-ins?facilityId=${facilityBId}`)
+      .set("Cookie", adminCookie);
+
+    expect(res.status).toBe(200);
+    expect(res.body.items.length).toBeGreaterThanOrEqual(1);
+    expect(
+      res.body.items.every((i: any) => i.facilityId === facilityBId),
+    ).toBe(true);
   });
 });

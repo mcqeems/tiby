@@ -5,12 +5,14 @@ import {
   ConflictException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { ILike, Repository, type FindOptionsWhere } from "typeorm";
 import { Facility } from "../entities/facilities.entity.js";
 import type {
   CreateFacilityDto,
   UpdateFacilityDto,
   FacilityItem,
+  FacilityListResponse,
+  ListFacilitiesQuery,
 } from "@tiby/ts-shared";
 
 export interface FacilityCaller {
@@ -38,11 +40,30 @@ export class FacilitiesService {
   ) {}
 
   /** Every authenticated role may read the full facility list. */
-  async listFacilities(): Promise<FacilityItem[]> {
-    const facilities = await this.facilityRepo.find({
-      order: { name: "ASC" },
+  async listFacilities(
+    query: ListFacilitiesQuery,
+  ): Promise<FacilityListResponse> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+
+    const term = query.search?.trim();
+    const where: FindOptionsWhere<Facility>[] = term
+      ? [
+          { code: ILike(`%${term}%`) },
+          { name: ILike(`%${term}%`) },
+          { district: ILike(`%${term}%`) },
+        ]
+      : [];
+
+    const [facilities, total] = await this.facilityRepo.findAndCount({
+      where,
+      // `id` tie-break keeps offset pages stable when names tie.
+      order: { name: "ASC", id: "ASC" },
+      skip: (page - 1) * limit,
+      take: limit,
     });
-    return facilities.map(toItem);
+
+    return { items: facilities.map(toItem), total, page, limit };
   }
 
   async getFacility(id: string): Promise<FacilityItem> {

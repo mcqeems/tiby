@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { UserRoleSchema } from "./enums.js";
+import { PaginationQuerySchema } from "./faskes.schema.js";
 
 export const CreateUserSchema = z.object({
   username: z
@@ -54,6 +55,27 @@ export const UserSummarySchema = z.object({
   facility: z.string().nullable().optional(),
 });
 export type UserSummary = z.infer<typeof UserSummarySchema>;
+
+export const ListUsersQuerySchema = PaginationQuerySchema.extend({
+  /** Comma-separated roles, e.g. `role=NAKES,ADMIN`. */
+  role: z
+    .string()
+    .transform((value) => value.split(",").map((r) => r.trim()))
+    .pipe(z.array(UserRoleSchema))
+    .optional(),
+  search: z.string().optional(),
+  /** ADMIN only: restrict the list to one facility. */
+  facilityId: z.uuid().optional(),
+});
+export type ListUsersQuery = z.infer<typeof ListUsersQuerySchema>;
+
+export const UserListResponseSchema = z.object({
+  items: z.array(UserSummarySchema),
+  total: z.number(),
+  page: z.number(),
+  limit: z.number(),
+});
+export type UserListResponse = z.infer<typeof UserListResponseSchema>;
 
 export const SignInSchema = z
   .object({
