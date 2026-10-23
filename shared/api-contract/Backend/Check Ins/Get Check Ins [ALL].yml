@@ -22,6 +22,33 @@ http:
       type: query
       description: "Optional. PASIEN may pass only their own plan."
       disabled: true
+    - name: medicationStatus
+      value: ""
+      type: query
+      description: SUDAH_MINUM | BELUM_MINUM | TIDAK_PASTI
+      disabled: true
+    - name: isDoseFulfilled
+      value: ""
+      type: query
+      description: "Boolean"
+      disabled: true
+    - name: from
+      value: ""
+      type: query
+      description: "YYYY-MM-DD (inclusive)"
+      disabled: true
+    - name: to
+      value: ""
+      type: query
+      description: "YYYY-MM-DD (inclusive)"
+      disabled: true
+    - name: facilityId
+      value: ""
+      type: query
+      description: "uuid — ADMIN only"
+      disabled: true
+      description: "Optional. PASIEN may pass only their own plan."
+      disabled: true
   auth: inherit
 
 settings:
@@ -50,6 +77,33 @@ examples:
         - name: treatmentPlanId
           value: ""
           type: query
+          description: "Optional. PASIEN may pass only their own plan."
+          disabled: true
+        - name: medicationStatus
+          value: ""
+          type: query
+          description: SUDAH_MINUM | BELUM_MINUM | TIDAK_PASTI
+          disabled: true
+        - name: isDoseFulfilled
+          value: ""
+          type: query
+          description: "Boolean"
+          disabled: true
+        - name: from
+          value: ""
+          type: query
+          description: "YYYY-MM-DD (inclusive)"
+          disabled: true
+        - name: to
+          value: ""
+          type: query
+          description: "YYYY-MM-DD (inclusive)"
+          disabled: true
+        - name: facilityId
+          value: ""
+          type: query
+          description: "uuid — ADMIN only"
+          disabled: true
           description: "Optional. PASIEN may pass only their own plan."
           disabled: true
     response:

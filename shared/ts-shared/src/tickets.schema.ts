@@ -15,6 +15,7 @@ import { PaginationQuerySchema } from "./faskes.schema.js";
 export const ListTicketsQuerySchema = PaginationQuerySchema.extend({
   status: TicketStatusSchema.optional(),
   priority: TicketPrioritySchema.optional(),
+  search: z.string().optional(),
 });
 export type ListTicketsQuery = z.infer<typeof ListTicketsQuerySchema>;
 
@@ -61,6 +62,7 @@ export type CloseTicketDto = z.infer<typeof CloseTicketSchema>;
 export const ListAlertsQuerySchema = PaginationQuerySchema.extend({
   unreadOnly: z.stringbool().default(false),
   severity: AlertSeveritySchema.optional(),
+  search: z.string().optional(),
 });
 export type ListAlertsQuery = z.infer<typeof ListAlertsQuerySchema>;
 

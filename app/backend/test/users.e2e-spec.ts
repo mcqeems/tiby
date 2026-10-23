@@ -349,4 +349,36 @@ describe("Users & RBAC Password Management (e2e)", () => {
       expect(loginCheck.status).toBe(200);
     });
   });
+  describe("User list filtering", () => {
+    it("searches users by username", async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/users?search=${nakesUsername}`)
+        .set("Cookie", adminCookie);
+
+      expect(res.status).toBe(200);
+      const found = res.body.items.find(
+        (u: any) => u.username === nakesUsername,
+      );
+      expect(found).toBeDefined();
+    });
+
+    it("forbids a NAKES from filtering by another facility", async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/users?facilityId=${otherFacilityId}`)
+        .set("Cookie", nakesCookie);
+
+      expect(res.status).toBe(403);
+    });
+
+    it("lets ADMIN filter users by facility", async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/users?facilityId=${otherFacilityId}&limit=100`)
+        .set("Cookie", adminCookie);
+
+      expect(res.status).toBe(200);
+      expect(
+        res.body.items.every((u: any) => u.facilityId === otherFacilityId),
+      ).toBe(true);
+    });
+  });
 });

@@ -46,6 +46,7 @@ describe("FacilitiesService Unit Tests", () => {
       const res = await service.listFacilities({ page: 1, limit: 12 });
 
       expect(mockFacilityRepo.findAndCount).toHaveBeenCalledWith({
+        where: [],
         order: { name: "ASC", id: "ASC" },
         skip: 0,
         take: 12,
@@ -197,6 +198,19 @@ describe("FacilitiesService Unit Tests", () => {
       await expect(service.deleteFacility("ghost")).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+  describe("listFacilities filtering", () => {
+    it("searches code, name and district", async () => {
+      mockFacilityRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.listFacilities({ search: "gambir" } as any);
+
+      const where = mockFacilityRepo.findAndCount.mock.calls[0][0].where;
+      expect(where).toHaveLength(3);
+      expect(where[0].code.value).toBe("%gambir%");
+      expect(where[1].name.value).toBe("%gambir%");
+      expect(where[2].district.value).toBe("%gambir%");
     });
   });
 });

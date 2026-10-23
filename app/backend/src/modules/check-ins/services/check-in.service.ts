@@ -3,9 +3,17 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, type FindOptionsWhere } from 'typeorm';
+import {
+  Between,
+  In,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  Repository,
+  type FindOptionsWhere,
+} from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DailyCheckIn } from '../entities/daily-check-in.entity.js';
 import { SafetyEvaluation } from '../../internal/rule-engine/entities/safety-evaluation.entity.js';
@@ -138,6 +146,15 @@ export class CheckInService {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
 
+    // Validate params before the empty-scope short-circuit: a forbidden
+    // filter must 403 regardless of whether the caller has visible plans.
+    if (query.facilityId && caller.role !== 'ADMIN') {
+      throw new ForbiddenException({
+        code: 'FORBIDDEN',
+        message: 'Only ADMIN may filter by facility',
+      });
+    }
+
     const planIds = await this.resolveVisiblePlanIds(caller);
 
     // `In([])` is a footgun; short-circuit instead.
@@ -157,6 +174,20 @@ export class CheckInService {
     const where: FindOptionsWhere<DailyCheckIn> = {};
     if (planIds) where.treatmentPlanId = In(planIds);
     if (query.treatmentPlanId) where.treatmentPlanId = query.treatmentPlanId;
+    if (query.medicationStatus) where.medicationStatus = query.medicationStatus;
+    if (query.isDoseFulfilled !== undefined) {
+      where.isDoseFulfilled = query.isDoseFulfilled;
+    }
+    if (query.from && query.to) {
+      where.checkInDate = Between(query.from, query.to);
+    } else if (query.from) {
+      where.checkInDate = MoreThanOrEqual(query.from);
+    } else if (query.to) {
+      where.checkInDate = LessThanOrEqual(query.to);
+    }
+    if (query.facilityId) {
+      where.treatmentPlan = { facilityId: query.facilityId };
+    }
 
     const [records, total] = await this.checkInRepo.findAndCount({
       where,

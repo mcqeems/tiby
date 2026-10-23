@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { ILike, Repository, type FindOptionsWhere } from "typeorm";
 import { FacilityAlert } from "../entities/facility-alert.entity.js";
 import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
 import type {
@@ -35,12 +35,25 @@ export class AlertsService {
       return { items: [], total: 0, page, limit };
     }
 
+    // Filters are ANDed with the facility scope, never ORed.
+    const base: FindOptionsWhere<FacilityAlert> = {
+      facilityId,
+      ...(query.unreadOnly ? { isRead: false } : {}),
+      ...(query.severity ? { severity: query.severity } : {}),
+    };
+    const term = query.search?.trim();
+    const where: FindOptionsWhere<FacilityAlert>[] = term
+      ? [
+          { ...base, treatmentPlan: { patientUser: { name: ILike(`%${term}%`) } } },
+          {
+            ...base,
+            treatmentPlan: { patientUser: { username: ILike(`%${term}%`) } },
+          },
+        ]
+      : [base];
+
     const [alerts, total] = await this.alertRepo.findAndCount({
-      where: {
-        facilityId,
-        ...(query.unreadOnly ? { isRead: false } : {}),
-        ...(query.severity ? { severity: query.severity } : {}),
-      },
+      where,
       relations: {
         treatmentPlan: {
           patientUser: true,

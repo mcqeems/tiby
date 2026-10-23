@@ -47,6 +47,7 @@ export class PatientsService {
     treatmentPlanId: string,
     page = 1,
     limit = 50,
+    eventType?: string,
   ): Promise<PatientStatusHistoryList> {
     // A NAKES may only read plans in their own facility. 404 (not 403) so the
     // endpoint never reveals whether a plan exists elsewhere.
@@ -60,7 +61,7 @@ export class PatientsService {
     }
 
     const [records, total] = await this.historyRepo.findAndCount({
-      where: { treatmentPlanId },
+      where: { treatmentPlanId, ...(eventType ? { eventType } : {}) },
       // `id` is the tie-break: offset pagination is only stable with a total order.
       order: { createdAt: 'DESC', id: 'DESC' },
       skip: (page - 1) * limit,

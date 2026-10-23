@@ -305,4 +305,31 @@ describe("PatientsService Unit Tests", () => {
       ).rejects.toThrow(NotFoundException);
     });
   });
+  describe("getPatientHistory filtering", () => {
+    it("filters the timeline by event type", async () => {
+      mockUserRepo.findOneBy.mockResolvedValue({
+        id: "nakes-1",
+        facilityId: "faskes-1",
+      });
+      mockPlanRepo.findOneBy.mockResolvedValue({
+        id: "plan-1",
+        facilityId: "faskes-1",
+      });
+      mockHistoryRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.getPatientHistory(
+        "nakes-1",
+        "plan-1",
+        1,
+        20,
+        "CHECK_IN_LOCKED",
+      );
+
+      expect(mockHistoryRepo.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { treatmentPlanId: "plan-1", eventType: "CHECK_IN_LOCKED" },
+        }),
+      );
+    });
+  });
 });

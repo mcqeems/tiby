@@ -264,4 +264,22 @@ describe("Facilities CRUD (e2e)", () => {
 
     expect(res.status).toBe(404);
   });
+  it("13. filters the facility list by search", async () => {
+    const match = await request(app.getHttpServer())
+      .get("/api/facilities?search=Lain")
+      .set("Cookie", adminCookie);
+
+    expect(match.status).toBe(200);
+    expect(match.body.total).toBeGreaterThanOrEqual(1);
+    expect(
+      match.body.items.every((f: any) => f.name.includes("Lain")),
+    ).toBe(true);
+
+    const miss = await request(app.getHttpServer())
+      .get("/api/facilities?search=zzzznomatch")
+      .set("Cookie", adminCookie);
+
+    expect(miss.status).toBe(200);
+    expect(miss.body.total).toBe(0);
+  });
 });

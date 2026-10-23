@@ -63,6 +63,9 @@ export const ListUsersQuerySchema = PaginationQuerySchema.extend({
     .transform((value) => value.split(",").map((r) => r.trim()))
     .pipe(z.array(UserRoleSchema))
     .optional(),
+  search: z.string().optional(),
+  /** ADMIN only: restrict the list to one facility. */
+  facilityId: z.uuid().optional(),
 });
 export type ListUsersQuery = z.infer<typeof ListUsersQuerySchema>;
 

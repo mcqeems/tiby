@@ -596,4 +596,51 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
     expect(allowed.status).toBe(200);
     expect(allowed.body.items.length).toBeGreaterThanOrEqual(1);
   });
+  it("14. filters check-ins by medication status and date range", async () => {
+    const byStatus = await request(app.getHttpServer())
+      .get("/api/check-ins?medicationStatus=SUDAH_MINUM")
+      .set("Cookie", patient1Cookie);
+
+    expect(byStatus.status).toBe(200);
+    expect(byStatus.body.items.length).toBeGreaterThanOrEqual(1);
+    expect(
+      byStatus.body.items.every(
+        (i: any) => i.medicationStatus === "SUDAH_MINUM",
+      ),
+    ).toBe(true);
+
+    const inRange = await request(app.getHttpServer())
+      .get("/api/check-ins?from=2000-01-01&to=2100-01-01")
+      .set("Cookie", patient1Cookie);
+
+    expect(inRange.status).toBe(200);
+    expect(inRange.body.total).toBeGreaterThanOrEqual(1);
+
+    const outOfRange = await request(app.getHttpServer())
+      .get("/api/check-ins?from=1990-01-01&to=1990-12-31")
+      .set("Cookie", patient1Cookie);
+
+    expect(outOfRange.status).toBe(200);
+    expect(outOfRange.body.total).toBe(0);
+  });
+
+  it("15. NAKES cannot filter check-ins by another facility", async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/check-ins?facilityId=${facilityBId}`)
+      .set("Cookie", nakesACookie);
+
+    expect(res.status).toBe(403);
+  });
+
+  it("16. ADMIN filters check-ins by facility", async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/check-ins?facilityId=${facilityBId}`)
+      .set("Cookie", adminCookie);
+
+    expect(res.status).toBe(200);
+    expect(res.body.items.length).toBeGreaterThanOrEqual(1);
+    expect(
+      res.body.items.every((i: any) => i.facilityId === facilityBId),
+    ).toBe(true);
+  });
 });

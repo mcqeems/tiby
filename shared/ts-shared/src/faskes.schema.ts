@@ -20,6 +20,11 @@ export const ListPatientsQuerySchema = PaginationQuerySchema.extend({
 });
 export type ListPatientsQuery = z.infer<typeof ListPatientsQuerySchema>;
 
+export const PatientHistoryQuerySchema = PaginationQuerySchema.extend({
+  eventType: PatientStatusEventTypeSchema.optional(),
+});
+export type PatientHistoryQuery = z.infer<typeof PatientHistoryQuerySchema>;
+
 export const RiskSortedPatientItemSchema = z.object({
   id: z.uuid(),
   patientUserId: z.string(),

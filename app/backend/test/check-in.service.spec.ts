@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
 } from "@nestjs/common";
 import { CheckInService } from "../src/modules/check-ins/services/check-in.service.js";
 
@@ -487,6 +488,75 @@ describe("CheckInService Unit Tests", () => {
       expect(res.items[0]).not.toHaveProperty("extractedFactsJson");
       expect(res.items[0].verdict).toBe("PERLU_PERHATIAN");
       expect(mockEvalRepo.find).toHaveBeenCalledTimes(1);
+    });
+  });
+  describe("listCheckIns filtering", () => {
+    it("applies medication status and dose filters", async () => {
+      mockCheckInRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.listCheckIns(
+        { id: "admin-1", role: "ADMIN" },
+        { medicationStatus: "BELUM_MINUM", isDoseFulfilled: false } as any,
+      );
+
+      const where = mockCheckInRepo.findAndCount.mock.calls[0][0].where;
+      expect(where.medicationStatus).toBe("BELUM_MINUM");
+      expect(where.isDoseFulfilled).toBe(false);
+    });
+
+    it("builds a closed date range from from/to", async () => {
+      mockCheckInRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.listCheckIns(
+        { id: "admin-1", role: "ADMIN" },
+        { from: "2026-10-01", to: "2026-10-31" } as any,
+      );
+
+      const range = mockCheckInRepo.findAndCount.mock.calls[0][0].where.checkInDate;
+      expect(range.type).toBe("between");
+      expect(range.value).toEqual(["2026-10-01", "2026-10-31"]);
+    });
+
+    it("supports a single-sided date bound", async () => {
+      mockCheckInRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.listCheckIns(
+        { id: "admin-1", role: "ADMIN" },
+        { from: "2026-10-01" } as any,
+      );
+      expect(
+        mockCheckInRepo.findAndCount.mock.calls[0][0].where.checkInDate.type,
+      ).toBe("moreThanOrEqual");
+
+      await service.listCheckIns(
+        { id: "admin-1", role: "ADMIN" },
+        { to: "2026-10-31" } as any,
+      );
+      expect(
+        mockCheckInRepo.findAndCount.mock.calls[1][0].where.checkInDate.type,
+      ).toBe("lessThanOrEqual");
+    });
+
+    it("forbids a non-ADMIN facility filter", async () => {
+      await expect(
+        service.listCheckIns(
+          { id: "nakes-1", role: "NAKES", facilityId: "faskes-1" },
+          { facilityId: "faskes-9" } as any,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockCheckInRepo.findAndCount).not.toHaveBeenCalled();
+    });
+
+    it("applies an ADMIN facility filter", async () => {
+      mockCheckInRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.listCheckIns(
+        { id: "admin-1", role: "ADMIN" },
+        { facilityId: "faskes-9" } as any,
+      );
+
+      const where = mockCheckInRepo.findAndCount.mock.calls[0][0].where;
+      expect(where.treatmentPlan).toEqual({ facilityId: "faskes-9" });
     });
   });
 });

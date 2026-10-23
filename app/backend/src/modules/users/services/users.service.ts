@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { ILike, In, Repository, type FindOptionsWhere } from 'typeorm';
 import { createHash } from 'node:crypto';
 import { AuthUser } from '../../../auth/entities/auth-user.entity.js';
 import { Facility } from '../../facilities/entities/facilities.entity.js';
@@ -387,16 +387,35 @@ export class UsersService {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
 
+    // Validate params before the empty-scope short-circuit.
+    if (query.facilityId && caller.role !== 'ADMIN') {
+      throw new ForbiddenException({
+        code: 'FORBIDDEN',
+        message: 'Only ADMIN may filter by facility',
+      });
+    }
+
     // A NAKES without a facility must not page through every facility.
     if (caller.role === 'NAKES' && !caller.facilityId) {
       return { items: [], total: 0, page, limit };
     }
 
+    const base: FindOptionsWhere<AuthUser> = {
+      ...(caller.role === 'NAKES' ? { facilityId: caller.facilityId! } : {}),
+      ...(query.facilityId ? { facilityId: query.facilityId } : {}),
+      ...(query.role?.length ? { role: In(query.role) } : {}),
+    };
+    const term = query.search?.trim();
+    const where: FindOptionsWhere<AuthUser>[] = term
+      ? [
+          { ...base, name: ILike(`%${term}%`) },
+          { ...base, username: ILike(`%${term}%`) },
+          { ...base, email: ILike(`%${term}%`) },
+        ]
+      : [base];
+
     const [users, total] = await this.userRepo.findAndCount({
-      where: {
-        ...(caller.role === 'NAKES' ? { facilityId: caller.facilityId! } : {}),
-        ...(query.role?.length ? { role: In(query.role) } : {}),
-      },
+      where,
       relations: { facility: true },
       // `id` is unique, so page boundaries stay stable across queries.
       order: { createdAt: 'DESC', id: 'DESC' },

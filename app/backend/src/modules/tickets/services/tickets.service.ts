@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { ILike, Repository, type FindOptionsWhere } from "typeorm";
 import { InterventionTicket } from "../entities/intervention-ticket.entity.js";
 import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
 import { PatientStatusHistory } from "../../patients/entities/patient-status-history.entity.js";
@@ -151,12 +151,26 @@ export class TicketsService {
       return { items: [], total: 0, page, limit };
     }
 
+    // Filters are ANDed with the facility scope, never ORed: a search term
+    // must not widen what this NAKES can see.
+    const base: FindOptionsWhere<InterventionTicket> = {
+      facilityId,
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.priority ? { priority: query.priority } : {}),
+    };
+    const term = query.search?.trim();
+    const where: FindOptionsWhere<InterventionTicket>[] = term
+      ? [
+          { ...base, treatmentPlan: { patientUser: { name: ILike(`%${term}%`) } } },
+          {
+            ...base,
+            treatmentPlan: { patientUser: { username: ILike(`%${term}%`) } },
+          },
+        ]
+      : [base];
+
     const [tickets, total] = await this.ticketRepo.findAndCount({
-      where: {
-        facilityId,
-        ...(query.status ? { status: query.status } : {}),
-        ...(query.priority ? { priority: query.priority } : {}),
-      },
+      where,
       relations: {
         treatmentPlan: {
           patientUser: true,

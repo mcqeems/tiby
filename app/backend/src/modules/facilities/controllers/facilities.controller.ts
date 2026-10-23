@@ -18,12 +18,12 @@ import type { AuthenticatedRequest } from "../../../common/types/auth-request.ty
 import {
   CreateFacilitySchema,
   UpdateFacilitySchema,
-  PaginationQuerySchema,
+  ListFacilitiesQuerySchema,
   type CreateFacilityDto,
   type UpdateFacilityDto,
   type FacilityItem,
   type FacilityListResponse,
-  type PaginationQuery,
+  type ListFacilitiesQuery,
   type UserRole,
 } from "@tiby/ts-shared";
 
@@ -50,7 +50,7 @@ export class FacilitiesController {
   @Get()
   @Roles(["ADMIN", "NAKES", "PMO", "PASIEN"])
   async listFacilities(
-    @Query({ schema: PaginationQuerySchema }) query: PaginationQuery,
+    @Query({ schema: ListFacilitiesQuerySchema }) query: ListFacilitiesQuery,
   ): Promise<FacilityListResponse> {
     return this.facilitiesService.listFacilities(query);
   }

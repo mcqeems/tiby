@@ -234,7 +234,7 @@ describe("TicketsService Unit Tests", () => {
       } as any);
 
       expect(mockTicketRepo.findAndCount).toHaveBeenCalledWith({
-        where: { facilityId: "faskes-1", status: "OPEN", priority: "HIGH" },
+        where: [{ facilityId: "faskes-1", status: "OPEN", priority: "HIGH" }],
         relations: { treatmentPlan: { patientUser: true } },
         order: { openedAt: "DESC", id: "DESC" },
         skip: 0,
@@ -249,6 +249,36 @@ describe("TicketsService Unit Tests", () => {
 
       expect(res).toEqual({ items: [], total: 0, page: 1, limit: 20 });
       expect(mockTicketRepo.findAndCount).not.toHaveBeenCalled();
+    });
+  });
+  describe("listTickets filtering", () => {
+    it("searches the joined patient name and keeps the facility scope", async () => {
+      mockUserRepo.findOneBy.mockResolvedValue({
+        id: "nakes-1",
+        facilityId: "faskes-1",
+      });
+      mockTicketRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.listTickets("nakes-1", { search: " budi " } as any);
+
+      const where = mockTicketRepo.findAndCount.mock.calls[0][0].where;
+      expect(where).toHaveLength(2);
+      expect(where[0].facilityId).toBe("faskes-1");
+      expect(where[0].treatmentPlan.patientUser.name.value).toBe("%budi%");
+      expect(where[1].treatmentPlan.patientUser.username.value).toBe("%budi%");
+    });
+
+    it("ignores a whitespace-only search", async () => {
+      mockUserRepo.findOneBy.mockResolvedValue({
+        id: "nakes-1",
+        facilityId: "faskes-1",
+      });
+      mockTicketRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.listTickets("nakes-1", { search: "   " } as any);
+
+      const where = mockTicketRepo.findAndCount.mock.calls[0][0].where;
+      expect(where).toEqual([{ facilityId: "faskes-1" }]);
     });
   });
 });

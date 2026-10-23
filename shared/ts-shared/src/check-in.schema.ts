@@ -73,6 +73,12 @@ export type CheckInVerdictResponse = z.infer<typeof CheckInVerdictResponseSchema
 
 export const ListCheckInsQuerySchema = PaginationQuerySchema.extend({
   treatmentPlanId: z.uuid().optional(),
+  medicationStatus: MedicationStatusSchema.optional(),
+  isDoseFulfilled: z.stringbool().optional(),
+  from: z.iso.date().optional(),
+  to: z.iso.date().optional(),
+  /** ADMIN only: restrict the cross-facility list to one facility. */
+  facilityId: z.uuid().optional(),
 });
 export type ListCheckInsQuery = z.infer<typeof ListCheckInsQuerySchema>;
 
