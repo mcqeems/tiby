@@ -1,16 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
+import { motion } from "framer-motion";
 import { educationApi, type EducationItem } from "@/lib/api/education";
 import PublicLoading from "@/components/ui/public-loading";
+import MascotAnimation from "@/components/mascot-animation";
 import {
   BookOpen,
   X,
-  ChevronRight,
+  ArrowRight,
   Pill,
   HeartPulse,
   ShieldAlert,
+  Clock,
 } from "lucide-react";
 
 export default function EducationView({
@@ -42,10 +44,10 @@ export default function EducationView({
     };
   }, []);
 
-  if (loading)
+  if (loading) {
     return <PublicLoading fullScreen message="Memuat materi edukasi..." />;
+  }
 
-  // Fungsi menentukan ikon & warna kategori
   const getCategoryStyle = (category: string) => {
     switch (category) {
       case "ADHERENCE":
@@ -53,6 +55,7 @@ export default function EducationView({
           icon: Pill,
           bg: "bg-tiby-teal-50",
           text: "text-tiby-teal-700",
+          border: "border-tiby-teal-200",
           label: "Kepatuhan Obat",
         };
       case "SIDE_EFFECTS":
@@ -60,6 +63,7 @@ export default function EducationView({
           icon: HeartPulse,
           bg: "bg-amber-50",
           text: "text-amber-700",
+          border: "border-amber-200",
           label: "Efek Samping",
         };
       default:
@@ -67,97 +71,118 @@ export default function EducationView({
           icon: ShieldAlert,
           bg: "bg-blue-50",
           text: "text-blue-700",
+          border: "border-blue-200",
           label: "Informasi Umum",
         };
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-24 md:pb-10">
-      {/* Header Edukasi (Dinamis berdasarkan role) */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="font-heading text-2xl font-semibold tracking-tight text-tiby-ink">
-            {role === "PMO" ? "Pusat Edukasi PMO" : "Edukasi Harian"}
-          </h1>
-          <p className="mt-1 text-sm text-tiby-muted">
-            {role === "PMO"
-              ? "Bacaan singkat untuk membantumu mendampingi pasien."
-              : "Bacaan singkat untuk menemanimu sembuh."}
-          </p>
-        </div>
-        <div className="relative w-16 h-16 shrink-0">
-          <Image
-            src="/mascot/thinking/thinking.webp"
-            alt="Pandu"
-            fill
-            className="object-contain"
-          />
-        </div>
-      </div>
+    <div className="w-full max-w-7xl mx-auto space-y-8 pb-24 md:pb-10">
+      {/* ─── 1. HERO SECTION (Full Width) ─── */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative w-full overflow-hidden rounded-3xl bg-gradient-to-br from-tiby-teal-600 to-tiby-teal-800 p-8 sm:p-12 text-white shadow-xl shadow-tiby-teal-600/20"
+      >
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
 
-      {/* Daftar Kartu Edukasi */}
-      <div className="grid gap-4">
-        {cards.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-3xl border border-gray-200">
-            <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <h3 className="font-heading text-lg font-bold text-tiby-ink">
-              Belum Ada Materi
-            </h3>
-            <p className="text-sm text-tiby-muted mt-1">
-              Saat ini belum ada materi edukasi yang tersedia untuk fase Anda.
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="space-y-3 text-center md:text-left flex-1">
+            <h1 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight">
+              {role === "PMO" ? "Pusat Edukasi PMO" : "Edukasi Harian"}
+            </h1>
+            <p className="text-tiby-teal-50/90 text-sm sm:text-base max-w-2xl mx-auto md:mx-0 leading-relaxed">
+              {role === "PMO"
+                ? "Tingkatkan pengetahuanmu untuk membimbing dan mendampingi pasien menuju kesembuhan total. Materi ini bersumber langsung dari Kemenkes dan WHO."
+                : "Bacaan singkat dan terpercaya untuk menemanimu sembuh. Yuk, luangkan waktu 5 menit untuk membaca artikel di bawah ini!"}
             </p>
           </div>
-        ) : (
-          cards.map((card) => {
+          <div className="shrink-0 flex items-center justify-center">
+            <MascotAnimation size={160} className="drop-shadow-2xl" />
+          </div>
+        </div>
+      </motion.div>
+
+      {/* ─── 2. GRID KARTU EDUKASI ─── */}
+      {cards.length === 0 ? (
+        <div className="text-center py-24 bg-white rounded-3xl border border-gray-200 w-full shadow-2xs">
+          <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <h3 className="font-heading text-lg font-bold text-tiby-ink">
+            Belum Ada Materi
+          </h3>
+          <p className="text-sm text-tiby-muted mt-1">
+            Saat ini belum ada materi edukasi yang tersedia.
+          </p>
+        </div>
+      ) : (
+        // Grid otomatis menyesuaikan. Jika hanya ada 3, ia akan melebar memenuhi layar.
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+          {cards.map((card, index) => {
             const style = getCategoryStyle(card.category);
             const Icon = style.icon;
+
             return (
-              <button
+              <motion.button
                 key={card.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1, duration: 0.3 }}
                 onClick={() => setSelectedCard(card)}
-                className="text-left bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs hover:border-tiby-teal-300 hover:shadow-sm transition-all group flex items-start gap-4"
+                className="group text-left bg-white rounded-3xl border border-gray-200 p-6 sm:p-8 shadow-2xs hover:shadow-lg hover:border-tiby-teal-300 hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
               >
-                <div
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${style.bg} ${style.text}`}
-                >
-                  <Icon className="w-6 h-6" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span
-                      className={`text-[10px] font-bold uppercase tracking-wider ${style.text}`}
-                    >
-                      {style.label}
-                    </span>
-                    <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-sm">
-                      {card.phase}
-                    </span>
+                {/* Header Kartu */}
+                <div className="flex items-start justify-between mb-6">
+                  <div
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${style.bg} ${style.text} transition-transform group-hover:scale-110`}
+                  >
+                    <Icon className="w-7 h-7" />
                   </div>
-                  <h3 className="font-heading font-bold text-base text-tiby-ink group-hover:text-tiby-teal-700 transition line-clamp-2">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-lg">
+                    <Clock className="w-3.5 h-3.5" />
+                    {card.phase}
+                  </div>
+                </div>
+
+                {/* Konten Kartu */}
+                <div className="flex-1 space-y-3">
+                  <span
+                    className={`text-[10px] font-bold uppercase tracking-wider ${style.text}`}
+                  >
+                    {style.label}
+                  </span>
+                  <h3 className="font-heading font-bold text-xl text-tiby-ink group-hover:text-tiby-teal-700 transition line-clamp-3 leading-snug">
                     {card.title}
                   </h3>
-                  <p className="text-sm text-tiby-muted mt-1 line-clamp-2 leading-relaxed">
+                  <p className="text-sm sm:text-base text-tiby-muted line-clamp-3 leading-relaxed">
                     {card.summary}
                   </p>
                 </div>
-                <div className="mt-4 text-gray-300 group-hover:text-tiby-teal-600 transition">
-                  <ChevronRight className="w-5 h-5" />
-                </div>
-              </button>
-            );
-          })
-        )}
-      </div>
 
-      {/* ─── MODAL BACA ARTIKEL ─── */}
+                {/* Footer Kartu */}
+                <div className="mt-8 pt-5 border-t border-gray-100 flex items-center justify-between text-tiby-teal-600 font-semibold text-sm">
+                  <span>Baca Artikel</span>
+                  <div className="w-8 h-8 rounded-full bg-tiby-teal-50 flex items-center justify-center group-hover:bg-tiby-teal-600 group-hover:text-white transition-colors">
+                    <ArrowRight className="w-4 h-4" />
+                  </div>
+                </div>
+              </motion.button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ─── 3. MODAL BACA ARTIKEL ─── */}
       {selectedCard && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-3xl bg-white shadow-xl overflow-hidden animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 bg-gray-50/50 shrink-0">
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-tiby-teal-600" />
-                <h3 className="font-heading font-bold text-tiby-ink truncate pr-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-3xl bg-white shadow-2xl overflow-hidden animate-in zoom-in-95">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5 bg-gray-50/80 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-tiby-teal-100 flex items-center justify-center">
+                  <BookOpen className="w-4.5 h-4.5 text-tiby-teal-700" />
+                </div>
+                <h3 className="font-heading font-bold text-tiby-ink truncate pr-4 text-lg sm:text-xl">
                   {selectedCard.title}
                 </h3>
               </div>
@@ -169,9 +194,9 @@ export default function EducationView({
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto">
-              <div className="prose prose-sm prose-teal max-w-none">
-                {/* Render Markdown sederhana */}
+            {/* Modal Body (Scrollable) */}
+            <div className="p-6 sm:p-10 overflow-y-auto custom-scrollbar bg-white">
+              <div className="prose prose-sm sm:prose-base prose-teal max-w-none">
                 {selectedCard.contentMarkdown
                   .split("\n")
                   .map((paragraph, idx) => {
@@ -179,19 +204,18 @@ export default function EducationView({
                       return (
                         <h4
                           key={idx}
-                          className="font-heading font-bold text-lg text-tiby-ink mt-4 mb-2"
+                          className="font-heading font-bold text-xl text-tiby-ink mt-8 mb-4"
                         >
                           {paragraph.replace("###", "").trim()}
                         </h4>
                       );
                     }
                     if (paragraph.startsWith("**")) {
-                      // Handle bold text sederhana
                       const text = paragraph.replace(/\*\*/g, "");
                       return (
                         <p
                           key={idx}
-                          className="font-bold text-sm text-tiby-ink mt-3 mb-1"
+                          className="font-bold text-base text-tiby-ink mt-6 mb-2"
                         >
                           {text}
                         </p>
@@ -201,7 +225,7 @@ export default function EducationView({
                       return (
                         <li
                           key={idx}
-                          className="text-sm text-tiby-muted ml-4 mb-1"
+                          className="text-base text-tiby-muted ml-4 mb-3 leading-relaxed"
                         >
                           {paragraph.replace("-", "").trim()}
                         </li>
@@ -211,7 +235,7 @@ export default function EducationView({
                     return (
                       <p
                         key={idx}
-                        className="text-sm text-tiby-muted leading-relaxed mb-3"
+                        className="text-base text-tiby-muted leading-relaxed mb-5"
                       >
                         {paragraph}
                       </p>
@@ -220,10 +244,11 @@ export default function EducationView({
               </div>
             </div>
 
-            <div className="p-4 border-t border-gray-100 bg-gray-50 shrink-0">
+            {/* Modal Footer */}
+            <div className="p-4 sm:p-6 border-t border-gray-100 bg-gray-50 shrink-0">
               <button
                 onClick={() => setSelectedCard(null)}
-                className="w-full h-12 bg-tiby-teal-600 text-white rounded-xl font-semibold text-sm hover:bg-tiby-teal-700 transition"
+                className="w-full h-12 bg-tiby-teal-600 text-white rounded-xl font-semibold text-sm hover:bg-tiby-teal-700 transition shadow-sm"
               >
                 Selesai Membaca
               </button>
