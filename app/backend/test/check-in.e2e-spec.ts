@@ -11,7 +11,6 @@ import { TreatmentPlan } from "../src/modules/patients/entities/treatment-plan.e
 import { PmoAssignment } from "../src/modules/patients/entities/pmo-assignment.entity.js";
 import { DailyCheckIn } from "../src/modules/check-ins/entities/daily-check-in.entity.js";
 import { InterventionTicket } from "../src/modules/tickets/entities/intervention-ticket.entity.js";
-import { DailyCheckIn } from "../src/modules/check-ins/entities/daily-check-in.entity.js";
 
 describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
   let app: INestApplication;
@@ -40,6 +39,13 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
   let patient2Password = "P3PatientPass123!";
   let patient2Cookie: string[];
   let plan2Id: string;
+
+  // Patient 4 (voice transcript -> backend extraction, isolated from the red-flag fixture)
+  let patient4Id: string;
+  let patient4Username = `pasien_voice_${timestamp}`;
+  let patient4Password = "P3PatientPass123!";
+  let patient4Cookie: string[];
+  let plan4Id: string;
 
   // Cross-facility visibility fixtures
   let facilityBId: string;
@@ -303,6 +309,50 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
       }),
     );
 
+    // Patient 4: voice check-in whose day must stay untouched until its own
+    // test, so the red-flag fixture (patient 2) can still lock a full dose.
+    const p4Auth = await auth.api.createUser({
+      body: {
+        name: "Dewi Lestari",
+        email: `${patient4Username}@users.tiby.internal`,
+        password: patient4Password,
+        role: "PASIEN",
+        data: {
+          username: patient4Username,
+          displayUsername: patient4Username,
+          facility_id: facilityId,
+          must_confirm_consent: false,
+        },
+      },
+    });
+    patient4Id = p4Auth.user.id;
+
+    const plan4 = await planRepo.save(
+      planRepo.create({
+        patientUserId: patient4Id,
+        facilityId,
+        registeredByNakesId: nakesId,
+        phase: "INTENSIF",
+        patientState: "AKTIF",
+        regimenCode: "FDC-4",
+        dailyPillQuota: 4,
+        reminderTimeLocal: "08:00",
+        timezone: "Asia/Jakarta",
+        startDate: "2026-10-16",
+        targetEndDate: "2027-04-16",
+        currentStreak: 3,
+        consecutiveSilenceDays: 0,
+        riskScore: 0,
+      }),
+    );
+    plan4Id = plan4.id;
+
+    const p4Login = await request(app.getHttpServer())
+      .post("/api/auth/sign-in")
+      .send({ username: patient4Username, password: patient4Password });
+    expect(p4Login.status).toBe(200);
+    patient4Cookie = p4Login.get("Set-Cookie")!;
+
     // ADMIN (super admin, no facility)
     const adminUsername = `admin_p3_${timestamp}`;
     const adminAuth = await auth.api.createUser({
@@ -339,6 +389,7 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
     if (patient1Id) await userRepo.delete({ id: patient1Id });
     if (pmo1Id) await userRepo.delete({ id: pmo1Id });
     if (patient2Id) await userRepo.delete({ id: patient2Id });
+    if (patient4Id) await userRepo.delete({ id: patient4Id });
     if (nakesId) await userRepo.delete({ id: nakesId });
     if (patient3Id) await userRepo.delete({ id: patient3Id });
     if (nakesBId) await userRepo.delete({ id: nakesBId });
@@ -434,16 +485,16 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
   it("4b. Voice submit accepts a confirmed transcript without facts (backend extracts)", async () => {
     const res = await request(app.getHttpServer())
       .post("/api/check-ins/audio-extract")
-      .set("Cookie", patient2Cookie)
+      .set("Cookie", patient4Cookie)
       .attach("audio", Buffer.from("mock audio bytes for Pandu STT"), "voice_checkin.webm")
-      .field("treatmentPlanId", plan2Id);
+      .field("treatmentPlanId", plan4Id);
 
     expect(res.status).toBe(201);
     expect(Object.keys(res.body)).toEqual(["transcript"]);
 
     const submit = await request(app.getHttpServer())
       .post("/api/check-ins")
-      .set("Cookie", patient2Cookie)
+      .set("Cookie", patient4Cookie)
       .send({
         inputMode: "VOICE_STT",
         confirmedFacts: { transcript: res.body.transcript },
@@ -455,7 +506,7 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
 
     const stored = await dataSource
       .getRepository(DailyCheckIn)
-      .findOneBy({ treatmentPlanId: plan2Id });
+      .findOneBy({ treatmentPlanId: plan4Id });
     expect(stored?.rawTranscriptEncrypted).toBe(res.body.transcript);
   });
 

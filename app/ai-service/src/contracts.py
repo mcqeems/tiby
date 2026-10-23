@@ -94,13 +94,6 @@ class TranscriptResponse(BaseModel):
     transcript: str = Field(min_length=1)
 
 
-class AudioExtractionResponse(TranscriptResponse):
-    """Backend-compatible extraction plus transcription provider metadata."""
-
-    transcription_provider: str = Field(min_length=1)
-    transcription_model: str = Field(min_length=1)
-
-
 class OcrOnboardingDraft(BaseModel):
     """Unconfirmed fields read from an onboarding card; never clinical advice.
 

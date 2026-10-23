@@ -1,7 +1,5 @@
 """Application orchestration for check-in extraction."""
 
-from pydantic import ValidationError
-
 from contracts import CheckInRequest, CheckInResponse
 from providers.base import CheckInExtractor, Transcriber
 
@@ -15,4 +13,4 @@ async def transcribe_audio(transcriber: Transcriber, content: bytes, filename: s
     return await transcriber.transcribe(content, filename)
 
 
-__all__ = ["ValidationError", "extract_check_in", "transcribe_audio"]
+__all__ = ["extract_check_in", "transcribe_audio"]

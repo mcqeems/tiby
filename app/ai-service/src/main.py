@@ -14,7 +14,6 @@ from typing import Any
 from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import ValidationError
 
 from contracts import (
     AiAudioExtractionResponse,
@@ -26,8 +25,8 @@ from contracts import (
 )
 from errors import api_error
 from extraction.mapper import to_backend_extraction
-from extraction.service import transcribe_audio
 from extraction.service import extract_check_in as run_extraction
+from extraction.service import transcribe_audio
 from guidance.retrieval import SQLiteRetriever
 from guidance.service import GroundedAnswerer, pack_evidence
 from onboarding_ocr import router as onboarding_ocr_router

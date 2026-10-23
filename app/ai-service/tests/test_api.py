@@ -6,7 +6,7 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from contracts import CheckInRequest, CheckInResponse, GuidanceResponse
+from contracts import CheckInRequest, GuidanceResponse
 from guidance.retrieval import Citation, Evidence
 from guidance.service import GroundedAnswerer
 from main import (
