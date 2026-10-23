@@ -1,10 +1,11 @@
 import EducationView from "@/app/pasien/edukasi/components/education-view";
+import type { Metadata } from "next";
 
+export const metadata: Metadata = {
+  title: "Edukasi Harian",
+  description:
+    "Baca materi edukasi kesehatan dan tips pengobatan TBC dari Kemenkes dan WHO.",
+};
 export default function PmoEdukasiPage() {
-  return (
-    <div className="max-w-3xl mx-auto pb-20">
-      {/* Panggil komponen yang sama, tapi oper role="PMO" */}
-      <EducationView role="PMO" />
-    </div>
-  );
+  return <EducationView role="PMO" />;
 }

@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { pmoApi } from "@/lib/api/pmo";
 import PublicLoading from "@/components/ui/public-loading";
-// ✅ Path diubah karena sekarang berada di folder yang sama
 import PmoFollowUpModal from "./pmo-follow-up-modal";
 import {
   User,
@@ -12,6 +11,9 @@ import {
   Flame,
   ClipboardCheck,
   MessageSquarePlus,
+  AlertCircle,
+  CalendarCheck,
+  ShieldCheck,
 } from "lucide-react";
 
 interface PmoPatient {
@@ -27,7 +29,6 @@ interface PmoPatient {
 export default function PmoPatientsList() {
   const [patients, setPatients] = useState<PmoPatient[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [selectedPatient, setSelectedPatient] = useState<PmoPatient | null>(
     null,
   );
@@ -59,85 +60,135 @@ export default function PmoPatientsList() {
     };
   }, [fetchPatients]);
 
-  if (loading)
+  if (loading) {
     return (
       <PublicLoading fullScreen message="Memuat daftar pasien binaan..." />
     );
+  }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-20">
-      <div>
-        <h1 className="text-2xl font-heading font-bold text-tiby-ink">
-          Pasien Binaan
-        </h1>
-        <p className="text-sm text-tiby-muted">
-          Pantau dan dampingi pasien yang menjadi tanggung jawab Anda.
-        </p>
+    <div className="max-w-6xl mx-auto space-y-6 pb-20">
+      {/* HEADER SECTION */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-heading font-bold text-tiby-ink">
+            Pasien Binaan
+          </h1>
+          <p className="text-sm text-tiby-muted mt-1">
+            Pantau dan dampingi pasien yang menjadi tanggung jawab Anda.
+          </p>
+        </div>
+        <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-2xs">
+          <User className="w-4 h-4 text-tiby-teal-600" />
+          <span className="text-sm font-semibold text-tiby-ink">
+            {patients.length} Total Pasien
+          </span>
+        </div>
       </div>
 
+      {/* KONTEN UTAMA */}
       {patients.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-3xl border border-gray-200">
-          <User className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-tiby-muted">
-            Belum ada pasien yang ditugaskan kepada Anda.
+        <div className="flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-dashed border-gray-300">
+          <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-4">
+            <User className="w-8 h-8 text-gray-300" />
+          </div>
+          <h3 className="text-lg font-heading font-bold text-tiby-ink mb-1">
+            Belum Ada Pasien
+          </h3>
+          <p className="text-sm text-tiby-muted text-center max-w-sm">
+            Saat ini tidak ada pasien yang ditugaskan kepada Anda. Hubungi
+            Faskes jika Anda merasa ini sebuah kesalahan.
           </p>
         </div>
       ) : (
-        <div className="grid gap-4">
-          {patients.map((patient) => (
-            <div
-              key={patient.treatmentPlanId}
-              className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs hover:border-tiby-teal-200 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-heading font-bold text-lg text-tiby-ink">
-                    {patient.patientName}
-                  </h3>
-                  <span className="px-2 py-0.5 rounded-md bg-tiby-teal-50 text-tiby-teal-700 text-[10px] font-bold border border-tiby-teal-100">
-                    {patient.phase}
-                  </span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {patients.map((patient) => {
+            // Logika pewarnaan status
+            const isSilence = patient.consecutiveSilenceDays > 0;
+            const isPending = !patient.isLockedToday && !patient.todayVerdict;
+
+            let statusColor =
+              "bg-emerald-50 text-emerald-700 border-emerald-200";
+            let statusText = "Terkendali";
+            let StatusIcon = ShieldCheck;
+
+            if (isSilence) {
+              statusColor = "bg-red-50 text-red-700 border-red-200";
+              statusText = `Sunyi ${patient.consecutiveSilenceDays} Hari`;
+              StatusIcon = AlertCircle;
+            } else if (isPending) {
+              statusColor = "bg-amber-50 text-amber-700 border-amber-200";
+              statusText = "Belum Check-in";
+              StatusIcon = Activity;
+            }
+
+            return (
+              <div
+                key={patient.treatmentPlanId}
+                className="group bg-white rounded-3xl border border-gray-200 p-5 shadow-2xs hover:shadow-md hover:border-tiby-teal-300 transition-all duration-300 flex flex-col justify-between"
+              >
+                <div>
+                  {/* Card Header: Avatar & Info */}
+                  <div className="flex items-start justify-between gap-3 mb-5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-tiby-teal-50 border border-tiby-teal-100 flex items-center justify-center text-tiby-teal-700 font-heading font-bold text-lg shadow-sm">
+                        {patient.patientName.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <h3 className="font-heading font-bold text-base text-tiby-ink line-clamp-1 group-hover:text-tiby-teal-700 transition">
+                          {patient.patientName}
+                        </h3>
+                        <span className="inline-block mt-1 px-2 py-0.5 rounded-md bg-gray-100 text-[10px] font-bold uppercase tracking-wider text-gray-600">
+                          {patient.phase}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Status & Streak Grid */}
+                  <div className="grid grid-cols-2 gap-3 mb-5">
+                    <div className="bg-gray-50/80 rounded-2xl p-3 border border-gray-100">
+                      <p className="text-[10px] font-bold text-tiby-muted uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <Flame className="w-3 h-3 text-amber-500" /> Streak
+                      </p>
+                      <p className="font-heading font-bold text-tiby-ink">
+                        {patient.currentStreak}{" "}
+                        <span className="text-xs font-normal text-tiby-muted">
+                          Hari
+                        </span>
+                      </p>
+                    </div>
+
+                    <div className={`rounded-2xl p-3 border ${statusColor}`}>
+                      <p className="text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1 opacity-80">
+                        <StatusIcon className="w-3 h-3" /> Status
+                      </p>
+                      <p className="font-bold text-xs truncate">{statusText}</p>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-xs text-tiby-muted">
-                  <div className="flex items-center gap-1">
-                    <Flame className="w-4 h-4 text-amber-500" />
-                    <span>{patient.currentStreak} Hari Streak</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Activity className="w-4 h-4 text-tiby-teal-600" />
-                    <span>
-                      Status:{" "}
-                      {patient.todayVerdict
-                        ? patient.todayVerdict
-                        : patient.isLockedToday
-                          ? "Sudah Check-in"
-                          : "Belum Check-in"}
-                    </span>
-                  </div>
+                {/* Action Buttons */}
+                <div className="space-y-2 mt-auto pt-4 border-t border-gray-100">
+                  <Link
+                    href={`/pmo/check-in?patientId=${patient.treatmentPlanId}&patientName=${encodeURIComponent(patient.patientName)}`}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-tiby-teal-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-tiby-teal-700 transition"
+                  >
+                    <ClipboardCheck className="w-4 h-4" />
+                    Wakili Check-in
+                  </Link>
+
+                  <button
+                    onClick={() => setSelectedPatient(patient)}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-tiby-ink shadow-sm hover:bg-gray-50 transition"
+                  >
+                    <MessageSquarePlus className="w-4 h-4 text-tiby-teal-600" />
+                    Catat Tindak Lanjut
+                  </button>
                 </div>
               </div>
-
-              {/* Kumpulan Tombol Aksi PMO */}
-              <div className="flex flex-wrap items-center gap-2 shrink-0">
-                <button
-                  onClick={() => setSelectedPatient(patient)}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-tiby-ink shadow-sm hover:bg-gray-50 transition"
-                >
-                  <MessageSquarePlus className="w-4 h-4 text-tiby-teal-600" />
-                  Catat Tindak Lanjut
-                </button>
-
-                <Link
-                  href={`/pmo/check-in?patientId=${patient.treatmentPlanId}&patientName=${encodeURIComponent(patient.patientName)}`}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-tiby-teal-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-tiby-teal-700 transition"
-                >
-                  <ClipboardCheck className="w-4 h-4" />
-                  Wakili Check-in
-                </Link>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
