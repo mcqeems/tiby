@@ -141,10 +141,11 @@ export default function RiwayatView() {
               new Date(b.submittedAt).getTime(),
           )[0].submittedAt,
         )
-      : undefined;
+      : getLocalDateStr(new Date().toISOString());
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-24 md:pb-10">
+    <div className="max-w-6xl mx-auto space-y-6 pb-24 md:pb-10">
+      {/* Header Full Width */}
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight text-tiby-ink">
           Riwayat Terapi
@@ -154,153 +155,146 @@ export default function RiwayatView() {
         </p>
       </div>
 
-      <div className="bg-tiby-teal-600 rounded-3xl p-6 text-white shadow-lg shadow-tiby-teal-600/20 relative overflow-hidden">
-        <div className="relative z-10 flex items-center justify-between">
-          <div>
-            <p className="text-tiby-teal-100 text-sm font-medium mb-1">
-              Total Check-in Beruntun
-            </p>
-            <div className="flex items-end gap-2">
-              <span className="text-4xl font-heading font-bold">
-                {currentStreak}
-              </span>
-              <span className="text-lg font-medium mb-1">Hari</span>
+      {/* Grid Layout: Kiri (Streak + Kalender), Kanan (Timeline) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* Kolom Kiri (Lebar 2/3) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Kartu Streak */}
+          <div className="bg-tiby-teal-600 rounded-3xl p-6 text-white shadow-lg shadow-tiby-teal-600/20 relative overflow-hidden">
+            <div className="relative z-10 flex items-center justify-between">
+              <div>
+                <p className="text-tiby-teal-100 text-sm font-medium mb-1">
+                  Total Check-in Beruntun
+                </p>
+                <div className="flex items-end gap-2">
+                  <span className="text-4xl font-heading font-bold">
+                    {currentStreak}
+                  </span>
+                  <span className="text-lg font-medium mb-1">Hari</span>
+                </div>
+                <p className="text-xs text-tiby-teal-100 mt-2 max-w-50">
+                  {currentStreak > 0
+                    ? "Api semangatmu menyala! Pertahankan konsistensimu."
+                    : "Ayo lakukan check-in hari ini untuk menyalakan apimu kembali."}
+                </p>
+              </div>
+
+              <div className="relative w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm shrink-0">
+                {currentStreak > 0 && (
+                  <motion.div
+                    className="absolute inset-0 bg-orange-500/40 rounded-full blur-xl"
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0.8, 0.4] }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+                )}
+                <motion.div
+                  animate={
+                    currentStreak > 0
+                      ? {
+                          scale: [1, 1.15, 0.95, 1.05, 1],
+                          rotate: [0, -5, 5, -2, 0],
+                          y: [0, -2, 2, 0],
+                        }
+                      : {}
+                  }
+                  transition={{
+                    duration: 1.2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <Flame
+                    className={`w-10 h-10 transition-colors duration-500 ${
+                      currentStreak > 0
+                        ? "text-orange-400 fill-orange-400 drop-shadow-[0_0_12px_rgba(249,115,22,0.8)]"
+                        : "text-white/40 fill-white/10"
+                    }`}
+                  />
+                </motion.div>
+              </div>
             </div>
-            <p className="text-xs text-tiby-teal-100 mt-2 max-w-[200px]">
-              {currentStreak > 0
-                ? "Api semangatmu menyala! Pertahankan konsistensimu."
-                : "Ayo lakukan check-in hari ini untuk menyalakan apimu kembali."}
-            </p>
           </div>
 
-          <div className="relative w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-            {currentStreak > 0 && (
-              <motion.div
-                className="absolute inset-0 bg-orange-500/40 rounded-full blur-xl"
-                animate={{
-                  scale: [1, 1.3, 1],
-                  opacity: [0.4, 0.8, 0.4],
-                }}
-                transition={{
-                  duration: 1.5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              />
-            )}
+          {/* Kalender */}
+          <TreatmentCalendar checkIns={history} startDate={startDate} />
+        </div>
 
-            <motion.div
-              animate={
-                currentStreak > 0
-                  ? {
-                      scale: [1, 1.15, 0.95, 1.05, 1],
-                      rotate: [0, -5, 5, -2, 0],
-                      y: [0, -2, 2, 0],
-                    }
-                  : {}
-              }
-              transition={{
-                duration: 1.2,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            >
-              <Flame
-                className={`w-10 h-10 transition-colors duration-500 ${
-                  currentStreak > 0
-                    ? "text-orange-400 fill-orange-400 drop-shadow-[0_0_12px_rgba(249,115,22,0.8)]"
-                    : "text-white/40 fill-white/10"
-                }`}
-              />
-            </motion.div>
+        {/* Kolom Kanan (Lebar 1/3) */}
+        <div className="lg:col-span-1 space-y-4">
+          <h2 className="font-heading font-bold text-lg text-tiby-ink">
+            Detail Laporan
+          </h2>
+
+          <div className="max-h-200 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+            {history.length === 0 ? (
+              <div className="text-center py-10 bg-white rounded-2xl border border-gray-200">
+                <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm text-tiby-muted">Belum ada riwayat.</p>
+              </div>
+            ) : (
+              history.map((item) => {
+                const style = getVerdictStyle(item.verdict);
+                const Icon = style.icon;
+                const date = new Date(item.submittedAt);
+
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-white rounded-2xl border border-gray-200 p-4 shadow-2xs"
+                  >
+                    <div className="flex flex-col gap-2 mb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-tiby-ink font-semibold text-sm">
+                          <CalendarDays className="w-3.5 h-3.5 text-tiby-muted" />
+                          {date.toLocaleDateString("id-ID", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </div>
+                        <div
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${style.bg} ${style.text} ${style.border}`}
+                        >
+                          <Icon className="w-3 h-3" /> {style.label}
+                        </div>
+                      </div>
+                      <span className="text-[11px] text-tiby-muted bg-gray-50 w-fit px-1.5 py-0.5 rounded">
+                        {date.toLocaleTimeString("id-ID", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}{" "}
+                        WIB
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2 border border-gray-100">
+                        <Pill className="w-3.5 h-3.5 text-tiby-teal-700 shrink-0" />
+                        <p className="text-xs font-medium text-tiby-ink truncate">
+                          {item.medicationStatus === "SUDAH_MINUM"
+                            ? `${item.pillsTakenCount} Butir (Sudah)`
+                            : "Belum Minum"}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2 border border-gray-100">
+                        <Activity className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                        <p className="text-xs font-medium text-tiby-ink truncate">
+                          Metode:{" "}
+                          {item.inputMode === "VOICE_STT" ? "Suara" : "Manual"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
-      </div>
-
-      <TreatmentCalendar checkIns={history} startDate={startDate} />
-
-      <div className="space-y-4">
-        <h2 className="font-heading font-bold text-lg text-tiby-ink pt-2">
-          Detail Laporan
-        </h2>
-
-        {history.length === 0 ? (
-          <div className="text-center py-10 bg-white rounded-2xl border border-gray-200">
-            <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm text-tiby-muted">
-              Belum ada riwayat check-in.
-            </p>
-          </div>
-        ) : (
-          history.map((item) => {
-            const style = getVerdictStyle(item.verdict);
-            const Icon = style.icon;
-            const date = new Date(item.submittedAt);
-
-            return (
-              <div
-                key={item.id}
-                className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                  <div className="flex items-center gap-2 text-tiby-ink font-semibold">
-                    <CalendarDays className="w-4 h-4 text-tiby-muted" />
-                    {date.toLocaleDateString("id-ID", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
-                    <span className="text-xs font-normal text-tiby-muted bg-gray-100 px-2 py-0.5 rounded-md">
-                      {date.toLocaleTimeString("id-ID", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
-                  <div
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${style.bg} ${style.text} ${style.border}`}
-                  >
-                    <Icon className="w-3.5 h-3.5" /> {style.label}
-                  </div>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3 border border-gray-100">
-                    <div className="w-8 h-8 rounded-lg bg-tiby-teal-100 flex items-center justify-center shrink-0">
-                      <Pill className="w-4 h-4 text-tiby-teal-700" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-tiby-muted uppercase font-bold tracking-wider">
-                        Status Obat
-                      </p>
-                      <p className="text-sm font-semibold text-tiby-ink">
-                        {item.medicationStatus === "SUDAH_MINUM"
-                          ? `${item.pillsTakenCount} Butir (Sudah)`
-                          : "Belum Minum"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3 border border-gray-100">
-                    <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
-                      <Activity className="w-4 h-4 text-amber-700" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] text-tiby-muted uppercase font-bold tracking-wider">
-                        Metode Lapor
-                      </p>
-                      <p className="text-sm font-semibold text-tiby-ink truncate">
-                        {item.inputMode === "VOICE_STT"
-                          ? "Suara (Pandu)"
-                          : "Tombol Manual"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
       </div>
     </div>
   );

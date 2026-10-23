@@ -17,7 +17,7 @@ export default function CheckInReview({ transcript, onSubmit }: CheckInReviewPro
       <div className="flex flex-col items-center space-y-2">
         <div className="w-24 h-24 relative">
           <Image
-            src="/mascot/thinking/thinking.webp"
+            src="/mascot/thinking/thinking-stroke.png"
             alt="Pandu berpikir"
             fill
             className="object-contain"
