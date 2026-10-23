@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { createHash } from 'node:crypto';
 import { AuthUser } from '../../../auth/entities/auth-user.entity.js';
 import { Facility } from '../../facilities/entities/facilities.entity.js';
@@ -16,6 +16,8 @@ import type {
   ChangeOwnPasswordDto,
   ResetUserPasswordDto,
   UpdateUserDto,
+  ListUsersQuery,
+  UserListResponse,
   UserSummary,
 } from '@tiby/ts-shared';
 
@@ -381,25 +383,41 @@ export class UsersService {
     id: string;
     role: string;
     facilityId?: string | null;
-  }): Promise<UserSummary[]> {
-    const users = await this.userRepo.find({
-      where:
-        caller.role === 'NAKES' && caller.facilityId
-          ? { facilityId: caller.facilityId }
-          : {},
+  }, query: ListUsersQuery): Promise<UserListResponse> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+
+    // A NAKES without a facility must not page through every facility.
+    if (caller.role === 'NAKES' && !caller.facilityId) {
+      return { items: [], total: 0, page, limit };
+    }
+
+    const [users, total] = await this.userRepo.findAndCount({
+      where: {
+        ...(caller.role === 'NAKES' ? { facilityId: caller.facilityId! } : {}),
+        ...(query.role?.length ? { role: In(query.role) } : {}),
+      },
       relations: { facility: true },
-      order: { id: 'ASC' },
+      // `id` is unique, so page boundaries stay stable across queries.
+      order: { createdAt: 'DESC', id: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
 
-    return users.map((user) => ({
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      facilityId: user.facilityId,
-      facility: user.facility?.name ?? null,
-    }));
+    return {
+      items: users.map((user) => ({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        facilityId: user.facilityId,
+        facility: user.facility?.name ?? null,
+      })),
+      total,
+      page,
+      limit,
+    };
   }
 
   async getMe(userId: string): Promise<UserSummary> {

@@ -220,6 +220,35 @@ describe("PatientsService Unit Tests", () => {
       expect(clause).toContain("search_pmo.active = true");
       expect(params).toEqual({ search: "%sri%" });
     });
+
+    it("returns an empty page when the nakes has no facility", async () => {
+      mockUserRepo.findOneBy.mockResolvedValue({
+        id: "nakes-1",
+        facilityId: null,
+      });
+
+      const res = await service.listPatients("nakes-1", {} as any);
+
+      expect(res).toEqual({ items: [], total: 0, page: 1, limit: 20 });
+      expect(mockPlanRepo.createQueryBuilder).not.toHaveBeenCalled();
+    });
+
+    it("filters by a single treatment plan", async () => {
+      mockUserRepo.findOneBy.mockResolvedValue({
+        id: "nakes-1",
+        facilityId: "faskes-1",
+      });
+      const qb = mockQueryBuilder([basePlan]);
+      mockPmoRepo.find.mockResolvedValue([]);
+
+      await service.listPatients("nakes-1", {
+        treatmentPlanId: "plan-1",
+      } as any);
+
+      expect(qb.andWhere).toHaveBeenCalledWith("plan.id = :treatmentPlanId", {
+        treatmentPlanId: "plan-1",
+      });
+    });
   });
 
   describe("getPatientHistory", () => {

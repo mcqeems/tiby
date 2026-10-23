@@ -236,21 +236,19 @@ describe("TicketsService Unit Tests", () => {
       expect(mockTicketRepo.findAndCount).toHaveBeenCalledWith({
         where: { facilityId: "faskes-1", status: "OPEN", priority: "HIGH" },
         relations: { treatmentPlan: { patientUser: true } },
-        order: { openedAt: "DESC" },
+        order: { openedAt: "DESC", id: "DESC" },
         skip: 0,
         take: 20,
       });
     });
 
-    it("omits the facility filter when the nakes has no facility", async () => {
+    it("returns an empty page when the nakes has no facility", async () => {
       mockUserRepo.findOneBy.mockResolvedValue({ id: "nakes-1", facilityId: null });
-      mockTicketRepo.findAndCount.mockResolvedValue([[], 0]);
 
-      await service.listTickets("nakes-1", {} as any);
+      const res = await service.listTickets("nakes-1", {} as any);
 
-      expect(mockTicketRepo.findAndCount).toHaveBeenCalledWith(
-        expect.objectContaining({ where: {} }),
-      );
+      expect(res).toEqual({ items: [], total: 0, page: 1, limit: 20 });
+      expect(mockTicketRepo.findAndCount).not.toHaveBeenCalled();
     });
   });
 });

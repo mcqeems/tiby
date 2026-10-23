@@ -61,7 +61,8 @@ export class PatientsService {
 
     const [records, total] = await this.historyRepo.findAndCount({
       where: { treatmentPlanId },
-      order: { createdAt: 'DESC' },
+      // `id` is the tie-break: offset pagination is only stable with a total order.
+      order: { createdAt: 'DESC', id: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
     });
@@ -94,15 +95,25 @@ export class PatientsService {
   ): Promise<RiskSortedPatientList> {
     const nakes = await this.userRepo.findOneBy({ id: nakesUserId });
     const facilityId = nakes?.facilityId;
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+
+    // A NAKES without a facility must not page through every facility.
+    if (!facilityId) {
+      return { items: [], total: 0, page, limit };
+    }
 
     // Query Builder is required here: the PMO-name search below is an EXISTS
     // correlated subquery, which the Repository API cannot express.
     const qb = this.planRepo
       .createQueryBuilder('plan')
-      .leftJoinAndSelect('plan.patientUser', 'patient');
+      .leftJoinAndSelect('plan.patientUser', 'patient')
+      .andWhere('plan.facilityId = :facilityId', { facilityId });
 
-    if (facilityId) {
-      qb.andWhere('plan.facilityId = :facilityId', { facilityId });
+    if (query.treatmentPlanId) {
+      qb.andWhere('plan.id = :treatmentPlanId', {
+        treatmentPlanId: query.treatmentPlanId,
+      });
     }
 
     if (query.state) {
@@ -132,10 +143,9 @@ export class PatientsService {
 
     qb.orderBy('plan.riskScore', 'DESC')
       .addOrderBy('plan.consecutiveSilenceDays', 'DESC')
-      .addOrderBy('plan.createdAt', 'DESC');
+      .addOrderBy('plan.createdAt', 'DESC')
+      .addOrderBy('plan.id', 'DESC');
 
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
     qb.skip((page - 1) * limit).take(limit);
 
     const [plans, total] = await qb.getManyAndCount();

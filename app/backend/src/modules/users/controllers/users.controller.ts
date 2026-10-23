@@ -5,6 +5,7 @@ import {
   Patch,
   Body,
   Param,
+  Query,
   Req,
   UseGuards,
   UnauthorizedException,
@@ -18,10 +19,13 @@ import {
   ChangeOwnPasswordSchema,
   ResetUserPasswordSchema,
   UpdateUserSchema,
+  ListUsersQuerySchema,
   type CreateUserDto,
   type ChangeOwnPasswordDto,
   type ResetUserPasswordDto,
   type UpdateUserDto,
+  type ListUsersQuery,
+  type UserListResponse,
   type UserSummary,
   type UserRole,
 } from '@tiby/ts-shared';
@@ -79,9 +83,12 @@ export class UsersController {
 
   @Get()
   @Roles(['ADMIN', 'NAKES'])
-  async listUsers(@Req() req: AuthenticatedRequest): Promise<UserSummary[]> {
+  async listUsers(
+    @Req() req: AuthenticatedRequest,
+    @Query({ schema: ListUsersQuerySchema }) query: ListUsersQuery,
+  ): Promise<UserListResponse> {
     const caller = this.extractCaller(req);
-    return this.usersService.listUsers(caller);
+    return this.usersService.listUsers(caller, query);
   }
 
   @Patch(':id')

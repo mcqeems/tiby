@@ -161,7 +161,7 @@ export class CheckInService {
     const [records, total] = await this.checkInRepo.findAndCount({
       where,
       relations: { treatmentPlan: { patientUser: true, facility: true } },
-      order: { checkInDate: 'DESC', submittedAt: 'DESC' },
+      order: { checkInDate: 'DESC', submittedAt: 'DESC', id: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
     });

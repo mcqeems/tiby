@@ -30,9 +30,14 @@ export class AlertsService {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
 
+    // A NAKES without a facility must not page through every facility.
+    if (!facilityId) {
+      return { items: [], total: 0, page, limit };
+    }
+
     const [alerts, total] = await this.alertRepo.findAndCount({
       where: {
-        ...(facilityId ? { facilityId } : {}),
+        facilityId,
         ...(query.unreadOnly ? { isRead: false } : {}),
         ...(query.severity ? { severity: query.severity } : {}),
       },
@@ -41,7 +46,8 @@ export class AlertsService {
           patientUser: true,
         },
       },
-      order: { createdAt: "DESC" },
+      // `id` tie-break keeps offset pages stable when createdAt ties.
+      order: { createdAt: "DESC", id: "DESC" },
       skip: (page - 1) * limit,
       take: limit,
     });

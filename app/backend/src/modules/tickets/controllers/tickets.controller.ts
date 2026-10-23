@@ -26,7 +26,7 @@ import {
   type UserRole,
 } from "@tiby/ts-shared";
 
-@Controller(["faskes/tickets", "tickets"])
+@Controller("faskes/tickets")
 @UseGuards(RolesGuard)
 export class TicketsController {
   constructor(private readonly ticketsService: TicketsService) {}

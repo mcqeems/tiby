@@ -11,6 +11,8 @@ import type {
   CreateFacilityDto,
   UpdateFacilityDto,
   FacilityItem,
+  FacilityListResponse,
+  PaginationQuery,
 } from "@tiby/ts-shared";
 
 export interface FacilityCaller {
@@ -38,11 +40,20 @@ export class FacilitiesService {
   ) {}
 
   /** Every authenticated role may read the full facility list. */
-  async listFacilities(): Promise<FacilityItem[]> {
-    const facilities = await this.facilityRepo.find({
-      order: { name: "ASC" },
+  async listFacilities(
+    query: PaginationQuery,
+  ): Promise<FacilityListResponse> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+
+    const [facilities, total] = await this.facilityRepo.findAndCount({
+      // `id` tie-break keeps offset pages stable when names tie.
+      order: { name: "ASC", id: "ASC" },
+      skip: (page - 1) * limit,
+      take: limit,
     });
-    return facilities.map(toItem);
+
+    return { items: facilities.map(toItem), total, page, limit };
   }
 
   async getFacility(id: string): Promise<FacilityItem> {

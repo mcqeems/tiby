@@ -24,7 +24,7 @@ describe("FacilitiesService Unit Tests", () => {
 
   beforeEach(() => {
     mockFacilityRepo = {
-      find: vi.fn().mockResolvedValue([]),
+      findAndCount: vi.fn().mockResolvedValue([[], 0]),
       findOneBy: vi.fn(),
       create: vi.fn((d) => d),
       save: vi.fn((d) =>
@@ -40,13 +40,18 @@ describe("FacilitiesService Unit Tests", () => {
   });
 
   describe("listFacilities", () => {
-    it("returns every facility ordered by name", async () => {
-      mockFacilityRepo.find.mockResolvedValue([makeFacility()]);
+    it("returns a paginated page ordered by name", async () => {
+      mockFacilityRepo.findAndCount.mockResolvedValue([[makeFacility()], 1]);
 
-      const res = await service.listFacilities();
+      const res = await service.listFacilities({ page: 1, limit: 12 });
 
-      expect(mockFacilityRepo.find).toHaveBeenCalledWith({ order: { name: "ASC" } });
-      expect(res[0]).toEqual({
+      expect(mockFacilityRepo.findAndCount).toHaveBeenCalledWith({
+        order: { name: "ASC", id: "ASC" },
+        skip: 0,
+        take: 12,
+      });
+      expect(res.total).toBe(1);
+      expect(res.items[0]).toEqual({
         id: "fac-1",
         code: "PUSK-001",
         name: "Puskesmas Gambir",

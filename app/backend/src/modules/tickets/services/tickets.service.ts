@@ -146,9 +146,14 @@ export class TicketsService {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
 
+    // A NAKES without a facility must not page through every facility.
+    if (!facilityId) {
+      return { items: [], total: 0, page, limit };
+    }
+
     const [tickets, total] = await this.ticketRepo.findAndCount({
       where: {
-        ...(facilityId ? { facilityId } : {}),
+        facilityId,
         ...(query.status ? { status: query.status } : {}),
         ...(query.priority ? { priority: query.priority } : {}),
       },
@@ -157,7 +162,8 @@ export class TicketsService {
           patientUser: true,
         },
       },
-      order: { openedAt: "DESC" },
+      // `id` tie-break keeps offset pages stable when openedAt ties.
+      order: { openedAt: "DESC", id: "DESC" },
       skip: (page - 1) * limit,
       take: limit,
     });

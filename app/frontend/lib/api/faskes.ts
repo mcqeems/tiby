@@ -21,6 +21,8 @@ export const faskesApi = {
     if (query.state) searchParams.set("state", query.state);
     if (query.phase) searchParams.set("phase", query.phase);
     if (query.search) searchParams.set("search", query.search);
+    if (query.treatmentPlanId)
+      searchParams.set("treatmentPlanId", query.treatmentPlanId);
 
     const qs = searchParams.toString();
     return apiFetch<RiskSortedPatientList>(

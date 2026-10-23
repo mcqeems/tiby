@@ -121,12 +121,13 @@ describe("Facilities CRUD (e2e)", () => {
   it("1. every role can read the facility list", async () => {
     for (const cookie of [adminCookie, nakesCookie, pasienCookie]) {
       const res = await request(app.getHttpServer())
-        .get("/api/facilities")
+        .get("/api/facilities?limit=100")
         .set("Cookie", cookie);
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
-      const found = res.body.find((f: any) => f.id === facilityId);
+      expect(Array.isArray(res.body.items)).toBe(true);
+      expect(res.body.total).toBeGreaterThanOrEqual(1);
+      const found = res.body.items.find((f: any) => f.id === facilityId);
       expect(found).toBeDefined();
       expect(found.district).toBe("Jakarta Pusat");
       expect(found.emergencyPhone).toBe("021-111");

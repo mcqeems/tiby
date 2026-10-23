@@ -1,22 +1,29 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-// ✅ Import UserItem dari file API kita
 import { usersApi, type UserItem } from "@/lib/api/users";
 import { facilitiesApi } from "@/lib/api/facilities";
 import type { FacilityItem } from "@/lib/types/facilities";
 import { usePopup } from "@/components/ui/popup-provider";
 import PublicLoading from "@/components/ui/public-loading";
 import UserFormModal from "./user-form-modal";
-import { UserPlus, Building2, ShieldCheck } from "lucide-react";
+import {
+  UserPlus,
+  Building2,
+  ShieldCheck,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+
+const LIMIT = 20;
 
 export default function UserManager() {
   const { notify } = usePopup();
 
-  // ✅ FIX: Ganti any[] menjadi UserItem[]
   const [users, setUsers] = useState<UserItem[]>([]);
-
   const [facilities, setFacilities] = useState<FacilityItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -24,11 +31,12 @@ export default function UserManager() {
     setLoading(true);
     try {
       const [usersRes, facilitiesRes] = await Promise.all([
-        usersApi.getAll(),
-        facilitiesApi.getAll(),
+        usersApi.list({ page, limit: LIMIT, role: "NAKES,ADMIN" }),
+        facilitiesApi.list({ limit: 100 }),
       ]);
-      setUsers(usersRes || []);
-      setFacilities(facilitiesRes || []);
+      setUsers(usersRes.items || []);
+      setTotal(usersRes.total || 0);
+      setFacilities(facilitiesRes.items || []);
     } catch {
       await notify({
         variant: "danger",
@@ -39,7 +47,7 @@ export default function UserManager() {
     } finally {
       setLoading(false);
     }
-  }, [notify]);
+  }, [notify, page]);
 
   useEffect(() => {
     let active = true;
@@ -52,17 +60,10 @@ export default function UserManager() {
     };
   }, [fetchData]);
 
-  if (loading) return <PublicLoading message="Memuat data pengguna..." />;
+  if (loading && users.length === 0)
+    return <PublicLoading message="Memuat data pengguna..." />;
 
-  const nakesList = users.filter(
-    (u) => u.role === "NAKES" || u.role === "ADMIN",
-  );
-
-  const getFacilityName = (id?: string | null) => {
-    if (!id) return "-";
-    const faskes = facilities.find((f) => f.id === id);
-    return faskes ? faskes.name : "Faskes Tidak Diketahui";
-  };
+  const totalPages = Math.ceil(total / LIMIT);
 
   return (
     <div className="max-w-5xl mx-auto space-y-5 pb-20">
@@ -93,7 +94,7 @@ export default function UserManager() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {nakesList.map((u) => (
+            {users.map((u) => (
               <tr key={u.id} className="hover:bg-gray-50/50">
                 <td className="px-5 py-4">
                   <p className="font-semibold text-tiby-ink">{u.name}</p>
@@ -116,13 +117,44 @@ export default function UserManager() {
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-2 text-xs font-medium text-tiby-ink">
                     <Building2 className="w-4 h-4 text-gray-400" />
-                    {getFacilityName(u.facilityId)}
+                    {u.facility || "-"}
                   </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+
+        {total > 0 && (
+          <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-5 py-3">
+            <span className="text-xs text-tiby-muted">
+              Menampilkan <strong>{(page - 1) * LIMIT + 1}</strong> -{" "}
+              <strong>{Math.min(page * LIMIT, total)}</strong> dari{" "}
+              <strong>{total}</strong> data
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1 || loading}
+                className="p-1.5 rounded-lg border border-gray-200 bg-white text-tiby-ink disabled:opacity-50 hover:bg-gray-50 cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs font-medium text-tiby-ink px-2">
+                Hal {page} / {totalPages || 1}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages || loading}
+                className="p-1.5 rounded-lg border border-gray-200 bg-white text-tiby-ink disabled:opacity-50 hover:bg-gray-50 cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {isModalOpen && (

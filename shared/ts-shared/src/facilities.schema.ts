@@ -10,6 +10,14 @@ export const FacilityItemSchema = z.object({
 });
 export type FacilityItem = z.infer<typeof FacilityItemSchema>;
 
+export const FacilityListResponseSchema = z.object({
+  items: z.array(FacilityItemSchema),
+  total: z.number(),
+  page: z.number(),
+  limit: z.number(),
+});
+export type FacilityListResponse = z.infer<typeof FacilityListResponseSchema>;
+
 export const CreateFacilitySchema = z.object({
   code: z.string().min(1).max(50),
   name: z.string().min(2).max(255),

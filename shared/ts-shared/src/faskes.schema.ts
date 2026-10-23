@@ -15,6 +15,8 @@ export const ListPatientsQuerySchema = PaginationQuerySchema.extend({
   state: PatientStateSchema.optional(),
   phase: TreatmentPhaseSchema.optional(),
   search: z.string().optional(),
+  /** Exposed so a patient detail page can fetch one plan without scanning pages. */
+  treatmentPlanId: z.uuid().optional(),
 });
 export type ListPatientsQuery = z.infer<typeof ListPatientsQuerySchema>;
 

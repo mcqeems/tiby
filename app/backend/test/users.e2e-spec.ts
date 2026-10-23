@@ -182,7 +182,9 @@ describe("Users & RBAC Password Management (e2e)", () => {
         .get("/api/users")
         .set("Cookie", nakesCookie);
       expect(listRes.status).toBe(200);
-      const foundNakes = listRes.body.find((u: any) => u.id === nakesUserId);
+      const foundNakes = listRes.body.items.find(
+        (u: any) => u.id === nakesUserId,
+      );
       expect(foundNakes?.facility).toBe("Puskesmas Menteng");
     });
   });

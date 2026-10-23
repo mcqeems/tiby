@@ -13,6 +13,7 @@ export interface UserItem {
   name: string;
   role: "ADMIN" | "NAKES" | "PMO" | "PASIEN" | "FASKES";
   facilityId?: string | null;
+  facility?: string | null;
 }
 
 export interface CreateUserPayload {
@@ -33,13 +34,30 @@ export interface UpdateUserPayload {
   facilityId?: string | null;
 }
 
+export interface UserListResponse {
+  items: UserItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export const usersApi = {
   async getMe() {
     return apiFetch<UserItem>("/api/users/me", { method: "GET" });
   },
 
-  async getAll(): Promise<UserItem[]> {
-    return apiFetch<UserItem[]>("/api/users", { method: "GET" });
+  async list(
+    params: { page?: number; limit?: number; role?: string } = {},
+  ): Promise<UserListResponse> {
+    const searchParams = new URLSearchParams();
+    if (params.page) searchParams.set("page", String(params.page));
+    if (params.limit) searchParams.set("limit", String(params.limit));
+    if (params.role) searchParams.set("role", params.role);
+
+    const qs = searchParams.toString();
+    return apiFetch<UserListResponse>(`/api/users${qs ? `?${qs}` : ""}`, {
+      method: "GET",
+    });
   },
 
   async createUser(dto: CreateUserPayload) {

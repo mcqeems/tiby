@@ -10,12 +10,11 @@ import {
   PmoFollowUpActionSchema,
   TreatmentPhaseSchema,
 } from "./enums.js";
+import { PaginationQuerySchema } from "./faskes.schema.js";
 
-export const ListTicketsQuerySchema = z.object({
+export const ListTicketsQuerySchema = PaginationQuerySchema.extend({
   status: TicketStatusSchema.optional(),
   priority: TicketPrioritySchema.optional(),
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().max(100).default(20),
 });
 export type ListTicketsQuery = z.infer<typeof ListTicketsQuerySchema>;
 
@@ -59,11 +58,9 @@ export const CloseTicketSchema = z.object({
 });
 export type CloseTicketDto = z.infer<typeof CloseTicketSchema>;
 
-export const ListAlertsQuerySchema = z.object({
-  unreadOnly: z.coerce.boolean().default(false),
+export const ListAlertsQuerySchema = PaginationQuerySchema.extend({
+  unreadOnly: z.stringbool().default(false),
   severity: AlertSeveritySchema.optional(),
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().max(100).default(20),
 });
 export type ListAlertsQuery = z.infer<typeof ListAlertsQuerySchema>;
 
