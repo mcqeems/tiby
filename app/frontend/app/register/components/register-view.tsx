@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
+import { ArrowLeft } from "lucide-react"; 
 import {
   authClient,
   signIn,
@@ -10,9 +12,8 @@ import {
   ROLE_PATHS,
   useSession,
 } from "@/lib/auth-client";
-import MascotAnimation from "@/components/mascot-animation";
 
-function UserIcon({ className = "w-4 h-4" }: { className?: string }) {
+function UserIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -31,7 +32,7 @@ function UserIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
-function AtIcon({ className = "w-4 h-4" }: { className?: string }) {
+function AtIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -50,7 +51,7 @@ function AtIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
-function MailIcon({ className = "w-4 h-4" }: { className?: string }) {
+function MailIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -69,7 +70,7 @@ function MailIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
-function LockIcon({ className = "w-4 h-4" }: { className?: string }) {
+function LockIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -88,7 +89,7 @@ function LockIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
-function EyeIcon({ className = "w-4 h-4" }: { className?: string }) {
+function EyeIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -112,7 +113,7 @@ function EyeIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
-function EyeOffIcon({ className = "w-4 h-4" }: { className?: string }) {
+function EyeOffIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -208,7 +209,7 @@ export default function RegisterView() {
 
   if (isPending || session) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-tiby-white">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-4 border-tiby-teal-100 border-t-tiby-teal-600 rounded-full animate-spin" />
           <p className="text-sm font-medium text-tiby-muted">Mengalihkan...</p>
@@ -218,204 +219,262 @@ export default function RegisterView() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-tiby-white px-5 py-6">
-      <div className="w-full max-w-85">
-        <div className="flex flex-col items-center text-center">
-          <MascotAnimation size={85} className="mb-1" />
-          <h1 className="font-heading text-2xl font-600 text-tiby-ink tracking-tight">
-            Daftar Akun Tiby
-          </h1>
-          <p className="mt-0.5 text-xs text-tiby-muted font-body">
-            Yuk gabung bersama Pandu untuk hidup lebih sehat
-          </p>
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 sm:p-8 relative">
+      <Link
+        href="/"
+        className="absolute top-6 left-6 sm:top-8 sm:left-8 z-50 flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-tiby-ink shadow-sm border border-gray-200 transition-all hover:bg-gray-50 hover:shadow-md"
+      >
+        <ArrowLeft className="w-4 h-4" />
+      </Link>
+
+      <div className="flex w-full max-w-5xl flex-col md:flex-row overflow-hidden rounded-3xl bg-white shadow-2xl shadow-gray-200/50 border border-gray-100 md:min-h-175">
+        <div className="relative hidden w-full md:flex md:w-1/2 flex-col justify-between p-10 sm:p-12 text-white overflow-hidden bg-tiby-teal-900">
+          <Image
+            src="/bg-login.png"
+            alt="Tiby Register Background"
+            fill
+            className="object-cover z-0"
+            priority
+          />
+
+          <div className="absolute inset-0 bg-linear-to-t from-tiby-teal-900/90 via-tiby-teal-900/40 to-transparent z-10" />
+
+          <div className="relative z-20">
+            <h1 className="font-heading text-4xl font-bold mb-4 tracking-tight">
+              Daftar
+            </h1>
+            <p className="text-white/90 text-sm sm:text-base leading-relaxed max-w-xs font-medium">
+              Bergabunglah bersama Pandu untuk memulai rutinitas sehat dan
+              mencapai kesembuhan total.
+            </p>
+          </div>
+
+          <div className="relative z-20 flex items-center gap-3.5 border-l-4 border-white/30 pl-4">
+            <div className="relative w-11 h-11 rounded-full bg-white flex items-center justify-center shrink-0 shadow-lg overflow-hidden">
+              <Image
+                src="/mascot/happy/happy.webp"
+                alt="Pandu Mascot"
+                fill
+                className="object-contain p-0.5"
+              />
+            </div>
+            <div>
+              <p className="font-heading font-bold text-lg leading-tight tracking-wide text-white">
+                Tiby Health
+              </p>
+              <p className="text-[10px] text-white/80 uppercase tracking-widest font-semibold mt-0.5">
+                Pendamping Cerdas
+              </p>
+            </div>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-2.5">
-          <div>
-            <label
-              htmlFor="username"
-              className="block text-xs font-medium text-tiby-ink font-body pl-1"
-            >
-              Username
-            </label>
-            <div className="relative mt-0.5">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-tiby-muted">
-                <AtIcon />
+        <div className="flex w-full md:w-1/2 flex-col p-8 sm:p-12 relative bg-white">
+          <div className="absolute top-8 right-8 hidden sm:block sm:top-10 sm:right-10">
+            <Image
+              src="/mascot/logo.png"
+              alt="Tiby Logo"
+              width={120}
+              height={32}
+              className="object-contain"
+              priority
+            />
+          </div>
+
+          <div className="flex-1 flex flex-col justify-center w-full max-w-sm mx-auto space-y-6 mt-12 md:mt-0">
+            <div className="text-center md:text-left space-y-2">
+              <h2 className="font-heading text-2xl font-bold text-tiby-ink tracking-tight">
+                Buat Akun Baru
+              </h2>
+              <p className="text-sm text-tiby-muted">
+                Isi data diri Anda untuk mendaftar.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label
+                  htmlFor="name"
+                  className="block text-xs font-semibold text-tiby-ink mb-1.5"
+                >
+                  Nama Lengkap
+                </label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-tiby-muted">
+                    <UserIcon />
+                  </div>
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 pl-11 pr-4 py-3 text-sm text-tiby-ink placeholder:text-gray-400 transition-all focus:border-tiby-teal-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-tiby-teal-600/10"
+                    value={form.name}
+                    onChange={handleChange}
+                    placeholder="Nama lengkap Anda"
+                    autoComplete="name"
+                    required
+                  />
+                </div>
               </div>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                className="w-full rounded-2xl border border-tiby-teal-100 bg-white pl-10 pr-4 py-2 font-body text-sm text-tiby-ink placeholder:text-tiby-muted/50 shadow-[0_2px_8px_rgba(27,158,155,0.04)] transition-all duration-200 focus:border-tiby-teal-600 focus:outline-none focus:ring-4 focus:ring-tiby-teal-600/10"
-                value={form.username}
-                onChange={handleChange}
-                placeholder="username unik"
-                autoComplete="username"
-                minLength={3}
-                maxLength={30}
-                required
-              />
-            </div>
-          </div>
 
-          <div>
-            <label
-              htmlFor="name"
-              className="block text-xs font-medium text-tiby-ink font-body pl-1"
-            >
-              Nama Lengkap
-            </label>
-            <div className="relative mt-0.5">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-tiby-muted">
-                <UserIcon />
+              <div>
+                <label
+                  htmlFor="username"
+                  className="block text-xs font-semibold text-tiby-ink mb-1.5"
+                >
+                  Username
+                </label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-tiby-muted">
+                    <AtIcon />
+                  </div>
+                  <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 pl-11 pr-4 py-3 text-sm text-tiby-ink placeholder:text-gray-400 transition-all focus:border-tiby-teal-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-tiby-teal-600/10"
+                    value={form.username}
+                    onChange={handleChange}
+                    placeholder="Username unik"
+                    autoComplete="username"
+                    minLength={3}
+                    maxLength={30}
+                    required
+                  />
+                </div>
               </div>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                className="w-full rounded-2xl border border-tiby-teal-100 bg-white pl-10 pr-4 py-2 font-body text-sm text-tiby-ink placeholder:text-tiby-muted/50 shadow-[0_2px_8px_rgba(27,158,155,0.04)] transition-all duration-200 focus:border-tiby-teal-600 focus:outline-none focus:ring-4 focus:ring-tiby-teal-600/10"
-                value={form.name}
-                onChange={handleChange}
-                placeholder="nama lengkap Anda"
-                autoComplete="name"
-                required
-              />
-            </div>
-          </div>
 
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-xs font-medium text-tiby-ink font-body pl-1"
-            >
-              Email
-            </label>
-            <div className="relative mt-0.5">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-tiby-muted">
-                <MailIcon />
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-xs font-semibold text-tiby-ink mb-1.5"
+                >
+                  Email
+                </label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-tiby-muted">
+                    <MailIcon />
+                  </div>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 pl-11 pr-4 py-3 text-sm text-tiby-ink placeholder:text-gray-400 transition-all focus:border-tiby-teal-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-tiby-teal-600/10"
+                    value={form.email}
+                    onChange={handleChange}
+                    placeholder="email@contoh.com"
+                    autoComplete="email"
+                    required
+                  />
+                </div>
               </div>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                className="w-full rounded-2xl border border-tiby-teal-100 bg-white pl-10 pr-4 py-2 font-body text-sm text-tiby-ink placeholder:text-tiby-muted/50 shadow-[0_2px_8px_rgba(27,158,155,0.04)] transition-all duration-200 focus:border-tiby-teal-600 focus:outline-none focus:ring-4 focus:ring-tiby-teal-600/10"
-                value={form.email}
-                onChange={handleChange}
-                placeholder="email@contoh.com"
-                autoComplete="email"
-                required
-              />
-            </div>
-          </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-xs font-medium text-tiby-ink font-body pl-1"
-            >
-              Password
-            </label>
-            <div className="relative mt-0.5">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-tiby-muted">
-                <LockIcon />
+              {/* Password */}
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-xs font-semibold text-tiby-ink mb-1.5"
+                >
+                  Password
+                </label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-tiby-muted">
+                    <LockIcon />
+                  </div>
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 pl-11 pr-12 py-3 text-sm text-tiby-ink placeholder:text-gray-400 transition-all focus:border-tiby-teal-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-tiby-teal-600/10"
+                    value={form.password}
+                    onChange={handleChange}
+                    placeholder="Minimal 8 karakter"
+                    autoComplete="new-password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-tiby-teal-600 transition-colors focus:outline-none cursor-pointer"
+                  >
+                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                  </button>
+                </div>
               </div>
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                className="w-full rounded-2xl border border-tiby-teal-100 bg-white pl-10 pr-11 py-2 font-body text-sm text-tiby-ink placeholder:text-tiby-muted/50 shadow-[0_2px_8px_rgba(27,158,155,0.04)] transition-all duration-200 focus:border-tiby-teal-600 focus:outline-none focus:ring-4 focus:ring-tiby-teal-600/10"
-                value={form.password}
-                onChange={handleChange}
-                placeholder="minimal 8 karakter"
-                autoComplete="new-password"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={
-                  showPassword ? "Sembunyikan password" : "Tampilkan password"
-                }
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-tiby-muted hover:text-tiby-teal-700 transition-colors focus:outline-none focus:text-tiby-teal-700 cursor-pointer"
-              >
-                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-              </button>
-            </div>
-          </div>
 
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="block text-xs font-medium text-tiby-ink font-body pl-1"
-            >
-              Konfirmasi Password
-            </label>
-            <div className="relative mt-0.5">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-tiby-muted">
-                <LockIcon />
+              {/* Konfirmasi Password */}
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-xs font-semibold text-tiby-ink mb-1.5"
+                >
+                  Konfirmasi Password
+                </label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-tiby-muted">
+                    <LockIcon />
+                  </div>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 pl-11 pr-12 py-3 text-sm text-tiby-ink placeholder:text-gray-400 transition-all focus:border-tiby-teal-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-tiby-teal-600/10"
+                    value={form.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="Ulangi password"
+                    autoComplete="new-password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-tiby-teal-600 transition-colors focus:outline-none cursor-pointer"
+                  >
+                    {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
+                  </button>
+                </div>
               </div>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                className="w-full rounded-2xl border border-tiby-teal-100 bg-white pl-10 pr-11 py-2 font-body text-sm text-tiby-ink placeholder:text-tiby-muted/50 shadow-[0_2px_8px_rgba(27,158,155,0.04)] transition-all duration-200 focus:border-tiby-teal-600 focus:outline-none focus:ring-4 focus:ring-tiby-teal-600/10"
-                value={form.confirmPassword}
-                onChange={handleChange}
-                placeholder="ulangi password"
-                autoComplete="new-password"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                aria-label={
-                  showConfirmPassword
-                    ? "Sembunyikan konfirmasi password"
-                    : "Tampilkan konfirmasi password"
-                }
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-tiby-muted hover:text-tiby-teal-700 transition-colors focus:outline-none focus:text-tiby-teal-700 cursor-pointer"
-              >
-                {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
-              </button>
-            </div>
+
+              {error && (
+                <div className="flex items-center gap-2 rounded-xl border border-red-100 bg-red-50 p-3 text-xs text-red-600 font-medium mt-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="w-4 h-4 shrink-0"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full rounded-xl bg-tiby-teal-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-tiby-teal-600/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-tiby-teal-700 hover:shadow-xl disabled:translate-y-0 disabled:opacity-70 disabled:shadow-none cursor-pointer flex justify-center items-center"
+                >
+                  {loading ? "Mendaftarkan..." : "Daftar Sekarang"}
+                </button>
+              </div>
+
+              <div className="pt-2 text-center text-sm text-tiby-muted font-body">
+                Sudah punya akun?{" "}
+                <Link
+                  href="/login"
+                  className="font-semibold text-tiby-teal-700 hover:text-tiby-teal-600 transition-colors"
+                >
+                  Masuk di sini
+                </Link>
+              </div>
+            </form>
           </div>
-
-          {error && (
-            <div className="flex items-center gap-2 rounded-2xl border border-red-100 bg-tiby-danger p-2.5 text-xs text-tiby-danger-text font-body">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="w-4 h-4 shrink-0"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span>{error}</span>
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="mt-2 w-full rounded-full bg-tiby-teal-600 py-3 text-sm font-medium text-white shadow-[0_4px_14px_rgba(27,158,155,0.25)] transition-all duration-200 hover:bg-tiby-teal-700 hover:shadow-[0_6px_20px_rgba(27,158,155,0.3)] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
-          >
-            {loading ? "Mendaftarkan..." : "Daftar"}
-          </button>
-
-          <div className="pt-1.5 text-center text-xs text-tiby-muted font-body">
-            Sudah punya akun?{" "}
-            <Link
-              href="/login"
-              className="font-medium text-tiby-teal-700 hover:text-tiby-teal-600 transition-colors"
-            >
-              Masuk
-            </Link>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );
