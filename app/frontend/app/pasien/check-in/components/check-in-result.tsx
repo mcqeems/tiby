@@ -17,20 +17,20 @@ export default function CheckInResult({
     verdict === "TERKENDALI"
       ? {
           color: "text-emerald-600",
-          mascot: "/mascot/happy/happy.webp",
+          mascot: "/mascot/happy/happy-stroke.png",
           icon: CheckCircle2,
           title: "Luar Biasa!",
         }
       : verdict === "PERLU_PERHATIAN"
         ? {
             color: "text-amber-600",
-            mascot: "/mascot/empathy/empathy.webp",
+            mascot: "/mascot/empathy/empathy.png",
             icon: AlertTriangle,
             title: "Perlu Perhatian",
           }
         : {
             color: "text-red-600",
-            mascot: "/mascot/alert/alert.webp",
+            mascot: "/mascot/alert/alert.png",
             icon: ShieldAlert,
             title: "Segera ke Faskes",
           };

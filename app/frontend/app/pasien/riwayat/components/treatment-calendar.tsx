@@ -42,7 +42,9 @@ export default function TreatmentCalendar({
 
   const checkInMap = new Map<string, CheckInHistoryItem>();
   checkIns.forEach((item) => {
-    checkInMap.set(item.checkInDate, item);
+    const d = new Date(item.submittedAt);
+    const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    checkInMap.set(localDate, item);
   });
 
   const getStatusForDay = (day: number) => {
@@ -58,12 +60,10 @@ export default function TreatmentCalendar({
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
-    // ✅ FIX: Jika tanggal sebelum startDate, kembalikan "inactive"
     if (startDate && dateStr < startDate) {
       return "inactive";
     }
 
-    // Jika tanggal sudah lewat (tapi >= startDate) dan tidak ada check-in, baru merah
     if (dateStr < todayStr) {
       return "missed";
     }
@@ -84,7 +84,7 @@ export default function TreatmentCalendar({
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <span className="text-sm font-semibold text-tiby-ink min-w-25 text-center">
+          <span className="text-sm font-semibold text-tiby-ink min-w-[100px] text-center">
             {monthNames[month]} {year}
           </span>
           <button
@@ -136,7 +136,6 @@ export default function TreatmentCalendar({
             bgClass = "bg-amber-50 border-amber-200";
             textClass = "text-amber-700 font-bold";
           } else if (status === "future" || status === "inactive") {
-            // ✅ FIX: Tanggal "inactive" (sebelum terdaftar) dibuat putih pudar tanpa garis putus-putus
             bgClass =
               status === "future"
                 ? "bg-white border-dashed border-gray-200"

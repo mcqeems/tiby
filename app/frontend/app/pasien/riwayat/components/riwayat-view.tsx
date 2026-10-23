@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { checkInsApi } from "@/lib/api/check-in";
 import type { CheckInHistoryItem } from "@/lib/types/check-in";
 import TreatmentCalendar from "./treatment-calendar";
@@ -16,56 +17,52 @@ import {
   FileText,
 } from "lucide-react";
 
-// ─── FUNGSI HITUNG STREAK (MUNDUR KE BELAKANG) ──────────────────────────────
+const getLocalDateStr = (dateString: string) => {
+  const d = new Date(dateString);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
 function calculateStreak(history: CheckInHistoryItem[]) {
   if (history.length === 0) return 0;
 
-  // 1. Urutkan dari tanggal terbaru ke terlama
   const sorted = [...history].sort(
     (a, b) =>
-      new Date(b.checkInDate).getTime() - new Date(a.checkInDate).getTime(),
+      new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
   );
 
-  // 2. Jika data terbaru bukan "Dosis Terpenuhi" (misal dia bilang belum minum), streak putus.
   if (!sorted[0].isDoseFulfilled) return 0;
 
   let streak = 0;
-  const expectedDate = new Date(sorted[0].checkInDate);
+  const expectedDate = new Date(sorted[0].submittedAt);
+  expectedDate.setHours(0, 0, 0, 0);
 
-  // 3. Looping mundur untuk mengecek hari-hari sebelumnya
   for (let i = 0; i < sorted.length; i++) {
     const item = sorted[i];
-    const itemDate = new Date(item.checkInDate);
+    const itemDate = new Date(item.submittedAt);
+    itemDate.setHours(0, 0, 0, 0);
 
-    // Jika tanggal cocok dengan ekspektasi DAN dosisnya terpenuhi
     if (itemDate.getTime() === expectedDate.getTime() && item.isDoseFulfilled) {
       streak++;
-      expectedDate.setDate(expectedDate.getDate() - 1); // Mundur 1 hari
+      expectedDate.setDate(expectedDate.getDate() - 1);
     } else {
-      // Jika ada tanggal yang bolong atau dosis tidak terpenuhi, hentikan streak
       break;
     }
   }
 
-  // 4. Cek apakah hari ini atau kemarin pasien masih check-in
-  // Jika data terakhir sudah lebih dari 1 hari yang lalu, streak dianggap 0 (hangus)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const latestCheckIn = new Date(sorted[0].checkInDate);
+  const latestCheckIn = new Date(sorted[0].submittedAt);
   latestCheckIn.setHours(0, 0, 0, 0);
 
   const diffInDays = Math.floor(
     (today.getTime() - latestCheckIn.getTime()) / (1000 * 60 * 60 * 24),
   );
 
-  if (diffInDays > 1) {
-    return 0;
-  }
+  if (diffInDays > 1) return 0;
 
   return streak;
 }
 
-// ─── FUNGSI STYLING BADGE VERDICT ───────────────────────────────────────────
 const getVerdictStyle = (verdict: string) => {
   switch (verdict) {
     case "TERKENDALI":
@@ -103,27 +100,22 @@ const getVerdictStyle = (verdict: string) => {
   }
 };
 
-// ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
 export default function RiwayatView() {
   const [history, setHistory] = useState<CheckInHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
-
     async function fetchHistory() {
       try {
         const res = await checkInsApi.getHistory({ limit: 50 });
-        if (active) {
-          setHistory(res.items || []);
-        }
+        if (active) setHistory(res.items || []);
       } catch (err) {
         console.error("Gagal memuat riwayat:", err);
       } finally {
         if (active) setLoading(false);
       }
     }
-
     fetchHistory();
     return () => {
       active = false;
@@ -138,20 +130,21 @@ export default function RiwayatView() {
     );
   }
 
-  // Hitung nilai Streak dan Start Date
   const currentStreak = calculateStreak(history);
+
   const startDate =
     history.length > 0
-      ? [...history].sort(
-          (a, b) =>
-            new Date(a.checkInDate).getTime() -
-            new Date(b.checkInDate).getTime(),
-        )[0].checkInDate
+      ? getLocalDateStr(
+          [...history].sort(
+            (a, b) =>
+              new Date(a.submittedAt).getTime() -
+              new Date(b.submittedAt).getTime(),
+          )[0].submittedAt,
+        )
       : undefined;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-24 md:pb-10">
-      {/* Header Halaman */}
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight text-tiby-ink">
           Riwayat Terapi
@@ -161,7 +154,6 @@ export default function RiwayatView() {
         </p>
       </div>
 
-      {/* 1. Kartu Streak */}
       <div className="bg-tiby-teal-600 rounded-3xl p-6 text-white shadow-lg shadow-tiby-teal-600/20 relative overflow-hidden">
         <div className="relative z-10 flex items-center justify-between">
           <div>
@@ -174,21 +166,59 @@ export default function RiwayatView() {
               </span>
               <span className="text-lg font-medium mb-1">Hari</span>
             </div>
-            <p className="text-xs text-tiby-teal-100 mt-2 max-w-50">
-              Pertahankan semangatmu! Konsistensi adalah kunci kesembuhan.
+            <p className="text-xs text-tiby-teal-100 mt-2 max-w-[200px]">
+              {currentStreak > 0
+                ? "Api semangatmu menyala! Pertahankan konsistensimu."
+                : "Ayo lakukan check-in hari ini untuk menyalakan apimu kembali."}
             </p>
           </div>
-          <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-            <Flame className="w-10 h-10 text-white fill-white/50" />
+
+          <div className="relative w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+            {currentStreak > 0 && (
+              <motion.div
+                className="absolute inset-0 bg-orange-500/40 rounded-full blur-xl"
+                animate={{
+                  scale: [1, 1.3, 1],
+                  opacity: [0.4, 0.8, 0.4],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+            )}
+
+            <motion.div
+              animate={
+                currentStreak > 0
+                  ? {
+                      scale: [1, 1.15, 0.95, 1.05, 1],
+                      rotate: [0, -5, 5, -2, 0],
+                      y: [0, -2, 2, 0],
+                    }
+                  : {}
+              }
+              transition={{
+                duration: 1.2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            >
+              <Flame
+                className={`w-10 h-10 transition-colors duration-500 ${
+                  currentStreak > 0
+                    ? "text-orange-400 fill-orange-400 drop-shadow-[0_0_12px_rgba(249,115,22,0.8)]"
+                    : "text-white/40 fill-white/10"
+                }`}
+              />
+            </motion.div>
           </div>
         </div>
-        <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
       </div>
 
-      {/* 2. Kalender Kepatuhan (Menerima startDate) */}
       <TreatmentCalendar checkIns={history} startDate={startDate} />
 
-      {/* 3. Timeline Detail Laporan */}
       <div className="space-y-4">
         <h2 className="font-heading font-bold text-lg text-tiby-ink pt-2">
           Detail Laporan
