@@ -1,5 +1,5 @@
 info:
-  name: Delete All Consent for own user (api/consent) [PASIEN, PMO]
+  name: Delete All Consent for own user (api/consent) [PASIEN]
   type: http
   seq: 3
 

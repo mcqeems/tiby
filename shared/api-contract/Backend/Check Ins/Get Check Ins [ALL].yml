@@ -20,7 +20,7 @@ http:
     - name: treatmentPlanId
       value: ""
       type: query
-      description: "[NAKES, PMO, ADMIN]"
+      description: "Optional. PASIEN may pass only their own plan."
       disabled: true
   auth: inherit
 
@@ -50,6 +50,7 @@ examples:
         - name: treatmentPlanId
           value: ""
           type: query
+          description: "Optional. PASIEN may pass only their own plan."
           disabled: true
     response:
       status: 200

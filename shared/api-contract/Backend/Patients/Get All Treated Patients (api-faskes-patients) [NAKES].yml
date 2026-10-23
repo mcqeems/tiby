@@ -6,6 +6,37 @@ info:
 http:
   method: GET
   url: "{{baseUrl}}/api/faskes/patients"
+  params:
+    - name: treatmentPlanId
+      value: ""
+      type: query
+      description: "uuid — returns a single plan (patient detail page)"
+      disabled: true
+    - name: search
+      value: ""
+      type: query
+      description: "matches patient name, username, or PMO name"
+      disabled: true
+    - name: state
+      value: ""
+      type: query
+      description: PENDING | AKTIF | BERISIKO | PUTUS_FOLLOW_UP | DIJEDA | DIPANTAU_TERBATAS | PINDAH_FASKES | SELESAI
+      disabled: true
+    - name: phase
+      value: ""
+      type: query
+      description: INTENSIF | LANJUTAN
+      disabled: true
+    - name: limit
+      value: ""
+      type: query
+      description: "Default: 20, Max: 100"
+      disabled: true
+    - name: page
+      value: ""
+      type: query
+      description: "Default: 1"
+      disabled: true
   auth: inherit
 
 settings:

@@ -15,7 +15,7 @@ http:
     - name: limit
       value: ""
       type: query
-      description: "Default: 50, Max: 100"
+      description: "Default: 20, Max: 100"
       disabled: true
     - name: id
       value: a0f0c34d-b119-408f-8ede-98a35920f2ea
@@ -44,7 +44,7 @@ examples:
         - name: limit
           value: ""
           type: query
-          description: "Default: 50, Max: 100"
+          description: "Default: 20, Max: 100"
           disabled: true
         - name: id
           value: a0f0c34d-b119-408f-8ede-98a35920f2ea

@@ -1,5 +1,5 @@
 info:
-  name: Create Ticket (api/faskes/tickets [ALL]
+  name: Create Ticket (api/faskes/tickets) [ALL]
   type: http
   seq: 3
 
