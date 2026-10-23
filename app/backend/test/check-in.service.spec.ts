@@ -64,7 +64,7 @@ describe("CheckInService Unit Tests", () => {
       save: vi.fn((data) => Promise.resolve(data)),
     };
     mockAiClient = {
-      extractFromAudio: vi.fn(),
+      transcribeFromAudio: vi.fn(),
       extractFromText: vi.fn(),
     };
     mockRuleEngine = {
@@ -225,6 +225,81 @@ describe("CheckInService Unit Tests", () => {
       expect(res.redoRequiredToday).toBe(false);
       expect(plan.currentStreak).toBe(3); // 2 + 1
       expect(mockPlanRepo.save).toHaveBeenCalledWith(plan);
+      // Client-supplied facts win: the AI service is not asked again.
+      expect(mockAiClient.extractFromText).not.toHaveBeenCalled();
+    });
+
+    it("extracts facts from the confirmed transcript when the client sends none", async () => {
+      const plan = {
+        id: "plan-1",
+        patientUserId: "user-1",
+        facilityId: "faskes-1",
+        dailyPillQuota: 4,
+        currentStreak: 2,
+        consecutiveSilenceDays: 0,
+        patientState: "AKTIF",
+      };
+      mockPlanRepo.findOne.mockResolvedValue(plan);
+      mockCheckInRepo.findOne.mockResolvedValue(null);
+      mockAiClient.extractFromText.mockResolvedValue({
+        transcript: "Sudah minum 4 pil.",
+        medicationTaken: "SUDAH_MINUM",
+        pillsTakenCount: 4,
+        symptoms: [],
+        intentToStopOrRefuse: false,
+        extractionConfidence: 0.93,
+      });
+
+      mockRuleEngine.evaluate.mockReturnValue({
+        verdict: "TERKENDALI",
+        isDoseFulfilled: true,
+        redoRequiredToday: false,
+        matchedRuleCodes: ["RULE_DOSE_FULFILLED_NO_SYMPTOMS"],
+        failSafeTriggered: false,
+        failSafeReason: null,
+        responseMessage: "Luar biasa! Obat lengkap.",
+      });
+
+      const res = await service.submitCheckIn("user-1", "PASIEN", {
+        inputMode: "VOICE_STT",
+        confirmedFacts: { transcript: "Sudah minum 4 pil." },
+      });
+
+      expect(mockAiClient.extractFromText).toHaveBeenCalledWith("Sudah minum 4 pil.");
+      expect(mockRuleEngine.evaluate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          medicationStatus: "SUDAH_MINUM",
+          pillsTakenCount: 4,
+          extractionConfidence: 0.93,
+        }),
+      );
+      expect(mockCheckInRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          rawTranscriptEncrypted: "Sudah minum 4 pil.",
+        }),
+      );
+      expect(res.verdict).toBe("TERKENDALI");
+    });
+
+    it("rejects VOICE_STT submissions without a transcript", async () => {
+      const plan = {
+        id: "plan-1",
+        patientUserId: "user-1",
+        facilityId: "faskes-1",
+        dailyPillQuota: 4,
+        currentStreak: 2,
+        consecutiveSilenceDays: 0,
+        patientState: "AKTIF",
+      };
+      mockPlanRepo.findOne.mockResolvedValue(plan);
+      mockCheckInRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.submitCheckIn("user-1", "PASIEN", {
+          inputMode: "VOICE_STT",
+          confirmedFacts: { transcript: "" },
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

@@ -28,6 +28,7 @@ import { RuleEngineService } from '../../internal/rule-engine/rule-engine.servic
 import { NotificationTriggerEvent } from '../../../common/events/notification-trigger.event.js';
 import type {
   AiAudioExtractionResponse,
+  AiAudioTranscriptResponse,
   CheckInVerdictResponse,
   SubmitCheckInDto,
   TextExtractRequest,
@@ -274,12 +275,12 @@ export class CheckInService {
     role: string,
     file: Express.Multer.File,
     treatmentPlanId?: string,
-  ): Promise<AiAudioExtractionResponse> {
+  ): Promise<AiAudioTranscriptResponse> {
     const today = new Date().toISOString().slice(0, 10);
     const plan = await this.resolvePlan(userId, role, treatmentPlanId);
     await this.checkIsLockedToday(plan.id, today);
 
-    return this.aiClientService.extractFromAudio(
+    return this.aiClientService.transcribeFromAudio(
       file.buffer,
       file.originalname,
       file.mimetype,
@@ -315,18 +316,31 @@ export class CheckInService {
     let rawTranscript: string | null = null;
 
     if (dto.inputMode === 'VOICE_STT') {
-      if (!dto.confirmedFacts) {
+      if (!dto.confirmedFacts?.transcript) {
         throw new BadRequestException({
           code: 'BAD_REQUEST',
-          message: 'confirmedFacts required for VOICE_STT mode',
+          message: 'confirmedFacts.transcript required for VOICE_STT mode',
         });
       }
-      medicationStatus = dto.confirmedFacts.medicationStatus;
-      pillsTakenCount = dto.confirmedFacts.pillsTakenCount;
-      symptoms = dto.confirmedFacts.symptoms ?? [];
-      intentToStop = Boolean(dto.confirmedFacts.intentToStop);
-      confidence = dto.confirmedFacts.confidence ?? 0.95;
-      rawTranscript = dto.confirmedFacts.transcript ?? null;
+      rawTranscript = dto.confirmedFacts.transcript;
+      // Facts are extracted from the confirmed transcript unless the client
+      // already sent them; extraction always happens in the AI service.
+      if (dto.confirmedFacts.medicationStatus) {
+        medicationStatus = dto.confirmedFacts.medicationStatus;
+        pillsTakenCount = dto.confirmedFacts.pillsTakenCount ?? null;
+        symptoms = dto.confirmedFacts.symptoms ?? [];
+        intentToStop = Boolean(dto.confirmedFacts.intentToStop);
+        confidence = dto.confirmedFacts.confidence ?? 0.95;
+      } else {
+        const extraction = await this.aiClientService.extractFromText(
+          dto.confirmedFacts.transcript,
+        );
+        medicationStatus = extraction.medicationTaken;
+        pillsTakenCount = extraction.pillsTakenCount;
+        symptoms = extraction.symptoms ?? [];
+        intentToStop = extraction.intentToStopOrRefuse;
+        confidence = extraction.extractionConfidence;
+      }
     } else {
       if (!dto.fallbackButtons) {
         throw new BadRequestException({

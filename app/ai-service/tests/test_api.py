@@ -164,12 +164,13 @@ def test_check_in_timeout_maps_to_provider_timeout(monkeypatch):
     assert response.json()["code"] == "PROVIDER_TIMEOUT"
 
 
-def test_audio_endpoint_connects_transcriber_and_extractor(monkeypatch):
-    monkeypatch.setenv("TIBY_EXTRACTOR", "agnes")
-    monkeypatch.setenv("NARAROUTER_API_TOKEN", "test-router-token")
-    monkeypatch.setenv("NARAROUTER_BASE_URL", "https://router.test/v1")
-    fake_result = CheckInResponse.model_validate(response_payload())
+def test_audio_endpoint_returns_the_transcript_only(monkeypatch):
+    """Facts are extracted later, from the transcript the patient confirmed."""
     with (
+        patch(
+            "main.transcription_service",
+            return_value=GroqTranscriber(api_key="test-token"),
+        ),
         patch.object(
             GroqTranscriber,
             "transcribe",
@@ -179,22 +180,32 @@ def test_audio_endpoint_connects_transcriber_and_extractor(monkeypatch):
                 )
             ),
         ) as transcribe,
-        patch.object(
-            AgnesExtractor, "extract", new=AsyncMock(return_value=fake_result)
-        ) as extract,
+        patch("main.extraction_service") as extraction,
     ):
         response = client.post(
             "/ai/extractions/check-in/audio",
             files={"audio": ("speech.wav", b"fake-wav", "audio/wav")},
         )
     assert response.status_code == 200
-    assert response.json()["transcript"] == "Sudah minum obat empat biji."
-    assert response.json()["transcription_provider"] == "groq"
-    assert response.json()["transcription_model"] == "whisper-large-v3-turbo"
-    assert response.json()["pillsTakenCount"] == 4
-    assert "emotionalSentiment" not in response.json()
+    assert response.json() == {"transcript": "Sudah minum obat empat biji."}
     transcribe.assert_awaited_once()
-    extract.assert_awaited_once()
+    # The transcriber is the only provider touched on this route.
+    extraction.assert_not_called()
+
+
+def test_audio_endpoint_keeps_distinct_transcription_providers(monkeypatch):
+    monkeypatch.setenv("TIBY_TRANSCRIBER", "fish")
+    with patch.object(
+        FishAudioTranscriber,
+        "transcribe",
+        new=AsyncMock(return_value=Transcription("Sudah minum.", "fish", "transcribe-1-pro")),
+    ):
+        response = client.post(
+            "/ai/extractions/check-in/audio",
+            files={"audio": ("speech.wav", b"fake-wav", "audio/wav")},
+        )
+    assert response.status_code == 200
+    assert response.json()["transcript"] == "Sudah minum."
 
 
 def test_audio_endpoint_rejects_non_audio_upload():
@@ -216,30 +227,16 @@ def test_audio_endpoint_rejects_empty_upload():
 
 
 def test_audio_extract_alias_uses_the_same_audio_contract(monkeypatch):
-    monkeypatch.setenv("NARAROUTER_API_TOKEN", "test-router-token")
-    monkeypatch.setenv("NARAROUTER_BASE_URL", "https://router.test/v1")
-    fake_result = CheckInResponse.model_validate(response_payload())
-    with (
-        patch(
-            "main.transcription_service",
-            return_value=GroqTranscriber(api_key="test-token"),
-        ),
-        patch.object(
-            GroqTranscriber,
-            "transcribe",
-            new=AsyncMock(
-                return_value=Transcription("Sudah minum.", "groq", "whisper")
-            ),
-        ),
-        patch("main.extraction_service") as extraction,
+    with patch.object(
+        GroqTranscriber,
+        "transcribe",
+        new=AsyncMock(return_value=Transcription("Sudah minum.", "groq", "whisper")),
     ):
-        extraction.return_value.extract = AsyncMock(return_value=fake_result)
         response = client.post(
             "/audio/extract", files={"audio": ("speech.wav", b"audio", "audio/wav")}
         )
     assert response.status_code == 200
-    assert response.json()["transcription_provider"] == "groq"
-    assert response.json()["pillsTakenCount"] == 4
+    assert response.json() == {"transcript": "Sudah minum."}
 
 
 def test_audio_endpoint_rejects_oversized_upload(monkeypatch):
@@ -252,9 +249,8 @@ def test_audio_endpoint_rejects_oversized_upload(monkeypatch):
     assert response.json()["code"] == "INVALID_REQUEST"
 
 
-def test_audio_endpoint_rejects_transcription_over_contract_limit(monkeypatch):
-    monkeypatch.setenv("NARAROUTER_API_TOKEN", "test-router-token")
-    monkeypatch.setenv("NARAROUTER_BASE_URL", "https://router.test/v1")
+def test_audio_endpoint_accepts_a_transcript_over_the_extraction_limit(monkeypatch):
+    """A long recording is still transcribed; only the later JSON extract caps length."""
     long_text = "mual " * 1500
     with patch.object(
         GroqTranscriber,
@@ -267,8 +263,8 @@ def test_audio_endpoint_rejects_transcription_over_contract_limit(monkeypatch):
             "/ai/extractions/check-in/audio",
             files={"audio": ("speech.wav", b"fake-wav", "audio/wav")},
         )
-    assert response.status_code == 422
-    assert response.json()["code"] == "INVALID_REQUEST"
+    assert response.status_code == 200
+    assert response.json()["transcript"] == long_text
 
 
 def test_audio_endpoint_maps_transcription_timeout(monkeypatch):

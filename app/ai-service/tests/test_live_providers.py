@@ -186,8 +186,8 @@ def check_text_extraction(client: TestClient, report: Report, repeat: int = 1) -
     return {field: round(100 * hits[field] / runs) for field in SCORED_FIELDS} if runs else {}
 
 
-def check_audio_extraction(client: TestClient, report: Report) -> None:
-    """Real speech-to-text plus the same extraction, end to end."""
+def check_audio_transcription(client: TestClient, report: Report) -> None:
+    """Real speech-to-text; facts are extracted separately from the transcript."""
     if not AUDIO_SAMPLE.is_file():
         report.add("extraction / audio", False, f"missing fixture {AUDIO_SAMPLE}")
         return
@@ -198,12 +198,11 @@ def check_audio_extraction(client: TestClient, report: Report) -> None:
     if response.status_code != 200:
         report.add("extraction / audio", False, f"HTTP {response.status_code}")
         return
-    body = response.json()
+    transcript = response.json().get("transcript", "")
     report.add(
         "extraction / audio",
-        bool(body.get("transcription_provider")),
-        f"{body.get('transcription_provider')}/{body.get('transcription_model')} -> "
-        f"{body.get('medicationTaken')}, {body.get('pillsTakenCount')} pill",
+        bool(transcript),
+        f"transcript chars: {len(transcript)}",
     )
 
 
@@ -259,7 +258,7 @@ GROUPS: dict[str, Callable[[TestClient, Report, int], None | dict[str, int]]] = 
     "health": check_health,
     "ocr": lambda client, report, repeat: check_ocr(client, report),
     "extraction": check_text_extraction,
-    "audio": lambda client, report, repeat: check_audio_extraction(client, report),
+    "audio": lambda client, report, repeat: check_audio_transcription(client, report),
     "guidance": check_guidance,
 }
 

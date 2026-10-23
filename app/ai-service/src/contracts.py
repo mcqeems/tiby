@@ -82,7 +82,19 @@ class AiAudioExtractionResponse(BaseModel):
     emotionalSentiment: str | None = None
 
 
-class AudioExtractionResponse(AiAudioExtractionResponse):
+class TranscriptResponse(BaseModel):
+    """Transcript-only answer of the audio endpoint.
+
+    Facts are extracted later, from the transcript the patient confirmed, so
+    this response deliberately carries nothing else.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    transcript: str = Field(min_length=1)
+
+
+class AudioExtractionResponse(TranscriptResponse):
     """Backend-compatible extraction plus transcription provider metadata."""
 
     transcription_provider: str = Field(min_length=1)

@@ -11,6 +11,7 @@ import { TreatmentPlan } from "../src/modules/patients/entities/treatment-plan.e
 import { PmoAssignment } from "../src/modules/patients/entities/pmo-assignment.entity.js";
 import { DailyCheckIn } from "../src/modules/check-ins/entities/daily-check-in.entity.js";
 import { InterventionTicket } from "../src/modules/tickets/entities/intervention-ticket.entity.js";
+import { DailyCheckIn } from "../src/modules/check-ins/entities/daily-check-in.entity.js";
 
 describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
   let app: INestApplication;
@@ -348,7 +349,7 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
     await app.close();
   });
 
-  it("1. Audio extract preview endpoint parses audio (stateless)", async () => {
+  it("1. Audio extract preview endpoint returns the transcript only (stateless)", async () => {
     const audioBuffer = Buffer.from("mock audio bytes for Pandu STT");
 
     const res = await request(app.getHttpServer())
@@ -358,9 +359,10 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
 
     expect(res.status).toBe(201);
     expect(res.body.transcript).toBeDefined();
-    expect(res.body.medicationTaken).toBe("SUDAH_MINUM");
-    expect(res.body.pillsTakenCount).toBe(4);
-    expect(res.body.extractionConfidence).toBeGreaterThan(0.7);
+    // Facts are extracted from the edited transcript later, never with the audio.
+    expect(res.body.medicationTaken).toBeUndefined();
+    expect(res.body.pillsTakenCount).toBeUndefined();
+    expect(res.body.extractionConfidence).toBeUndefined();
   });
 
   it("2. Text extract re-extraction parses edited transcript (stateless)", async () => {
@@ -427,6 +429,34 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
     // Verify TreatmentPlan has streak incremented to 1
     const plan = await dataSource.getRepository(TreatmentPlan).findOneBy({ id: plan1Id });
     expect(plan?.currentStreak).toBe(1);
+  });
+
+  it("4b. Voice submit accepts a confirmed transcript without facts (backend extracts)", async () => {
+    const res = await request(app.getHttpServer())
+      .post("/api/check-ins/audio-extract")
+      .set("Cookie", patient2Cookie)
+      .attach("audio", Buffer.from("mock audio bytes for Pandu STT"), "voice_checkin.webm")
+      .field("treatmentPlanId", plan2Id);
+
+    expect(res.status).toBe(201);
+    expect(Object.keys(res.body)).toEqual(["transcript"]);
+
+    const submit = await request(app.getHttpServer())
+      .post("/api/check-ins")
+      .set("Cookie", patient2Cookie)
+      .send({
+        inputMode: "VOICE_STT",
+        confirmedFacts: { transcript: res.body.transcript },
+      });
+
+    expect(submit.status).toBe(201);
+    expect(submit.body.verdict).toBe("TERKENDALI");
+    expect(submit.body.isDoseFulfilled).toBe(true);
+
+    const stored = await dataSource
+      .getRepository(DailyCheckIn)
+      .findOneBy({ treatmentPlanId: plan2Id });
+    expect(stored?.rawTranscriptEncrypted).toBe(res.body.transcript);
   });
 
   it("5. Same-day second check-in is rejected with 409 Conflict (CHECK_IN_ALREADY_LOCKED)", async () => {

@@ -50,12 +50,17 @@ describe("AiClientService Unit Tests", () => {
       expect(res.emotionalSentiment).toBe("distressed");
     });
 
-    it("extracts mock audio fallback when AI service is offline", async () => {
+    it("returns the fallback transcript when AI service is offline", async () => {
       const audioBuffer = Buffer.from("dummy-audio-bytes");
-      const res = await service.extractFromAudio(audioBuffer, "checkin.webm", "audio/webm");
-      expect(res.medicationTaken).toBe("SUDAH_MINUM");
-      expect(res.pillsTakenCount).toBe(4);
-      expect(res.extractionConfidence).toBeGreaterThan(0.7);
+      const res = await service.transcribeFromAudio(
+        audioBuffer,
+        "checkin.webm",
+        "audio/webm",
+      );
+      expect(res.transcript).toContain("sudah minum");
+      // Transcript-only: the bridge must not invent facts before the patient
+      // has confirmed the text.
+      expect(Object.keys(res)).toEqual(["transcript"]);
     });
   });
 });

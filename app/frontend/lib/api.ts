@@ -1,5 +1,6 @@
 import type {
   AiAudioExtractionResponse,
+  AiAudioTranscriptResponse,
   CheckInVerdictResponse,
   SubmitCheckInDto,
   TextExtractRequest,
@@ -73,14 +74,14 @@ export const api = {
     async extractAudio(
       audioBlob: Blob,
       treatmentPlanId?: string,
-    ): Promise<AiAudioExtractionResponse> {
+    ): Promise<AiAudioTranscriptResponse> {
       const formData = new FormData();
       formData.append("audio", audioBlob, "recording.webm");
       if (treatmentPlanId) {
         formData.append("treatmentPlanId", treatmentPlanId);
       }
 
-      return apiFetch<AiAudioExtractionResponse>(
+      return apiFetch<AiAudioTranscriptResponse>(
         "/api/check-ins/audio-extract",
         {
           method: "POST",
