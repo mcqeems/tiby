@@ -2,7 +2,7 @@
 
 export type PmoRelationship = "KELUARGA" | "KADER" | "NAKES";
 
-export interface OcrOnboardingResult {
+export interface OcrOnboardingDraft {
   patientName: string | null;
   regimenCode: string;
   dailyPillQuota: number;
@@ -12,17 +12,17 @@ export interface OcrOnboardingResult {
   rawText: string;
 }
 
-export interface OnboardingPayload {
+export interface CreateOnboardingDto {
   patient: {
     fullName: string;
     username: string;
     whatsappNumber: string;
   };
   pmo: {
-    fullName?: string; // Opsional jika pakai PMO Existing
-    username?: string; // Opsional jika pakai PMO Existing
-    whatsappNumber?: string; // Opsional jika pakai PMO Existing
-    id?: string; // Untuk PMO yang sudah terdaftar (Existing)
+    fullName?: string;
+    username?: string;
+    whatsappNumber?: string;
+    id?: string;
     relationship: PmoRelationship;
   };
   familyContact?: {
@@ -42,8 +42,9 @@ export interface OnboardingCredentials {
   patientUsername: string;
   patientPassword: string;
   pmoUsername: string;
-  pmoPassword: string | null;
+  pmoPassword: string | null; // Sesuaikan dengan respons backend
   patientUserId: string;
-  pmoUserId: string;
-  pmoCreated: boolean;
+  pmoUserId: string | null;
 }
+
+export type OnboardingPayload = CreateOnboardingDto;

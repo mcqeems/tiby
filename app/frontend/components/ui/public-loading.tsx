@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 interface PublicLoadingProps {
   message?: string;
   fullScreen?: boolean;
@@ -11,15 +13,18 @@ export default function PublicLoading({
 }: PublicLoadingProps) {
   const content = (
     <div className="flex flex-col items-center justify-center p-8 text-center">
-      {/* Maskot Pandu dengan Animasi Floating & Glow Halus */}
       <div className="relative mb-4 flex items-center justify-center pt-2">
         <div className="absolute inset-0 rounded-full bg-radial from-tiby-teal-500/20 to-transparent blur-xl scale-125 pointer-events-none" />
-        <img
+        <Image
           src="/mascot/listening/listening.png"
           alt="Maskot Pandu Memuat"
+          width={80}
+          height={80}
+          quality={100}
+          priority
           className="relative h-20 w-20 object-contain drop-shadow-md animate-[bounce_3s_ease-in-out_infinite]"
           onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = "/mascot/pandu.png";
+            (e.currentTarget as HTMLImageElement).src = "/mascot/happy/happy-stroke.png";
           }}
         />
       </div>

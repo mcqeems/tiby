@@ -1,17 +1,20 @@
-import type {
-  CreateOnboardingDto,
-  ListPatientsQuery,
-  OcrOnboardingDraft,
-  OnboardingCredentials,
-  PatientStatusHistoryList,
-  RiskSortedPatientList,
-} from "@tiby/ts-shared";
-// ✅ Import tipe FaskesTicket dan FaskesAlert dari folder types kita
-import type { FaskesTicket, FaskesAlert } from "../types/faskes";
 import { apiFetch } from "./client";
 
+import type {
+  ListPatientsQuery,
+  RiskSortedPatientList,
+  PatientStatusHistoryList,
+  FaskesTicket,
+  FaskesAlert,
+} from "../types/faskes";
+
+import type {
+  CreateOnboardingDto,
+  OcrOnboardingDraft,
+  OnboardingCredentials,
+} from "../types/onboarding";
+
 export const faskesApi = {
-  // ─── 1. MANAJEMEN PASIEN ──────────────────────────────────────────────────
   async getPatients(
     query: Partial<ListPatientsQuery> = {},
   ): Promise<RiskSortedPatientList> {
@@ -42,7 +45,6 @@ export const faskesApi = {
     );
   },
 
-  // ─── 2. ONBOARDING (Pendaftaran Pasien Baru) ──────────────────────────────
   async onboard(dto: CreateOnboardingDto): Promise<OnboardingCredentials> {
     return apiFetch<OnboardingCredentials>("/api/faskes/onboarding", {
       method: "POST",

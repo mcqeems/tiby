@@ -1,6 +1,4 @@
-// lib/types/faskes.ts
 
-// --- Tipe untuk Daftar Pasien ---
 export type PatientState =
   | "AKTIF"
   | "PENDING"
@@ -10,6 +8,7 @@ export type PatientState =
   | "PINDAH_FASKES"
   | "SELESAI"
   | "DIPANTAU_TERBATAS";
+
 export type TreatmentPhase = "INTENSIF" | "LANJUTAN";
 
 export interface RiskSortedPatientItem {
@@ -40,13 +39,30 @@ export interface RiskSortedPatientItem {
   } | null;
 }
 
-// --- Tipe untuk Tiket (Tickets) ---
+export interface ListPatientsQuery {
+  page?: number;
+  limit?: number;
+  state?: PatientState;
+  phase?: TreatmentPhase;
+  search?: string;
+  treatmentPlanId?: string;
+}
+
+export interface RiskSortedPatientList {
+  items: RiskSortedPatientItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+
 export type TicketStatus =
   | "OPEN"
   | "IN_PROGRESS"
   | "RESOLVED"
   | "RESOLVED_CLOSED"
   | "AUTO_CLOSED_BY_CHECKIN";
+
 export type TicketPriority = "HIGH" | "CRITICAL";
 
 export interface FaskesTicket {
@@ -66,7 +82,6 @@ export interface FaskesTicket {
   closedAt: string | null;
 }
 
-// --- Tipe untuk Alerts (Notifikasi Dashboard) ---
 export type AlertSeverity = "INFO" | "WARNING" | "HIGH";
 
 export interface FaskesAlert {
@@ -83,32 +98,32 @@ export interface FaskesAlert {
   readAt: string | null;
 }
 
-// lib/types/faskes.ts
 
 export interface PatientHistoryItem {
   id: string;
   treatmentPlanId: string;
-  eventType: string; 
+  eventType: string;
   previousState: string | null;
   newState: string | null;
-  previousStreak: number | null; 
-  newStreak: number | null;      
-  actorRole: string; 
-  reasonOrSummary: string | null; 
+  previousStreak: number | null;
+  newStreak: number | null;
+  actorRole: string;
+  reasonOrSummary: string | null;
   metadata: Record<string, unknown> | null;
   createdAt: string;
 }
 
-export interface PatientHistoryResponse {
+export interface PatientStatusHistoryList {
   items: PatientHistoryItem[];
   total: number;
   page: number;
   limit: number;
 }
 
+export type PatientHistoryResponse = PatientStatusHistoryList;
 
 export interface PatientDetail extends RiskSortedPatientItem {
-  userId?: string;           
+  userId?: string;
 }
 
 export type PatientPmo = NonNullable<RiskSortedPatientItem["pmo"]>;

@@ -1,4 +1,4 @@
-import type { ConsentStatus } from "@tiby/ts-shared";
+import type { ConsentStatus } from "../types/consent";
 import { apiFetch } from "./client";
 
 export const consentApi = {

@@ -1,9 +1,9 @@
+import { apiFetch } from "./client";
 import type {
+  PmoPatientStatusList,
   CreatePmoFollowUpDto,
   PmoFollowUpResponse,
-  PmoPatientStatusList,
-} from "@tiby/ts-shared";
-import { apiFetch } from "./client";
+} from "../types/pmo";
 
 export const pmoApi = {
   async getPatients(): Promise<PmoPatientStatusList> {

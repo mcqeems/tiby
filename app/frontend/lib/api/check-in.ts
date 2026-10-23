@@ -1,11 +1,12 @@
+import { apiFetch } from "./client";
 import type {
   AiAudioExtractionResponse,
   AiAudioTranscriptResponse,
   CheckInVerdictResponse,
   SubmitCheckInDto,
   TextExtractRequest,
-} from "@tiby/ts-shared";
-import { apiFetch } from "./client";
+  CheckInHistoryResponse,
+} from "../types/check-in";
 
 export const checkInsApi = {
   async extractAudio(
@@ -38,5 +39,21 @@ export const checkInsApi = {
       method: "POST",
       body: JSON.stringify(dto),
     });
+  },
+
+  async getHistory(
+    params: { page?: number; limit?: number } = {},
+  ): Promise<CheckInHistoryResponse> {
+    const searchParams = new URLSearchParams();
+    if (params.page) searchParams.set("page", String(params.page));
+    if (params.limit) searchParams.set("limit", String(params.limit));
+
+    const qs = searchParams.toString();
+    return apiFetch<CheckInHistoryResponse>(
+      `/api/check-ins${qs ? `?${qs}` : ""}`,
+      {
+        method: "GET",
+      },
+    );
   },
 };

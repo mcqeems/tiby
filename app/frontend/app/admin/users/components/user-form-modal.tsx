@@ -25,25 +25,56 @@ export default function UserFormModal({
     username: "",
     email: "",
     password: "",
-    role: "NAKES",
     facilityId: "",
-    whatsappNumber: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // ✅ VALIDASI FRONTEND
     if (!formData.facilityId) {
       return notify({
         variant: "warning",
-        title: "Validasi",
-        description: "Pilih Faskes tempat Nakes bertugas.",
+        title: "Validasi Gagal",
+        description: "Pilih Faskes penempatan.",
+        confirmLabel: "Mengerti",
+      });
+    }
+    if (formData.fullName.length < 3) {
+      return notify({
+        variant: "warning",
+        title: "Validasi Gagal",
+        description: "Nama lengkap minimal 3 karakter.",
+        confirmLabel: "Mengerti",
+      });
+    }
+    if (formData.username.length < 3) {
+      return notify({
+        variant: "warning",
+        title: "Validasi Gagal",
+        description: "Username minimal 3 karakter.",
+        confirmLabel: "Mengerti",
+      });
+    }
+    if (formData.password.length < 8) {
+      return notify({
+        variant: "warning",
+        title: "Validasi Gagal",
+        description: "Password minimal 8 karakter.",
         confirmLabel: "Mengerti",
       });
     }
 
     try {
       setSubmitting(true);
-      await usersApi.createUser(formData);
+      await usersApi.createUser({
+        fullName: formData.fullName,
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        role: "NAKES",
+        facilityId: formData.facilityId,
+      });
       await notify({
         variant: "success",
         title: "Berhasil",
@@ -52,10 +83,14 @@ export default function UserFormModal({
       });
       onSuccess();
     } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Pastikan format email benar dan username belum dipakai.";
       await notify({
         variant: "danger",
-        title: "Gagal",
-        description: err instanceof Error ? err.message : "Server error",
+        title: "Gagal Membuat Akun",
+        description: message,
         confirmLabel: "Tutup",
       });
     } finally {
@@ -102,37 +137,42 @@ export default function UserFormModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
-                Nama Lengkap
+                Nama Lengkap *
               </label>
               <input
                 required
+                minLength={3}
                 value={formData.fullName}
                 onChange={(e) =>
                   setFormData({ ...formData, fullName: e.target.value })
                 }
-                className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm outline-none"
+                className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm outline-none focus:ring-2 focus:ring-tiby-teal-600"
                 placeholder="dr. Budi"
               />
             </div>
             <div>
               <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
-                Username
+                Username *
               </label>
               <input
                 required
+                minLength={3}
                 value={formData.username}
                 onChange={(e) =>
                   setFormData({ ...formData, username: e.target.value })
                 }
-                className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm outline-none"
+                className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm outline-none focus:ring-2 focus:ring-tiby-teal-600"
                 placeholder="dokter_budi"
               />
+              <span className="text-[10px] text-gray-500 mt-1 block">
+                Minimal 3 karakter, tanpa spasi.
+              </span>
             </div>
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
-              Email
+              Email *
             </label>
             <input
               required
@@ -141,28 +181,26 @@ export default function UserFormModal({
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
               }
-              className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm outline-none"
+              className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm outline-none focus:ring-2 focus:ring-tiby-teal-600"
               placeholder="budi@faskes.com"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
-              Password Awal
+              Password Awal *
             </label>
             <input
               required
               type="text"
+              minLength={8}
               value={formData.password}
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })
               }
-              className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm outline-none"
+              className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm outline-none focus:ring-2 focus:ring-tiby-teal-600"
               placeholder="Minimal 8 karakter"
             />
-            <p className="text-[10px] text-gray-500 mt-1">
-              Nakes dapat mengganti password ini nanti di halaman profil.
-            </p>
           </div>
 
           <div className="flex gap-3 pt-4 border-t border-gray-100">

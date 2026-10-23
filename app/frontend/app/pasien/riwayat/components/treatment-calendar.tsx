@@ -1,23 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import {
-  ChevronLeft,
-  ChevronRight,
-  CheckCircle2,
-  AlertTriangle,
-  XCircle,
-  Clock,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { CheckInHistoryItem } from "@/lib/types/check-in";
 
-export default function TreatmentCalendar() {
-  // Menggunakan waktu saat ini sebagai default
+export default function TreatmentCalendar({
+  checkIns = [],
+  startDate,
+}: {
+  checkIns: CheckInHistoryItem[];
+  startDate?: string;
+}) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  // Nama bulan dan hari
   const monthNames = [
     "Januari",
     "Februari",
@@ -34,32 +32,47 @@ export default function TreatmentCalendar() {
   ];
   const dayNames = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
 
-  // Fungsi navigasi bulan
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
-  // Logika kalender
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // Mendapatkan hari pertama di bulan ini (0 = Minggu, 1 = Senin, dst)
-  // Kita ubah agar Senin = 0, Minggu = 6
   let firstDay = new Date(year, month, 1).getDay();
   firstDay = firstDay === 0 ? 6 : firstDay - 1;
 
-  // MOCK DATA: Simulasi status per tanggal (1-30/31)
-  // Di aplikasi nyata, ini diambil dari API riwayat
+  const checkInMap = new Map<string, CheckInHistoryItem>();
+  checkIns.forEach((item) => {
+    checkInMap.set(item.checkInDate, item);
+  });
+
   const getStatusForDay = (day: number) => {
-    // Simulasi: Tanggal 1-10 sukses, 11-12 bolos, 13-20 sukses, 21 ada keluhan
-    if (day < 10) return "success";
-    if (day === 11 || day === 12) return "missed";
-    if (day === 21) return "warning";
-    if (day < new Date().getDate()) return "success"; // Hari yang sudah lewat dianggap sukses
-    return "future"; // Hari yang belum terjadi
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const checkIn = checkInMap.get(dateStr);
+
+    if (checkIn) {
+      if (checkIn.verdict === "TERKENDALI") return "success";
+      if (checkIn.verdict === "PERLU_PERHATIAN") return "warning";
+      if (checkIn.verdict === "SEGERA_KE_FASKES") return "missed";
+    }
+
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+    // ✅ FIX: Jika tanggal sebelum startDate, kembalikan "inactive"
+    if (startDate && dateStr < startDate) {
+      return "inactive";
+    }
+
+    // Jika tanggal sudah lewat (tapi >= startDate) dan tidak ada check-in, baru merah
+    if (dateStr < todayStr) {
+      return "missed";
+    }
+
+    return "future";
   };
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs">
-      {/* Header Kalender */}
       <div className="flex items-center justify-between mb-6">
         <h3 className="font-heading font-bold text-lg text-tiby-ink">
           Kalender Kepatuhan
@@ -71,7 +84,7 @@ export default function TreatmentCalendar() {
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <span className="text-sm font-semibold text-tiby-ink min-w-[100px] text-center">
+          <span className="text-sm font-semibold text-tiby-ink min-w-25 text-center">
             {monthNames[month]} {year}
           </span>
           <button
@@ -83,7 +96,6 @@ export default function TreatmentCalendar() {
         </div>
       </div>
 
-      {/* Grid Hari */}
       <div className="grid grid-cols-7 gap-1 mb-2">
         {dayNames.map((day) => (
           <div
@@ -95,9 +107,7 @@ export default function TreatmentCalendar() {
         ))}
       </div>
 
-      {/* Grid Tanggal */}
       <div className="grid grid-cols-7 gap-1.5">
-        {/* Slot Kosong untuk hari sebelum tanggal 1 */}
         {Array.from({ length: firstDay }).map((_, i) => (
           <div
             key={`empty-${i}`}
@@ -105,7 +115,6 @@ export default function TreatmentCalendar() {
           />
         ))}
 
-        {/* Tanggal 1 sampai akhir bulan */}
         {Array.from({ length: daysInMonth }).map((_, i) => {
           const day = i + 1;
           const status = getStatusForDay(day);
@@ -114,7 +123,6 @@ export default function TreatmentCalendar() {
             month === new Date().getMonth() &&
             year === new Date().getFullYear();
 
-          // Styling berdasarkan status
           let bgClass = "bg-white border border-gray-100";
           let textClass = "text-tiby-ink";
 
@@ -127,21 +135,21 @@ export default function TreatmentCalendar() {
           } else if (status === "warning") {
             bgClass = "bg-amber-50 border-amber-200";
             textClass = "text-amber-700 font-bold";
-          } else if (status === "future") {
-            bgClass = "bg-white border-dashed border-gray-200";
-            textClass = "text-gray-400";
+          } else if (status === "future" || status === "inactive") {
+            // ✅ FIX: Tanggal "inactive" (sebelum terdaftar) dibuat putih pudar tanpa garis putus-putus
+            bgClass =
+              status === "future"
+                ? "bg-white border-dashed border-gray-200"
+                : "bg-gray-50/30 border-transparent";
+            textClass = "text-gray-300";
           }
 
           return (
             <div
               key={day}
-              className={`relative flex flex-col items-center justify-center h-10 sm:h-12 rounded-xl transition-all ${bgClass} ${
-                isToday ? "ring-2 ring-tiby-teal-600 ring-offset-2" : ""
-              }`}
+              className={`relative flex flex-col items-center justify-center h-10 sm:h-12 rounded-xl transition-all ${bgClass} ${isToday ? "ring-2 ring-tiby-teal-600 ring-offset-2" : ""}`}
             >
               <span className={`text-sm ${textClass}`}>{day}</span>
-
-              {/* Titik indikator kecil di bawah angka */}
               {status === "success" && (
                 <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-tiby-teal-600" />
               )}
@@ -156,7 +164,6 @@ export default function TreatmentCalendar() {
         })}
       </div>
 
-      {/* Legend / Keterangan */}
       <div className="flex flex-wrap items-center justify-center gap-4 mt-6 pt-4 border-t border-gray-100">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-full bg-tiby-teal-50 border border-tiby-teal-200 flex items-center justify-center">
@@ -179,7 +186,7 @@ export default function TreatmentCalendar() {
             <div className="w-1 h-1 bg-red-500 rounded-full" />
           </div>
           <span className="text-[11px] font-medium text-tiby-muted">
-            Terlewat
+            Terlewat / Bahaya
           </span>
         </div>
         <div className="flex items-center gap-1.5">
