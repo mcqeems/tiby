@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-// ✅ FIX 1: Import API Modular (usersApi & onboardingApi)
 import { usersApi } from "@/lib/api/users";
 import { onboardingApi } from "@/lib/api/onboarding";
 import { usePopup } from "@/components/ui/popup-provider";
 import PublicLoading from "@/components/ui/public-loading";
 import OnboardingSuccessCard from "./onboarding-success-card";
-// ✅ FIX 2: Pastikan import tipe data menggunakan OnboardingPayload
 import type {
   OnboardingPayload,
   OnboardingCredentials,
@@ -139,9 +137,7 @@ function SectionCard({
             <Icon className="h-[18px] w-[18px]" />
           </span>
           <div className="min-w-0">
-            <span className="block text-[11px] font-semibold uppercase tracking-wider text-tiby-teal-700">
-              {eyebrow}
-            </span>
+       
             <h3 className="font-heading text-base font-semibold leading-tight text-tiby-ink">
               {title}
             </h3>
@@ -209,7 +205,6 @@ export default function OnboardingForm() {
   const { confirm, notify } = usePopup();
   const todayStr = new Date().toISOString().slice(0, 10);
 
-  // ✅ FIX 3: Gunakan OnboardingPayload, bukan CreateOnboardingDto
   const [form, setForm] = useState<OnboardingPayload>({
     patient: { fullName: "", username: "", whatsappNumber: "" },
     pmo: {
@@ -281,7 +276,6 @@ export default function OnboardingForm() {
     setOcrLoading(true);
 
     try {
-      // ✅ FIX 5: Panggil onboardingApi.ocrExtract()
       const draft = await onboardingApi.ocrExtract(file);
 
       setForm((prev) => ({
@@ -355,7 +349,6 @@ export default function OnboardingForm() {
     setSubmitting(true);
 
     try {
-      // ✅ FIX 6: Gunakan tipe OnboardingPayload
       const payload: OnboardingPayload = {
         patient: form.patient,
         regimenCode: form.regimenCode,
@@ -377,7 +370,6 @@ export default function OnboardingForm() {
         };
       }
 
-      // ✅ FIX 7: Panggil onboardingApi.onboard()
       const creds = await onboardingApi.onboard(payload);
       setCreatedCredentials(creds);
 
@@ -455,7 +447,6 @@ export default function OnboardingForm() {
 
       {!createdCredentials && <Stepper />}
 
-      {/* ───────── OCR SCAN BANNER ───────── */}
       {!createdCredentials && (
         <div className="relative isolate overflow-hidden rounded-2xl bg-linear-to-br from-tiby-teal-600 to-tiby-teal-700 p-5 text-white shadow-[0_8px_24px_-8px_rgba(13,148,136,0.45)] sm:p-6">
           <span
@@ -510,7 +501,6 @@ export default function OnboardingForm() {
 
       {!createdCredentials && (
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* ───────── SECTION 1: DATA PASIEN ───────── */}
           <SectionCard
             id="langkah-1"
             icon={UserCheck}
@@ -583,7 +573,6 @@ export default function OnboardingForm() {
             </div>
           </SectionCard>
 
-          {/* ───────── SECTION 2: DATA PMO ───────── */}
           <SectionCard
             id="langkah-2"
             icon={Users}
@@ -637,7 +626,6 @@ export default function OnboardingForm() {
               </div>
             }
           >
-            {/* MODE EXISTING, BELUM PILIH: pencarian + daftar */}
             {pmoMode === "existing" && !selectedExistingPmo && (
               <div className="space-y-3">
                 <div className="relative">
@@ -696,7 +684,6 @@ export default function OnboardingForm() {
               </div>
             )}
 
-            {/* MODE EXISTING, SUDAH DIPILIH: kartu ringkasan & form tertutup */}
             {pmoMode === "existing" && selectedExistingPmo && (
               <div className="flex flex-col gap-3 rounded-xl border border-tiby-teal-200 bg-linear-to-r from-tiby-teal-50/80 to-white p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3.5">
@@ -726,7 +713,6 @@ export default function OnboardingForm() {
               </div>
             )}
 
-            {/* MODE BARU: form lengkap */}
             {pmoMode === "baru" && (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <Field label="Nama Lengkap PMO" required icon={User}>
@@ -805,7 +791,6 @@ export default function OnboardingForm() {
             )}
           </SectionCard>
 
-          {/* ───────── SECTION 3: RENCANA TERAPI ───────── */}
           <SectionCard
             id="langkah-3"
             icon={Pill}
@@ -888,7 +873,6 @@ export default function OnboardingForm() {
             </div>
           </SectionCard>
 
-          {/* ───────── SECTION 4: KONTAK DARURAT (OPSIONAL) ───────── */}
           <SectionCard
             icon={PhoneCall}
             eyebrow="Opsional"
@@ -965,7 +949,6 @@ export default function OnboardingForm() {
             )}
           </SectionCard>
 
-          {/* ───────── AKSI ───────── */}
           <div
             className={`${cardCls} flex flex-col-reverse gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6`}
           >

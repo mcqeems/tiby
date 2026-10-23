@@ -112,7 +112,6 @@ export const faskesApi = {
     });
   },
 
-  // ─── 4. NOTIFIKASI / ALERTS ───────────────────────────────────────────────
   async getAlerts(
     params: {
       unreadOnly?: boolean;
