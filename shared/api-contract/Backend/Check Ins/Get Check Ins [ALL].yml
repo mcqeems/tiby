@@ -1,0 +1,118 @@
+info:
+  name: Get Check Ins [ALL]
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/check-ins"
+  params:
+    - name: page
+      value: ""
+      type: query
+      description: "Default: 1"
+      disabled: true
+    - name: limit
+      value: ""
+      type: query
+      description: "Default:  20, Max: 100"
+      disabled: true
+    - name: treatmentPlanId
+      value: ""
+      type: query
+      description: "[NAKES, PMO, ADMIN]"
+      disabled: true
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Get Check Ins (200)
+    request:
+      url: "{{baseUrl}}/api/check-ins"
+      method: GET
+      params:
+        - name: page
+          value: ""
+          type: query
+          description: "Default: 1"
+          disabled: true
+        - name: limit
+          value: ""
+          type: query
+          description: "Default:  20, Max: 100"
+          disabled: true
+        - name: treatmentPlanId
+          value: ""
+          type: query
+          disabled: true
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: access-control-allow-origin
+          value: http://localhost:3000
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "570"
+        - name: etag
+          value: W/"23a-Nhy4B2QLuEVAsa8FaK5PML66rHo"
+        - name: date
+          value: Fri, 23 Oct 2026 02:15:32 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            "items": [
+              {
+                "id": "3ba8c8b8-8706-4895-bc6b-f776f871cfde",
+                "treatmentPlanId": "bb1adaae-b7fc-4621-9bdb-26948c44406a",
+                "patientUserId": "0ehKGWIZgdFr6IXIXv13X1wRB8cyHofD",
+                "patientName": "Budi Santoso",
+                "facilityId": "dd2e9d96-3837-4d2b-8e26-b0cb89b2808e",
+                "facilityName": "Puskesmas Gambir",
+                "checkInDate": "2026-10-18",
+                "attemptNumber": 1,
+                "reportedByRole": "PASIEN",
+                "inputMode": "FALLBACK_BUTTONS",
+                "medicationStatus": "SUDAH_MINUM",
+                "pillsTakenCount": 4,
+                "isDoseFulfilled": true,
+                "sttConfidence": 1,
+                "submittedAt": "2026-10-18T03:59:39.807Z",
+                "verdict": "TERKENDALI"
+              }
+            ],
+            "total": 1,
+            "page": 1,
+            "limit": 20
+          }
+
+docs: |-
+  # Notes
+
+  ## Scope
+
+  **ADMIN**: Can view all at all facilities.
+
+  **NAKES**: Can view all patient at the same facilities.
+
+  **PMO**: Can view all patient that is assigned to him/her.
+
+  **PATIENT**: Can view it's own check ins.
