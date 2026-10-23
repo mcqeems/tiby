@@ -84,7 +84,7 @@ export default function TreatmentCalendar({
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <span className="text-sm font-semibold text-tiby-ink min-w-[100px] text-center">
+          <span className="text-sm font-semibold text-tiby-ink min-w-25 text-center">
             {monthNames[month]} {year}
           </span>
           <button

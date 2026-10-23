@@ -219,7 +219,7 @@ export default function RegisterView() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-tiby-white px-5 py-6">
-      <div className="w-full max-w-[340px]">
+      <div className="w-full max-w-85">
         <div className="flex flex-col items-center text-center">
           <MascotAnimation size={85} className="mb-1" />
           <h1 className="font-heading text-2xl font-600 text-tiby-ink tracking-tight">

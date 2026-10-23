@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Image from "next/image"; // ✅ Import Image
-import { ArrowRight, Edit3, CheckCircle2 } from "lucide-react";
+import { Edit3, CheckCircle2 } from "lucide-react";
 
 interface CheckInReviewProps {
   transcript: string;

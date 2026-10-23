@@ -16,7 +16,7 @@ export default function PublicLoading({
       <div className="relative mb-4 flex items-center justify-center pt-2">
         <div className="absolute inset-0 rounded-full bg-radial from-tiby-teal-500/20 to-transparent blur-xl scale-125 pointer-events-none" />
         <Image
-          src="/mascot/listening/listening.png"
+          src="/mascot/idle/idle.png"
           alt="Maskot Pandu Memuat"
           width={80}
           height={80}
@@ -29,7 +29,6 @@ export default function PublicLoading({
         />
       </div>
 
-      {/* Teks Indikator */}
       <h4 className="font-heading text-sm font-semibold text-tiby-ink">
         {message}
       </h4>

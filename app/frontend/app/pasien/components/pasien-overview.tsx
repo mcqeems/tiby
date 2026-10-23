@@ -10,7 +10,6 @@ import { facilitiesApi } from "@/lib/api/facilities";
 import type { CheckInHistoryItem } from "@/lib/types/check-in";
 import type { FacilityItem } from "@/lib/types/facilities";
 import PublicLoading from "@/components/ui/public-loading";
-// ✅ Ganti import ke MascotAnimation agar selalu beranimasi
 import MascotAnimation from "@/components/mascot-animation";
 import {
   Pill,
@@ -289,11 +288,12 @@ export default function PasienOverview() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4 }}
-            className="bg-gradient-to-br from-tiby-teal-600 to-tiby-teal-800 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-tiby-teal-600/20 relative overflow-hidden"
+            className="bg-linear-to-br from-tiby-teal-600 to-tiby-teal-800 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-tiby-teal-600/20 relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
 
-            <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
+            {/* ✅ FIX: Menggunakan flex-col-reverse agar maskot di atas pada mobile */}
+            <div className="relative z-10 flex flex-col-reverse sm:flex-row items-center justify-between gap-6">
               <div className="space-y-4 text-center sm:text-left">
                 <div>
                   <p className="text-tiby-teal-100 font-medium mb-1">
@@ -331,7 +331,6 @@ export default function PasienOverview() {
                 )}
               </div>
 
-              {/* ✅ FIX: Langsung panggil MascotAnimation agar dipastikan beranimasi */}
               <div className="shrink-0 flex items-center justify-center">
                 <MascotAnimation size={140} className="drop-shadow-2xl" />
               </div>
