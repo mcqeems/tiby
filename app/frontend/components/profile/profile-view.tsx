@@ -7,7 +7,6 @@ import { usersApi } from "@/lib/api/users";
 import { consentApi } from "@/lib/api/consent";
 import { usePopup } from "@/components/ui/popup-provider";
 import PublicLoading from "@/components/ui/public-loading";
-// Import FamilyContactsCard (hanya akan dirender untuk Pasien)
 import FamilyContactsCard from "@/app/pasien/profile/components/family-contacts-card";
 
 import {
@@ -163,8 +162,6 @@ function Requirement({
   );
 }
 
-// ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
-
 export default function ProfileView() {
   const { data: session, isPending } = useSession();
   const { notify, confirm } = usePopup();
@@ -289,11 +286,10 @@ export default function ProfileView() {
   const strength = getPasswordStrength(newPassword);
   const lengthOk = newPassword.length >= 8;
   const matchOk = confirmPassword !== "" && confirmPassword === newPassword;
-
-const isPasien = user.role === "PASIEN";
+  const isPasien = user.role === "PASIEN";
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 pb-24 md:pb-10">
+    <div className="mx-auto max-w-7xl space-y-6 pb-8 md:pb-10">
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight text-tiby-ink">
           Profil Saya
@@ -303,201 +299,207 @@ const isPasien = user.role === "PASIEN";
         </p>
       </div>
 
-      {/* ─── 1. KARTU PROFIL UTAMA ─────────────────────────────────────── */}
-      <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
-        <div className="relative h-28 overflow-hidden bg-linear-to-r from-tiby-teal-600 to-tiby-teal-700 sm:h-32">
-          <span
-            aria-hidden="true"
-            className="absolute -right-8 -top-12 h-44 w-44 rounded-full bg-white/10"
-          />
-          <span
-            aria-hidden="true"
-            className="absolute -bottom-16 left-1/3 h-36 w-36 rounded-full bg-white/5"
-          />
-        </div>
-
-        <div className="px-6 pb-6 sm:px-8 sm:pb-8">
-          <div className="-mt-12 flex flex-col items-center gap-4 sm:-mt-14 sm:flex-row sm:items-end">
-            <span className="relative z-10 flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-tiby-teal-50 font-heading text-3xl font-semibold uppercase text-tiby-teal-700 shadow-md ring-4 ring-white sm:h-28 sm:w-28 sm:text-4xl">
-              {user.name?.charAt(0) || user.username?.charAt(0) || "?"}
-            </span>
-            <div className="min-w-0 text-center sm:pb-1 sm:text-left">
-              <h2 className="truncate font-heading text-xl font-semibold text-tiby-ink">
-                {user.name || user.username}
-              </h2>
-              <p className="font-mono text-sm text-tiby-muted">
-                @{user.username}
-              </p>
-            </div>
-          </div>
-
-          <dl
-            className={`mt-6 grid gap-3 ${user.email ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
-          >
-            <InfoItem
-              icon={AtSign}
-              label="Username"
-              value={user.username || "-"}
-              mono
-            />
-            <InfoItem
-              icon={ShieldCheck}
-              label="Peran"
-              value={roleLabel(user.role)}
-            />
-            {user.email && (
-              <InfoItem icon={Mail} label="Email" value={user.email} />
-            )}
-          </dl>
-        </div>
-      </section>
-
-      {/* ✅ 2. KARTU KONTAK KELUARGA (HANYA UNTUK PASIEN) */}
-      {isPasien && <FamilyContactsCard patientId={user.id} />}
-
-      {/* ─── 3. KARTU UBAH PASSWORD ───────────────────────────────────── */}
-      <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
-        <header className="flex items-center gap-3 border-b border-gray-100 bg-linear-to-r from-tiby-teal-50/70 to-white px-6 py-4 sm:px-8">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-tiby-teal-700 shadow-sm ring-1 ring-tiby-teal-100">
-            <KeyRound className="h-[18px] w-[18px]" />
-          </span>
-          <div>
-            <h3 className="font-heading text-base font-semibold leading-tight text-tiby-ink">
-              Ubah Password
-            </h3>
-            <p className="mt-0.5 text-xs text-tiby-muted">
-              Gunakan password baru untuk login di sesi berikutnya.
-            </p>
-          </div>
-        </header>
-
-        <form onSubmit={handleChangePassword} className="space-y-5 p-6 sm:p-8">
-          <PasswordField
-            id="current-password"
-            label="Password Saat Ini"
-            value={currentPassword}
-            onChange={setCurrentPassword}
-            placeholder="Masukkan password lama"
-            autoComplete="current-password"
-            visible={showPassword}
-            onToggleVisible={toggleVisible}
-          />
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <PasswordField
-              id="new-password"
-              label="Password Baru"
-              value={newPassword}
-              onChange={setNewPassword}
-              placeholder="Minimal 8 karakter"
-              autoComplete="new-password"
-              visible={showPassword}
-              onToggleVisible={toggleVisible}
-            />
-            <PasswordField
-              id="confirm-password"
-              label="Konfirmasi Password Baru"
-              value={confirmPassword}
-              onChange={setConfirmPassword}
-              placeholder="Ulangi password baru"
-              autoComplete="new-password"
-              visible={showPassword}
-              onToggleVisible={toggleVisible}
-            />
-          </div>
-
-          <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-tiby-muted">
-                Kekuatan password
-              </span>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+        <div className="flex flex-col gap-6">
+          <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs flex-1 flex flex-col">
+            <div className="relative h-28 overflow-hidden bg-linear-to-r from-tiby-teal-600 to-tiby-teal-700 shrink-0">
               <span
-                aria-live="polite"
-                className={`text-xs font-semibold ${strength.text}`}
-              >
-                {strength.label || "-"}
-              </span>
+                aria-hidden="true"
+                className="absolute -right-8 -top-12 h-44 w-44 rounded-full bg-white/10"
+              />
+              <span
+                aria-hidden="true"
+                className="absolute -bottom-16 left-1/3 h-36 w-36 rounded-full bg-white/5"
+              />
             </div>
-            <div className="mt-2.5 grid grid-cols-4 gap-1.5" aria-hidden="true">
-              {[1, 2, 3, 4].map((step) => (
-                <span
-                  key={step}
-                  className={`h-1.5 rounded-full transition-colors duration-300 ${
-                    strength.score >= step ? strength.bar : "bg-gray-200"
-                  }`}
+
+            <div className="px-6 pb-6 flex-1 flex flex-col">
+              <div className="-mt-12 flex flex-col items-center text-center gap-3 shrink-0">
+                <span className="relative z-10 flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-tiby-teal-50 font-heading text-3xl font-semibold uppercase text-tiby-teal-700 shadow-md ring-4 ring-white">
+                  {user.name?.charAt(0) || user.username?.charAt(0) || "?"}
+                </span>
+                <div className="min-w-0">
+                  <h2 className="truncate font-heading text-xl font-semibold text-tiby-ink">
+                    {user.name || user.username}
+                  </h2>
+                  <p className="font-mono text-sm text-tiby-muted">
+                    @{user.username}
+                  </p>
+                </div>
+              </div>
+
+              {/* ✅ mt-auto agar info turun ke bawah jika card ditarik panjang */}
+              <dl className="grid gap-3 mt-auto">
+                <InfoItem
+                  icon={AtSign}
+                  label="Username"
+                  value={user.username || "-"}
+                  mono
                 />
-              ))}
-            </div>
-            <ul className="mt-3.5 flex flex-wrap gap-x-5 gap-y-1.5">
-              <Requirement met={lengthOk}>Minimal 8 karakter</Requirement>
-              <Requirement met={matchOk}>Konfirmasi cocok</Requirement>
-            </ul>
-          </div>
-
-          <div className="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
-            <p className="flex items-center gap-2 text-xs text-tiby-muted">
-              <ShieldCheck className="h-4 w-4 shrink-0 text-tiby-teal-600" />
-              Pastikan password lama Anda benar.
-            </p>
-            <button
-              type="submit"
-              disabled={loading}
-              className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-tiby-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_6px_16px_-6px_rgba(13,148,136,0.6)] transition hover:-translate-y-0.5 hover:bg-tiby-teal-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tiby-teal-600 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70 disabled:shadow-none"
-            >
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <KeyRound className="h-4 w-4" />
-              )}
-              {loading ? "Menyimpan..." : "Simpan Password Baru"}
-            </button>
-          </div>
-        </form>
-      </section>
-
-      {/* ─── 4. KARTU PRIVASI & KEAMANAN DATA (KHUSUS PASIEN) ─────────── */}
-      {isPasien && (
-        <section className="overflow-hidden rounded-2xl border border-red-200 bg-white shadow-xs">
-          <header className="flex items-center gap-3 border-b border-red-100 bg-red-50/50 px-6 py-4 sm:px-8">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-red-600 shadow-sm ring-1 ring-red-100">
-              <ShieldAlert className="h-[18px] w-[18px]" />
-            </span>
-            <div>
-              <h3 className="font-heading text-base font-semibold leading-tight text-red-900">
-                Privasi & Keamanan Data
-              </h3>
-              <p className="mt-0.5 text-xs text-red-700/80">
-                Kelola izin berbagi data pengobatan Anda.
-              </p>
-            </div>
-          </header>
-
-          <div className="p-6 sm:p-8 space-y-4">
-            <p className="text-sm text-tiby-muted leading-relaxed">
-              Saat ini Anda telah memberikan izin kepada Fasilitas Kesehatan dan
-              sistem Tiby untuk memproses data pendampingan. Jika Anda mencabut
-              izin ini, fitur pendampingan akan dinonaktifkan dan data Anda
-              tidak akan lagi terlihat oleh petugas.
-            </p>
-
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={handleRevokeConsent}
-                disabled={revoking}
-                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-6 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-70"
-              >
-                {revoking ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ShieldAlert className="h-4 w-4" />
+                <InfoItem
+                  icon={ShieldCheck}
+                  label="Peran"
+                  value={roleLabel(user.role)}
+                />
+                {user.email && (
+                  <InfoItem icon={Mail} label="Email" value={user.email} />
                 )}
-                {revoking ? "Memproses..." : "Cabut Persetujuan Data"}
-              </button>
+              </dl>
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+
+          {isPasien && <FamilyContactsCard patientId={user.id} />}
+        </div>
+
+        {/* KOLOM KANAN */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
+            <header className="flex items-center gap-3 border-b border-gray-100 bg-linear-to-r from-tiby-teal-50/70 to-white px-6 py-4 sm:px-8">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-tiby-teal-700 shadow-sm ring-1 ring-tiby-teal-100">
+                <KeyRound className="h-4.5 w-4.5" />
+              </span>
+              <div>
+                <h3 className="font-heading text-base font-semibold leading-tight text-tiby-ink">
+                  Ubah Password
+                </h3>
+                <p className="mt-0.5 text-xs text-tiby-muted">
+                  Gunakan password baru untuk login di sesi berikutnya.
+                </p>
+              </div>
+            </header>
+
+            <form
+              onSubmit={handleChangePassword}
+              className="space-y-5 p-6 sm:p-8"
+            >
+              <PasswordField
+                id="current-password"
+                label="Password Saat Ini"
+                value={currentPassword}
+                onChange={setCurrentPassword}
+                placeholder="Masukkan password lama"
+                autoComplete="current-password"
+                visible={showPassword}
+                onToggleVisible={toggleVisible}
+              />
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <PasswordField
+                  id="new-password"
+                  label="Password Baru"
+                  value={newPassword}
+                  onChange={setNewPassword}
+                  placeholder="Minimal 8 karakter"
+                  autoComplete="new-password"
+                  visible={showPassword}
+                  onToggleVisible={toggleVisible}
+                />
+                <PasswordField
+                  id="confirm-password"
+                  label="Konfirmasi Password Baru"
+                  value={confirmPassword}
+                  onChange={setConfirmPassword}
+                  placeholder="Ulangi password baru"
+                  autoComplete="new-password"
+                  visible={showPassword}
+                  onToggleVisible={toggleVisible}
+                />
+              </div>
+
+              <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-tiby-muted">
+                    Kekuatan password
+                  </span>
+                  <span
+                    aria-live="polite"
+                    className={`text-xs font-semibold ${strength.text}`}
+                  >
+                    {strength.label || "-"}
+                  </span>
+                </div>
+                <div
+                  className="mt-2.5 grid grid-cols-4 gap-1.5"
+                  aria-hidden="true"
+                >
+                  {[1, 2, 3, 4].map((step) => (
+                    <span
+                      key={step}
+                      className={`h-1.5 rounded-full transition-colors duration-300 ${strength.score >= step ? strength.bar : "bg-gray-200"}`}
+                    />
+                  ))}
+                </div>
+                <ul className="mt-3.5 flex flex-wrap gap-x-5 gap-y-1.5">
+                  <Requirement met={lengthOk}>Minimal 8 karakter</Requirement>
+                  <Requirement met={matchOk}>Konfirmasi cocok</Requirement>
+                </ul>
+              </div>
+
+              <div className="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <p className="flex items-center gap-2 text-xs text-tiby-muted">
+                  <ShieldCheck className="h-4 w-4 shrink-0 text-tiby-teal-600" />
+                  Pastikan password lama Anda benar.
+                </p>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-tiby-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_6px_16px_-6px_rgba(13,148,136,0.6)] transition hover:-translate-y-0.5 hover:bg-tiby-teal-700 disabled:opacity-70 disabled:shadow-none"
+                >
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <KeyRound className="h-4 w-4" />
+                  )}
+                  {loading ? "Menyimpan..." : "Simpan Password Baru"}
+                </button>
+              </div>
+            </form>
+          </section>
+
+          {isPasien && (
+            <section className="overflow-hidden rounded-2xl border border-red-200 bg-white shadow-xs">
+              <header className="flex items-center gap-3 border-b border-red-100 bg-red-50/50 px-6 py-4 sm:px-8">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-red-600 shadow-sm ring-1 ring-red-100">
+                  <ShieldAlert className="h-4.5 w-4.5" />
+                </span>
+                <div>
+                  <h3 className="font-heading text-base font-semibold leading-tight text-red-900">
+                    Privasi & Keamanan Data
+                  </h3>
+                  <p className="mt-0.5 text-xs text-red-700/80">
+                    Kelola izin berbagi data pengobatan Anda.
+                  </p>
+                </div>
+              </header>
+
+              <div className="p-6 sm:p-8 space-y-4">
+                <p className="text-sm text-tiby-muted leading-relaxed">
+                  Saat ini Anda telah memberikan izin kepada Fasilitas Kesehatan
+                  dan sistem Tiby untuk memproses data pendampingan. Jika Anda
+                  mencabut izin ini, fitur pendampingan akan dinonaktifkan dan
+                  data Anda tidak akan lagi terlihat oleh petugas.
+                </p>
+
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleRevokeConsent}
+                    disabled={revoking}
+                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-6 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-70"
+                  >
+                    {revoking ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ShieldAlert className="h-4 w-4" />
+                    )}
+                    {revoking ? "Memproses..." : "Cabut Persetujuan Data"}
+                  </button>
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

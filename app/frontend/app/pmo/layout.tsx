@@ -56,8 +56,8 @@ export default function PmoLayout({ children }: { children: React.ReactNode }) {
           roleTitle="Pengawas Menelan Obat"
           items={pmoMenuItems}
         />
-        <main className="flex flex-1 flex-col overflow-y-auto p-6 md:p-8 pb-24 md:pb-8">
-          <div className="shrink-0 mb-6">
+        <main className="flex flex-1 flex-col overflow-y-auto p-6 md:p-8 pb-8 md:pb-8">
+          <div className="shrink-0 ">
             <PageHeader />
           </div>
           <div className="flex-1">

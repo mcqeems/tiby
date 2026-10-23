@@ -34,7 +34,7 @@ export default function NakesLayout({
             <NakesNotificationBell />
           </div>
 
-          <div className="shrink-0 mb-6 pr-14">
+          <div className="shrink-0 pr-14">
             <PageHeader />
           </div>
 
