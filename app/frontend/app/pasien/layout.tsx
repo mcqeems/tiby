@@ -8,8 +8,9 @@ import { RoleGuard } from "@/app/role-guard";
 import UniversalSidebar from "@/components/layout/universal-sidebar";
 import PageHeader from "@/components/layout/page-header";
 import PublicLoading from "@/components/ui/public-loading";
-import { consentApi } from "@/lib/api/consent"; // ✅ Import API Consent
+import { consentApi } from "@/lib/api/consent";
 import { pasienMenuItems } from "./components/pasien-menu";
+import Footer from "@/components/layout/footer";
 
 export default function PasienLayout({
   children,
@@ -23,12 +24,10 @@ export default function PasienLayout({
   const pathname = usePathname();
   const [isCheckingConsent, setIsCheckingConsent] = useState(true);
 
-  // ✅ Logika Pengecekan Consent
   useEffect(() => {
     if (isPending) return;
 
     async function checkConsent() {
-      // Jika sedang berada di halaman consent, jangan lakukan pengecekan (biar form bisa diisi)
       if (pathname === "/pasien/consent") {
         setIsCheckingConsent(false);
         return;
@@ -36,14 +35,12 @@ export default function PasienLayout({
 
       try {
         const res = await consentApi.getStatus();
-        // Jika API bilang wajib setuju, paksa pindah ke halaman consent
         if (res.mustConfirmConsent || !res.active) {
           router.replace("/pasien/consent");
         } else {
-          setIsCheckingConsent(false); // Izin aman, lanjutkan render
+          setIsCheckingConsent(false);
         }
       } catch (err) {
-        // Jika API error, asumsikan aman agar tidak memblokir UI (atau bisa juga redirect)
         console.error("Gagal cek consent:", err);
         setIsCheckingConsent(false);
       }
@@ -54,7 +51,7 @@ export default function PasienLayout({
 
   return (
     <RoleGuard allowed={["PATIENT", "PASIEN"]}>
-      <div className="flex min-h-screen bg-tiby-white text-tiby-ink font-body selection:bg-tiby-teal-100 selection:text-tiby-teal-700">
+      <div className="flex h-screen bg-tiby-white text-tiby-ink font-body selection:bg-tiby-teal-100 selection:text-tiby-teal-700">
         <UniversalSidebar
           user={user}
           brandName="Tiby Pasien"
@@ -64,15 +61,20 @@ export default function PasienLayout({
           items={pasienMenuItems}
         />
 
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 pb-24 md:pb-8">
-          <PageHeader />
+        <main className="flex-1 flex flex-col overflow-y-auto p-6 md:p-8">
+          <div className="shrink-0">
+            <PageHeader />
+          </div>
 
-          {/* ✅ Tampilkan Loading Screen selama mengecek izin */}
-          {isCheckingConsent ? (
-            <PublicLoading fullScreen message="Memeriksa izin akses..." />
-          ) : (
-            children
-          )}
+          <div className="flex-1">
+            {isCheckingConsent ? (
+              <PublicLoading fullScreen message="Memeriksa izin akses..." />
+            ) : (
+              children
+            )}
+          </div>
+
+          <Footer />
         </main>
       </div>
     </RoleGuard>

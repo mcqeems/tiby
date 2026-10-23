@@ -144,7 +144,7 @@ export default function RiwayatView() {
       : getLocalDateStr(new Date().toISOString());
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-24 md:pb-10">
+    <div className="max-w-6xl mx-auto space-y-6 md:pb-10">
       {/* Header Full Width */}
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight text-tiby-ink">

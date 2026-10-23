@@ -9,7 +9,6 @@ const ROLE_PATH: Record<string, string> = {
   NAKES: "/nakes",
   PMO: "/pmo",
   PASIEN: "/pasien",
-  FASKES: "/faskes",
 };
 
 export default function DashboardRedirect() {

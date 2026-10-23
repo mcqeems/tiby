@@ -4,9 +4,10 @@ import { useSession } from "@/lib/auth-client";
 import { RoleGuard } from "@/app/role-guard";
 import type { TibyUser } from "@/lib/auth-client";
 import UniversalSidebar from "@/components/layout/universal-sidebar";
-import PageHeader from "@/components/layout/page-header"; // <--- Impor PageHeader di sini
+import PageHeader from "@/components/layout/page-header";
 import { nakesMenuItems } from "./components/nakes-menu";
 import NakesNotificationBell from "./components/nakes-notification-bell";
+import Footer from "@/components/layout/footer";
 
 export default function NakesLayout({
   children,
@@ -18,7 +19,7 @@ export default function NakesLayout({
 
   return (
     <RoleGuard allowed={["NAKES"]}>
-      <div className="flex min-h-screen bg-tiby-white text-tiby-ink font-body selection:bg-tiby-teal-100 selection:text-tiby-teal-700">
+      <div className="flex h-screen bg-tiby-white text-tiby-ink font-body selection:bg-tiby-teal-100 selection:text-tiby-teal-700">
         <UniversalSidebar
           user={user}
           brandName="Tiby Nakes"
@@ -27,16 +28,19 @@ export default function NakesLayout({
           roleTitle="Tenaga Kesehatan"
           items={nakesMenuItems}
         />
-        <main className="relative flex-1 overflow-y-auto p-6 md:p-8 pb-24 md:pb-8">
-          <div className="absolute top-4 right-6 md:top-4 md:right-8 z-10">
+
+        <main className="relative flex flex-1 flex-col overflow-y-auto p-6 md:p-8 pb-24 md:pb-8">
+          <div className="absolute top-6 right-6 md:top-8 md:right-8 z-10">
             <NakesNotificationBell />
           </div>
 
-          <div className="mb-6 pr-14">
+          <div className="shrink-0 mb-6 pr-14">
             <PageHeader />
           </div>
 
-          {children}
+          <div className="flex-1">{children}</div>
+
+          <Footer />
         </main>
       </div>
     </RoleGuard>

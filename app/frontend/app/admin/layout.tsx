@@ -6,6 +6,7 @@ import type { TibyUser } from "@/lib/auth-client";
 import UniversalSidebar from "@/components/layout/universal-sidebar";
 import PageHeader from "@/components/layout/page-header";
 import { adminMenuItems } from "./components/admin-menu";
+import Footer from "@/components/layout/footer";
 
 export default function AdminLayout({
   children,
@@ -17,7 +18,7 @@ export default function AdminLayout({
 
   return (
     <RoleGuard allowed={["ADMIN"]}>
-      <div className="flex min-h-screen bg-tiby-white text-tiby-ink font-body selection:bg-tiby-teal-100 selection:text-tiby-teal-700">
+      <div className="flex h-screen bg-tiby-white text-tiby-ink font-body selection:bg-tiby-teal-100 selection:text-tiby-teal-700">
         <UniversalSidebar
           user={user}
           brandName="Tiby Admin"
@@ -26,12 +27,12 @@ export default function AdminLayout({
           roleTitle="Administrator Pusat"
           items={adminMenuItems}
         />
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 pb-24 md:pb-8">
-          <div className="mb-6">
+        <main className="flex flex-1 flex-col overflow-y-auto p-6 md:p-8 pb-24 md:pb-8">
+          <div className="shrink-0 mb-6">
             <PageHeader />
           </div>
-
-          {children}
+          <div className="flex-1">{children}</div>
+          <Footer />
         </main>
       </div>
     </RoleGuard>

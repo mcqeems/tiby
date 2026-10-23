@@ -8,8 +8,9 @@ import type { TibyUser } from "@/lib/auth-client";
 import UniversalSidebar from "@/components/layout/universal-sidebar";
 import PageHeader from "@/components/layout/page-header";
 import PublicLoading from "@/components/ui/public-loading";
-import { consentApi } from "@/lib/api/consent"; 
+import { consentApi } from "@/lib/api/consent";
 import { pmoMenuItems } from "./components/pmo-menu";
+import Footer from "@/components/layout/footer";
 
 export default function PmoLayout({ children }: { children: React.ReactNode }) {
   const { data: sessionData, isPending } = useSession();
@@ -33,11 +34,11 @@ export default function PmoLayout({ children }: { children: React.ReactNode }) {
         if (res.mustConfirmConsent || !res.active) {
           router.replace("/pmo/consent");
         } else {
-          setIsCheckingConsent(false); 
+          setIsCheckingConsent(false);
         }
       } catch (err) {
         console.error("Gagal cek consent PMO:", err);
-        setIsCheckingConsent(false); 
+        setIsCheckingConsent(false);
       }
     }
 
@@ -46,7 +47,7 @@ export default function PmoLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <RoleGuard allowed={["PMO"]}>
-      <div className="flex min-h-screen bg-tiby-white text-tiby-ink font-body selection:bg-tiby-teal-100 selection:text-tiby-teal-700">
+      <div className="flex h-screen bg-tiby-white text-tiby-ink font-body selection:bg-tiby-teal-100 selection:text-tiby-teal-700">
         <UniversalSidebar
           user={user}
           brandName="Tiby PMO"
@@ -55,14 +56,18 @@ export default function PmoLayout({ children }: { children: React.ReactNode }) {
           roleTitle="Pengawas Menelan Obat"
           items={pmoMenuItems}
         />
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 pb-24 md:pb-8">
-          <PageHeader />
-
-          {isCheckingConsent ? (
-            <PublicLoading fullScreen message="Memeriksa izin akses PMO..." />
-          ) : (
-            children
-          )}
+        <main className="flex flex-1 flex-col overflow-y-auto p-6 md:p-8 pb-24 md:pb-8">
+          <div className="shrink-0 mb-6">
+            <PageHeader />
+          </div>
+          <div className="flex-1">
+            {isCheckingConsent ? (
+              <PublicLoading fullScreen message="Memeriksa izin akses PMO..." />
+            ) : (
+              children
+            )}
+          </div>
+          <Footer />
         </main>
       </div>
     </RoleGuard>
