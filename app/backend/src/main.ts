@@ -6,13 +6,19 @@ import {
 } from '@nestjs/common';
 import { AppModule } from './app.module.js';
 import { ApiErrorExceptionFilter } from './common/filters/api-error-exception.filter.js';
-import { methods } from 'better-auth/client';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
 
+  const allowedOrigins = (process.env.WEB_URL ?? '')
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+
   app.enableCors({
-    origin: process.env.WEB_URL ?? 'http://localhost:3000',
+    // Dev: reflect any origin so LAN/phone/tunnel testing works with credentials.
+    // Prod: exact allowlist from WEB_URL (comma-separated).
+    origin: process.env.NODE_ENV === 'production' ? allowedOrigins : true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
     allowedHeaders: 'Content-Type, Accept, Authorization',
