@@ -47,8 +47,6 @@ http:
       type: query
       description: "uuid — ADMIN only"
       disabled: true
-      description: "Optional. PASIEN may pass only their own plan."
-      disabled: true
   auth: inherit
 
 settings:
@@ -103,8 +101,6 @@ examples:
           value: ""
           type: query
           description: "uuid — ADMIN only"
-          disabled: true
-          description: "Optional. PASIEN may pass only their own plan."
           disabled: true
     response:
       status: 200

@@ -32,8 +32,6 @@ http:
       type: query
       description: "uuid — ADMIN only"
       disabled: true
-      description: "Comma-separated: PASIEN,PMO,NAKES,ADMIN"
-      disabled: true
   auth: inherit
 
 settings:
@@ -73,8 +71,6 @@ examples:
           value: ""
           type: query
           description: "uuid — ADMIN only"
-          disabled: true
-          description: "Comma-separated: PASIEN,PMO,NAKES,ADMIN"
           disabled: true
     response:
       status: 200
