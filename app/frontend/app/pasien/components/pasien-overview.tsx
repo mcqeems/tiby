@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { useSession, type TibyUser } from "@/lib/auth-client";
 import { checkInsApi } from "@/lib/api/check-in";
@@ -11,6 +10,8 @@ import { facilitiesApi } from "@/lib/api/facilities";
 import type { CheckInHistoryItem } from "@/lib/types/check-in";
 import type { FacilityItem } from "@/lib/types/facilities";
 import PublicLoading from "@/components/ui/public-loading";
+// ✅ Ganti import ke MascotAnimation agar selalu beranimasi
+import MascotAnimation from "@/components/mascot-animation";
 import {
   Pill,
   Flame,
@@ -284,12 +285,11 @@ export default function PasienOverview() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:col-span-2 space-y-6">
-          {/* 1. HERO CARD */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4 }}
-            className="bg-linear-to-br from-tiby-teal-600 to-tiby-teal-800 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-tiby-teal-600/20 relative overflow-hidden"
+            className="bg-gradient-to-br from-tiby-teal-600 to-tiby-teal-800 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-tiby-teal-600/20 relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
 
@@ -331,26 +331,10 @@ export default function PasienOverview() {
                 )}
               </div>
 
-              <motion.div
-                animate={{ y: [0, -10, 0] }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="relative w-32 h-32 sm:w-40 sm:h-40 shrink-0"
-              >
-                <Image
-                  src={
-                    isCheckedInToday
-                      ? "/mascot/happy/happy-stroke.png"
-                      : "/mascot/idle/idle.png"
-                  }
-                  alt="Pandu"
-                  fill
-                  className="object-contain drop-shadow-2xl"
-                />
-              </motion.div>
+              {/* ✅ FIX: Langsung panggil MascotAnimation agar dipastikan beranimasi */}
+              <div className="shrink-0 flex items-center justify-center">
+                <MascotAnimation size={140} className="drop-shadow-2xl" />
+              </div>
             </div>
           </motion.div>
 
@@ -417,7 +401,6 @@ export default function PasienOverview() {
         </div>
 
         <div className="lg:col-span-1 space-y-6">
-          {/* 4. KARTU STREAK */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
