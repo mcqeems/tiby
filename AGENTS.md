@@ -97,6 +97,7 @@ Use the Repository API by default. `createQueryBuilder` only when the Repository
 3. **Zero-stigma copy.** Outbound push and WhatsApp messages must never contain "TBC" or "Tuberkulosis". `PushService` strips them defensively; keep that guard.
 4. **PMO transcript blindness.** `/api/pmo/patients` must never leak transcripts or symptom detail — enforced with `@SerializeOptions({ schema: PmoPatientStatusItemSchema })` and a bare-array response.
 5. **Consent gate.** Clinical routes for `PASIEN` pass through `ConsentGuard`; `must_confirm_consent` blocks them.
+6. **Backend scope by default.** Work in `app/backend/`, `shared/ts-shared/`, and root scripts unless the user explicitly asks for frontend work. Never edit `app/frontend/**` on your own initiative. If a backend change breaks the frontend (a response shape change, a removed route, a renamed field), stop and report the affected files instead of fixing them.
 
 ## Reference docs
 
