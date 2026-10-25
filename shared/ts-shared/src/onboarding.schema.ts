@@ -1,8 +1,5 @@
 import { z } from "zod";
-import {
-  ConsentScopes,
-  PmoRelationshipSchema,
-} from "./enums.js";
+import { ConsentScopes, PmoRelationshipSchema } from "./enums.js";
 
 export const GrantConsentSchema = z.object({
   scopes: z.array(z.enum(ConsentScopes)).min(1),
@@ -70,9 +67,13 @@ export const CreateOnboardingSchema = z.object({
   familyContact: FamilyContactInputSchema.optional(),
   regimenCode: z.string().min(1),
   dailyPillQuota: z.number().int().positive(),
-  reminderTimeLocal: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Format HH:mm required"),
+  reminderTimeLocal: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Format HH:mm required"),
   timezone: z.string().default("Asia/Jakarta"),
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Format YYYY-MM-DD required"),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Format YYYY-MM-DD required"),
 });
 export type CreateOnboardingDto = z.infer<typeof CreateOnboardingSchema>;
 
@@ -96,5 +97,7 @@ export const OcrOnboardingDraftSchema = z.object({
   targetEndDate: z.string().nullable(),
   confidence: z.number().min(0).max(1),
   rawText: z.string().optional(),
+  fieldConfidence: z.record(z.string(), z.number()).optional(),
+  uncertainties: z.array(z.string()).optional(),
 });
 export type OcrOnboardingDraft = z.infer<typeof OcrOnboardingDraftSchema>;
