@@ -52,13 +52,13 @@ export default function PmoLayout({ children }: { children: React.ReactNode }) {
 
           <div className="flex-1">
             {consentGranted === null ? (
-              <PublicLoading fullScreen message="Memeriksa izin akses PMO..." />
+              <PublicLoading fullScreen message="Memeriksa izin akses..." />
             ) : (
               <div
                 key={consentGranted ? "granted" : "pending"}
-                className={
+                className={`h-full ${
                   consentGranted ? "" : "pointer-events-none select-none"
-                }
+                }`}
                 aria-hidden={!consentGranted}
               >
                 {children}

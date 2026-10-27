@@ -61,16 +61,15 @@ export default function PasienLayout({
             ) : (
               <div
                 key={consentGranted ? "granted" : "pending"}
-                className={
+                className={`h-full ${
                   consentGranted ? "" : "pointer-events-none select-none"
-                }
+                }`}
                 aria-hidden={!consentGranted}
               >
                 {children}
               </div>
             )}
           </div>
-
           <Footer />
         </main>
       </div>
