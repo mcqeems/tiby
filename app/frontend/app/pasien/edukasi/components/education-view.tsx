@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { educationApi, type EducationItem } from "@/lib/api/education";
 import PublicLoading from "@/components/ui/public-loading";
 import MascotAnimation from "@/components/mascot-animation";
@@ -79,7 +79,6 @@ export default function EducationView({
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8 pb-24 md:pb-10">
-      {/* ─── 1. HERO SECTION (Full Width) ─── */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -104,7 +103,6 @@ export default function EducationView({
         </div>
       </motion.div>
 
-      {/* ─── 2. GRID KARTU EDUKASI ─── */}
       {cards.length === 0 ? (
         <div className="text-center py-24 bg-white rounded-3xl border border-gray-200 w-full shadow-2xs">
           <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
@@ -116,7 +114,6 @@ export default function EducationView({
           </p>
         </div>
       ) : (
-        // Grid otomatis menyesuaikan. Jika hanya ada 3, ia akan melebar memenuhi layar.
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
           {cards.map((card, index) => {
             const style = getCategoryStyle(card.category);
@@ -131,7 +128,6 @@ export default function EducationView({
                 onClick={() => setSelectedCard(card)}
                 className="group text-left bg-white rounded-3xl border border-gray-200 p-6 sm:p-8 shadow-2xs hover:shadow-lg hover:border-tiby-teal-300 hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
               >
-                {/* Header Kartu */}
                 <div className="flex items-start justify-between mb-6">
                   <div
                     className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${style.bg} ${style.text} transition-transform group-hover:scale-110`}
@@ -144,7 +140,6 @@ export default function EducationView({
                   </div>
                 </div>
 
-                {/* Konten Kartu */}
                 <div className="flex-1 space-y-3">
                   <span
                     className={`text-[10px] font-bold uppercase tracking-wider ${style.text}`}
@@ -159,7 +154,6 @@ export default function EducationView({
                   </p>
                 </div>
 
-                {/* Footer Kartu */}
                 <div className="mt-8 pt-5 border-t border-gray-100 flex items-center justify-between text-tiby-teal-600 font-semibold text-sm">
                   <span>Baca Artikel</span>
                   <div className="w-8 h-8 rounded-full bg-tiby-teal-50 flex items-center justify-center group-hover:bg-tiby-teal-600 group-hover:text-white transition-colors">
@@ -172,11 +166,9 @@ export default function EducationView({
         </div>
       )}
 
-      {/* ─── 3. MODAL BACA ARTIKEL ─── */}
       {selectedCard && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in">
           <div className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-3xl bg-white shadow-2xl overflow-hidden animate-in zoom-in-95">
-            {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5 bg-gray-50/80 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-tiby-teal-100 flex items-center justify-center">
@@ -194,7 +186,6 @@ export default function EducationView({
               </button>
             </div>
 
-            {/* Modal Body (Scrollable) */}
             <div className="p-6 sm:p-10 overflow-y-auto custom-scrollbar bg-white">
               <div className="prose prose-sm sm:prose-base prose-teal max-w-none">
                 {selectedCard.contentMarkdown
@@ -244,7 +235,6 @@ export default function EducationView({
               </div>
             </div>
 
-            {/* Modal Footer */}
             <div className="p-4 sm:p-6 border-t border-gray-100 bg-gray-50 shrink-0">
               <button
                 onClick={() => setSelectedCard(null)}

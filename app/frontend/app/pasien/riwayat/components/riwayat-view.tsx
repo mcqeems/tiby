@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { checkInsApi } from "@/lib/api/check-in";
 import type { CheckInHistoryItem } from "@/lib/types/check-in";
 import TreatmentCalendar from "./treatment-calendar";
@@ -145,7 +145,6 @@ export default function RiwayatView() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 md:pb-10">
-      {/* Header Full Width */}
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight text-tiby-ink">
           Riwayat Terapi
@@ -155,11 +154,8 @@ export default function RiwayatView() {
         </p>
       </div>
 
-      {/* Grid Layout: Kiri (Streak + Kalender), Kanan (Timeline) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Kolom Kiri (Lebar 2/3) */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Kartu Streak */}
           <div className="bg-tiby-teal-600 rounded-3xl p-6 text-white shadow-lg shadow-tiby-teal-600/20 relative overflow-hidden">
             <div className="relative z-10 flex items-center justify-between">
               <div>
@@ -219,11 +215,9 @@ export default function RiwayatView() {
             </div>
           </div>
 
-          {/* Kalender */}
           <TreatmentCalendar checkIns={history} startDate={startDate} />
         </div>
 
-        {/* Kolom Kanan (Lebar 1/3) */}
         <div className="lg:col-span-1 space-y-4">
           <h2 className="font-heading font-bold text-lg text-tiby-ink">
             Detail Laporan

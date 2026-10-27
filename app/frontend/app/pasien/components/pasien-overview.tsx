@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { useSession, type TibyUser } from "@/lib/auth-client";
 import { checkInsApi } from "@/lib/api/check-in";
 import { educationApi, type EducationItem } from "@/lib/api/education";
@@ -292,7 +292,6 @@ export default function PasienOverview() {
           >
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
 
-            {/* ✅ FIX: Menggunakan flex-col-reverse agar maskot di atas pada mobile */}
             <div className="relative z-10 flex flex-col-reverse sm:flex-row items-center justify-between gap-6">
               <div className="space-y-4 text-center sm:text-left">
                 <div>
