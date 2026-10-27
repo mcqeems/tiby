@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image"; // ✅ Import Image
+import Image from "next/image";
 import { Mic, Square } from "lucide-react";
 
 interface CheckInVoiceProps {
@@ -28,10 +28,8 @@ export default function CheckInVoice({
 
   return (
     <div className="flex flex-col items-center justify-center py-10 space-y-8">
-      {/* Maskot Pandu */}
       <div className="relative">
         <div className="w-36 h-36 bg-tiby-teal-50 rounded-full flex items-center justify-center border-4 border-tiby-teal-100 shadow-sm overflow-hidden transition-all duration-300">
-          {/* ✅ Ganti emoji dengan gambar maskot asli */}
           <Image
             src={
               isRecording
@@ -61,7 +59,7 @@ export default function CheckInVoice({
         </h2>
         <p className="text-sm text-tiby-muted max-w-xs mx-auto">
           {isRecording
-            ? "Silakan ceritakan obat yang sudah diminum atau keluhan yang dirasakan."
+            ? "Silakan ceritakan obat yang sudah diminum atau keluhanmu."
             : "Tekan tombol di bawah dan mulailah berbicara dengan santai."}
         </p>
       </div>

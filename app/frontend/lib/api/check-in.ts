@@ -6,6 +6,7 @@ import type {
   SubmitCheckInDto,
   TextExtractRequest,
   CheckInHistoryResponse,
+  CheckInHistoryItem,
 } from "../types/check-in";
 
 export const checkInsApi = {
@@ -55,5 +56,16 @@ export const checkInsApi = {
         method: "GET",
       },
     );
+  },
+  async getTodayStatus(): Promise<CheckInHistoryItem | null> {
+    const today = new Date().toISOString().split("T")[0]; // Format YYYY-MM-DD
+    const res = await apiFetch<CheckInHistoryResponse>(
+      `/api/check-ins?from=${today}&to=${today}&limit=1`,
+    );
+
+    if (res.items && res.items.length > 0) {
+      return res.items[0];
+    }
+    return null;
   },
 };

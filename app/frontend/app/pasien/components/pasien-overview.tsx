@@ -263,7 +263,7 @@ export default function PasienOverview() {
   const currentStreak = calculateStreak(history);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-24 md:pb-10">
+    <div className="max-w-6xl mx-auto space-y-6 md:pb-10">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -320,7 +320,7 @@ export default function PasienOverview() {
                 {!isCheckedInToday ? (
                   <Link
                     href="/pasien/check-in"
-                    className="inline-flex items-center gap-2 bg-white text-tiby-teal-800 px-6 py-3 rounded-xl font-bold text-sm shadow-sm hover:scale-105 transition-transform"
+                    className="inline-flex items-center gap-2 bg-white text-tiby-teal-700 px-6 py-3 rounded-xl font-bold text-sm shadow-sm hover:scale-105 transition-transform"
                   >
                     <Pill className="w-5 h-5" /> Check-in Sekarang
                   </Link>

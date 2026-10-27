@@ -9,9 +9,9 @@ import CheckInFallback from "./check-in-fallback";
 import CheckInResult from "./check-in-result";
 import PublicLoading from "@/components/ui/public-loading";
 import { pmoApi } from "@/lib/api/pmo";
+import { CheckCircle2 } from "lucide-react";
 import type { FallbackButtonsPayload } from "@/lib/types/check-in";
 
-// Definisikan tipe data pasien PMO
 interface PmoPatient {
   treatmentPlanId: string;
   patientName: string;
@@ -25,38 +25,33 @@ export default function CheckInView({
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const [patients, setPatients] = useState<PmoPatient[]>([]);
+  const urlPatientId = searchParams.get("patientId") || "";
+  const urlPatientName = searchParams.get("patientName") || "";
+  const [selectedPatientId, setSelectedPatientId] =
+    useState<string>(urlPatientId);
+  const [loadingPatients, setLoadingPatients] = useState(
+    role === "PMO" && !urlPatientId,
+  );
+
   const {
     state,
+    isCheckingStatus,
     startRecording,
     stopRecording,
     submitVoice,
     submitFallback,
     goToFallback,
-  } = useCheckIn();
+    goToRecord,
+  } = useCheckIn(selectedPatientId || undefined);
 
-  const [patients, setPatients] = useState<PmoPatient[]>([]);
-
-  // Ambil data dari URL jika PMO
-  const urlPatientId = searchParams.get("patientId") || "";
-  const urlPatientName = searchParams.get("patientName") || "";
-  const [selectedPatientId, setSelectedPatientId] =
-    useState<string>(urlPatientId);
-
-  // ✅ FIX: Inisialisasi loadingPatients menjadi true JIKA role PMO dan tidak ada ID dari URL
-  const [loadingPatients, setLoadingPatients] = useState(
-    role === "PMO" && !urlPatientId,
-  );
-
-  // Fetch daftar pasien jika PMO dan tidak ada ID di URL
   useEffect(() => {
     let isMounted = true;
-
     if (role === "PMO" && !urlPatientId) {
       pmoApi
         .getPatients()
         .then((res) => {
           if (!isMounted) return;
-          // ✅ FIX: Hilangkan penggunaan 'any', gunakan cast ke tipe yang aman
           const list = Array.isArray(res)
             ? res
             : (res as { items?: PmoPatient[] }).items || [];
@@ -67,38 +62,41 @@ export default function CheckInView({
           if (isMounted) setLoadingPatients(false);
         });
     }
-
     return () => {
       isMounted = false;
     };
   }, [role, urlPatientId]);
 
-  if (loadingPatients)
-    return <PublicLoading fullScreen message="Memuat daftar pasien..." />;
+  if (loadingPatients || isCheckingStatus) {
+    return <PublicLoading fullScreen message="Memeriksa status check-in..." />;
+  }
 
   if (state.step === "loading") {
     return (
-      <PublicLoading fullScreen message="Pandu sedang memproses laporan..." />
+      <PublicLoading
+        fullScreen
+        message="Pandu sedang memproses laporanmu... (Bisa memakan waktu hingga 40 detik)"
+      />
     );
   }
 
   if (state.step === "locked") {
     return (
-      <div className="text-center py-20 space-y-4">
-        <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-emerald-100">
-          <span className="text-4xl">✅</span>
+      <div className="flex flex-1 w-full h-full flex-col items-center justify-center text-center px-4 animate-in fade-in zoom-in-95 duration-500 pb-20">
+        <div className="w-24 h-24 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-6 border-4 border-emerald-100 shadow-sm">
+          <CheckCircle2 className="w-12 h-12" />
         </div>
-        <h2 className="text-xl font-bold text-tiby-ink">
+        <h2 className="text-2xl font-heading font-bold text-tiby-ink mb-2">
           Laporan sudah dikirim hari ini!
         </h2>
-        <p className="text-sm text-tiby-muted max-w-xs mx-auto">
+        <p className="text-sm text-tiby-muted max-w-xs mx-auto leading-relaxed">
           Data check-in sudah tercatat dengan aman. Kembali lagi besok ya.
         </p>
         <button
           onClick={() =>
             router.push(role === "PMO" ? "/pmo/pasien" : "/pasien")
           }
-          className="mt-6 px-6 py-2.5 bg-tiby-teal-600 text-white rounded-xl font-semibold hover:bg-tiby-teal-700 transition"
+          className="mt-8 px-8 py-3 bg-tiby-teal-600 text-white rounded-xl font-semibold hover:bg-tiby-teal-700 hover:shadow-lg transition-all"
         >
           Kembali ke Beranda
         </button>
@@ -108,7 +106,6 @@ export default function CheckInView({
 
   return (
     <div className="max-w-md mx-auto w-full">
-      {/* UI Pemilihan Pasien (Hanya jika PMO dan tidak ada ID dari URL) */}
       {role === "PMO" && state.step === "record" && !urlPatientId && (
         <div className="mb-6 p-5 bg-white border border-tiby-teal-100 rounded-2xl shadow-sm">
           <label className="text-xs font-bold text-tiby-ink mb-2 block">
@@ -126,15 +123,9 @@ export default function CheckInView({
               </option>
             ))}
           </select>
-          {!selectedPatientId && (
-            <p className="text-[11px] text-amber-600 mt-2 font-medium">
-              * Pilih pasien terlebih dahulu untuk memulai check-in.
-            </p>
-          )}
         </div>
       )}
 
-      {/* Info Pasien (Jika PMO membuka via URL) */}
       {role === "PMO" &&
         urlPatientId &&
         urlPatientName &&
@@ -154,7 +145,6 @@ export default function CheckInView({
           </div>
         )}
 
-      {/* Validasi: Jangan tampilkan form jika PMO belum pilih pasien */}
       {role === "PMO" && !selectedPatientId && state.step === "record" ? (
         <div className="text-center py-10 opacity-50">
           <div className="w-36 h-36 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -185,6 +175,7 @@ export default function CheckInView({
 
           {state.step === "fallback" && (
             <CheckInFallback
+              onBackToVoice={goToRecord}
               onSubmit={(data: FallbackButtonsPayload) =>
                 submitFallback(data, selectedPatientId || undefined)
               }

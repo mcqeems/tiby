@@ -1,5 +1,7 @@
+"use client";
+
 import { useState } from "react";
-import Image from "next/image"; // ✅ Import Image
+import Image from "next/image";
 import { Edit3, CheckCircle2 } from "lucide-react";
 
 interface CheckInReviewProps {
@@ -7,13 +9,15 @@ interface CheckInReviewProps {
   onSubmit: (editedText: string) => void;
 }
 
-export default function CheckInReview({ transcript, onSubmit }: CheckInReviewProps) {
+export default function CheckInReview({
+  transcript,
+  onSubmit,
+}: CheckInReviewProps) {
   const [text, setText] = useState(transcript);
   const [isEditing, setIsEditing] = useState(false);
 
   return (
     <div className="space-y-6">
-      {/* ✅ Tambahkan Maskot Thinking */}
       <div className="flex flex-col items-center space-y-2">
         <div className="w-24 h-24 relative">
           <Image
@@ -29,13 +33,12 @@ export default function CheckInReview({ transcript, onSubmit }: CheckInReviewPro
             Konfirmasi Laporanmu
           </h2>
           <p className="text-xs text-tiby-muted">
-            Pastikan transkripnya benar, lalu kirim. Pandu akan mengekstrak isi
-            laporan di langkah berikutnya.
+            Pastikan transkrip di bawah ini sudah sesuai dengan yang kamu
+            ucapkan.
           </p>
         </div>
       </div>
 
-      {/* Kotak Transkrip */}
       <div className="bg-tiby-teal-50 border border-tiby-teal-100 rounded-2xl p-5 space-y-4 shadow-2xs">
         {isEditing ? (
           <textarea

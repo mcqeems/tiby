@@ -1,5 +1,5 @@
-import Image from "next/image"; // ✅ Import Image
-import { CheckCircle2, AlertTriangle, ShieldAlert } from "lucide-react";
+import Image from "next/image";
+import { CheckCircle2, AlertTriangle, ShieldAlert, Flame } from "lucide-react";
 
 interface CheckInResultProps {
   verdict: string;
@@ -12,7 +12,6 @@ export default function CheckInResult({
   message,
   streak,
 }: CheckInResultProps) {
-  // ✅ Tambahkan path gambar maskot
   const config =
     verdict === "TERKENDALI"
       ? {
@@ -37,36 +36,54 @@ export default function CheckInResult({
 
   const Icon = config.icon;
 
+  // Logika: Jika streak 1, artinya baru mulai atau baru reset. Ubah pesannya!
+  let displayMessage = message;
+  if (verdict === "TERKENDALI") {
+    if (streak === 1) {
+      displayMessage =
+        "Api semangatmu baru saja dinyalakan kembali! Ayo jaga konsistensi minum obatmu besok ya.";
+    } else {
+      displayMessage = `Luar biasa! Kamu sudah konsisten selama ${streak} hari. Pertahankan semangatmu!`;
+    }
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center py-10 space-y-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* ✅ Ganti Ikon Bulat dengan Maskot */}
+    <div className="flex flex-col items-center justify-center py-6 space-y-6 text-center animate-in fade-in zoom-in-95 duration-500">
       <div className="relative w-40 h-40">
         <Image
           src={config.mascot}
           alt={config.title}
           fill
-          className="object-contain"
+          className="object-contain drop-shadow-xl"
           priority
         />
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3 px-4">
         <div className="flex items-center justify-center gap-2">
-          <Icon className={`w-6 h-6 ${config.color}`} />
-          <h2 className={`font-heading text-2xl font-bold ${config.color}`}>
+          <Icon className={`w-7 h-7 ${config.color}`} />
+          <h2 className={`font-heading text-3xl font-bold ${config.color}`}>
             {config.title}
           </h2>
         </div>
-        <p className="text-sm text-tiby-muted max-w-sm mx-auto px-4 leading-relaxed">
-          {message}
+        <p className="text-sm text-tiby-muted leading-relaxed max-w-sm mx-auto">
+          {displayMessage}
         </p>
       </div>
 
       {verdict === "TERKENDALI" && (
-        <div className="bg-tiby-teal-50 px-6 py-3 rounded-full border border-tiby-teal-100 shadow-2xs">
-          <p className="text-sm font-semibold text-tiby-teal-700 flex items-center gap-2">
-            <span className="text-lg">🔥</span> {streak} Hari Berturut-turut
-          </p>
+        <div
+          className={`px-6 py-3 rounded-2xl border ${streak === 1 ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-tiby-teal-50 border-tiby-teal-200 text-tiby-teal-700"} shadow-sm flex items-center gap-3`}
+        >
+          <Flame
+            className={`w-6 h-6 ${streak === 1 ? "text-amber-500 fill-amber-500" : "text-orange-500 fill-orange-500"} animate-pulse`}
+          />
+          <div className="text-left">
+            <p className="text-[10px] font-bold uppercase tracking-wider opacity-70">
+              Streak Kamu
+            </p>
+            <p className="font-bold text-lg leading-none">{streak} Hari</p>
+          </div>
         </div>
       )}
     </div>

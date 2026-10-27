@@ -1,16 +1,18 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { checkInsApi } from "@/lib/api/check-in";
 import { usePopup } from "@/components/ui/popup-provider";
 import type {
-  AiAudioTranscriptResponse,
-  CheckInStep,
   CheckInState,
   MedicationStatus,
+  SubmitCheckInDto,
+  FallbackButtonsPayload,
 } from "@/lib/types/check-in";
-import type { SubmitCheckInPayload } from "@/lib/types/check-in";
 
-export function useCheckIn() {
+export function useCheckIn(treatmentPlanId?: string) {
   const { confirm, notify } = usePopup();
+
+  const [isCheckingStatus, setIsCheckingStatus] = useState(true);
+
   const [state, setState] = useState<CheckInState>({
     step: "record",
     audioBlob: null,
@@ -19,13 +21,32 @@ export function useCheckIn() {
     verdict: null,
   });
 
+  useEffect(() => {
+    let active = true;
+    async function checkStatus() {
+      try {
+        const todayCheckIn = await checkInsApi.getTodayStatus();
+        if (active && todayCheckIn) {
+          setState((s) => ({ ...s, step: "locked" }));
+        }
+      } catch (err) {
+        console.error("Gagal mengecek status awal:", err);
+      } finally {
+        if (active) setIsCheckingStatus(false);
+      }
+    }
+    checkStatus();
+    return () => {
+      active = false;
+    };
+  }, [treatmentPlanId]);
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
   const updateStep = (step: CheckInState["step"]) =>
     setState((s) => ({ ...s, step }));
 
-  // ✅ Tambahkan parameter treatmentPlanId (opsional untuk Pasien, wajib untuk PMO)
   const startRecording = async (treatmentPlanId?: string) => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -55,7 +76,6 @@ export function useCheckIn() {
           "Kami tidak dapat mengakses mikrofon. Silakan gunakan tombol manual di bawah.",
         confirmLabel: "Mengerti",
       });
-      updateStep("fallback");
     }
   };
 
@@ -73,21 +93,19 @@ export function useCheckIn() {
 
   const processAudio = async (blob: Blob, treatmentPlanId?: string) => {
     try {
-      const res: AiAudioTranscriptResponse = await checkInsApi.extractAudio(
-        blob,
-        treatmentPlanId,
-      );
+      const res = await checkInsApi.extractAudio(blob, treatmentPlanId);
       setState((s) => ({ ...s, transcript: res.transcript, step: "review" }));
-    } catch {
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Gagal memproses suara.";
       await notify({
         variant: "danger",
         badgeText: "Pemrosesan Gagal",
         title: "Suara Tidak Terbaca",
-        description:
-          "Pandu kesulitan memahami suaramu. Silakan coba rekam ulang atau gunakan tombol manual.",
+        description: message,
         confirmLabel: "Coba Lagi",
       });
-      updateStep("fallback");
+      updateStep("record");
     }
   };
 
@@ -98,24 +116,25 @@ export function useCheckIn() {
     try {
       updateStep("loading");
 
-      const payload: SubmitCheckInPayload = {
+      const extractRes = await checkInsApi.extractText({
+        editedTranscript,
+        treatmentPlanId,
+      });
+
+      const payload: SubmitCheckInDto = {
         inputMode: "VOICE_STT",
-        treatmentPlanId, // ✅ Masukkan ID Pasien
+        treatmentPlanId,
         confirmedFacts: {
-          transcript: editedTranscript,
+          transcript: extractRes.transcript,
+          medicationStatus: extractRes.medicationTaken as MedicationStatus,
+          pillsTakenCount: extractRes.pillsTakenCount ?? 0,
+          symptoms: extractRes.symptoms,
+          intentToStop: extractRes.intentToStopOrRefuse,
+          confidence: extractRes.extractionConfidence,
         },
       };
 
       const verdict = await checkInsApi.submit(payload);
-
-      await notify({
-        variant: "success",
-        badgeText: "Laporan Suara",
-        title: "Berhasil Mengirim Laporan",
-        description: "Data dari rekaman suaramu sudah tersimpan dengan aman.",
-        confirmLabel: "Lihat Hasil",
-      });
-
       setState((s) => ({ ...s, verdict, step: "result" }));
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string };
@@ -127,7 +146,7 @@ export function useCheckIn() {
           badgeText: "Gagal Mengirim",
           title: "Laporan Tidak Terkirim",
           description:
-            error.message || "Terjadi kesalahan jaringan. Silakan coba lagi.",
+            error.message || "Terjadi kesalahan pada server atau AI timeout.",
           confirmLabel: "Tutup",
         });
         updateStep("review");
@@ -145,7 +164,7 @@ export function useCheckIn() {
       title: "Kirim laporan ini?",
       description:
         "Pastikan pilihan kondisimu sudah benar sebelum laporan disimpan.",
-      confirmLabel: "Ya, Kirim Laporan",
+      confirmLabel: "Ya, Kirim",
       cancelLabel: "Batal",
     });
 
@@ -153,22 +172,13 @@ export function useCheckIn() {
 
     try {
       updateStep("loading");
-      const payload: SubmitCheckInPayload = {
+      const payload: SubmitCheckInDto = {
         inputMode: "FALLBACK_BUTTONS",
-        treatmentPlanId, // ✅ Masukkan ID Pasien
+        treatmentPlanId,
         fallbackButtons: data,
       };
 
       const verdict = await checkInsApi.submit(payload);
-
-      await notify({
-        variant: "success",
-        badgeText: "Laporan Manual",
-        title: "Berhasil Mengirim Laporan",
-        description: "Data check-in manualmu sudah tersimpan dengan aman.",
-        confirmLabel: "Lihat Hasil",
-      });
-
       setState((s) => ({ ...s, verdict, step: "result" }));
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string };
@@ -190,11 +200,13 @@ export function useCheckIn() {
 
   return {
     state,
+    isCheckingStatus,
     startRecording,
     stopRecording,
     submitVoice,
     submitFallback,
     goToFallback: () => updateStep("fallback"),
+    goToRecord: () => updateStep("record"),
     reset: () =>
       setState({
         step: "record",

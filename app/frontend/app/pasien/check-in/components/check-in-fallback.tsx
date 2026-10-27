@@ -1,17 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import { Pill, Frown, CheckCircle2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Pill,
+  Frown,
+  CheckCircle2,
+  ChevronLeft,
+  Check,
+  Mic,
+} from "lucide-react";
 import type { FallbackButtonsPayload } from "@/lib/types/check-in";
 
 interface CheckInFallbackProps {
+  onBackToVoice: () => void;
   onSubmit: (data: FallbackButtonsPayload) => void;
 }
 
 const SYMPTOMS = ["Mual", "Pusing", "Gatal", "Sesak Napas", "Nyeri Sendi"];
+const DEFAULT_PILLS = 4;
 
-export default function CheckInFallback({ onSubmit }: CheckInFallbackProps) {
-  const [hasComplaints, setHasComplaints] = useState(false);
+export default function CheckInFallback({
+  onBackToVoice,
+  onSubmit,
+}: CheckInFallbackProps) {
+  const [step, setStep] = useState(1);
+  const [medStatus, setMedStatus] = useState<
+    "SUDAH_MINUM" | "BELUM_MINUM" | null
+  >(null);
+  const [hasComplaints, setHasComplaints] = useState<boolean | null>(null);
   const [complaints, setComplaints] = useState<string[]>([]);
 
   const handleToggleSymptom = (s: string) => {
@@ -20,114 +37,193 @@ export default function CheckInFallback({ onSubmit }: CheckInFallbackProps) {
     );
   };
 
-  // Default jumlah pil (bisa disesuaikan dengan data regimen pasien jika ada)
-  const DEFAULT_PILLS = 4;
+  const handleFinalSubmit = () => {
+    if (!medStatus) return;
+    onSubmit({
+      medicationStatus: medStatus,
+      pillsTakenCount: medStatus === "SUDAH_MINUM" ? DEFAULT_PILLS : 0,
+      hasComplaints: hasComplaints || false,
+      selectedComplaints: complaints,
+    });
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center space-y-1">
-        <h2 className="font-heading text-lg font-semibold text-tiby-ink">
-          Pilih Kondisimu
-        </h2>
-        <p className="text-xs text-tiby-muted">
-          Gunakan tombol di bawah ini dengan jujur.
-        </p>
-      </div>
-
-      <div className="grid gap-3">
-        {/* Tombol 1: Sudah Minum, Tanpa Keluhan */}
-        <button
-          onClick={() =>
-            onSubmit({
-              medicationStatus: "SUDAH_MINUM",
-              pillsTakenCount: DEFAULT_PILLS,
-              hasComplaints: false,
-              selectedComplaints: [],
-            })
-          }
-          className="flex items-center gap-4 p-4 rounded-2xl border-2 border-tiby-teal-100 bg-tiby-teal-50 hover:border-tiby-teal-600 text-left transition-all hover:shadow-md"
-        >
-          <CheckCircle2 className="w-8 h-8 text-tiby-teal-600" />
-          <div>
-            <p className="font-bold text-tiby-ink">Sudah Minum Obat</p>
-            <p className="text-xs text-tiby-muted">Tanpa keluhan</p>
-          </div>
-        </button>
-
-        {/* Tombol 2: Sudah Minum, Ada Keluhan */}
-        <button
-          onClick={() => setHasComplaints(!hasComplaints)}
-          className={`flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all ${
-            hasComplaints
-              ? "border-amber-500 bg-amber-50 shadow-md"
-              : "border-amber-100 bg-white hover:border-amber-300"
-          }`}
-        >
-          <Frown
-            className={`w-8 h-8 ${hasComplaints ? "text-amber-600" : "text-amber-400"}`}
-          />
-          <div>
-            <p className="font-bold text-tiby-ink">Sudah Minum, Ada Keluhan</p>
-            <p className="text-xs text-tiby-muted">Laporkan efek samping</p>
-          </div>
-        </button>
-
-        {/* Tombol 3: Belum Minum */}
-        <button
-          onClick={() =>
-            onSubmit({
-              medicationStatus: "BELUM_MINUM",
-              pillsTakenCount: 0,
-              hasComplaints: false,
-              selectedComplaints: [],
-            })
-          }
-          className="flex items-center gap-4 p-4 rounded-2xl border-2 border-gray-200 bg-white hover:border-gray-400 text-left transition-all hover:shadow-md"
-        >
-          <Pill className="w-8 h-8 text-gray-500" />
-          <div>
-            <p className="font-bold text-tiby-ink">Belum Minum Obat</p>
-            <p className="text-xs text-tiby-muted">Belum sempat / lupa</p>
-          </div>
-        </button>
-      </div>
-
-      {/* Panel Keluhan (Muncul jika Tombol 2 diklik) */}
-      {hasComplaints && (
-        <div className="bg-amber-50 p-4 rounded-xl space-y-4 animate-in fade-in slide-in-from-top-2 border border-amber-100">
-          <p className="text-xs font-semibold text-amber-800">
-            Pilih keluhan yang dirasakan:
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {SYMPTOMS.map((s) => (
-              <button
-                key={s}
-                onClick={() => handleToggleSymptom(s)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
-                  complaints.includes(s)
-                    ? "bg-amber-600 text-white border-amber-600"
-                    : "bg-white text-amber-800 border-amber-200 hover:border-amber-400"
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+    <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-xl w-full max-w-md mx-auto">
+      <div className="flex items-center mb-6">
+        {step > 1 ? (
           <button
-            onClick={() =>
-              onSubmit({
-                medicationStatus: "SUDAH_MINUM",
-                pillsTakenCount: DEFAULT_PILLS,
-                hasComplaints: true,
-                selectedComplaints: complaints,
-              })
-            }
-            className="w-full mt-2 h-10 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 transition"
+            onClick={() => setStep(step - 1)}
+            className="p-2 -ml-2 rounded-full hover:bg-gray-100 text-gray-500 transition"
           >
-            Kirim Laporan Keluhan
+            <ChevronLeft className="w-5 h-5" />
           </button>
-        </div>
-      )}
+        ) : (
+          <div className="w-9" />
+        )}
+        <h2 className="font-heading text-lg font-bold text-tiby-ink text-center flex-1">
+          Lapor Manual
+        </h2>
+        <div className="w-9" />
+      </div>
+
+      <AnimatePresence mode="wait">
+        {step === 1 && (
+          <motion.div
+            key="step1"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-4"
+          >
+            <p className="text-sm text-tiby-muted text-center mb-6">
+              Apakah kamu sudah minum obat hari ini?
+            </p>
+            <button
+              onClick={() => {
+                setMedStatus("SUDAH_MINUM");
+                setStep(2);
+              }}
+              className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-tiby-teal-100 bg-tiby-teal-50 hover:border-tiby-teal-600 hover:shadow-md transition-all group"
+            >
+              <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm text-tiby-teal-600 group-hover:scale-110 transition">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div className="text-left">
+                <p className="font-bold text-tiby-ink text-lg">Sudah Minum</p>
+                <p className="text-xs text-tiby-muted">
+                  Aku sudah minum obat pagi ini
+                </p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => {
+                setMedStatus("BELUM_MINUM");
+                onSubmit({
+                  medicationStatus: "BELUM_MINUM",
+                  pillsTakenCount: 0,
+                  hasComplaints: false,
+                  selectedComplaints: [],
+                });
+              }}
+              className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-gray-200 hover:border-gray-400 hover:shadow-md transition-all group"
+            >
+              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 group-hover:scale-110 transition">
+                <Pill className="w-6 h-6" />
+              </div>
+              <div className="text-left">
+                <p className="font-bold text-tiby-ink text-lg">Belum Minum</p>
+                <p className="text-xs text-tiby-muted">
+                  Belum sempat atau lupa
+                </p>
+              </div>
+            </button>
+
+            <div className="pt-4 mt-2 border-t border-gray-100">
+              <button
+                onClick={onBackToVoice}
+                className="w-full flex items-center justify-center gap-2 py-3 text-sm font-semibold text-tiby-teal-600 hover:text-tiby-teal-700 hover:bg-tiby-teal-50 rounded-xl transition"
+              >
+                <Mic className="w-4 h-4" /> Kembali ke Rekam Suara
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {step === 2 && (
+          <motion.div
+            key="step2"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-4"
+          >
+            <p className="text-sm text-tiby-muted text-center mb-6">
+              Apakah ada keluhan atau efek samping?
+            </p>
+            <button
+              onClick={() => {
+                setHasComplaints(true);
+                setStep(3);
+              }}
+              className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-amber-100 bg-amber-50 hover:border-amber-500 hover:shadow-md transition-all group"
+            >
+              <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm text-amber-600 group-hover:scale-110 transition">
+                <Frown className="w-6 h-6" />
+              </div>
+              <div className="text-left">
+                <p className="font-bold text-tiby-ink text-lg">
+                  Ya, Ada Keluhan
+                </p>
+                <p className="text-xs text-tiby-muted">
+                  Mual, pusing, atau efek samping lain
+                </p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => {
+                setHasComplaints(false);
+                onSubmit({
+                  medicationStatus: "SUDAH_MINUM",
+                  pillsTakenCount: DEFAULT_PILLS,
+                  hasComplaints: false,
+                  selectedComplaints: [],
+                });
+              }}
+              className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-emerald-100 bg-white hover:border-emerald-500 hover:shadow-md transition-all group"
+            >
+              <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div className="text-left">
+                <p className="font-bold text-tiby-ink text-lg">
+                  Tidak Ada Keluhan
+                </p>
+                <p className="text-xs text-tiby-muted">
+                  Badan terasa baik-baik saja
+                </p>
+              </div>
+            </button>
+          </motion.div>
+        )}
+
+        {step === 3 && (
+          <motion.div
+            key="step3"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-5"
+          >
+            <p className="text-sm text-tiby-muted text-center">
+              Pilih keluhan yang dirasakan (bisa lebih dari satu):
+            </p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {SYMPTOMS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => handleToggleSymptom(s)}
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${
+                    complaints.includes(s)
+                      ? "bg-amber-500 text-white border-amber-500 shadow-md scale-105"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-amber-300"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={handleFinalSubmit}
+              disabled={complaints.length === 0}
+              className="w-full h-12 mt-4 bg-tiby-teal-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-tiby-teal-700 transition disabled:opacity-50"
+            >
+              <Check className="w-5 h-5" /> Kirim Laporan
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
