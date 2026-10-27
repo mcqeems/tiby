@@ -1,5 +1,5 @@
 info:
-  name: Whatsapp Webhook (api/webhooks/waha) [PUBLIC]
+  name: Whatsapp Webhook (api/webhooks/waha) [WAHA]
   type: http
   seq: 3
 
@@ -108,6 +108,13 @@ examples:
           }
 
 docs: |-
+  **Server-to-server only — never called by the application client.**
+  WAHA posts here when a WhatsApp message arrives. The Next.js app only uses
+  `POST /api/whatsapp/connect` and `GET /api/whatsapp/status`; it must never
+  call this route (there is no user session, and the shared secret must not
+  ship to a browser). This file exists for documentation and for simulating
+  WAHA manually in Bruno.
+
   WAHA calls this endpoint when a WhatsApp message arrives. Configure it at the
   session level (or with `WHATSAPP_HOOK_URL` + `WHATSAPP_HOOK_EVENTS=message`).
   From a Dockerised WAHA, the host is `host.docker.internal` (Linux needs

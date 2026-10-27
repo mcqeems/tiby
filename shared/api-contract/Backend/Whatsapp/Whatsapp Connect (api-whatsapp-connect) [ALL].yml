@@ -72,3 +72,5 @@ docs: |-
     after normalisation).
   - 404: Family contact not found or not visible to the caller.
   - 503: WhatsApp is enabled but the bot number is not configured.
+  The inbound side (the user sending the code) arrives at
+  `POST /api/webhooks/waha`, which is called by WAHA — never by this client.

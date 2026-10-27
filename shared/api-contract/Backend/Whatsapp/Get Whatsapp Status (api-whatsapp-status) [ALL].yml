@@ -74,3 +74,5 @@ docs: |-
   Responses:
   - 200: Status (verified or pending).
   - 404: Family contact not found or not visible to the caller.
+  The inbound side (the user sending the code) arrives at
+  `POST /api/webhooks/waha`, which is called by WAHA — never by this client.
