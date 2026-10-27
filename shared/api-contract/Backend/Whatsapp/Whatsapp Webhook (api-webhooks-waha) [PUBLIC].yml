@@ -1,0 +1,135 @@
+info:
+  name: Whatsapp Webhook (api/webhooks/waha) [PUBLIC]
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/webhooks/waha"
+  headers:
+    - name: X-Waha-Secret
+      value: "{{wahaWebhookSecret}}"
+  body:
+    type: json
+    data: |-
+      {
+        // WAHA event name. Only inbound text messages are handled.
+        "event": "message",
+        "session": "default",
+        "payload": {
+          "id": "false_6281234567890@c.us_3EB0...",
+          "from": "6281234567890@c.us",
+          "to": "6281199887766@c.us",
+          // The 6-character code can be anywhere in the message.
+          "body": "Halo, kode verifikasi saya K9X4T2",
+          "fromMe": false,
+          "timestamp": 1793092940
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Verified (201)
+    request:
+      url: "{{baseUrl}}/api/webhooks/waha"
+      method: POST
+      headers:
+        - name: X-Waha-Secret
+          value: "{{wahaWebhookSecret}}"
+      body:
+        type: json
+        data: |-
+          {
+            "event": "message",
+            "session": "default",
+            "payload": {
+              "id": "false_6281234567890@c.us_3EB0",
+              "from": "6281234567890@c.us",
+              "to": "6281199887766@c.us",
+              "body": "Kode saya K9X4T2",
+              "fromMe": false,
+              "timestamp": 1793092940
+            }
+          }
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: content-type
+          value: application/json; charset=utf-8
+      body:
+        type: json
+        data: |-
+          {
+            "handled": true,
+            "verified": true
+          }
+  - name: Ignored - no code or wrong sender (201)
+    request:
+      url: "{{baseUrl}}/api/webhooks/waha"
+      method: POST
+      headers:
+        - name: X-Waha-Secret
+          value: "{{wahaWebhookSecret}}"
+      body:
+        type: json
+        data: |-
+          {
+            "event": "message",
+            "session": "default",
+            "payload": {
+              "id": "false_6289999999999@c.us_3EB1",
+              "from": "6289999999999@c.us",
+              "to": "6281199887766@c.us",
+              "body": "K9X4T2",
+              "fromMe": false,
+              "timestamp": 1793092941
+            }
+          }
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: content-type
+          value: application/json; charset=utf-8
+      body:
+        type: json
+        data: |-
+          {
+            "handled": true,
+            "verified": false
+          }
+
+docs: |-
+  WAHA calls this endpoint when a WhatsApp message arrives. Configure it at the
+  session level (or with `WHATSAPP_HOOK_URL` + `WHATSAPP_HOOK_EVENTS=message`).
+  From a Dockerised WAHA, the host is `host.docker.internal` (Linux needs
+  `--add-host=host.docker.internal:host-gateway`), not `localhost`.
+
+  Matching rules:
+  - Only `event: "message"` with `fromMe: false` is processed.
+  - Only **direct chats** (`…@c.us`) may complete a handshake. A group JID is
+    ignored so future messages can never be bound to a group.
+  - The code is matched together with the sender's phone hash: a code sent from
+    a different number does not verify the account. The sender becomes the
+    stored `whatsapp_chat_id` only after that match.
+
+  On success it marks the user/family contact verified, records
+  `WHATSAPP_CONNECTED` in the patient timeline + audit log, and replies with the
+  zero-stigma Pandu welcome message (sendSeen + sendText).
+
+  Security: when `WAHA_WEBHOOK_SECRET` is set, every request must carry it in
+  `X-Waha-Secret` (or `X-Api-Key`), otherwise 401. Production refuses to boot
+  when WAHA is enabled without a secret.
+
+  Responses:
+  - 201: `{ handled: true, verified: boolean }` — ignored messages are still a
+    successful webhook (201) so WAHA does not retry them.
+  - 401: Missing or invalid webhook secret.

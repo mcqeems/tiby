@@ -30,7 +30,11 @@ import {
 export class WhatsappController {
   constructor(private readonly whatsappConnectService: WhatsappConnectService) {}
 
-  private extractUser(req: AuthenticatedRequest): { userId: string; role: UserRole } {
+  private extractUser(req: AuthenticatedRequest): {
+    userId: string;
+    role: UserRole;
+    facilityId: string | null;
+  } {
     const user = req.session?.user ?? req.user;
     if (!user?.id) {
       throw new UnauthorizedException({
@@ -38,7 +42,11 @@ export class WhatsappController {
         message: "Authentication session required",
       });
     }
-    return { userId: user.id, role: user.role };
+    return {
+      userId: user.id,
+      role: user.role,
+      facilityId: user.facility_id ?? user.facilityId ?? null,
+    };
   }
 
   @Post("whatsapp/connect")
@@ -48,8 +56,8 @@ export class WhatsappController {
     @Req() req: AuthenticatedRequest,
     @Body({ schema: WhatsappConnectRequestSchema }) body: WhatsappConnectRequest,
   ): Promise<WhatsappConnectChallenge> {
-    const { userId, role } = this.extractUser(req);
-    return this.whatsappConnectService.generateConnectChallenge(userId, role, body);
+    const caller = this.extractUser(req);
+    return this.whatsappConnectService.generateConnectChallenge(caller, body);
   }
 
   @Get("whatsapp/status")
@@ -59,8 +67,8 @@ export class WhatsappController {
     @Req() req: AuthenticatedRequest,
     @Query({ schema: WhatsappStatusQuerySchema }) query: WhatsappStatusQuery,
   ): Promise<WhatsappConnectionStatus> {
-    const { userId } = this.extractUser(req);
-    return this.whatsappConnectService.getConnectionStatus(userId, query);
+    const caller = this.extractUser(req);
+    return this.whatsappConnectService.getConnectionStatus(caller, query);
   }
 
   @Post("webhooks/waha")
