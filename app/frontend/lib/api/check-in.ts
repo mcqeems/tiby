@@ -57,15 +57,24 @@ export const checkInsApi = {
       },
     );
   },
-  async getTodayStatus(): Promise<CheckInHistoryItem | null> {
-    const today = new Date().toISOString().split("T")[0]; // Format YYYY-MM-DD
+  async getTodayStatus(
+    treatmentPlanId?: string,
+  ): Promise<CheckInHistoryItem | null> {
+    const today = new Date().toISOString().split("T")[0];
+    const params = new URLSearchParams({
+      from: today,
+      to: today,
+      limit: "1",
+    });
+
+    if (treatmentPlanId) {
+      params.set("treatmentPlanId", treatmentPlanId);
+    }
+
     const res = await apiFetch<CheckInHistoryResponse>(
-      `/api/check-ins?from=${today}&to=${today}&limit=1`,
+      `/api/check-ins?${params.toString()}`,
     );
 
-    if (res.items && res.items.length > 0) {
-      return res.items[0];
-    }
-    return null;
+    return res.items?.[0] ?? null;
   },
 };

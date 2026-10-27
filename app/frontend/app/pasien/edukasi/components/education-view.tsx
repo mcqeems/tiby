@@ -82,7 +82,7 @@ export default function EducationView({
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative w-full overflow-hidden rounded-3xl bg-gradient-to-br from-tiby-teal-600 to-tiby-teal-800 p-8 sm:p-12 text-white shadow-xl shadow-tiby-teal-600/20"
+        className="relative w-full overflow-hidden rounded-3xl bg-linear-to-br from-tiby-teal-600 to-tiby-teal-800 p-8 sm:p-12 text-white shadow-xl shadow-tiby-teal-600/20"
       >
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
 
