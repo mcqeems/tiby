@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import type { TibyUser } from "@/lib/auth-client";
 import { RoleGuard } from "@/app/role-guard";
@@ -11,6 +10,7 @@ import PublicLoading from "@/components/ui/public-loading";
 import { consentApi } from "@/lib/api/consent";
 import { pasienMenuItems } from "./components/pasien-menu";
 import Footer from "@/components/layout/footer";
+import ConsentModal from "@/components/consent/consent-modal";
 
 export default function PasienLayout({
   children,
@@ -20,34 +20,23 @@ export default function PasienLayout({
   const { data: sessionData, isPending } = useSession();
   const user = sessionData?.user as TibyUser | undefined;
 
-  const router = useRouter();
-  const pathname = usePathname();
-  const [isCheckingConsent, setIsCheckingConsent] = useState(true);
+  const [consentGranted, setConsentGranted] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (isPending) return;
 
     async function checkConsent() {
-      if (pathname === "/pasien/consent") {
-        setIsCheckingConsent(false);
-        return;
-      }
-
       try {
         const res = await consentApi.getStatus();
-        if (res.mustConfirmConsent || !res.active) {
-          router.replace("/pasien/consent");
-        } else {
-          setIsCheckingConsent(false);
-        }
+        setConsentGranted(Boolean(res.active) && !res.mustConfirmConsent);
       } catch (err) {
         console.error("Gagal cek consent:", err);
-        setIsCheckingConsent(false);
+        setConsentGranted(false);
       }
     }
 
     checkConsent();
-  }, [pathname, router, isPending]);
+  }, [isPending]);
 
   return (
     <RoleGuard allowed={["PATIENT", "PASIEN"]}>
@@ -67,16 +56,28 @@ export default function PasienLayout({
           </div>
 
           <div className="flex-1">
-            {isCheckingConsent ? (
+            {consentGranted === null ? (
               <PublicLoading fullScreen message="Memeriksa izin akses..." />
             ) : (
-              children
+              <div
+                key={consentGranted ? "granted" : "pending"}
+                className={
+                  consentGranted ? "" : "pointer-events-none select-none"
+                }
+                aria-hidden={!consentGranted}
+              >
+                {children}
+              </div>
             )}
           </div>
 
           <Footer />
         </main>
       </div>
+
+      {consentGranted === false && (
+        <ConsentModal role="PASIEN" onGranted={() => setConsentGranted(true)} />
+      )}
     </RoleGuard>
   );
 }
