@@ -585,6 +585,16 @@ export class CheckInService {
           verdictResult.responseMessage,
         ),
       );
+
+      // Family contacts get the same escalation over WhatsApp (no login).
+      this.eventEmitter.emit(
+        'notification.trigger',
+        new NotificationTriggerEvent(
+          intentToStop ? 'INTENT_TO_STOP_ALERT' : 'RED_FLAG_ALERT',
+          plan.id,
+          'KELUARGA',
+        ),
+      );
     }
 
     await this.auditRepo.save(

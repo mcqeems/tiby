@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { INestApplication } from "@nestjs/common";
-import { describe, beforeAll, afterAll, it, expect } from "vitest";
+import { describe, beforeAll, afterAll, it, expect, vi } from "vitest";
 import request from "supertest";
 import { DataSource } from "typeorm";
 import { AppModule } from "../src/app.module.js";
@@ -8,6 +8,7 @@ import { auth } from "../src/auth/auth.config.js";
 import { AuthUser } from "../src/auth/entities/auth-user.entity.js";
 import { Facility } from "../src/modules/facilities/entities/facilities.entity.js";
 import { TreatmentPlan } from "../src/modules/patients/entities/treatment-plan.entity.js";
+import { WahaClientService } from "../src/modules/whatsapp/services/waha-client.service.js";
 
 describe("Phase 5: WhatsApp Connect & Inbound WAHA Webhook (e2e)", () => {
   let app: INestApplication;
@@ -33,6 +34,11 @@ describe("Phase 5: WhatsApp Connect & Inbound WAHA Webhook (e2e)", () => {
     await app.init();
 
     dataSource = app.get(DataSource);
+
+    // Never hit the live WAHA from the test suite.
+    const waha = app.get(WahaClientService);
+    vi.spyOn(waha, "sendSeen").mockResolvedValue(true);
+    vi.spyOn(waha, "sendText").mockResolvedValue({ success: true, messageId: "mock-msg" });
 
     // 1. Seed Facility
     const facilityRepo = dataSource.getRepository(Facility);
@@ -156,6 +162,7 @@ describe("Phase 5: WhatsApp Connect & Inbound WAHA Webhook (e2e)", () => {
 
     const res = await request(app.getHttpServer())
       .post("/api/webhooks/waha")
+      .set("X-Waha-Secret", process.env.WAHA_WEBHOOK_SECRET ?? "")
       .send(webhookPayload);
 
     expect(res.status).toBe(201);

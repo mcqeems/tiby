@@ -1,43 +1,73 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { createHash, randomBytes } from 'node:crypto';
-import { WhatsappVerification } from '../entities/whatsapp-verification.entity.js';
-import { AuthUser } from '../../../auth/entities/auth-user.entity.js';
-import { FamilyContact } from '../../family-contacts/entities/family-contact.entity.js';
-import { TreatmentPlan } from '../../patients/entities/treatment-plan.entity.js';
-import { PatientStatusHistory } from '../../patients/entities/patient-status-history.entity.js';
-import { AuditLog } from '../../internal/audit/entities/audit-log.entity.js';
-import { WahaClientService } from './waha-client.service.js';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ServiceUnavailableException,
+  Logger,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { createHash, randomBytes } from "node:crypto";
+import { WhatsappVerification } from "../entities/whatsapp-verification.entity.js";
+import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
+import { FamilyContact } from "../../family-contacts/entities/family-contact.entity.js";
+import { TreatmentPlan } from "../../patients/entities/treatment-plan.entity.js";
+import { PmoAssignment } from "../../patients/entities/pmo-assignment.entity.js";
+import { PatientStatusHistory } from "../../patients/entities/patient-status-history.entity.js";
+import { AuditLog } from "../../internal/audit/entities/audit-log.entity.js";
+import { WahaClientService } from "./waha-client.service.js";
 import type {
   WhatsappConnectRequest,
   WhatsappConnectChallenge,
   WhatsappStatusQuery,
   WhatsappConnectionStatus,
   WahaWebhookPayload,
-} from '@tiby/ts-shared';
+} from "@tiby/ts-shared";
 
-function normalizeIndonesianPhone(phone: string): string {
-  let cleaned = phone.replace(/\D/g, '');
-  if (cleaned.startsWith('0')) {
-    cleaned = '62' + cleaned.slice(1);
+export interface WhatsappCaller {
+  userId: string;
+  role: string;
+  facilityId?: string | null;
+}
+
+const DIRECT_CHAT = /^[0-9]+@c\.us$/;
+
+/** Digits only, in international form: 08… / 8… / +62… all become 62…. */
+export function normalizeWhatsappNumber(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  let normalized = digits;
+  if (digits.startsWith("0")) normalized = `62${digits.slice(1)}`;
+  else if (digits.startsWith("8")) normalized = `62${digits}`;
+
+  if (!/^62[0-9]{7,13}$/.test(normalized)) {
+    throw new BadRequestException({
+      code: "BAD_REQUEST",
+      message: "Invalid Indonesian WhatsApp number",
+    });
   }
-  return cleaned;
+  return normalized;
 }
 
 function hashPhone(phone: string): string {
-  const digits = phone.replace(/\D/g, '');
-  return createHash('sha256').update(digits).digest('hex');
+  const digits = phone.replace(/\D/g, "");
+  return createHash("sha256").update(digits).digest("hex");
 }
 
 function generate6CharCode(): string {
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   const bytes = randomBytes(6);
-  let code = '';
+  let code = "";
   for (let i = 0; i < 6; i++) {
     code += alphabet[bytes[i] % alphabet.length];
   }
   return code;
+}
+
+function notFound(): NotFoundException {
+  return new NotFoundException({
+    code: "NOT_FOUND",
+    message: "Family contact not found",
+  });
 }
 
 @Injectable()
@@ -51,6 +81,8 @@ export class WhatsappConnectService {
     private readonly userRepo: Repository<AuthUser>,
     @InjectRepository(FamilyContact)
     private readonly familyRepo: Repository<FamilyContact>,
+    @InjectRepository(PmoAssignment)
+    private readonly pmoRepo: Repository<PmoAssignment>,
     @InjectRepository(TreatmentPlan)
     private readonly planRepo: Repository<TreatmentPlan>,
     @InjectRepository(PatientStatusHistory)
@@ -61,30 +93,30 @@ export class WhatsappConnectService {
   ) {}
 
   async generateConnectChallenge(
-    userId: string,
-    userRole: string,
+    caller: WhatsappCaller,
     dto: WhatsappConnectRequest,
   ): Promise<WhatsappConnectChallenge> {
-    const normalizedDigits = normalizeIndonesianPhone(dto.phoneNumber);
+    const botPhoneNumber = process.env.WAHA_BOT_PHONE_NUMBER || "";
+    if (process.env.WAHA_ENABLED === "true" && !botPhoneNumber.replace(/\D/g, "")) {
+      throw new ServiceUnavailableException({
+        code: "INTERNAL",
+        message: "WhatsApp bot number is not configured",
+      });
+    }
+
+    const normalizedDigits = normalizeWhatsappNumber(dto.phoneNumber);
     const expectedChatId = `${normalizedDigits}@c.us`;
-    const phoneHash = hashPhone(dto.phoneNumber);
+    const phoneHash = hashPhone(normalizedDigits);
 
     if (dto.familyContactId) {
-      const family = await this.familyRepo.findOneBy({
-        id: dto.familyContactId,
-      });
-      if (!family) {
-        throw new NotFoundException({
-          code: 'NOT_FOUND',
-          message: 'Family contact not found',
-        });
-      }
+      // Any authenticated user could otherwise claim another plan's contact.
+      await this.getAccessibleFamilyContact(caller, dto.familyContactId);
     } else {
-      const user = await this.userRepo.findOneBy({ id: userId });
+      const user = await this.userRepo.findOneBy({ id: caller.userId });
       if (!user) {
         throw new NotFoundException({
-          code: 'NOT_FOUND',
-          message: 'User not found',
+          code: "NOT_FOUND",
+          message: "User not found",
         });
       }
     }
@@ -95,32 +127,31 @@ export class WhatsappConnectService {
     // Invalidate prior pending challenges for this user/contact
     if (dto.familyContactId) {
       await this.verifyRepo.update(
-        { familyContactId: dto.familyContactId, status: 'PENDING' },
-        { status: 'REPLACED' },
+        { familyContactId: dto.familyContactId, status: "PENDING" },
+        { status: "REPLACED" },
       );
     } else {
       await this.verifyRepo.update(
-        { userId, status: 'PENDING' },
-        { status: 'REPLACED' },
+        { userId: caller.userId, status: "PENDING" },
+        { status: "REPLACED" },
       );
     }
 
     const verification = this.verifyRepo.create({
-      userId: dto.familyContactId ? null : userId,
+      userId: dto.familyContactId ? null : caller.userId,
       familyContactId: dto.familyContactId ?? null,
-      targetRole: dto.familyContactId ? 'FAMILY' : userRole,
+      targetRole: dto.familyContactId ? "KELUARGA" : caller.role,
       phoneEncrypted: dto.phoneNumber,
       phoneHash,
       expectedChatId,
       verificationCode,
-      status: 'PENDING',
+      status: "PENDING",
       expiresAt,
     });
 
     await this.verifyRepo.save(verification);
 
-    const botPhoneNumber = process.env.WAHA_BOT_PHONE_NUMBER || '';
-    const cleanBotPhone = botPhoneNumber.replace(/\D/g, '');
+    const cleanBotPhone = botPhoneNumber.replace(/\D/g, "");
     const wahaDeepLink = cleanBotPhone
       ? `https://wa.me/${cleanBotPhone}?text=${verificationCode}`
       : `https://wa.me/?text=${verificationCode}`;
@@ -134,66 +165,51 @@ export class WhatsappConnectService {
   }
 
   async getConnectionStatus(
-    userId: string,
+    caller: WhatsappCaller,
     query: WhatsappStatusQuery,
   ): Promise<WhatsappConnectionStatus> {
     if (query.familyContactId) {
-      const family = await this.familyRepo.findOneBy({
-        id: query.familyContactId,
-      });
-      if (!family) {
-        throw new NotFoundException({
-          code: 'NOT_FOUND',
-          message: 'Family contact not found',
-        });
-      }
+      const family = await this.getAccessibleFamilyContact(
+        caller,
+        query.familyContactId,
+      );
 
       const pending = await this.verifyRepo.findOne({
-        where: { familyContactId: query.familyContactId, status: 'PENDING' },
-        order: { createdAt: 'DESC' },
+        where: { familyContactId: query.familyContactId, status: "PENDING" },
+        order: { createdAt: "DESC" },
       });
 
+      const active = pending && pending.expiresAt > new Date();
       return {
         verified: Boolean(family.whatsappVerified),
         phoneNumber: family.whatsappEncrypted,
-        pendingCode:
-          pending && pending.expiresAt > new Date()
-            ? pending.verificationCode
-            : null,
-        expiresAt:
-          pending && pending.expiresAt > new Date()
-            ? pending.expiresAt.toISOString()
-            : null,
+        pendingCode: active ? pending.verificationCode : null,
+        expiresAt: active ? pending.expiresAt.toISOString() : null,
         verifiedAt: family.whatsappVerifiedAt
           ? family.whatsappVerifiedAt.toISOString()
           : null,
       };
     }
 
-    const user = await this.userRepo.findOneBy({ id: userId });
+    const user = await this.userRepo.findOneBy({ id: caller.userId });
     if (!user) {
       throw new NotFoundException({
-        code: 'NOT_FOUND',
-        message: 'User not found',
+        code: "NOT_FOUND",
+        message: "User not found",
       });
     }
 
     const pending = await this.verifyRepo.findOne({
-      where: { userId, status: 'PENDING' },
-      order: { createdAt: 'DESC' },
+      where: { userId: caller.userId, status: "PENDING" },
+      order: { createdAt: "DESC" },
     });
 
+    const active = pending && pending.expiresAt > new Date();
     return {
       verified: Boolean(user.whatsappVerified),
       phoneNumber: user.whatsappEncrypted,
-      pendingCode:
-        pending && pending.expiresAt > new Date()
-          ? pending.verificationCode
-          : null,
-      expiresAt:
-        pending && pending.expiresAt > new Date()
-          ? pending.expiresAt.toISOString()
-          : null,
+      pendingCode: active ? pending.verificationCode : null,
+      expiresAt: active ? pending.expiresAt.toISOString() : null,
       verifiedAt: user.whatsappVerifiedAt
         ? user.whatsappVerifiedAt.toISOString()
         : null,
@@ -204,11 +220,18 @@ export class WhatsappConnectService {
     dto: WahaWebhookPayload,
   ): Promise<{ handled: boolean; verified: boolean }> {
     const { event, payload } = dto;
-    if (event !== 'message' || payload.fromMe) {
+    if (event !== "message" || payload.fromMe) {
       return { handled: true, verified: false };
     }
 
-    const bodyText = payload.body?.trim() || '';
+    // A group JID would bind future messages to a group; only direct chats may
+    // complete a handshake.
+    if (!DIRECT_CHAT.test(payload.from)) {
+      this.logger.warn(`Ignoring WhatsApp handshake from non-direct chat`);
+      return { handled: true, verified: false };
+    }
+
+    const bodyText = payload.body?.trim() || "";
     const codeMatch = bodyText.toUpperCase().match(/\b[A-Z0-9]{6}\b/);
 
     if (!codeMatch) {
@@ -216,10 +239,15 @@ export class WhatsappConnectService {
     }
 
     const candidateCode = codeMatch[0];
+    const senderDigits = payload.from.replace(/@.*$/, "");
+
+    // The code alone is a bearer token; the sender must be the number that was
+    // registered, or anyone could bind their phone to someone else's account.
     const verification = await this.verifyRepo.findOne({
       where: {
         verificationCode: candidateCode,
-        status: 'PENDING',
+        status: "PENDING",
+        phoneHash: hashPhone(senderDigits),
       },
     });
 
@@ -228,24 +256,27 @@ export class WhatsappConnectService {
     }
 
     if (verification.expiresAt <= new Date()) {
-      verification.status = 'EXPIRED';
+      verification.status = "EXPIRED";
       await this.verifyRepo.save(verification);
       return { handled: true, verified: false };
     }
 
-    if (
-      verification.expectedChatId &&
-      verification.expectedChatId !== payload.from
-    ) {
-      this.logger.warn(
-        `WAHA verification sender mismatch: expected ${verification.expectedChatId}, got ${payload.from}. Accepting sender as source of truth.`,
-      );
-    }
-
-    // Mark verification as verified
-    verification.status = 'VERIFIED';
+    verification.status = "VERIFIED";
     verification.verifiedAt = new Date();
     await this.verifyRepo.save(verification);
+
+    // Supersede any other challenge that was still open for this target.
+    if (verification.userId) {
+      await this.verifyRepo.update(
+        { userId: verification.userId, status: "PENDING" },
+        { status: "REPLACED" },
+      );
+    } else if (verification.familyContactId) {
+      await this.verifyRepo.update(
+        { familyContactId: verification.familyContactId, status: "PENDING" },
+        { status: "REPLACED" },
+      );
+    }
 
     // Update target AuthUser or FamilyContact
     let treatmentPlanId: string | null = null;
@@ -254,6 +285,10 @@ export class WhatsappConnectService {
     if (verification.userId) {
       const user = await this.userRepo.findOneBy({ id: verification.userId });
       if (user) {
+        // Keep the number that was actually proven, so the profile and status
+        // endpoint have something to display.
+        user.whatsappEncrypted = verification.phoneEncrypted;
+        user.whatsappHash = verification.phoneHash;
         user.whatsappVerified = true;
         user.whatsappVerifiedAt = new Date();
         user.whatsappChatId = payload.from;
@@ -271,6 +306,8 @@ export class WhatsappConnectService {
         id: verification.familyContactId,
       });
       if (family) {
+        family.whatsappEncrypted = verification.phoneEncrypted;
+        family.whatsappHash = verification.phoneHash;
         family.whatsappVerified = true;
         family.whatsappVerifiedAt = new Date();
         family.whatsappChatId = payload.from;
@@ -285,14 +322,14 @@ export class WhatsappConnectService {
       await this.historyRepo.save(
         this.historyRepo.create({
           treatmentPlanId,
-          eventType: 'WHATSAPP_CONNECTED',
+          eventType: "WHATSAPP_CONNECTED",
           previousState: plan?.patientState ?? null,
           newState: plan?.patientState ?? null,
           previousStreak: plan?.currentStreak ?? null,
           newStreak: plan?.currentStreak ?? null,
           actorUserId,
           actorRole,
-          reasonOrSummary: 'WhatsApp number verified via 6-char code',
+          reasonOrSummary: "WhatsApp number verified via 6-char code",
           metadataJson: { chatId: payload.from },
         }),
       );
@@ -302,8 +339,8 @@ export class WhatsappConnectService {
       this.auditRepo.create({
         actorUserId,
         actorRole,
-        action: 'WHATSAPP_CONNECTED',
-        targetEntity: 'whatsapp_verifications',
+        action: "WHATSAPP_CONNECTED",
+        targetEntity: "whatsapp_verifications",
         targetId: verification.id,
         metadataJson: { chatId: payload.from },
       }),
@@ -313,9 +350,46 @@ export class WhatsappConnectService {
     await this.wahaClient.sendSeen(payload.from, payload.id);
     await this.wahaClient.sendText(
       payload.from,
-      'Halo! Nomor WhatsApp Anda sudah berhasil terhubung dengan Pandu. Pandu siap mendampingi perjalanan sehat Anda!',
+      "Halo! Nomor WhatsApp Anda sudah berhasil terhubung dengan Pandu. Pandu siap mendampingi perjalanan sehat Anda!",
     );
 
     return { handled: true, verified: true };
+  }
+
+  /**
+   * A family contact may only be managed by its own patient, the PMO assigned
+   * to that plan, a NAKES in the plan's facility, or an ADMIN. 404, not 403:
+   * the endpoint must not reveal that another plan's contact exists.
+   */
+  private async getAccessibleFamilyContact(
+    caller: WhatsappCaller,
+    familyContactId: string,
+  ): Promise<FamilyContact> {
+    const family = await this.familyRepo.findOneBy({ id: familyContactId });
+    if (!family) throw notFound();
+
+    const plan = await this.planRepo.findOneBy({ id: family.treatmentPlanId });
+    if (!plan) throw notFound();
+
+    let allowed = false;
+    if (caller.role === "ADMIN") {
+      allowed = true;
+    } else if (caller.role === "PASIEN") {
+      allowed = plan.patientUserId === caller.userId;
+    } else if (caller.role === "NAKES") {
+      allowed = Boolean(caller.facilityId) && plan.facilityId === caller.facilityId;
+    } else if (caller.role === "PMO") {
+      allowed =
+        (await this.pmoRepo.count({
+          where: {
+            treatmentPlanId: plan.id,
+            pmoUserId: caller.userId,
+            active: true,
+          },
+        })) > 0;
+    }
+
+    if (!allowed) throw notFound();
+    return family;
   }
 }

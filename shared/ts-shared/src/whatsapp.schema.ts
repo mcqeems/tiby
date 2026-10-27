@@ -35,7 +35,7 @@ export const WahaWebhookPayloadSchema = z.object({
     id: z.string().optional(),
     from: z.string(),
     to: z.string().optional(),
-    body: z.string(),
+    body: z.string().default(""),
     fromMe: z.boolean().optional(),
     timestamp: z.number().optional(),
   }),

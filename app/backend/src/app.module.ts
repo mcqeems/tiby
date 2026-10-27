@@ -20,6 +20,7 @@ import { PatientsModule } from "./modules/patients/patients.module.js";
 import { FacilitiesModule } from "./modules/facilities/facilities.module.js";
 import { FamilyContactsModule } from "./modules/family-contacts/family-contacts.module.js";
 import { EscalationModule } from "./modules/internal/escalation/escalation.module.js";
+import { ReminderModule } from "./modules/internal/reminder/reminder.module.js";
 import { EducationModule } from "./modules/education/education.module.js";
 import { AuditModule } from "./modules/internal/audit/audit.module.js";
 import { UsersModule } from "./modules/users/users.module.js";
@@ -58,6 +59,7 @@ import { StatsModule } from "./modules/stats/stats.module.js";
     PatientsModule,
     FamilyContactsModule,
     EscalationModule,
+    ReminderModule,
     EducationModule,
     UsersModule,
     GuidanceModule,

@@ -35,6 +35,22 @@ export const EnvSchema = z.object({
   WAHA_API_KEY: z.string().optional().default(""),
   WAHA_BOT_PHONE_NUMBER: z.string().optional().default(""),
   WAHA_WEBHOOK_SECRET: z.string().optional().default(""),
+}).superRefine((env, ctx) => {
+  if (env.NODE_ENV !== "production" || !env.WAHA_ENABLED) return;
+  if (!env.WAHA_WEBHOOK_SECRET) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["WAHA_WEBHOOK_SECRET"],
+      message: "WAHA_WEBHOOK_SECRET is required in production when WAHA is enabled",
+    });
+  }
+  if (!env.WAHA_BOT_PHONE_NUMBER.replace(/\D/g, "")) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["WAHA_BOT_PHONE_NUMBER"],
+      message: "WAHA_BOT_PHONE_NUMBER is required in production when WAHA is enabled",
+    });
+  }
 });
 
 export type Env = z.infer<typeof EnvSchema>;

@@ -1,6 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { NotFoundException } from "@nestjs/common";
-import { WhatsappConnectService } from "../src/modules/whatsapp/services/whatsapp-connect.service.js";
+import {
+  BadRequestException,
+  NotFoundException,
+  ServiceUnavailableException,
+} from "@nestjs/common";
+import {
+  WhatsappConnectService,
+  normalizeWhatsappNumber,
+} from "../src/modules/whatsapp/services/whatsapp-connect.service.js";
+import { createHash } from "node:crypto";
+
+const hash = (digits: string) =>
+  createHash("sha256").update(digits).digest("hex");
 
 describe("WhatsappConnectService Unit Tests", () => {
   let service: WhatsappConnectService;
@@ -8,12 +19,14 @@ describe("WhatsappConnectService Unit Tests", () => {
   let mockVerifyRepo: any;
   let mockUserRepo: any;
   let mockFamilyRepo: any;
+  let mockPmoRepo: any;
   let mockPlanRepo: any;
   let mockHistoryRepo: any;
   let mockAuditRepo: any;
   let mockWahaClient: any;
 
   beforeEach(() => {
+    process.env.WAHA_ENABLED = "true";
     process.env.WAHA_BOT_PHONE_NUMBER = "+62811-9988-7766";
 
     mockVerifyRepo = {
@@ -32,7 +45,7 @@ describe("WhatsappConnectService Unit Tests", () => {
       findOneBy: vi.fn(),
       save: vi.fn((data) => Promise.resolve(data)),
     };
-
+    mockPmoRepo = { count: vi.fn().mockResolvedValue(0) };
     mockPlanRepo = {
       findOneBy: vi.fn().mockResolvedValue(null),
     };
@@ -54,6 +67,7 @@ describe("WhatsappConnectService Unit Tests", () => {
       mockVerifyRepo,
       mockUserRepo,
       mockFamilyRepo,
+      mockPmoRepo,
       mockPlanRepo,
       mockHistoryRepo,
       mockAuditRepo,
@@ -61,23 +75,38 @@ describe("WhatsappConnectService Unit Tests", () => {
     );
   });
 
+  describe("normalizeWhatsappNumber", () => {
+    it("accepts 08, 8 and +62 prefixes", () => {
+      expect(normalizeWhatsappNumber("081234567890")).toBe("6281234567890");
+      expect(normalizeWhatsappNumber("81234567890")).toBe("6281234567890");
+      expect(normalizeWhatsappNumber("+62 812-3456-7890")).toBe("6281234567890");
+    });
+
+    it("rejects numbers that cannot be Indonesian WhatsApp numbers", () => {
+      expect(() => normalizeWhatsappNumber("12345")).toThrow(BadRequestException);
+      expect(() => normalizeWhatsappNumber("021-555")).toThrow(BadRequestException);
+    });
+  });
+
   describe("generateConnectChallenge", () => {
     it("throws NotFoundException if user is not found", async () => {
       mockUserRepo.findOneBy.mockResolvedValue(null);
 
       await expect(
-        service.generateConnectChallenge("nonexistent", "PASIEN", {
-          phoneNumber: "081234567890",
-        }),
+        service.generateConnectChallenge(
+          { userId: "nonexistent", role: "PASIEN" },
+          { phoneNumber: "081234567890" },
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
     it("generates 6-character uppercase code and deep link for user", async () => {
       mockUserRepo.findOneBy.mockResolvedValue({ id: "user-1", role: "PASIEN" });
 
-      const res = await service.generateConnectChallenge("user-1", "PASIEN", {
-        phoneNumber: "081234567890",
-      });
+      const res = await service.generateConnectChallenge(
+        { userId: "user-1", role: "PASIEN" },
+        { phoneNumber: "081234567890" },
+      );
 
       expect(res.verificationCode).toHaveLength(6);
       expect(res.verificationCode).toBe(res.verificationCode.toUpperCase());
@@ -94,6 +123,81 @@ describe("WhatsappConnectService Unit Tests", () => {
         }),
       );
     });
+
+    it("refuses to issue a challenge without a bot number", async () => {
+      delete process.env.WAHA_BOT_PHONE_NUMBER;
+
+      await expect(
+        service.generateConnectChallenge(
+          { userId: "user-1", role: "PASIEN" },
+          { phoneNumber: "081234567890" },
+        ),
+      ).rejects.toThrow(ServiceUnavailableException);
+    });
+
+    it("lets a patient manage their own family contact", async () => {
+      mockFamilyRepo.findOneBy.mockResolvedValue({
+        id: "family-1",
+        treatmentPlanId: "plan-1",
+      });
+      mockPlanRepo.findOneBy.mockResolvedValue({
+        id: "plan-1",
+        patientUserId: "user-1",
+        facilityId: "faskes-1",
+      });
+
+      const res = await service.generateConnectChallenge(
+        { userId: "user-1", role: "PASIEN" },
+        { phoneNumber: "081234567890", familyContactId: "family-1" },
+      );
+
+      expect(res.verificationCode).toHaveLength(6);
+      expect(mockVerifyRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          familyContactId: "family-1",
+          targetRole: "KELUARGA",
+        }),
+      );
+    });
+
+    it("hides another patient's family contact behind a 404", async () => {
+      mockFamilyRepo.findOneBy.mockResolvedValue({
+        id: "family-1",
+        treatmentPlanId: "plan-1",
+      });
+      mockPlanRepo.findOneBy.mockResolvedValue({
+        id: "plan-1",
+        patientUserId: "someone-else",
+        facilityId: "faskes-1",
+      });
+
+      await expect(
+        service.generateConnectChallenge(
+          { userId: "user-1", role: "PASIEN" },
+          { phoneNumber: "081234567890", familyContactId: "family-1" },
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("lets the plan's PMO manage the family contact", async () => {
+      mockFamilyRepo.findOneBy.mockResolvedValue({
+        id: "family-1",
+        treatmentPlanId: "plan-1",
+      });
+      mockPlanRepo.findOneBy.mockResolvedValue({
+        id: "plan-1",
+        patientUserId: "user-1",
+        facilityId: "faskes-1",
+      });
+      mockPmoRepo.count.mockResolvedValue(1);
+
+      await service.generateConnectChallenge(
+        { userId: "pmo-1", role: "PMO" },
+        { phoneNumber: "081234567890", familyContactId: "family-1" },
+      );
+
+      expect(mockVerifyRepo.save).toHaveBeenCalled();
+    });
   });
 
   describe("getConnectionStatus", () => {
@@ -108,11 +212,14 @@ describe("WhatsappConnectService Unit Tests", () => {
       const pendingVerify = {
         verificationCode: "ABC123",
         status: "PENDING",
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000), // active
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
       };
       mockVerifyRepo.findOne.mockResolvedValue(pendingVerify);
 
-      const res = await service.getConnectionStatus("user-1", {});
+      const res = await service.getConnectionStatus(
+        { userId: "user-1", role: "PASIEN" },
+        {},
+      );
       expect(res.verified).toBe(false);
       expect(res.phoneNumber).toBe("081234567890");
       expect(res.pendingCode).toBe("ABC123");
@@ -133,6 +240,52 @@ describe("WhatsappConnectService Unit Tests", () => {
       expect(res.handled).toBe(true);
       expect(res.verified).toBe(false);
       expect(mockVerifyRepo.findOne).not.toHaveBeenCalled();
+    });
+
+    it("ignores group chats: a group JID must never be bound to an account", async () => {
+      const res = await service.handleInboundWebhook({
+        event: "message",
+        payload: {
+          from: "120363000000000000@g.us",
+          body: "ABC123",
+        },
+      });
+
+      expect(res.verified).toBe(false);
+      expect(mockVerifyRepo.findOne).not.toHaveBeenCalled();
+    });
+
+    it("only matches a challenge registered to the sending number", async () => {
+      await service.handleInboundWebhook({
+        event: "message",
+        payload: {
+          from: "6281234567890@c.us",
+          body: "Halo ini kode verifikasi saya: XYZ987",
+        },
+      });
+
+      expect(mockVerifyRepo.findOne).toHaveBeenCalledWith({
+        where: {
+          verificationCode: "XYZ987",
+          status: "PENDING",
+          phoneHash: hash("6281234567890"),
+        },
+      });
+    });
+
+    it("does not verify when the sender does not match the registered number", async () => {
+      mockVerifyRepo.findOne.mockResolvedValue(null);
+
+      const res = await service.handleInboundWebhook({
+        event: "message",
+        payload: {
+          from: "6289999999999@c.us",
+          body: "XYZ987",
+        },
+      });
+
+      expect(res.verified).toBe(false);
+      expect(mockUserRepo.save).not.toHaveBeenCalled();
     });
 
     it("verifies user account when incoming message contains matching 6-char verification code", async () => {

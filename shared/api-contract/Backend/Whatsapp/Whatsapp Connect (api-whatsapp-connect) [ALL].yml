@@ -1,0 +1,74 @@
+info:
+  name: Whatsapp Connect (api/whatsapp/connect) [ALL]
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/whatsapp/connect"
+  body:
+    type: json
+    data: |-
+      {
+        // Indonesian WhatsApp number. 08…, 8… and +62… are normalised to 62….
+        "phoneNumber": "081234567890",
+        // Optional. Only a contact on a plan you can access (own plan, assigned
+        // PMO plan, NAKES facility, or ADMIN).
+        "familyContactId": null
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Whatsapp Connect (201)
+    request:
+      url: "{{baseUrl}}/api/whatsapp/connect"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "phoneNumber": "081234567890"
+          }
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: content-type
+          value: application/json; charset=utf-8
+      body:
+        type: json
+        data: |-
+          {
+            "verificationCode": "K9X4T2",
+            "botPhoneNumber": "6281199887766",
+            "wahaDeepLink": "https://wa.me/6281199887766?text=K9X4T2",
+            "expiresAt": "2026-10-27T08:15:00.000Z"
+          }
+
+docs: |-
+  Starts the user-initiated WhatsApp handshake. The user sends the 6-character
+  ALL-CAPS code from the number they entered to the bot; only then can the
+  backend message that number (WAHA reachout rule).
+
+  - The code is valid for 15 minutes. Calling connect again replaces the
+    previous PENDING challenge for the same user/contact.
+  - `familyContactId` connects a secondary household contact instead of the
+    caller. It is rejected with 404 when the contact belongs to a plan the
+    caller cannot access (patient owner, assigned PMO, NAKES in the same
+    facility, or ADMIN).
+  - `WAHA_BOT_PHONE_NUMBER` must be configured when WAHA is enabled, otherwise
+    the deep link would have no recipient and the endpoint returns 503.
+
+  Responses:
+  - 201: Challenge with the code, bot number, deep link, and expiry.
+  - 400: Phone number cannot be an Indonesian WhatsApp number (9..15 digits
+    after normalisation).
+  - 404: Family contact not found or not visible to the caller.
+  - 503: WhatsApp is enabled but the bot number is not configured.

@@ -139,6 +139,15 @@ export class SilenceDetectorService {
               "PMO",
             ),
           );
+
+          this.eventEmitter.emit(
+            "notification.trigger",
+            new NotificationTriggerEvent(
+              "SILENCE_H2_ESCALATION",
+              plan.id,
+              "KELUARGA",
+            ),
+          );
         } else if (plan.consecutiveSilenceDays >= 3) {
           const prolonged = plan.consecutiveSilenceDays >= 7;
           const newState = prolonged ? "PUTUS_FOLLOW_UP" : "BERISIKO";
@@ -202,6 +211,15 @@ export class SilenceDetectorService {
               "SILENCE_H3_ESCALATION",
               plan.id,
               "PMO",
+            ),
+          );
+
+          this.eventEmitter.emit(
+            "notification.trigger",
+            new NotificationTriggerEvent(
+              "SILENCE_H3_ESCALATION",
+              plan.id,
+              "KELUARGA",
             ),
           );
         }

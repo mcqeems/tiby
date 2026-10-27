@@ -12,3 +12,7 @@ app/.DS_Store
 app/ai-service/.DS_Store
 app/ai-service/knowledge/*.db
 app/ai-service/knowledge/*.sqlite
+
+# WAHA runtime state (QR session) and local credentials
+infra/waha/sessions/
+infra/waha/.env
