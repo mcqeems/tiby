@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrl}}/ai/guidance"
+  url: "{{aiBaseUrl}}/ai/guidance"
   headers:
     - name: Content-Type
       value: application/json
@@ -20,8 +20,6 @@ http:
         // jejak transkrip check-in untuk konteks. max 5000 char, scanned for fail-closed case (Optional)
         "transcript": null
       }
-  auth:
-    type: inherit
 
 runtime:
   scripts:
@@ -46,19 +44,13 @@ runtime:
 
 settings:
   encodeUrl: true
-
-docs: |-
-  Answers general educational questions using approved Kemenkes/WHO evidence only. It does not diagnose or instruct treatment.
-
-  Fails closed - `answer: null`, still HTTP 200 - for personal decision questions (dose, start/stop/switch medication) or when no evidence matches; `limitations` explains why.
-
-  Responses:
-  - 200: Answer (possibly null) with `grounded`, `evidence`, `citations`, and `limitations`.
-  - 422: Request validation failed (ApiError).
-  - 503: Guidance provider is not configured on the server (ApiError).
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
 
 examples:
-  - name: "200 - grounded answer with citations"
+  - name: 200 - grounded answer with citations
     request:
       url: "{{baseUrl}}/ai/guidance"
       method: POST
@@ -110,7 +102,7 @@ examples:
               "Informasi ini merupakan ringkasan umum berdasarkan panduan Kemenkes dan bukan penilaian spesifik untuk kasus pasien tertentu. Untuk pertanyaan mengenai kondisi pribadi, konsultasikan dengan tenaga kesehatan yang menangani."
             ]
           }
-  - name: "200 - fail closed on personal dosing question"
+  - name: 200 - fail closed on personal dosing question
     request:
       url: "{{baseUrl}}/ai/guidance"
       method: POST
@@ -132,3 +124,13 @@ examples:
               "Permintaan ini menyangkut keputusan atau tindakan pengobatan pribadi; silakan hubungi tenaga kesehatan yang menangani Anda."
             ]
           }
+
+docs: |-
+  Answers general educational questions using approved Kemenkes/WHO evidence only. It does not diagnose or instruct treatment.
+
+  Fails closed - `answer: null`, still HTTP 200 - for personal decision questions (dose, start/stop/switch medication) or when no evidence matches; `limitations` explains why.
+
+  Responses:
+  - 200: Answer (possibly null) with `grounded`, `evidence`, `citations`, and `limitations`.
+  - 422: Request validation failed (ApiError).
+  - 503: Guidance provider is not configured on the server (ApiError).
