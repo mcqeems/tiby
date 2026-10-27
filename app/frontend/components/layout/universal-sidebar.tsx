@@ -24,13 +24,11 @@ interface UniversalSidebarProps {
 
 const STORAGE_KEY = "tiby-sidebar-collapsed";
 
-/* Store kecil untuk status collapsed (sinkron dengan localStorage).
-   Dipakai lewat useSyncExternalStore sehingga tidak perlu setState di effect. */
 const collapsedListeners = new Set<() => void>();
 
 function subscribeCollapsed(callback: () => void) {
   collapsedListeners.add(callback);
-  window.addEventListener("storage", callback); // sinkron antar tab
+  window.addEventListener("storage", callback);
   return () => {
     collapsedListeners.delete(callback);
     window.removeEventListener("storage", callback);
@@ -53,7 +51,7 @@ function setCollapsedValue(next: boolean) {
   try {
     localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
   } catch {
-    /* abaikan jika storage tidak tersedia */
+    /* noop */
   }
   collapsedListeners.forEach((listener) => listener());
 }
@@ -127,18 +125,10 @@ export default function UniversalSidebar({
 
   const toggleCollapsed = () => setCollapsedValue(!collapsed);
 
-  // ✅ FIX LOGIKA ACTIVE MENU
   const isItemActive = (href: string) => {
-    // 1. Jika URL persis sama, pasti aktif
     if (pathname === href) return true;
-
-    // 2. Daftar menu "Root" (Induk). Menu ini HANYA boleh aktif jika URL persis sama.
-    // Jangan biarkan "/pasien" aktif saat kita berada di "/pasien/check-in"
     const rootPaths = ["/pasien", "/nakes", "/pmo", "/admin", "/faskes"];
     if (rootPaths.includes(href)) return false;
-
-    // 3. Untuk sub-menu (misal: "/pasien/riwayat"), aktifkan jika URL berawalan sama
-    // Ditambah garis miring (/) agar "/pasien/riwayat" tidak menyalakan "/pasien/riwayat-lain"
     return pathname.startsWith(`${href}/`);
   };
 
@@ -148,16 +138,18 @@ export default function UniversalSidebar({
 
   const avatarText = user?.name?.[0] || user?.username?.[0] || brandInitial;
 
+  // Filter menu profil agar tidak muncul di mobile bottom bar
+  const mobileItems = items.filter((item) => !item.href.endsWith("/profile"));
+
   return (
     <>
       <aside
         aria-label={`Sidebar ${brandName}`}
         data-collapsed={collapsed}
-        className={`relative sticky top-0 hidden h-screen shrink-0 flex-col justify-between border-r border-tiby-teal-100 bg-white px-4 py-5 shadow-xs transition-[width] duration-300 ease-out motion-reduce:transition-none md:flex ${
-          collapsed ? "w-[76px]" : "w-[264px]"
+        className={`sticky top-0 hidden h-screen shrink-0 flex-col justify-between border-r border-tiby-teal-100 bg-white px-4 py-5 shadow-xs transition-[width] duration-300 ease-out motion-reduce:transition-none md:flex ${
+          collapsed ? "w-19" : "w-66"
         }`}
       >
-        {/* Tombol buka/tutup di tepi sidebar */}
         <button
           type="button"
           onClick={toggleCollapsed}
@@ -173,7 +165,6 @@ export default function UniversalSidebar({
         </button>
 
         <div className="space-y-7">
-          {/* Logo: saat tutup, hanya bagian ikon (kiri) yang terlihat */}
           <div className="flex h-10 items-center pl-0.5">
             <div
               className={`relative h-10 overflow-hidden transition-[width] duration-300 motion-reduce:transition-none ${
@@ -191,7 +182,6 @@ export default function UniversalSidebar({
             </div>
           </div>
 
-          {/* Nav Links */}
           <nav aria-label="Menu Utama" className="space-y-1">
             {items.map((item) => {
               const isActive = isItemActive(item.href);
@@ -207,10 +197,9 @@ export default function UniversalSidebar({
                         : "text-tiby-muted hover:bg-gray-50 hover:text-tiby-ink"
                     }`}
                   >
-                    {/* Penanda item aktif */}
                     <span
                       aria-hidden="true"
-                      className={`absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-tiby-teal-600 transition-opacity ${
+                      className={`absolute left-0 top-1/2 h-5 w-0.75 -translate-y-1/2 rounded-r-full bg-tiby-teal-600 transition-opacity ${
                         isActive ? "opacity-100" : "opacity-0"
                       }`}
                     />
@@ -226,7 +215,6 @@ export default function UniversalSidebar({
           </nav>
         </div>
 
-        {/* User Card & Logout */}
         <div className="space-y-2 border-t border-tiby-teal-100 pt-4">
           <div
             className={`flex items-center rounded-xl ${
@@ -267,14 +255,14 @@ export default function UniversalSidebar({
         </div>
       </aside>
 
-      {/* ───────── MOBILE BOTTOM BAR (floating, tetap di bawah) ───────── */}
+      {/* ─── MOBILE BOTTOM BAR (Teks Dikembalikan) ─── */}
       <nav
         aria-label="Navigasi Mobile"
         className="fixed inset-x-3 bottom-3 z-40 md:hidden"
         style={{ marginBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="flex items-stretch gap-1 rounded-2xl border border-tiby-teal-100 bg-white/90 p-1.5 shadow-[0_8px_30px_rgba(15,60,60,0.12)] backdrop-blur-xl">
-          {items.map((item) => {
+          {mobileItems.map((item) => {
             const isActive = isItemActive(item.href);
             return (
               <Link
@@ -300,23 +288,6 @@ export default function UniversalSidebar({
               </Link>
             );
           })}
-
-          <span
-            aria-hidden="true"
-            className="mx-0.5 my-2 w-px shrink-0 bg-tiby-teal-100"
-          />
-
-          <button
-            type="button"
-            onClick={() => handleSignOut()}
-            aria-label="Keluar"
-            className="flex min-w-0 flex-1 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-red-600 transition active:scale-95 active:bg-red-50"
-          >
-            <LogoutIcon />
-            <span className="text-[10px] font-semibold leading-none">
-              Keluar
-            </span>
-          </button>
         </div>
       </nav>
     </>
