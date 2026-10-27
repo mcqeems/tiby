@@ -5,10 +5,12 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { useSession, type TibyUser } from "@/lib/auth-client";
 import { checkInsApi } from "@/lib/api/check-in";
+import { statsApi } from "@/lib/api/stats";
 import { educationApi, type EducationItem } from "@/lib/api/education";
 import { facilitiesApi } from "@/lib/api/facilities";
 import type { CheckInHistoryItem } from "@/lib/types/check-in";
 import type { FacilityItem } from "@/lib/types/facilities";
+import type { PatientStats } from "@/lib/types/stats";
 import PublicLoading from "@/components/ui/public-loading";
 import MascotAnimation from "@/components/mascot-animation";
 import {
@@ -22,49 +24,13 @@ import {
   CalendarDays,
   User,
   HeartPulse,
+  Target,
+  CalendarClock,
 } from "lucide-react";
 
 const getLocalDateStr = (dateString: string) => {
   const d = new Date(dateString);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
-
-const calculateStreak = (history: CheckInHistoryItem[]) => {
-  if (history.length === 0) return 0;
-  const sorted = [...history].sort(
-    (a, b) =>
-      new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
-  );
-  if (!sorted[0].isDoseFulfilled) return 0;
-
-  let streak = 0;
-  const expectedDate = new Date(sorted[0].submittedAt);
-  expectedDate.setHours(0, 0, 0, 0);
-
-  for (let i = 0; i < sorted.length; i++) {
-    const itemDate = new Date(sorted[i].submittedAt);
-    itemDate.setHours(0, 0, 0, 0);
-    if (
-      itemDate.getTime() === expectedDate.getTime() &&
-      sorted[i].isDoseFulfilled
-    ) {
-      streak++;
-      expectedDate.setDate(expectedDate.getDate() - 1);
-    } else {
-      break;
-    }
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const latestCheckIn = new Date(sorted[0].submittedAt);
-  latestCheckIn.setHours(0, 0, 0, 0);
-  const diffInDays = Math.floor(
-    (today.getTime() - latestCheckIn.getTime()) / (1000 * 60 * 60 * 24),
-  );
-
-  if (diffInDays > 1) return 0;
-  return streak;
 };
 
 const ComplianceCalendar = ({ history }: { history: CheckInHistoryItem[] }) => {
@@ -200,6 +166,7 @@ export default function PasienOverview() {
   const { data: session } = useSession();
   const user = session?.user as TibyUser | undefined;
 
+  const [stats, setStats] = useState<PatientStats | null>(null);
   const [history, setHistory] = useState<CheckInHistoryItem[]>([]);
   const [education, setEducation] = useState<EducationItem | null>(null);
   const [facility, setFacility] = useState<FacilityItem | null>(null);
@@ -209,12 +176,16 @@ export default function PasienOverview() {
     let active = true;
     async function fetchData() {
       try {
-        const [historyRes, eduRes] = await Promise.all([
+        const [statsRes, historyRes, eduRes] = await Promise.all([
+          statsApi.getStats(),
           checkInsApi.getHistory({ limit: 30 }),
           educationApi.getDaily(),
         ]);
 
         if (active) {
+          if (statsRes.role === "PASIEN") {
+            setStats(statsRes as PatientStats);
+          }
           setHistory(historyRes.items || []);
           if (eduRes.cards && eduRes.cards.length > 0) {
             setEducation(eduRes.cards[0]);
@@ -255,12 +226,11 @@ export default function PasienOverview() {
   if (loading)
     return <PublicLoading fullScreen message="Menyiapkan dashboard..." />;
 
-  const todayStr = getLocalDateStr(new Date().toISOString());
-  const todayCheckIn = history.find(
-    (h) => getLocalDateStr(h.submittedAt) === todayStr,
-  );
-  const isCheckedInToday = !!todayCheckIn;
-  const currentStreak = calculateStreak(history);
+  const isCheckedInToday =
+    stats?.todayCheckInStatus !== "BELUM_CHECK_IN" &&
+    stats?.todayCheckInStatus !== undefined;
+  const currentStreak = stats?.currentStreak || 0;
+  const adherencePercent = stats ? Math.round(stats.adherenceRate * 100) : 0;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 md:pb-10">
@@ -274,12 +244,10 @@ export default function PasienOverview() {
             {getGreeting()},
           </p>
           <h1 className="font-heading text-2xl font-bold text-tiby-ink">
-            {user?.name?.split(" ")[0] || "Sahabat Tiby"} 👋
+            {user?.name || "Sahabat Tiby"} 👋
           </h1>
         </div>
-        <div className="w-12 h-12 rounded-full bg-tiby-teal-50 border border-tiby-teal-100 flex items-center justify-center text-tiby-teal-700 font-heading font-bold text-lg shadow-sm">
-          {user?.name?.charAt(0).toUpperCase() || "P"}
-        </div>
+       
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -305,7 +273,11 @@ export default function PasienOverview() {
                       <Clock className="w-6 h-6 text-amber-300 animate-pulse" />
                     )}
                     <h2 className="text-2xl font-heading font-bold">
-                      {isCheckedInToday ? "Terkendali" : "Belum Check-in"}
+                      {isCheckedInToday
+                        ? stats?.todayCheckInStatus === "TERKENDALI"
+                          ? "Terkendali"
+                          : stats?.todayCheckInStatus.replace("_", " ")
+                        : "Belum Check-in"}
                     </h2>
                   </div>
                 </div>
@@ -336,63 +308,69 @@ export default function PasienOverview() {
             </div>
           </motion.div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex items-center gap-4"
+            >
+              <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
+                <Target className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-tiby-muted uppercase tracking-wider">
+                  Kepatuhan
+                </p>
+                <p className="font-heading text-xl font-bold text-tiby-ink">
+                  {adherencePercent}%
+                </p>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex items-center gap-4"
+            >
+              <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                <CalendarClock className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-tiby-muted uppercase tracking-wider">
+                  Sisa Hari
+                </p>
+                <p className="font-heading text-xl font-bold text-tiby-ink">
+                  {stats?.daysRemaining || 0} Hari
+                </p>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex items-center gap-4"
+            >
+              <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center shrink-0">
+                <Pill className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-tiby-muted uppercase tracking-wider">
+                  Total Obat
+                </p>
+                <p className="font-heading text-xl font-bold text-tiby-ink">
+                  {stats?.totalPillsTaken || 0} Butir
+                </p>
+              </div>
+            </motion.div>
+          </div>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-heading font-bold text-lg text-tiby-ink flex items-center gap-2">
-                <Pill className="w-5 h-5 text-tiby-teal-600" /> Jadwal
-                Pengobatan
-              </h3>
-              <span className="text-xs font-semibold bg-tiby-teal-50 text-tiby-teal-700 px-3 py-1 rounded-full border border-tiby-teal-100">
-                {facility?.name || "Faskes Terdaftar"}
-              </span>
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-2xs shrink-0">
-                  <Pill className="w-5 h-5 text-tiby-teal-600" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold text-tiby-muted uppercase tracking-wider mb-0.5">
-                    Lokasi Faskes
-                  </p>
-                  <p className="text-sm font-semibold text-tiby-ink">
-                    {facility?.district || "-"}
-                  </p>
-                  <p className="text-xs text-tiby-muted mt-1">
-                    {facility?.emergencyPhone || "-"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-2xs shrink-0">
-                  <Clock className="w-5 h-5 text-amber-500" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold text-tiby-muted uppercase tracking-wider mb-0.5">
-                    Informasi Terapi
-                  </p>
-                  <p className="text-sm font-semibold text-tiby-ink">
-                    Fase Pengobatan
-                  </p>
-                  <p className="text-xs text-tiby-muted mt-1">
-                    Sesuai anjuran dokter
-                  </p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.25 }}
           >
             <ComplianceCalendar history={history} />
           </motion.div>

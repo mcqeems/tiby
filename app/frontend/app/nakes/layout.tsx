@@ -29,7 +29,7 @@ export default function NakesLayout({
           items={nakesMenuItems}
         />
 
-        <main className="relative flex flex-1 flex-col overflow-y-auto p-6 md:p-8 pb-24 md:pb-8">
+        <main className="relative flex flex-1 flex-col overflow-y-auto p-6 md:p-8 md:pb-8">
           <div className="absolute top-6 right-6 md:top-8 md:right-8 z-10">
             <NakesNotificationBell />
           </div>

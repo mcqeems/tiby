@@ -25,7 +25,7 @@ export function useCheckIn(treatmentPlanId?: string) {
     let active = true;
     async function checkStatus() {
       try {
-        const todayCheckIn = await checkInsApi.getTodayStatus();
+        const todayCheckIn = await checkInsApi.getTodayStatus(treatmentPlanId);
         if (active && todayCheckIn) {
           setState((s) => ({ ...s, step: "locked" }));
         }

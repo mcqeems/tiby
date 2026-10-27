@@ -1,154 +1,185 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { facilitiesApi } from "@/lib/api/facilities";
-import { usersApi } from "@/lib/api/users";
+import { useState, useEffect } from "react";
+import { motion } from "motion/react";
+import { useSession, type TibyUser } from "@/lib/auth-client";
+import { statsApi } from "@/lib/api/stats";
+import type { AdminStats } from "@/lib/types/stats";
 import PublicLoading from "@/components/ui/public-loading";
-import {
-  Building2,
-  Users,
-  Activity,
-  ShieldCheck,
-  ChevronRight,
-} from "lucide-react";
+import MascotAnimation from "@/components/mascot-animation";
+import { Building2, Users, ShieldCheck, Ticket, User } from "lucide-react";
 
 export default function AdminOverview() {
+  const { data: session } = useSession();
+  const user = session?.user as TibyUser | undefined;
+
+  const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalFacilities: 0,
-    totalNakes: 0,
-    totalUsers: 0,
-  });
 
   useEffect(() => {
-    async function loadData() {
+    let active = true;
+    async function fetchStats() {
       try {
-        const [facilities, users, nakes] = await Promise.all([
-          facilitiesApi.list({ limit: 1 }),
-          usersApi.list({ limit: 1 }),
-          usersApi.list({ role: "NAKES", limit: 1 }),
-        ]);
-
-        setStats({
-          totalFacilities: facilities.total,
-          totalNakes: nakes.total,
-          totalUsers: users.total,
-        });
+        const res = await statsApi.getStats();
+        if (active && res.role === "ADMIN") {
+          setStats(res as AdminStats);
+        }
       } catch (err) {
-        console.error("Gagal load data admin", err);
+        console.error("Gagal memuat stats Admin:", err);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }
-    loadData();
+    fetchStats();
+    return () => {
+      active = false;
+    };
   }, []);
 
-  if (loading) return <PublicLoading message="Memuat data pusat..." />;
+  if (loading)
+    return <PublicLoading fullScreen message="Menyiapkan dashboard..." />;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-20">
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
-        <div className="relative z-10">
-          <p className="text-gray-400 text-sm font-medium mb-1">
-            Super Admin Control Center
+    <div className="max-w-6xl mx-auto space-y-6 md:pb-10">
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between"
+      >
+        <div>
+          <p className="text-sm text-tiby-muted font-medium mb-1">
+            Selamat Datang,
           </p>
-          <h1 className="text-3xl font-heading font-bold mb-4">
-            Selamat Datang, Admin Pusat 👋
+          <h1 className="font-heading text-2xl font-bold text-tiby-ink">
+            {user?.name || "Super Admin"} 👋
           </h1>
-          <p className="text-gray-300 text-sm max-w-lg">
-            Dari sini Anda dapat mengelola seluruh Fasilitas Kesehatan
-            (Puskesmas/Klinik) dan akun Tenaga Kesehatan di seluruh Indonesia.
-          </p>
         </div>
-        <ShieldCheck className="absolute -right-8 -bottom-8 w-64 h-64 text-white/5" />
-      </div>
+      
+      </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-2xs flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-tiby-teal-50 flex items-center justify-center shrink-0">
-            <Building2 className="w-7 h-7 text-tiby-teal-700" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-tiby-muted uppercase tracking-wider">
-              Total Faskes
-            </p>
-            <p className="text-3xl font-heading font-bold text-tiby-ink">
-              {stats.totalFacilities}
-            </p>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div className="lg:col-span-2 space-y-6">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            className="bg-linear-to-br from-gray-900 to-black rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-2xs flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center shrink-0">
-            <Activity className="w-7 h-7 text-amber-600" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-tiby-muted uppercase tracking-wider">
-              Total Tenaga Kesehatan
-            </p>
-            <p className="text-3xl font-heading font-bold text-tiby-ink">
-              {stats.totalNakes}
-            </p>
-          </div>
-        </div>
+            <div className="relative z-10 flex flex-col-reverse sm:flex-row items-center justify-between gap-6">
+              <div className="space-y-4 text-center sm:text-left">
+                <div>
+                  <p className="text-gray-400 font-medium mb-1">
+                    Kontrol Pusat Nasional
+                  </p>
+                  <div className="flex items-center justify-center sm:justify-start gap-2">
+                    <ShieldCheck className="w-6 h-6 text-tiby-teal-400" />
+                    <h2 className="text-3xl font-heading font-bold">
+                      Tiby Platform
+                    </h2>
+                  </div>
+                </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-2xs flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-purple-50 flex items-center justify-center shrink-0">
-            <Users className="w-7 h-7 text-purple-600" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-tiby-muted uppercase tracking-wider">
-              Total Pengguna
-            </p>
-            <p className="text-3xl font-heading font-bold text-tiby-ink">
-              {stats.totalUsers}
-            </p>
-          </div>
-        </div>
-      </div>
+                <p className="text-sm text-gray-400 max-w-xs mx-auto sm:mx-0">
+                  Kelola seluruh fasilitas kesehatan, tenaga kesehatan, dan
+                  pantau statistik platform secara keseluruhan.
+                </p>
+              </div>
 
-      <h2 className="text-lg font-heading font-bold text-tiby-ink mt-8 mb-4">
-        Menu Cepat
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Link
-          href="/admin/facilities"
-          className="group bg-white rounded-2xl border border-gray-200 p-6 shadow-2xs hover:border-tiby-teal-300 hover:shadow-md transition-all flex items-center justify-between"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center group-hover:bg-tiby-teal-50 transition-colors">
-              <Building2 className="w-6 h-6 text-gray-600 group-hover:text-tiby-teal-700" />
+              <div className="shrink-0 flex items-center justify-center grayscale opacity-80">
+                <MascotAnimation size={140} className="drop-shadow-2xl" />
+              </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-tiby-ink">
-                Kelola Data Faskes
-              </h3>
-              <p className="text-xs text-tiby-muted mt-0.5">
-                Tambah, edit, dan hapus Puskesmas/Klinik.
+          </motion.div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex flex-col items-center justify-center text-center"
+            >
+              <div className="w-10 h-10 rounded-full bg-tiby-teal-50 flex items-center justify-center shrink-0 mb-3">
+                <Building2 className="w-5 h-5 text-tiby-teal-600" />
+              </div>
+              <p className="text-xs font-semibold text-tiby-muted uppercase tracking-wider mb-1">
+                Faskes
               </p>
-            </div>
-          </div>
-          <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-tiby-teal-600 transition" />
-        </Link>
-
-        <Link
-          href="/admin/users"
-          className="group bg-white rounded-2xl border border-gray-200 p-6 shadow-2xs hover:border-tiby-teal-300 hover:shadow-md transition-all flex items-center justify-between"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center group-hover:bg-tiby-teal-50 transition-colors">
-              <Users className="w-6 h-6 text-gray-600 group-hover:text-tiby-teal-700" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-tiby-ink">Kelola Akun Nakes</h3>
-              <p className="text-xs text-tiby-muted mt-0.5">
-                Buat akun login untuk Tenaga Kesehatan.
+              <p className="font-heading text-xl font-bold text-tiby-ink">
+                {stats?.totalFacilities || 0}
               </p>
-            </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex flex-col items-center justify-center text-center"
+            >
+              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0 mb-3">
+                <Users className="w-5 h-5 text-blue-600" />
+              </div>
+              <p className="text-xs font-semibold text-tiby-muted uppercase tracking-wider mb-1">
+                Nakes
+              </p>
+              <p className="font-heading text-xl font-bold text-tiby-ink">
+                {stats?.totalNakes || 0}
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex flex-col items-center justify-center text-center"
+            >
+              <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center shrink-0 mb-3">
+                <User className="w-5 h-5 text-emerald-600" />
+              </div>
+              <p className="text-xs font-semibold text-tiby-muted uppercase tracking-wider mb-1">
+                Pasien
+              </p>
+              <p className="font-heading text-xl font-bold text-tiby-ink">
+                {stats?.totalPatients || 0}
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="bg-white rounded-2xl border border-red-200 p-5 shadow-2xs flex flex-col items-center justify-center text-center relative overflow-hidden"
+            >
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0 mb-3">
+                <Ticket className="w-5 h-5 text-red-600" />
+              </div>
+              <p className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-1">
+                Tiket Aktif
+              </p>
+              <p className="font-heading text-xl font-bold text-tiby-ink">
+                {stats?.totalActiveTickets || 0}
+              </p>
+            </motion.div>
           </div>
-          <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-tiby-teal-600 transition" />
-        </Link>
+        </div>
+
+        <div className="lg:col-span-1">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-tiby-teal-50 rounded-2xl border border-tiby-teal-100 p-6 shadow-2xs h-full flex flex-col justify-center"
+          >
+            <h3 className="font-heading font-bold text-lg text-tiby-teal-900 mb-2">
+              Pusat Kendali
+            </h3>
+            <p className="text-sm text-tiby-teal-700 leading-relaxed mb-6">
+              Gunakan menu di samping untuk mengelola data Master Faskes dan
+              Akun Tenaga Kesehatan.
+            </p>
+          </motion.div>
+        </div>
       </div>
     </div>
   );

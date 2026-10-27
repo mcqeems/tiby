@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { RoleGuard } from "@/app/role-guard";
 import type { TibyUser } from "@/lib/auth-client";
@@ -11,39 +10,29 @@ import PublicLoading from "@/components/ui/public-loading";
 import { consentApi } from "@/lib/api/consent";
 import { pmoMenuItems } from "./components/pmo-menu";
 import Footer from "@/components/layout/footer";
+import ConsentModal from "@/components/consent/consent-modal";
 
 export default function PmoLayout({ children }: { children: React.ReactNode }) {
   const { data: sessionData, isPending } = useSession();
   const user = sessionData?.user as TibyUser | undefined;
 
-  const router = useRouter();
-  const pathname = usePathname();
-  const [isCheckingConsent, setIsCheckingConsent] = useState(true);
+  const [consentGranted, setConsentGranted] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (isPending) return;
 
     async function checkConsent() {
-      if (pathname === "/pmo/consent") {
-        setIsCheckingConsent(false);
-        return;
-      }
-
       try {
         const res = await consentApi.getStatus();
-        if (res.mustConfirmConsent || !res.active) {
-          router.replace("/pmo/consent");
-        } else {
-          setIsCheckingConsent(false);
-        }
+        setConsentGranted(Boolean(res.active) && !res.mustConfirmConsent);
       } catch (err) {
         console.error("Gagal cek consent PMO:", err);
-        setIsCheckingConsent(false);
+        setConsentGranted(false);
       }
     }
 
     checkConsent();
-  }, [pathname, router, isPending]);
+  }, [isPending]);
 
   return (
     <RoleGuard allowed={["PMO"]}>
@@ -57,19 +46,33 @@ export default function PmoLayout({ children }: { children: React.ReactNode }) {
           items={pmoMenuItems}
         />
         <main className="flex flex-1 flex-col overflow-y-auto p-6 md:p-8 pb-8 md:pb-8">
-          <div className="shrink-0 ">
+          <div className="shrink-0">
             <PageHeader />
           </div>
+
           <div className="flex-1">
-            {isCheckingConsent ? (
-              <PublicLoading fullScreen message="Memeriksa izin akses PMO..." />
+            {consentGranted === null ? (
+              <PublicLoading fullScreen message="Memeriksa izin akses..." />
             ) : (
-              children
+              <div
+                key={consentGranted ? "granted" : "pending"}
+                className={`h-full ${
+                  consentGranted ? "" : "pointer-events-none select-none"
+                }`}
+                aria-hidden={!consentGranted}
+              >
+                {children}
+              </div>
             )}
           </div>
+
           <Footer />
         </main>
       </div>
+
+      {consentGranted === false && (
+        <ConsentModal role="PMO" onGranted={() => setConsentGranted(true)} />
+      )}
     </RoleGuard>
   );
 }
