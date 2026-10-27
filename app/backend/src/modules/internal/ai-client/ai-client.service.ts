@@ -8,6 +8,14 @@ import {
   type MedicationStatus,
 } from "@tiby/ts-shared";
 
+/**
+ * Ceiling for every AI call. The live provider answers in ~40-50s cold, so the
+ * old 5-6s caps timed out on requests that would have succeeded.
+ */
+export const AI_SERVICE_TIMEOUT_MS = Number(
+  process.env.AI_SERVICE_TIMEOUT_MS ?? 90_000,
+);
+
 @Injectable()
 export class AiClientService {
   private readonly logger = new Logger(AiClientService.name);
@@ -32,7 +40,7 @@ export class AiClientService {
       const res = await fetch(`${this.baseUrl}/audio/extract`, {
         method: "POST",
         body: formData,
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(AI_SERVICE_TIMEOUT_MS),
       });
 
       if (res.ok) {
@@ -61,7 +69,7 @@ export class AiClientService {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ transcript: transcriptText }),
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(AI_SERVICE_TIMEOUT_MS),
       });
 
       if (res.ok) {
@@ -95,9 +103,7 @@ export class AiClientService {
           question,
           ...(transcript ? { transcript } : {}),
         }),
-        // Retrieval plus an LLM turn; the live provider answers in ~40-50s
-        // cold, so the 6s used for STT/extraction would 503 every real call.
-        signal: AbortSignal.timeout(60000),
+        signal: AbortSignal.timeout(AI_SERVICE_TIMEOUT_MS),
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);

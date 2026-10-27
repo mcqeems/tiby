@@ -10,6 +10,7 @@ import { Facility } from "../../facilities/entities/facilities.entity.js";
 import { PatientStatusHistory } from "../../patients/entities/patient-status-history.entity.js";
 import { AuditLog } from "../../internal/audit/entities/audit-log.entity.js";
 import { auth } from "../../../auth/auth.config.js";
+import { AI_SERVICE_TIMEOUT_MS } from "../../internal/ai-client/ai-client.service.js";
 import type {
   CreateOnboardingDto,
   OnboardingCredentials,
@@ -295,7 +296,7 @@ export class OnboardingService {
       const res = await fetch(`${aiServiceUrl}/ocr/extract`, {
         method: "POST",
         body: formData,
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(AI_SERVICE_TIMEOUT_MS),
       });
 
       if (res.ok) {
