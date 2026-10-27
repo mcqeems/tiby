@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function PmoCheckInPage() {
   return (
-    <div className="min-h-screen bg-tiby-white p-4 pt-8">
+    <div className="h-full bg-tiby-white p-4 pt-8">
       <CheckInView role="PMO" />
     </div>
   );

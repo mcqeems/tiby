@@ -12,7 +12,6 @@ import {
   ClipboardCheck,
   MessageSquarePlus,
   AlertCircle,
-  CalendarCheck,
   ShieldCheck,
 } from "lucide-react";
 
@@ -67,8 +66,7 @@ export default function PmoPatientsList() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-20">
-      {/* HEADER SECTION */}
+    <div className="max-w-6xl mx-auto space-y-6 pb-8">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-heading font-bold text-tiby-ink">
