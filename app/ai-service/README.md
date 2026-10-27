@@ -1,6 +1,6 @@
 # Tiby AI Service
 
-FastAPI service for TB check-ins: extracts reported facts from transcripts (text or audio) and answers general questions with citation-grounded Kemenkes/WHO evidence. It does **not** diagnose, assign risk, or recommend treatment — deterministic safety rules live in the backend. Module docs live in docstrings; the HTTP contract is the OpenCollection (Bruno format) collection in `../../shared/api-contract` — open it with **Bruno → Open Collection → select the folder**.
+FastAPI service for TB check-ins: transcribes audio, extracts reported facts from the confirmed transcript, and answers general questions with citation-grounded Kemenkes/WHO evidence. It does **not** diagnose, assign risk, or recommend treatment — deterministic safety rules live in the backend. Module docs live in docstrings; the HTTP contract is the OpenCollection (Bruno format) collection in `../../shared/api-contract` — open it with **Bruno → Open Collection → select the folder**.
 
 ## Install & run
 
@@ -62,7 +62,7 @@ Missing token → 503, provider failure → 502, timeout → 504. Real providers
 ## Endpoints
 
 - `POST /ai/extractions/check-in` — JSON transcript → structured facts (`null` = unstated or uncertain, never false).
-- `POST /ai/extractions/check-in/audio` — multipart `audio` (max 10 MB) → transcription + facts.
+- `POST /ai/extractions/check-in/audio` — multipart `audio` (max 10 MB) → transcript only; facts come from the JSON route above once the patient confirms the text.
 - `POST /ai/guidance` — educational answers from approved-source evidence only; fails closed (`answer: null`) on personal dosing/start-stop questions or when no evidence matches.
 - `GET /ai/health` — liveness.
 

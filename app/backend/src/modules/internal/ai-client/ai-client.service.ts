@@ -1,8 +1,11 @@
-import { Injectable, Logger } from "@nestjs/common";
-import type {
-  AiAudioExtractionResponse,
-  AiAudioTranscriptResponse,
-  MedicationStatus,
+import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
+import {
+  AiAudioTranscriptResponseSchema,
+  GuidanceResponseSchema,
+  type AiAudioExtractionResponse,
+  type AiAudioTranscriptResponse,
+  type GuidanceResponse,
+  type MedicationStatus,
 } from "@tiby/ts-shared";
 
 @Injectable()
@@ -33,7 +36,9 @@ export class AiClientService {
       });
 
       if (res.ok) {
-        return (await res.json()) as AiAudioTranscriptResponse;
+        // Project instead of forwarding: the audio step may only surface the
+        // transcript, and a malformed body falls through to the fallback.
+        return AiAudioTranscriptResponseSchema.parse(await res.json());
       }
       this.logger.warn(
         `AI Service transcription failed with ${res.status}. Using fallback transcript.`,
@@ -68,6 +73,57 @@ export class AiClientService {
     }
 
     return this.fallbackHeuristicExtraction(transcriptText);
+  }
+
+  /**
+   * General educational guidance from the approved-source corpus.
+   *
+   * There is no fallback: an unreachable or drifting provider must surface as
+   * a 503, never as an invented medical answer. A `200` with a null answer is
+   * the AI service's own fail-closed decision and is forwarded untouched.
+   */
+  async askGuidance(
+    question: string,
+    transcript?: string | null,
+  ): Promise<GuidanceResponse> {
+    let res: Response;
+    try {
+      res = await fetch(`${this.baseUrl}/ai/guidance`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question,
+          ...(transcript ? { transcript } : {}),
+        }),
+        // Retrieval plus an LLM turn; the live provider answers in ~40-50s
+        // cold, so the 6s used for STT/extraction would 503 every real call.
+        signal: AbortSignal.timeout(60000),
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`AI Service guidance unreachable: ${msg}`);
+      throw this.guidanceUnavailable();
+    }
+
+    if (!res.ok) {
+      this.logger.warn(`AI Service guidance failed with ${res.status}.`);
+      throw this.guidanceUnavailable();
+    }
+
+    try {
+      return GuidanceResponseSchema.parse(await res.json());
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`AI Service guidance response drifted from contract: ${msg}`);
+      throw this.guidanceUnavailable();
+    }
+  }
+
+  private guidanceUnavailable(): ServiceUnavailableException {
+    return new ServiceUnavailableException({
+      code: "INTERNAL",
+      message: "Guidance service is unavailable. Please try again later.",
+    });
   }
 
   private fallbackHeuristicExtraction(text: string): AiAudioExtractionResponse {

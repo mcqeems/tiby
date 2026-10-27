@@ -43,12 +43,15 @@ describe("@tiby/ts-shared contracts", () => {
       transcript: "Saya sudah minum 3 obat pagi ini",
     });
     expect(parsed.success).toBe(true);
-    expect(
-      AiAudioTranscriptResponseSchema.safeParse({
-        transcript: "Saya sudah minum 3 obat pagi ini",
-        medicationTaken: "SUDAH_MINUM",
-      }).success,
-    ).toBe(true);
+    // Facts belong to the text-extract step: the bridge strips anything else.
+    const withFacts = AiAudioTranscriptResponseSchema.safeParse({
+      transcript: "Saya sudah minum 3 obat pagi ini",
+      medicationTaken: "SUDAH_MINUM",
+    });
+    expect(withFacts.success).toBe(true);
+    expect(withFacts.success && withFacts.data).toEqual({
+      transcript: "Saya sudah minum 3 obat pagi ini",
+    });
   });
 
   it("requires only the transcript in ConfirmedCheckInFactsSchema", () => {

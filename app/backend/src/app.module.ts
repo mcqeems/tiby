@@ -23,6 +23,7 @@ import { EscalationModule } from "./modules/internal/escalation/escalation.modul
 import { EducationModule } from "./modules/education/education.module.js";
 import { AuditModule } from "./modules/internal/audit/audit.module.js";
 import { UsersModule } from "./modules/users/users.module.js";
+import { GuidanceModule } from "./modules/guidance/guidance.module.js";
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { UsersModule } from "./modules/users/users.module.js";
     EscalationModule,
     EducationModule,
     UsersModule,
+    GuidanceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

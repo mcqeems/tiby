@@ -1,5 +1,5 @@
 info:
-  name: "[AI UNFINISHED] OCR Onboarding (api/faskes/onboarding/ocr) [NAKES]"
+  name: "OCR Onboarding (api/faskes/onboarding/ocr) [NAKES]"
   type: http
   seq: 1
 
@@ -22,7 +22,7 @@ settings:
   forwardAuthorizationHeader: false
 
 examples:
-  - name: OCR Onboarding [UNFINISHED] (201)
+  - name: OCR Onboarding (201)
     request:
       url: "{{baseUrl}}/api/faskes/onboarding/ocr"
       method: POST
