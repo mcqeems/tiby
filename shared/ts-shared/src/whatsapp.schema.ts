@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const WhatsappConnectRequestSchema = z.object({
   phoneNumber: z.string().min(8).max(20),
-  familyContactId: z.string().uuid().optional(),
+  familyContactId: z.string().uuid().nullable().optional(),
 });
 export type WhatsappConnectRequest = z.infer<typeof WhatsappConnectRequestSchema>;
 
@@ -15,7 +15,7 @@ export const WhatsappConnectChallengeSchema = z.object({
 export type WhatsappConnectChallenge = z.infer<typeof WhatsappConnectChallengeSchema>;
 
 export const WhatsappStatusQuerySchema = z.object({
-  familyContactId: z.string().uuid().optional(),
+  familyContactId: z.string().uuid().nullable().optional(),
 });
 export type WhatsappStatusQuery = z.infer<typeof WhatsappStatusQuerySchema>;
 

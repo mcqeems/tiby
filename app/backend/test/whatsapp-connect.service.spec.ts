@@ -61,6 +61,7 @@ describe("WhatsappConnectService Unit Tests", () => {
     mockWahaClient = {
       sendSeen: vi.fn().mockResolvedValue(true),
       sendText: vi.fn().mockResolvedValue({ success: true, messageId: "msg-123" }),
+      resolvePhoneNumber: vi.fn((id: string) => Promise.resolve(id)),
     };
 
     service = new WhatsappConnectService(
@@ -332,6 +333,61 @@ describe("WhatsappConnectService Unit Tests", () => {
         "6281234567890@c.us",
         expect.stringContaining("terhubung dengan Pandu"),
       );
+    });
+
+    it("resolves a @lid sender to the registered phone and binds the LID chat", async () => {
+      mockWahaClient.resolvePhoneNumber.mockResolvedValue("6281234567890@c.us");
+      const verification = {
+        id: "verify-lid",
+        userId: "user-1",
+        verificationCode: "LID123",
+        status: "PENDING",
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      };
+      mockVerifyRepo.findOne.mockResolvedValue(verification);
+      const user = { id: "user-1", whatsappVerified: false, whatsappChatId: null };
+      mockUserRepo.findOneBy.mockResolvedValue(user);
+
+      const res = await service.handleInboundWebhook({
+        event: "message",
+        payload: {
+          id: "waha-msg-lid",
+          from: "255546879938701@lid",
+          body: "Kode saya LID123",
+        },
+      });
+
+      expect(res.verified).toBe(true);
+      expect(mockWahaClient.resolvePhoneNumber).toHaveBeenCalledWith("255546879938701@lid");
+      expect(mockVerifyRepo.findOne).toHaveBeenCalledWith({
+        where: {
+          verificationCode: "LID123",
+          status: "PENDING",
+          phoneHash: hash("6281234567890"),
+        },
+      });
+      // Replies must go back to the JID WAHA reported, not the phone JID.
+      expect(user.whatsappChatId).toBe("255546879938701@lid");
+      expect(mockWahaClient.sendText).toHaveBeenCalledWith(
+        "255546879938701@lid",
+        expect.any(String),
+      );
+    });
+
+    it("ignores a LID that cannot be mapped to a phone number", async () => {
+      mockWahaClient.resolvePhoneNumber.mockResolvedValue(null);
+
+      const res = await service.handleInboundWebhook({
+        event: "message",
+        payload: {
+          from: "255546879938701@lid",
+          body: "Kode saya LID123",
+        },
+      });
+
+      expect(res.verified).toBe(false);
+      expect(mockVerifyRepo.findOne).not.toHaveBeenCalled();
+      expect(mockWahaClient.sendText).not.toHaveBeenCalled();
     });
 
     it("returns handled: true, verified: false if code does not match active challenge", async () => {

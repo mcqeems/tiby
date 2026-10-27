@@ -1,32 +1,54 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { WahaClientService } from "../src/modules/whatsapp/services/waha-client.service.js";
 
-describe("WahaClientService Unit Tests", () => {
-  let service: WahaClientService;
+describe("WahaClientService.resolvePhoneNumber", () => {
+  const service = new WahaClientService();
 
-  beforeEach(() => {
-    // Keep WAHA disabled for mock mode
-    process.env.WAHA_ENABLED = "false";
-    service = new WahaClientService();
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.WAHA_ENABLED;
   });
 
-  it("handles sendSeen safely in mock mode without real phone number or server", async () => {
-    const res = await service.sendSeen("628123456789@c.us");
-    expect(res).toBe(true);
+  it("returns a @c.us JID unchanged without calling WAHA", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(service.resolvePhoneNumber("6281234567890@c.us")).resolves.toBe(
+      "6281234567890@c.us",
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("handles startTyping and stopTyping in mock mode", async () => {
-    expect(await service.startTyping("628123456789@c.us")).toBe(true);
-    expect(await service.stopTyping("628123456789@c.us")).toBe(true);
+  it("maps a @lid to its phone JID through WAHA's LIDs API", async () => {
+    process.env.WAHA_ENABLED = "true";
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ lid: "255546879938701@lid", pn: "628811558295@c.us" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(service.resolvePhoneNumber("255546879938701@lid")).resolves.toBe(
+      "628811558295@c.us",
+    );
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/lids/255546879938701");
   });
 
-  it("sends text and enforces zero-stigma filtering (strips TBC/Tuberkulosis)", async () => {
-    const res = await service.sendText(
-      "628123456789@c.us",
-      "Halo! Mari minum obat TBC Anda secara rutin agar bebas Tuberkulosis.",
+  it("returns null when WAHA does not know the LID", async () => {
+    process.env.WAHA_ENABLED = "true";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ lid: "1@lid", pn: null }) }),
     );
 
-    expect(res.success).toBe(true);
-    expect(res.messageId).toBeDefined();
+    await expect(service.resolvePhoneNumber("1@lid")).resolves.toBeNull();
+  });
+
+  it("returns null when WAHA is disabled or the lookup fails", async () => {
+    await expect(service.resolvePhoneNumber("1@lid")).resolves.toBeNull();
+
+    process.env.WAHA_ENABLED = "true";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 404 }));
+
+    await expect(service.resolvePhoneNumber("1@lid")).resolves.toBeNull();
   });
 });

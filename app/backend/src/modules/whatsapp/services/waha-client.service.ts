@@ -87,6 +87,34 @@ export class WahaClientService {
     }
   }
 
+  /**
+   * WAHA/WEBJS reports incoming senders as `@lid` (WhatsApp's privacy ID).
+   * Resolve it to the phone JID via WAHA's LIDs API so the handshake can still
+   * prove the phone number. Returns the input unchanged for `@c.us`.
+   */
+  async resolvePhoneNumber(chatId: string): Promise<string | null> {
+    if (chatId.endsWith("@c.us")) return chatId;
+    if (!chatId.endsWith("@lid") || !this.isEnabled) return null;
+
+    const lid = chatId.replace(/@lid$/, "");
+    try {
+      const res = await fetch(
+        `${this.baseUrl}/api/${encodeURIComponent(this.session)}/lids/${encodeURIComponent(lid)}`,
+        { headers: this.buildHeaders(), signal: AbortSignal.timeout(5000) },
+      );
+      if (!res.ok) {
+        this.logger.warn(`WAHA lid lookup failed with ${res.status} for ${chatId}`);
+        return null;
+      }
+      const data = (await res.json()) as { pn?: string | null };
+      return data.pn ?? null;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`WAHA lid lookup failed for ${chatId}: ${msg}`);
+      return null;
+    }
+  }
+
   async sendText(chatId: string, text: string): Promise<{ success: boolean; messageId?: string }> {
     // Zero-Stigma Invariant: Strip TBC/Tuberkulosis mention
     const cleanText = text.replace(/\b(TBC|Tuberkulosis)\b/gi, "").trim();

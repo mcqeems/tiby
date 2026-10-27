@@ -30,7 +30,7 @@ export interface WhatsappCaller {
   facilityId?: string | null;
 }
 
-const DIRECT_CHAT = /^[0-9]+@c\.us$/;
+const DIRECT_CHAT = /^[0-9]+@(c\.us|lid)$/;
 
 /** Digits only, in international form: 08… / 8… / +62… all become 62…. */
 export function normalizeWhatsappNumber(phone: string): string {
@@ -239,7 +239,15 @@ export class WhatsappConnectService {
     }
 
     const candidateCode = codeMatch[0];
-    const senderDigits = payload.from.replace(/@.*$/, "");
+
+    // WAHA reports WEBJS senders as @lid; resolve it to the phone JID so the
+    // same "sender must be the registered number" rule still applies.
+    const senderPhone = await this.wahaClient.resolvePhoneNumber(payload.from);
+    if (!senderPhone) {
+      this.logger.warn(`Cannot resolve WhatsApp sender ${payload.from}; ignoring handshake`);
+      return { handled: true, verified: false };
+    }
+    const senderDigits = senderPhone.replace(/@.*$/, "");
 
     // The code alone is a bearer token; the sender must be the number that was
     // registered, or anyone could bind their phone to someone else's account.
