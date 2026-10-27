@@ -24,6 +24,7 @@ import { EducationModule } from "./modules/education/education.module.js";
 import { AuditModule } from "./modules/internal/audit/audit.module.js";
 import { UsersModule } from "./modules/users/users.module.js";
 import { GuidanceModule } from "./modules/guidance/guidance.module.js";
+import { StatsModule } from "./modules/stats/stats.module.js";
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { GuidanceModule } from "./modules/guidance/guidance.module.js";
     EducationModule,
     UsersModule,
     GuidanceModule,
+    StatsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

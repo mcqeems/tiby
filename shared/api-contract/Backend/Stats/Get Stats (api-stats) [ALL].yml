@@ -1,0 +1,135 @@
+info:
+  name: Get Stats (api/stats) [ALL]
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/stats"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: PASIEN (200)
+    request:
+      url: "{{baseUrl}}/api/stats"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: content-type
+          value: application/json; charset=utf-8
+      body:
+        type: json
+        data: |-
+          {
+            "role": "PASIEN",
+            "currentStreak": 3,
+            "adherenceRate": 0.273,
+            "daysRemaining": 170,
+            "todayCheckInStatus": "TERKENDALI",
+            "totalPillsTaken": 12,
+            "currentPhase": "INTENSIF"
+          }
+  - name: PMO (200)
+    request:
+      url: "{{baseUrl}}/api/stats"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: content-type
+          value: application/json; charset=utf-8
+      body:
+        type: json
+        data: |-
+          {
+            "role": "PMO",
+            "totalPatients": 1,
+            "checkedInToday": 1,
+            "pendingCheckIn": 0,
+            "highRiskPatients": 0,
+            "unreadAlerts": 1
+          }
+  - name: NAKES (200)
+    request:
+      url: "{{baseUrl}}/api/stats"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: content-type
+          value: application/json; charset=utf-8
+      body:
+        type: json
+        data: |-
+          {
+            "role": "NAKES",
+            "totalPatients": 1,
+            "highRiskPatients": 0,
+            "openTickets": 1,
+            "criticalTickets": 1,
+            "unreadAlerts": 1,
+            "adherenceRate": 0.273
+          }
+  - name: ADMIN (200)
+    request:
+      url: "{{baseUrl}}/api/stats"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: content-type
+          value: application/json; charset=utf-8
+      body:
+        type: json
+        data: |-
+          {
+            "role": "ADMIN",
+            "totalFacilities": 3,
+            "totalNakes": 4,
+            "totalPatients": 10,
+            "totalActiveTickets": 6
+          }
+
+docs: |-
+  One dashboard call; the response shape follows the caller's role. No query
+  params, and no cross-role fields: a PMO never receives a NAKES payload.
+
+  Definitions the numbers depend on:
+
+  - `adherenceRate` (0..1): fulfilled dose days / days elapsed since
+    `start_date`. Today counts only after a fulfilled check-in, and counting
+    stops at `target_end_date`. NAKES receives the weighted facility average
+    (`Σfulfilled / Σelapsed`); PASIEN receives their own plan's rate. No
+    elapsed days yet means `1` (nothing missed); no plan at all means `0`.
+  - `todayCheckInStatus`: `BELUM_CHECK_IN | TERKENDALI | PERLU_PERHATIAN |
+    SEGERA_KE_FASKES` — the verdict of today's latest attempt.
+  - `totalPillsTaken`: the latest attempt per day is summed, so retries do not
+    double count.
+  - `highRiskPatients`: `patient_state IN ('BERISIKO', 'PUTUS_FOLLOW_UP')`.
+  - `openTickets`: `OPEN` + `IN_PROGRESS`. `criticalTickets` is the subset with
+    `priority = 'CRITICAL'`. `totalActiveTickets` is the same filter, platform
+    wide.
+  - NAKES `totalPatients` excludes `SELESAI` and `PINDAH_FASKES`; PMO
+    `totalPatients` is active assignments; ADMIN `totalPatients` is PASIEN
+    accounts.
+  - `checkedInToday` counts assigned plans with any report today;
+    `pendingCheckIn = totalPatients - checkedInToday`.
+  - `unreadAlerts`: unread facility alerts (NAKES, by facility) or unread
+    alerts on the assigned plans (PMO).
+  - "Today" is the same UTC date the check-in lock uses, so stats and the lock
+    cannot disagree.
+
+  A NAKES without a facility gets zeros, never every facility. ADMIN is a
+  superuser and always receives the platform payload.
