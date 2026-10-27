@@ -10,6 +10,7 @@ export * from "./error.js";
 export * from "./push.schema.js";
 export * from "./whatsapp.schema.js";
 export * from "./check-in.schema.js";
+export * from "./guidance.schema.js";
 export * from "./onboarding.schema.js";
 export * from "./faskes.schema.js";
 export * from "./facilities.schema.js";

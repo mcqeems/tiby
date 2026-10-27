@@ -7,3 +7,4 @@ __pycache__/
 # Local/generated artifacts
 .DS_Store
 dataset/knowledge/tiby.db
+.env

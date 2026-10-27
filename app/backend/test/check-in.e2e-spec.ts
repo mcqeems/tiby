@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { INestApplication } from "@nestjs/common";
-import { describe, beforeAll, afterAll, it, expect } from "vitest";
+import { describe, beforeAll, afterAll, it, expect, vi } from "vitest";
 import request from "supertest";
 import { DataSource } from "typeorm";
 import { AppModule } from "../src/app.module.js";
@@ -11,6 +11,7 @@ import { TreatmentPlan } from "../src/modules/patients/entities/treatment-plan.e
 import { PmoAssignment } from "../src/modules/patients/entities/pmo-assignment.entity.js";
 import { DailyCheckIn } from "../src/modules/check-ins/entities/daily-check-in.entity.js";
 import { InterventionTicket } from "../src/modules/tickets/entities/intervention-ticket.entity.js";
+import { AiClientService } from "../src/modules/internal/ai-client/ai-client.service.js";
 
 describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
   let app: INestApplication;
@@ -67,6 +68,26 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
     await app.init();
 
     dataSource = app.get(DataSource);
+
+    // The e2e suite describes backend behaviour, not model latency or
+    // accuracy: stub the AI bridge so a live provider cannot make it flaky.
+    const aiClient = app.get(AiClientService);
+    vi.spyOn(aiClient, "transcribeFromAudio").mockResolvedValue({
+      transcript: "Halo Pandu, saya sudah minum 4 butir obat pagi ini dan tidak ada keluhan.",
+    });
+    vi.spyOn(aiClient, "extractFromText").mockImplementation(async (text: string) => {
+      const pills = Number(
+        text.match(/(\d+)\s*(butir|tablet|biji|obat|pil)/)?.[1] ?? 4,
+      );
+      return {
+        transcript: text,
+        medicationTaken: "SUDAH_MINUM",
+        pillsTakenCount: pills,
+        symptoms: [],
+        intentToStopOrRefuse: false,
+        extractionConfidence: 0.9,
+      };
+    });
 
     // 1. Seed Facility
     const facilityRepo = dataSource.getRepository(Facility);

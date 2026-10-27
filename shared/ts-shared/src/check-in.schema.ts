@@ -7,11 +7,9 @@ import {
 import { PaginationQuerySchema } from "./faskes.schema.js";
 
 /** Transcript-only response from the audio endpoint; facts come later via JSON. */
-export const AiAudioTranscriptResponseSchema = z
-  .object({
-    transcript: z.string(),
-  })
-  .passthrough();
+export const AiAudioTranscriptResponseSchema = z.object({
+  transcript: z.string().min(1),
+});
 export type AiAudioTranscriptResponse = z.infer<
   typeof AiAudioTranscriptResponseSchema
 >;

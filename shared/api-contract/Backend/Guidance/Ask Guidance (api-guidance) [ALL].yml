@@ -1,0 +1,122 @@
+info:
+  name: Ask Guidance (api/guidance) [ALL]
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/guidance"
+  body:
+    type: json
+    data: |-
+      {
+        // General educational question only, 1..3000 characters.
+        "question": "Menurut panduan, apakah mual termasuk efek samping umum obat TB?",
+        // Optional check-in transcript used as context, max 5000 characters.
+        "transcript": null
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Ask Guidance (201)
+    request:
+      url: "{{baseUrl}}/api/guidance"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "question": "Menurut panduan, apakah mual termasuk efek samping umum obat TB?",
+            "transcript": null
+          }
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: content-type
+          value: application/json; charset=utf-8
+      body:
+        type: json
+        data: |-
+          {
+            "answer": "Ya, menurut Panduan Kemenkes, mual termasuk efek samping umum OAT. Mual ringan dikategorikan sebagai efek samping derajat Ringan (Derajat 1) (src-1).",
+            "grounded": true,
+            "evidence": [
+              {
+                "citation_id": "src-1",
+                "text": "Efek samping umum OAT: mual ringan, nyeri epigastrium..."
+              }
+            ],
+            "citations": [
+              {
+                "citation_id": "src-1",
+                "document_id": "kemenkes-juknis-tb-so-2025",
+                "organization": "Kemenkes",
+                "title": "Petunjuk Teknis Penatalaksanaan Tuberkulosis Sensitif Obat di Indonesia",
+                "year": 2025,
+                "page": 116,
+                "section": null,
+                "source_url": "https://p2.kemkes.go.id/"
+              }
+            ],
+            "limitations": [
+              "Informasi ini merupakan ringkasan umum berdasarkan panduan Kemenkes dan bukan penilaian spesifik untuk kasus pasien tertentu."
+            ]
+          }
+  - name: Fail closed - personal dosing question (201)
+    request:
+      url: "{{baseUrl}}/api/guidance"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "question": "Berapa dosis obat saya hari ini?"
+          }
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: content-type
+          value: application/json; charset=utf-8
+      body:
+        type: json
+        data: |-
+          {
+            "answer": null,
+            "grounded": false,
+            "evidence": [],
+            "citations": [],
+            "limitations": [
+              "Permintaan ini menyangkut keputusan atau tindakan pengobatan pribadi; silakan hubungi tenaga kesehatan yang menangani Anda."
+            ]
+          }
+
+docs: |-
+  Educational guidance grounded in approved Kemenkes/WHO evidence. The backend
+  is a bridge: it adds auth and the request/response contract, and never
+  rewrites, scores, or completes the answer.
+
+  It does not diagnose or instruct treatment. Personal decision questions
+  (dose, start/stop/switch medication) fail closed: HTTP 201 with
+  `answer: null` and an explanation in `limitations`. That is a successful
+  response, not an error.
+
+  The field names mirror the AI service contract (`citation_id`,
+  `document_id`, `source_url`) so no mapping layer can drift.
+
+  Responses:
+  - 201: Answer (possibly null) with `grounded`, `evidence`, `citations`, and
+    `limitations`. POST returns 201 by Nest default.
+  - 400: Request validation failed.
+  - 401: Authentication session required.
+  - 503: Guidance provider unreachable, not configured, timed out, or answered
+    with a body that drifts from the contract. The bridge never invents an
+    answer in that case.

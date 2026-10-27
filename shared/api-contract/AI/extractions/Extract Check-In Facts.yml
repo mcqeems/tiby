@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrl}}/ai/extractions/check-in"
+  url: "{{aiBaseUrl}}/ai/extractions/check-in"
   headers:
     - name: Content-Type
       value: application/json
@@ -20,8 +20,6 @@ http:
         // Optional BCP-47 language tag. Defaults to id-ID.
         "language": "id-ID"
       }
-  auth:
-    type: inherit
 
 runtime:
   scripts:
@@ -42,21 +40,13 @@ runtime:
 
 settings:
   encodeUrl: true
-
-docs: |-
-  Extracts reported facts from a check-in transcript. It does not diagnose or assign clinical risk.
-
-  Facts only: every field means "what the transcript stated". `null` means unstated or uncertain, never false.
-
-  Responses:
-  - 200: Facts extracted successfully; not a clinical assessment.
-  - 422: Request validation failed (ApiError).
-  - 502: Extraction provider failed or returned invalid output (ApiError).
-  - 503: Extraction provider is not configured on the server (ApiError).
-  - 504: Extraction provider timed out (ApiError).
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
 
 examples:
-  - name: "200 - facts extracted"
+  - name: 200 - facts extracted
     request:
       url: "{{baseUrl}}/ai/extractions/check-in"
       method: POST
@@ -77,7 +67,7 @@ examples:
             "intentToStopOrRefuse": false,
             "extractionConfidence": 0.95
           }
-  - name: "422 - empty transcript"
+  - name: 422 - empty transcript
     request:
       url: "{{baseUrl}}/ai/extractions/check-in"
       method: POST
@@ -95,3 +85,15 @@ examples:
             "message": "Request does not match the API contract.",
             "request_id": null
           }
+
+docs: |-
+  Extracts reported facts from a check-in transcript. It does not diagnose or assign clinical risk.
+
+  Facts only: every field means "what the transcript stated". `null` means unstated or uncertain, never false.
+
+  Responses:
+  - 200: Facts extracted successfully; not a clinical assessment.
+  - 422: Request validation failed (ApiError).
+  - 502: Extraction provider failed or returned invalid output (ApiError).
+  - 503: Extraction provider is not configured on the server (ApiError).
+  - 504: Extraction provider timed out (ApiError).

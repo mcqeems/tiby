@@ -5,9 +5,7 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/ai/health"
-  auth:
-    type: inherit
+  url: "{{aiBaseUrl}}/ai/health"
 
 runtime:
   scripts:
@@ -23,15 +21,13 @@ runtime:
 
 settings:
   encodeUrl: true
-
-docs: |-
-  Liveness probe for the AI service.
-
-  Responses:
-  - 200: `{"status":"ok"}`.
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
 
 examples:
-  - name: "200 - ok"
+  - name: 200 - ok
     request:
       url: "{{baseUrl}}/ai/health"
       method: GET
@@ -47,3 +43,9 @@ examples:
           {
             "status": "ok"
           }
+
+docs: |-
+  Liveness probe for the AI service.
+
+  Responses:
+  - 200: `{"status":"ok"}`.

@@ -13,6 +13,7 @@ import {
   FileTypeValidator,
   UnauthorizedException,
   BadRequestException,
+  SerializeOptions,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CheckInService } from '../services/check-in.service.js';
@@ -23,6 +24,7 @@ import type { AuthenticatedRequest } from '../../../common/types/auth-request.ty
 import {
   SubmitCheckInSchema,
   TextExtractRequestSchema,
+  AiAudioTranscriptResponseSchema,
   ListCheckInsQuerySchema,
   type SubmitCheckInDto,
   type TextExtractRequest,
@@ -73,6 +75,7 @@ export class CheckInController {
 
   @Post('audio-extract')
   @Roles(['PASIEN', 'PMO'])
+  @SerializeOptions({ schema: AiAudioTranscriptResponseSchema })
   @UseInterceptors(
     FileInterceptor('audio', {
       limits: { fileSize: 10 * 1024 * 1024 }, // 10MB

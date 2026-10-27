@@ -18,6 +18,9 @@ export const EnvSchema = z.object({
     .default("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"),
 
   AI_SERVICE_URL: z.string().default("http://localhost:8000"),
+  // AI calls (STT, extraction, guidance, OCR) routinely take tens of seconds;
+  // this is the ceiling before the backend falls back or returns 503.
+  AI_SERVICE_TIMEOUT_MS: z.coerce.number().int().positive().default(90000),
 
   // Comma-separated browser origins allowed in production (CORS + prod deployments).
   WEB_URL: z.string().default("http://localhost:3000"),
