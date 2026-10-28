@@ -23,6 +23,9 @@ from main import app
 
 COLLECTION_ROOT = Path(__file__).resolve().parents[3] / "shared" / "api-contract" / "AI"
 COMMENT_LINE = re.compile(r"^\s*//.*$", re.MULTILINE)
+# The collection is shared with the frontend and backend, so AI requests may use
+# either the plain ``baseUrl`` or the AI-specific ``aiBaseUrl`` variable.
+BASE_URL_PREFIX = re.compile(r"^\{\{[^}]+\}\}")
 
 BODY_MODELS: dict[str, type[BaseModel]] = {
     "/ai/extractions/check-in": CheckInRequest,
@@ -41,7 +44,9 @@ def collection_requests() -> list[dict]:
 
 
 def route_of(request: dict) -> tuple[str, str]:
-    return request["http"]["method"].upper(), request["http"]["url"].removeprefix("{{baseUrl}}")
+    return request["http"]["method"].upper(), BASE_URL_PREFIX.sub(
+        "", request["http"]["url"]
+    )
 
 
 def app_routes() -> set[tuple[str, str]]:
@@ -59,7 +64,9 @@ def test_collection_covers_exactly_the_app_routes():
 
 def test_collection_urls_stay_under_the_ai_prefix():
     for request in collection_requests():
-        assert request["http"]["url"].startswith("{{baseUrl}}/ai/"), request["file"]
+        url = request["http"]["url"]
+        assert BASE_URL_PREFIX.match(url), request["file"]
+        assert route_of(request)[1].startswith("/ai/"), request["file"]
 
 
 def test_collection_requests_have_docs_and_saved_examples():

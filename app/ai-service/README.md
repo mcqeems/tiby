@@ -42,7 +42,7 @@ Set in `.env`; also read per request, never logged. Anything already in the real
 | Env var                                          | Needed for                         | Notes                                                                                                 |
 | ------------------------------------------------ | ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | `NARAROUTER_API_TOKEN` (or `NARAROUTER_API_KEY`) | check-in extraction + guidance     | requires `NARAROUTER_BASE_URL` including `/v1`; model via `TIBY_LLM_MODEL`, default `laguna-s-2.1` |
-| `GROQ_API_KEY`                                   | `/ai/extractions/check-in/audio`   | default transcriber (`TIBY_TRANSCRIBER=groq`)                                                         |
+| `GROQ_API_KEY`                                   | `/ai/extractions/check-in/audio`   | default transcriber (`TIBY_TRANSCRIBER=groq`); also requires `GROQ_ENDPOINT` (full endpoint or base URL) |
 | `FISH_AUDIO_API_TOKEN` (or `FISH_API_KEY`)       | audio when `TIBY_TRANSCRIBER=fish` | also requires `FISH_ENDPOINT`; optional alternative transcriber                                      |
 
 Missing token → 503, provider failure → 502, timeout → 504. Real providers are the default on `TIBY_EXTRACTOR` and `TIBY_TRANSCRIBER`; `TIBY_EXTRACTOR=rules` is the offline keyword baseline for deterministic tests only, and any unrecognised value is rejected at startup rather than falling through to a paid provider.

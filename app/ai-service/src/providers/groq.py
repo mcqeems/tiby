@@ -30,7 +30,6 @@ class GroqTranscriber:
     protocol so the HTTP layer can enforce them before calling the provider.
     """
 
-    endpoint = "https://api.groq.com/openai/v1/audio/transcriptions"
     model = "whisper-large-v3-turbo"
     # Keep the service upload boundary compatible with the backend.
     max_upload_bytes = 10 * 1024 * 1024
@@ -52,9 +51,7 @@ class GroqTranscriber:
         self, *, api_key: str | None = None, timeout_seconds: float | None = None
     ):
         self.api_key = api_key or env_str("GROQ_API_KEY")
-        self.endpoint = _transcriptions_url(
-            env_str("GROQ_ENDPOINT", type(self).endpoint)
-        )
+        self.endpoint = _transcriptions_url(env_str("GROQ_ENDPOINT"))
         self.model = env_str("GROQ_MODEL", type(self).model)
         self.timeout_seconds = timeout_seconds or env_float(
             "GROQ_TIMEOUT_SECONDS", 60.0
