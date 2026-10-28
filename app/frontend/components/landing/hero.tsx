@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { revealItem, staggerParent } from "@/lib/motion";
 import Image from "next/image";
 import { motion } from "motion/react";
 import { EASE } from "./shared";
@@ -10,11 +11,14 @@ export default function Hero() {
   return (
     <header className="relative flex min-h-screen items-center overflow-hidden bg-white">
       <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-12 px-6 pb-16 pt-16 lg:grid-cols-2 lg:gap-8 lg:pt-20">
-        <div className="relative z-10 flex flex-col items-start pt-10 lg:pt-0">
+        <motion.div
+          variants={staggerParent(0.1, 0.1)}
+          initial="hidden"
+          animate="visible"
+          className="relative z-10 flex flex-col items-start pt-10 lg:pt-0"
+        >
           <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1, ease: EASE }}
+            variants={revealItem}
             className="font-heading text-5xl font-extrabold leading-[1.05] tracking-tight text-gray-900 sm:text-6xl lg:text-[5.5rem]"
           >
             Lapor Suara,
@@ -25,9 +29,7 @@ export default function Hero() {
           </motion.h1>
 
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2, ease: EASE }}
+            variants={revealItem}
             className="mt-6 max-w-md text-lg leading-relaxed text-gray-500"
           >
             Catat keluhan dan obat harianmu hanya dengan bicara. Pandu siap
@@ -35,9 +37,7 @@ export default function Hero() {
           </motion.p>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3, ease: EASE }}
+            variants={revealItem}
             className="mt-10 w-full max-w-md"
           >
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -50,7 +50,7 @@ export default function Hero() {
               </Link>
             </div>
           </motion.div>
-        </div>
+        </motion.div>
 
         <motion.div
           initial={{ opacity: 0, x: 40, scale: 0.95 }}

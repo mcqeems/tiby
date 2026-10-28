@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { fadeDown, listItem, scaleIn, slideIn, staggerParent } from "@/lib/motion";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { useSession, type TibyUser } from "@/lib/auth-client";
@@ -97,10 +98,14 @@ export default function AdminOverview() {
       : 0;
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      variants={staggerParent(0.06, 0.05)}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6"
+    >
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+        variants={fadeDown}
         className="flex items-center justify-between"
       >
         <div>
@@ -116,9 +121,7 @@ export default function AdminOverview() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:col-span-2 space-y-6">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
+            variants={scaleIn}
             className="bg-tiby-teal-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-tiby-teal-600/20 relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
@@ -149,11 +152,9 @@ export default function AdminOverview() {
             </div>
           </motion.div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <motion.div variants={staggerParent(0.05)} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
+              variants={listItem}
               className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex flex-col items-center justify-center text-center"
             >
               <div className="w-10 h-10 rounded-full bg-tiby-teal-50 flex items-center justify-center shrink-0 mb-3">
@@ -171,9 +172,7 @@ export default function AdminOverview() {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
+              variants={listItem}
               className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex flex-col items-center justify-center text-center"
             >
               <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0 mb-3">
@@ -191,9 +190,7 @@ export default function AdminOverview() {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              variants={listItem}
               className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex flex-col items-center justify-center text-center"
             >
               <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center shrink-0 mb-3">
@@ -211,9 +208,7 @@ export default function AdminOverview() {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
+              variants={listItem}
               className="bg-white rounded-2xl border border-red-200 p-5 shadow-2xs flex flex-col items-center justify-center text-center relative overflow-hidden"
             >
               <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0 mb-3">
@@ -229,14 +224,12 @@ export default function AdminOverview() {
                 {ticketsPer100Patients} per 100 pasien
               </p>
             </motion.div>
-          </div>
+          </motion.div>
         </div>
 
         <div className="h-full">
           <motion.section
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
+            variants={slideIn}
             className="h-full rounded-2xl border border-gray-200 bg-white p-5 shadow-2xs"
           >
             <h3 className="font-heading text-base font-semibold text-tiby-ink">
@@ -275,9 +268,7 @@ export default function AdminOverview() {
       </div>
 
       <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.35 }}
+        variants={listItem}
         className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xs"
       >
         <header className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4 sm:px-6">
@@ -328,6 +319,6 @@ export default function AdminOverview() {
           </ul>
         )}
       </motion.section>
-    </div>
+    </motion.div>
   );
 }

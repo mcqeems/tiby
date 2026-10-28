@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { VIEWPORT, revealItem, staggerParent } from "@/lib/motion";
 import {
   Mic,
   Activity,
@@ -10,7 +11,7 @@ import {
   BookOpen,
   type LucideIcon,
 } from "lucide-react";
-import { EASE, SectionHeading } from "./shared";
+import { SectionHeading } from "./shared";
 
 /* ─── Marquee ─── */
 const MARQUEE_ITEMS = [
@@ -56,12 +57,10 @@ function FeatureCard({
   icon: Icon,
   title,
   desc,
-  index,
 }: {
   icon: LucideIcon;
   title: string;
   desc: string;
-  index: number;
 }) {
   const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
@@ -71,10 +70,7 @@ function FeatureCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 28 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.7, delay: (index % 3) * 0.1, ease: EASE }}
+      variants={revealItem}
       onMouseMove={onMove}
       className="group relative overflow-hidden rounded-3xl border border-gray-100 bg-white p-7 transition-all duration-500 hover:-translate-y-1 hover:border-tiby-teal-100 hover:shadow-[0_24px_50px_-24px_rgba(15,118,110,0.25)]"
     >
@@ -144,11 +140,17 @@ export default function Features() {
           <span className="text-tiby-teal-600">Semuanya Beres.</span>
         </SectionHeading>
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-          {FEATURES.map((f, i) => (
-            <FeatureCard key={f.title} index={i} {...f} />
+        <motion.div
+          variants={staggerParent(0.1, 0.05)}
+          initial="hidden"
+          whileInView="visible"
+          viewport={VIEWPORT}
+          className="grid grid-cols-1 gap-5 md:grid-cols-3"
+        >
+          {FEATURES.map((f) => (
+            <FeatureCard key={f.title} {...f} />
           ))}
-        </div>
+        </motion.div>
       </section>
     </>
   );

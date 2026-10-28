@@ -8,7 +8,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Mascot, { type MascotEmotion } from "@/components/mascot";
-import { EASE, SectionHeading } from "./shared";
+import { SectionHeading } from "./shared";
+import { VIEWPORT, revealItem, staggerParent } from "@/lib/motion";
 
 const PERSONAS: {
   icon: LucideIcon;
@@ -48,14 +49,17 @@ export default function Personas() {
         <span className="text-tiby-teal-600">Semua Peran.</span>
       </SectionHeading>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-        {PERSONAS.map((p, i) => (
+      <motion.div
+        variants={staggerParent(0.12, 0.05)}
+        initial="hidden"
+        whileInView="visible"
+        viewport={VIEWPORT}
+        className="grid grid-cols-1 gap-5 md:grid-cols-3"
+      >
+        {PERSONAS.map((p) => (
           <motion.div
             key={p.title}
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.8, delay: i * 0.12, ease: EASE }}
+            variants={revealItem}
             className={`group relative flex h-[340px] flex-col justify-between overflow-hidden rounded-3xl bg-gradient-to-br ${p.gradient} p-7 text-white shadow-lg shadow-black/5 transition-transform duration-500 hover:-translate-y-2`}
           >
             <span
@@ -85,7 +89,7 @@ export default function Personas() {
             </div>
           </motion.div>
         ))}
-      </div>
+      </motion.div>
     </section>
   );
 }

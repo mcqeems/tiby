@@ -87,6 +87,7 @@ export default function CheckInVoice({
                   duration: 2.1,
                   repeat: Infinity,
                   ease: "easeOut",
+                  // Phase offset between the looping rings, not a stagger.
                   delay: i * 0.7,
                 }}
               />
@@ -219,6 +220,7 @@ export default function CheckInVoice({
                     duration: d,
                     repeat: Infinity,
                     ease: "easeInOut",
+                    // Desyncs the looping bars on purpose; not an entry stagger.
                     delay: i * 0.08,
                   }}
                 />

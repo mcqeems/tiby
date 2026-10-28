@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { fadeDown, listItem, popItem, scaleIn, slideIn, staggerParent } from "@/lib/motion";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { useSession, type TibyUser } from "@/lib/auth-client";
@@ -89,7 +90,7 @@ const ComplianceCalendar = ({ history }: { history: CheckInHistoryItem[] }) => {
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-1.5">
+        <motion.div variants={staggerParent(0.01)} className="grid grid-cols-7 gap-1.5">
           {Array.from({ length: firstDay }).map((_, i) => (
             <div
               key={`empty-${i}`}
@@ -122,9 +123,7 @@ const ComplianceCalendar = ({ history }: { history: CheckInHistoryItem[] }) => {
             return (
               <motion.div
                 key={dateStr}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.01, type: "spring", stiffness: 300 }}
+                variants={popItem}
                 className={`relative aspect-square rounded-md border flex items-center justify-center text-[10px] font-medium transition-all ${
                   isToday ? "ring-2 ring-tiby-teal-600 ring-offset-1" : ""
                 } ${bgColor} ${
@@ -137,7 +136,7 @@ const ComplianceCalendar = ({ history }: { history: CheckInHistoryItem[] }) => {
               </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       </div>
 
       <div className="flex flex-wrap justify-center items-center gap-3 mt-4 text-[10px] text-tiby-muted">
@@ -273,10 +272,14 @@ export default function PasienOverview() {
     facilityName || careTeam?.facility?.name || "Faskes Terdaftar";
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      variants={staggerParent(0.06, 0.05)}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6"
+    >
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+        variants={fadeDown}
         className="flex items-center justify-between"
       >
         <div>
@@ -292,9 +295,7 @@ export default function PasienOverview() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:col-span-2 space-y-6">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
+            variants={scaleIn}
             className="bg-tiby-teal-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-tiby-teal-600/20 relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
@@ -361,11 +362,9 @@ export default function PasienOverview() {
             </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <motion.div variants={staggerParent(0.05)} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
+              variants={listItem}
               className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex items-center gap-4"
             >
               <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
@@ -391,9 +390,7 @@ export default function PasienOverview() {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
+              variants={listItem}
               className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex items-center gap-4"
             >
               <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
@@ -410,9 +407,7 @@ export default function PasienOverview() {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              variants={listItem}
               className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex items-center gap-4"
             >
               <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center shrink-0">
@@ -427,12 +422,10 @@ export default function PasienOverview() {
                 </p>
               </div>
             </motion.div>
-          </div>
+          </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
+            variants={listItem}
           >
             <ComplianceCalendar history={history} />
           </motion.div>
@@ -440,9 +433,7 @@ export default function PasienOverview() {
 
         <div className="lg:col-span-1 space-y-6">
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
+            variants={slideIn}
             className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex items-center justify-between"
           >
             <div className="flex items-center gap-4">
@@ -476,9 +467,7 @@ export default function PasienOverview() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            variants={listItem}
             className="space-y-3"
           >
             <div className="flex items-center justify-between">
@@ -522,9 +511,7 @@ export default function PasienOverview() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
+            variants={listItem}
             className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs"
           >
             <h3 className="font-heading font-bold text-sm text-tiby-ink mb-4 flex items-center gap-2">
@@ -625,6 +612,6 @@ export default function PasienOverview() {
           ))}
         </div>
       </Dialog>
-    </div>
+    </motion.div>
   );
 }

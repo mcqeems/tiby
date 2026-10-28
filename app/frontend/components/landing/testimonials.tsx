@@ -2,7 +2,8 @@
 
 import { motion } from "motion/react";
 import { Quote } from "lucide-react";
-import { EASE, SectionHeading } from "./shared";
+import { SectionHeading } from "./shared";
+import { VIEWPORT, revealItem, staggerParent } from "@/lib/motion";
 
 const TESTIMONIALS = [
   {
@@ -27,14 +28,17 @@ export default function Testimonials() {
     <section className="mx-auto max-w-6xl px-6 py-16">
       <SectionHeading eyebrow="Testimoni">Kata Mereka</SectionHeading>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-        {TESTIMONIALS.map((t, i) => (
+      <motion.div
+        variants={staggerParent(0.12, 0.05)}
+        initial="hidden"
+        whileInView="visible"
+        viewport={VIEWPORT}
+        className="grid grid-cols-1 gap-5 md:grid-cols-3"
+      >
+        {TESTIMONIALS.map((t) => (
           <motion.figure
             key={t.name}
-            initial={{ opacity: 0, y: 28 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.8, delay: i * 0.12, ease: EASE }}
+            variants={revealItem}
             className="relative flex flex-col rounded-3xl border border-gray-100 bg-gradient-to-b from-white to-tiby-teal-50/40 p-7 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_24px_50px_-28px_rgba(15,118,110,0.3)]"
           >
             <Quote className="mb-4 h-6 w-6 text-tiby-teal-200" />
@@ -54,7 +58,7 @@ export default function Testimonials() {
             </figcaption>
           </motion.figure>
         ))}
-      </div>
+      </motion.div>
     </section>
   );
 }

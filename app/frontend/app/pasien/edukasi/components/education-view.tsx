@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { listItem, staggerParent } from "@/lib/motion";
 import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import { AnimatePresence, motion } from "motion/react";
 import { educationApi, type EducationItem } from "@/lib/api/education";
@@ -121,17 +122,18 @@ export default function EducationView({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-          {cards.map((card, index) => {
+        <motion.div
+          variants={staggerParent(0.1, 0.1)}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full"
+        >
+          {cards.map((card) => {
             const style = getCategoryStyle(card.category);
             const Icon = style.icon;
 
             return (
               <motion.button
                 key={card.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.3 }}
+                variants={listItem}
                 onClick={() => setSelectedCard(card)}
                 className="group text-left bg-white rounded-3xl border border-gray-200 p-6 sm:p-8 shadow-2xs hover:shadow-lg hover:border-tiby-teal-300 hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
               >
@@ -170,7 +172,7 @@ export default function EducationView({
               </motion.button>
             );
           })}
-        </div>
+        </motion.div>
       )}
 
       <AnimatePresence>

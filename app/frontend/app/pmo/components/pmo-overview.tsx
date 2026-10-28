@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { fadeDown, listItem, scaleIn, slideIn, staggerParent } from "@/lib/motion";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { useSession, type TibyUser } from "@/lib/auth-client";
@@ -65,10 +66,14 @@ export default function PmoOverview() {
       : 0;
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      variants={staggerParent(0.06, 0.05)}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6"
+    >
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+        variants={fadeDown}
         className="flex items-center justify-between"
       >
         <div>
@@ -84,9 +89,7 @@ export default function PmoOverview() {
       <div className="grid grid-cols-1 gap-6 items-start">
         <div className="lg:col-span-2 space-y-6">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
+            variants={scaleIn}
             className="bg-tiby-teal-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-tiby-teal-600/20 relative overflow-hidden"
           >
             <div className="relative z-10 flex flex-col-reverse sm:flex-row items-center justify-between gap-6">
@@ -146,11 +149,9 @@ export default function PmoOverview() {
             </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <motion.div variants={staggerParent(0.05)} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
+              variants={listItem}
               className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex items-center gap-4"
             >
               <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
@@ -167,9 +168,7 @@ export default function PmoOverview() {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
+              variants={listItem}
               className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex items-center gap-4"
             >
               <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
@@ -189,9 +188,7 @@ export default function PmoOverview() {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
+              variants={slideIn}
               className="bg-white rounded-2xl border border-gray-200  p-5 shadow-2xs relative overflow-hidden"
             >
               <div className="absolute -right-4 -top-4 w-16 h-16 bg-red-50 rounded-full blur-xl" />
@@ -214,9 +211,7 @@ export default function PmoOverview() {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.25 }}
+              variants={slideIn}
               className="bg-white rounded-2xl border border-gray-200  p-5 shadow-2xs"
             >
               <div className="flex items-center gap-4">
@@ -233,9 +228,9 @@ export default function PmoOverview() {
                 </div>
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

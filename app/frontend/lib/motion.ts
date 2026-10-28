@@ -62,6 +62,39 @@ export const popover: Variants = {
   exit: { opacity: 0, y: -6, scale: 0.97, transition: TRANS.fast },
 };
 
+/** Page headers and top sections sliding into place. */
+export const fadeDown: Variants = {
+  hidden: { opacity: 0, y: -20 },
+  visible: { opacity: 1, y: 0, transition: TRANS.out },
+  exit: { opacity: 0, y: -12, transition: TRANS.fast },
+};
+
+/** Panels that scale up in place. */
+export const scaleIn: Variants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: { opacity: 1, scale: 1, transition: TRANS.pop },
+  exit: { opacity: 0, scale: 0.97, transition: TRANS.fast },
+};
+
+/** Side column sliding in from the right. */
+export const slideIn: Variants = {
+  hidden: { opacity: 0, x: 20 },
+  visible: { opacity: 1, x: 0, transition: TRANS.out },
+  exit: { opacity: 0, x: -20, transition: TRANS.fast },
+};
+
+/** Scale-in list child, e.g. calendar cells. Pair with `staggerParent()`. */
+export const popItem: Variants = {
+  hidden: { opacity: 0, scale: 0.8 },
+  visible: { opacity: 1, scale: 1, transition: TRANS.spring },
+};
+
+/** Slower, further-travelling reveal for landing cards. */
+export const revealItem: Variants = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0, transition: TRANS.reveal },
+};
+
 /** Centered modal card. */
 export const popIn: Variants = {
   hidden: { opacity: 0, y: 16, scale: 0.96 },

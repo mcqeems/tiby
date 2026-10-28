@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { fadeDown, listItem, scaleIn, slideIn, staggerParent } from "@/lib/motion";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { useSession, type TibyUser } from "@/lib/auth-client";
@@ -69,10 +70,14 @@ export default function NakesOverview() {
       : 0;
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      variants={staggerParent(0.06, 0.05)}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6"
+    >
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+        variants={fadeDown}
         className="flex items-center justify-between"
       >
         <div>
@@ -88,9 +93,7 @@ export default function NakesOverview() {
       <div className="grid grid-cols-1 gap-6 items-start">
         <div className="space-y-6">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
+            variants={scaleIn}
             className="bg-tiby-teal-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-tiby-teal-600/20 relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
@@ -134,11 +137,9 @@ export default function NakesOverview() {
             </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <motion.div variants={staggerParent(0.05)} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
+              variants={listItem}
               className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex items-center gap-4"
             >
               <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
@@ -164,9 +165,7 @@ export default function NakesOverview() {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
+              variants={listItem}
               className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex items-center gap-4"
             >
               <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center shrink-0">
@@ -186,9 +185,7 @@ export default function NakesOverview() {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.25 }}
+              variants={slideIn}
               className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex items-center gap-4"
             >
               <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
@@ -203,13 +200,11 @@ export default function NakesOverview() {
                 </p>
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         </div>
 
         <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
+          variants={slideIn}
           className="w-full rounded-2xl border border-tiby-teal-100 bg-white p-5 shadow-2xs"
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -240,6 +235,6 @@ export default function NakesOverview() {
           </div>
         </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }
