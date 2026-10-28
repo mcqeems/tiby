@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
 import Mascot, {
   type MascotEmotion,
 } from "@/components/mascot";
 import { overlay, popIn } from "@/lib/motion";
+import { useModalA11y } from "@/lib/use-modal-a11y";
 
 export type PopupVariant = "success" | "danger" | "warning" | "info";
 
@@ -289,21 +290,20 @@ export default function PublicPopup({
   onClose,
 }: PublicPopupProps) {
   const cfg = VARIANT_CONFIG[variant] || VARIANT_CONFIG.info;
+  const overlayRef = useRef<HTMLDivElement>(null);
 
-  // Tombol Escape
-  useEffect(() => {
-    if (!open) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !loading) onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, loading, onClose]);
+  useModalA11y({
+    active: open,
+    containerRef: overlayRef,
+    onClose,
+    closeOnEscape: !loading,
+  });
 
   return (
     <AnimatePresence>
       {open && (
         <motion.div
+          ref={overlayRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="tiby-popup-title"

@@ -74,7 +74,7 @@ export default function TicketResolveModal({
   };
 
   return (
-    <ModalOverlay onClose={onClose}>
+    <ModalOverlay label="Tindak Lanjut Pasien" onClose={onClose}>
       <ModalCard className="w-full max-w-lg rounded-3xl bg-white shadow-xl overflow-hidden">
         <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 bg-gray-50/50">
           <div className="flex items-center gap-3">

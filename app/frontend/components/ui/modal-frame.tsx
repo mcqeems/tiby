@@ -1,13 +1,17 @@
 "use client";
 
+import { useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { overlay, popIn } from "@/lib/motion";
+import { useModalA11y } from "@/lib/use-modal-a11y";
+
+const DEFAULT_OVERLAY =
+  "fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm";
 
 /**
  * Shared modal shell: backdrop plus a centered card, both animating in and
- * out with the same variants. Replaces the hand-written
- * `fixed inset-0 bg-black/40` + card pair and the dead `animate-in` classes
- * that used to sit on them.
+ * out with the same variants, and both announcing themselves as a dialog
+ * with a focus trap, Escape handling and a reference-counted scroll lock.
  *
  * `open` drives presence, so a component that used to `return null` when
  * closed now returns the frame and lets AnimatePresence play the exit.
@@ -15,24 +19,46 @@ import { overlay, popIn } from "@/lib/motion";
 export function ModalFrame({
   open,
   onClose,
-  className = "fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm",
+  label,
+  closeOnEscape = true,
+  dismissOnBackdrop = true,
+  className = DEFAULT_OVERLAY,
   children,
 }: {
   open: boolean;
-  /** Backdrop click. Omit for modals that must be dismissed explicitly. */
+  /** Escape (and the backdrop, unless disabled). Omit for gates that must be
+   * dismissed deliberately, such as the consent modal. */
   onClose?: () => void;
+  /** Accessible name; prefer it over relying on the visible heading. */
+  label?: string;
+  closeOnEscape?: boolean;
+  /** Set false when the design dismisses through a visible button only. */
+  dismissOnBackdrop?: boolean;
   className?: string;
   children: React.ReactNode;
 }) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  useModalA11y({
+    active: open,
+    containerRef: overlayRef,
+    onClose,
+    closeOnEscape,
+  });
+
   return (
     <AnimatePresence>
       {open && (
         <motion.div
+          ref={overlayRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={label}
           variants={overlay}
           initial="hidden"
           animate="visible"
           exit="exit"
-          onClick={onClose}
+          onClick={dismissOnBackdrop ? onClose : undefined}
           className={className}
         >
           {children}
@@ -71,20 +97,35 @@ export function ModalCard({
  */
 export function ModalOverlay({
   onClose,
-  className = "fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm",
+  label,
+  dismissOnBackdrop = true,
+  className = DEFAULT_OVERLAY,
   children,
 }: {
+  /** Escape (and the backdrop, unless disabled). */
   onClose?: () => void;
+  label?: string;
+  /** Set false when the design dismisses through a visible button only. */
+  dismissOnBackdrop?: boolean;
   className?: string;
   children: React.ReactNode;
 }) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  // Mounted only while present, so the dialog is always "active" here.
+  useModalA11y({ active: true, containerRef: overlayRef, onClose });
+
   return (
     <motion.div
+      ref={overlayRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={label}
       variants={overlay}
       initial="hidden"
       animate="visible"
       exit="exit"
-      onClick={onClose}
+      onClick={dismissOnBackdrop ? onClose : undefined}
       className={className}
     >
       {children}

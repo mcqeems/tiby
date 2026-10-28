@@ -115,7 +115,7 @@ export default function PmoFollowUpModal({
   };
 
   return (
-    <ModalOverlay onClose={onClose}>
+    <ModalOverlay label="Catat Tindak Lanjut" onClose={onClose}>
       <ModalCard className="w-full max-w-md max-h-[90vh] flex flex-col rounded-3xl bg-white shadow-xl overflow-hidden">
         <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 bg-gray-50/50 shrink-0">
           <div>

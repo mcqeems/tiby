@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useId, useRef, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
 import { overlay, popIn } from "@/lib/motion";
+import { useModalA11y } from "@/lib/use-modal-a11y";
 
 type DialogSize = "sm" | "md" | "lg" | "xl";
 
@@ -13,9 +14,6 @@ const SIZE_CLASS: Record<DialogSize, string> = {
   lg: "sm:max-w-2xl",
   xl: "sm:max-w-4xl",
 };
-
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 interface DialogProps {
   open: boolean;
@@ -39,55 +37,14 @@ export default function Dialog({
   children,
 }: DialogProps) {
   const panelRef = useRef<HTMLDivElement>(null);
-  const onCloseRef = useRef(onClose);
   const titleId = useId();
   const descriptionId = useId();
 
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const previousFocus = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onCloseRef.current();
-        return;
-      }
-      if (event.key !== "Tab") return;
-
-      const nodes = panelRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE);
-      if (!nodes?.length) return;
-      const first = nodes[0];
-      const last = nodes[nodes.length - 1];
-
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    const timer = setTimeout(() => {
-      panelRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
-    }, 0);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-      clearTimeout(timer);
-      previousFocus?.focus?.();
-    };
-  }, [open]);
+  useModalA11y({
+    active: open,
+    containerRef: panelRef,
+    onClose,
+  });
 
   return (
     <AnimatePresence>

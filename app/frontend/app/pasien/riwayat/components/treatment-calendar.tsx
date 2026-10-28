@@ -79,7 +79,9 @@ export default function TreatmentCalendar({
         </h3>
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={prevMonth}
+            aria-label="Bulan sebelumnya"
             className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-tiby-muted transition"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -88,7 +90,9 @@ export default function TreatmentCalendar({
             {monthNames[month]} {year}
           </span>
           <button
+            type="button"
             onClick={nextMonth}
+            aria-label="Bulan berikutnya"
             className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-tiby-muted transition"
           >
             <ChevronRight className="w-4 h-4" />

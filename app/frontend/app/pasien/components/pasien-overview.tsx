@@ -460,6 +460,7 @@ export default function PasienOverview() {
             </div>
             <Link
               href="/pasien/riwayat"
+              aria-label="Lihat riwayat terapi"
               className="text-tiby-teal-600 p-2 hover:bg-tiby-teal-50 rounded-full transition"
             >
               <ChevronRight className="w-5 h-5" />

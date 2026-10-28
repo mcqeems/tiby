@@ -248,7 +248,11 @@ export default function FamilyContactsCard({
       {/* MODAL TAMBAH KONTAK */}
       <AnimatePresence>
         {isModalOpen && (
-          <ModalOverlay>
+          <ModalOverlay
+            label="Tambah Kontak Darurat"
+            onClose={() => setIsModalOpen(false)}
+            dismissOnBackdrop={false}
+          >
             <ModalCard className="w-full max-w-md rounded-2xl bg-white shadow-xl">
               <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
                 <h3 className="font-heading font-bold text-tiby-ink">
@@ -314,7 +318,11 @@ export default function FamilyContactsCard({
 
       <AnimatePresence>
         {connectingContact && (
-          <ModalOverlay>
+          <ModalOverlay
+            label="Hubungkan Kontak Darurat"
+            onClose={() => setConnectingContact(null)}
+            dismissOnBackdrop={false}
+          >
             <ModalCard className="max-h-[90vh] w-full max-w-md overflow-y-auto">
               <div className="mb-2 flex justify-end">
                 <button

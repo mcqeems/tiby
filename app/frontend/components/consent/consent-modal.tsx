@@ -138,7 +138,12 @@ export default function ConsentModal({
   };
 
   return (
-    <ModalFrame open={!checking && needsConsent}>
+    <ModalFrame
+      open={!checking && needsConsent}
+      label={
+        isPmo ? "Persetujuan Pengawas (PMO)" : "Persetujuan Berbagi Data"
+      }
+    >
       <ModalCard className="flex w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-xl max-h-[90vh] lg:max-h-[calc(100vh-2rem)]">
         <div className="overflow-y-auto p-6 lg:overflow-hidden lg:p-5">
           <div className="space-y-6 lg:space-y-3">

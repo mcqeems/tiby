@@ -128,7 +128,10 @@ export default function UserFormModal({
   };
 
   return (
-    <ModalOverlay onClose={onClose}>
+    <ModalOverlay
+      label={isEdit ? "Edit Akun" : "Buat Akun Nakes Baru"}
+      onClose={onClose}
+    >
       <ModalCard className="w-full max-w-lg rounded-2xl bg-white shadow-xl overflow-hidden">
         <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 bg-gray-50/50">
           <h3 className="font-heading font-bold text-tiby-ink">

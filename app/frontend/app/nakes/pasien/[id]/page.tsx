@@ -754,7 +754,7 @@ export default function PatientDetailPage() {
       {/* ─── MODAL BUAT TIKET MANUAL ─── */}
       <AnimatePresence>
         {ticketOpen && (
-          <ModalOverlay>
+          <ModalOverlay label="Buat Tiket Manual">
             <ModalCard className="w-full max-w-md rounded-2xl bg-white shadow-xl">
               <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 bg-amber-50/50">
                 <h3 className="font-heading text-sm font-semibold text-tiby-ink">
@@ -881,7 +881,7 @@ export default function PatientDetailPage() {
       {/* ─── MODAL RESET PASSWORD (Pasien & PMO) ─── */}
       <AnimatePresence>
         {resetOpen && (
-          <ModalOverlay>
+          <ModalOverlay label="Reset Password Pasien">
             <ModalCard className="w-full max-w-md rounded-2xl bg-white shadow-xl">
               <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
                 <h3 className="font-heading text-sm font-semibold text-tiby-ink">
