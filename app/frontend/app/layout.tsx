@@ -36,6 +36,11 @@ export const metadata: Metadata = {
     "pengobatan TBC",
   ],
   authors: [{ name: "Team Argon" }],
+  appleWebApp: {
+    capable: true,
+    title: "Tiby",
+    statusBarStyle: "default",
+  },
   icons: {
     icon: "/icon-192.png",
     apple: "/apple-touch-icon.png",

@@ -1,5 +1,15 @@
 /* Tiby service worker: web push display and click-through only. */
 
+self.addEventListener("install", () => self.skipWaiting());
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
+// Network-only. A fetch handler keeps the app installable in browsers that
+// still require one; it deliberately does not add an offline cache.
+self.addEventListener("fetch", () => {});
+
 self.addEventListener("push", (event) => {
   let payload = {};
   try {
