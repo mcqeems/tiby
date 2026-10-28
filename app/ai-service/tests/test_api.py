@@ -483,7 +483,8 @@ def test_nararouter_timeout_maps_to_provider_timeout():
     asyncio.run(run_test())
 
 
-def test_groq_provider_uses_configured_token_and_returns_transcript():
+def test_groq_provider_uses_configured_token_and_returns_transcript(monkeypatch):
+    monkeypatch.setenv("GROQ_ENDPOINT", "https://api.groq.com/openai/v1")
     seen = {}
 
     def handler(request):
@@ -513,6 +514,16 @@ def test_groq_provider_uses_configured_token_and_returns_transcript():
     assert result.model == "whisper-large-v3-turbo"
     assert seen["authorization"] == "Bearer groq-test-token"
     assert seen["path"] == "/openai/v1/audio/transcriptions"
+
+
+def test_groq_provider_requires_an_endpoint(monkeypatch):
+    monkeypatch.delenv("GROQ_ENDPOINT", raising=False)
+    with (
+        patch("providers.groq.httpx.AsyncClient") as client_factory,
+        pytest.raises(ProviderConfigurationError),
+    ):
+        asyncio.run(GroqTranscriber(api_key="groq-test-token").transcribe(b"wav"))
+    client_factory.assert_not_called()
 
 
 def test_guidance_action_request_fails_closed_without_provider_call(monkeypatch):
