@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { NotFoundException, BadRequestException } from "@nestjs/common";
+import {
+  BadRequestException,
+  NotFoundException,
+  ServiceUnavailableException,
+} from "@nestjs/common";
 import { OnboardingService } from "../src/modules/onboarding/services/onboarding.service.js";
 import { auth } from "../src/auth/auth.config.js";
 
@@ -13,6 +17,7 @@ describe("OnboardingService Unit Tests", () => {
   let mockFacilityRepo: any;
   let mockHistoryRepo: any;
   let mockAuditRepo: any;
+  let mockAiClient: any;
 
   beforeEach(() => {
     mockUserRepo = {
@@ -46,6 +51,8 @@ describe("OnboardingService Unit Tests", () => {
       save: vi.fn((data) => Promise.resolve(data)),
     };
 
+    mockAiClient = { extractOnboardingCard: vi.fn() };
+
     service = new OnboardingService(
       mockUserRepo,
       mockPlanRepo,
@@ -54,6 +61,7 @@ describe("OnboardingService Unit Tests", () => {
       mockFacilityRepo,
       mockHistoryRepo,
       mockAuditRepo,
+      mockAiClient,
     );
   });
 
@@ -253,25 +261,53 @@ describe("OnboardingService Unit Tests", () => {
   });
 
   describe("extractOcr", () => {
-    it("returns default draft when no file is uploaded", async () => {
-      const draft = await service.extractOcr(undefined);
-      expect(draft.regimenCode).toBe("FDC-4");
-      expect(draft.dailyPillQuota).toBe(4);
-      expect(draft.confidence).toBe(0.8);
-      expect(draft.patientName).toBeNull();
+    const file = {
+      originalname: "tb_card.jpg",
+      mimetype: "image/jpeg",
+      buffer: Buffer.from("image-bytes"),
+    } as Express.Multer.File;
+
+    const draft = {
+      patientName: "BUDI SANTOSO",
+      regimenCode: "FDC-4",
+      dailyPillQuota: 4,
+      startDate: "2026-10-28",
+      targetEndDate: null,
+      confidence: 0.79,
+      rawText: "PENANGGULANGAN TBC NASIONAL",
+      fieldConfidence: {},
+      uncertainties: [],
+    };
+
+    it("rejects a scan with no image instead of returning defaults", async () => {
+      await expect(service.extractOcr(undefined)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockAiClient.extractOnboardingCard).not.toHaveBeenCalled();
     });
 
-    it("returns scanned fallback draft when file is provided and AI service is unreachable", async () => {
-      const mockFile = {
-        originalname: "tb_card.jpg",
-        mimetype: "image/jpeg",
-        buffer: Buffer.from("image-bytes"),
-      } as Express.Multer.File;
+    it("delegates the image to the AI client and returns its draft", async () => {
+      mockAiClient.extractOnboardingCard.mockResolvedValue(draft);
 
-      const draft = await service.extractOcr(mockFile);
-      expect(draft.regimenCode).toBe("FDC-4");
-      expect(draft.dailyPillQuota).toBe(4);
-      expect(draft.rawText).toContain("tb_card.jpg");
+      await expect(service.extractOcr(file)).resolves.toEqual(draft);
+      expect(mockAiClient.extractOnboardingCard).toHaveBeenCalledWith(
+        file.buffer,
+        "tb_card.jpg",
+        "image/jpeg",
+      );
+    });
+
+    it("propagates an unavailable scan instead of inventing a draft", async () => {
+      mockAiClient.extractOnboardingCard.mockRejectedValue(
+        new ServiceUnavailableException({
+          code: "INTERNAL",
+          message: "Card scan is unavailable.",
+        }),
+      );
+
+      await expect(service.extractOcr(file)).rejects.toThrow(
+        ServiceUnavailableException,
+      );
     });
   });
 });

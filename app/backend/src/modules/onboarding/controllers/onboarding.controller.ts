@@ -55,7 +55,7 @@ export class OnboardingController {
   async ocrExtract(
     @UploadedFile(
       new ParseFilePipe({
-        fileIsRequired: false,
+        fileIsRequired: true,
         validators: [
           new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
           new FileTypeValidator({

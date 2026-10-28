@@ -1,11 +1,20 @@
-import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  PayloadTooLargeException,
+  ServiceUnavailableException,
+  UnprocessableEntityException,
+  UnsupportedMediaTypeException,
+} from "@nestjs/common";
 import {
   AiAudioTranscriptResponseSchema,
   GuidanceResponseSchema,
+  OcrOnboardingDraftSchema,
   type AiAudioExtractionResponse,
   type AiAudioTranscriptResponse,
   type GuidanceResponse,
   type MedicationStatus,
+  type OcrOnboardingDraft,
 } from "@tiby/ts-shared";
 
 /**
@@ -123,6 +132,75 @@ export class AiClientService {
       this.logger.warn(`AI Service guidance response drifted from contract: ${msg}`);
       throw this.guidanceUnavailable();
     }
+  }
+
+  /**
+   * Treatment-card OCR. Like guidance, there is no fallback: an unreachable
+   * provider or a response that drifted from the contract must surface as an
+   * error, never as an invented draft that a Nakes could mistake for a reading
+   * of the card. A bad image is the caller's fault, so the AI service's 413 /
+   * 415 / 422 are forwarded as 4xx rather than as "unavailable".
+   */
+  async extractOnboardingCard(
+    cardBuffer: Buffer,
+    filename: string,
+    mimetype: string,
+  ): Promise<OcrOnboardingDraft> {
+    let res: Response;
+    try {
+      const formData = new FormData();
+      const blob = new Blob([new Uint8Array(cardBuffer)], { type: mimetype });
+      formData.append("cardImage", blob, filename);
+
+      res = await fetch(`${this.baseUrl}/ai/ocr/extract`, {
+        method: "POST",
+        body: formData,
+        signal: AbortSignal.timeout(AI_SERVICE_TIMEOUT_MS),
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`AI Service OCR unreachable: ${msg}`);
+      throw this.ocrUnavailable();
+    }
+
+    if (!res.ok) {
+      this.logger.warn(`AI Service OCR failed with ${res.status}.`);
+      if (res.status === 413) {
+        throw new PayloadTooLargeException({
+          code: "INVALID_REQUEST",
+          message: "Image must be between 1 byte and 10 MB.",
+        });
+      }
+      if (res.status === 415) {
+        throw new UnsupportedMediaTypeException({
+          code: "INVALID_REQUEST",
+          message: "Unsupported image content type.",
+        });
+      }
+      if (res.status === 422) {
+        throw new UnprocessableEntityException({
+          code: "INVALID_REQUEST",
+          message: "Uploaded file is not a decodable image.",
+        });
+      }
+      throw this.ocrUnavailable();
+    }
+
+    try {
+      return OcrOnboardingDraftSchema.parse(await res.json());
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`AI Service OCR response drifted from contract: ${msg}`);
+      throw this.ocrUnavailable();
+    }
+  }
+
+  private ocrUnavailable(): ServiceUnavailableException {
+    return new ServiceUnavailableException({
+      code: "INTERNAL",
+      message:
+        "Card scan is unavailable. Fill the form manually, or try again later.",
+    });
   }
 
   private guidanceUnavailable(): ServiceUnavailableException {

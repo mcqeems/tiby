@@ -7,11 +7,14 @@ http:
   method: POST
   url: "{{baseUrl}}/api/faskes/onboarding/ocr"
   body:
-    type: file
+    type: multipart-form
     data:
-      - filePath: /home/mcqeems/Documents/Project/UINIC 8.0/tiby/shared/assets/images/ocr_test.png
-        contentType: image/png
-        selected: true
+      - name: cardImage
+        type: file
+        value:
+          - /home/mcqeems/Documents/Project/UINIC 8.0/tiby/shared/assets/images/ocr-test.jpeg
+        contentType: image/jpeg
+        description: Treatment-card photo (image/jpeg, image/png, image/webp; max 10 MB). Required.
   auth: inherit
 
 settings:
@@ -21,48 +24,91 @@ settings:
   maxRedirects: 5
   forwardAuthorizationHeader: false
 
+docs: |-
+  Forwards a treatment-card photo to the AI service (`POST /ai/ocr/extract`) and
+  returns the **unconfirmed** onboarding draft. It never creates anything: the
+  Nakes reviews every field against the photo and then posts
+  `/api/faskes/onboarding` themselves.
+
+  - multipart field: `cardImage` (required)
+  - accepted content types: `image/jpeg`, `image/jpg`, `image/png`, `image/webp`
+  - size limit: 10 MB
+
+  There is no default draft. A missing file is `400`, a bad image is `415` /
+  `413` / `422`, and an unreachable AI service or a response that drifted from
+  the contract is `503` - in that case nothing is guessed and the form stays as
+  the Nakes typed it.
+
+  Read `fieldConfidence` and `uncertainties`: a field that is `null` with
+  confidence `0.0` means its label was not on that card, not that the value is
+  empty. Fill those in by hand. The parser knows the common Indonesian
+  treatment-card labels (`Nama Pasien`/`Nama Terduga`, `Regimen`/`Paduan Obat`,
+  `Dosis`/`Kuota`, `Tanggal Mulai`/`Mulai Terapi`, `Tanggal Selesai`) and
+  ignores facility, clinician and identity columns, so the same request works
+  across card layouts.
+
 examples:
-  - name: OCR Onboarding (201)
+  - name: OCR Onboarding (201) - TBC.05 lab-request scan
     request:
       url: "{{baseUrl}}/api/faskes/onboarding/ocr"
       method: POST
       body:
-        type: file
+        type: multipart-form
         data:
-          - filePath: /home/mcqeems/Documents/Project/UINIC 8.0/tiby/shared/assets/images/ocr_test.png
-            contentType: image/png
-            selected: true
+          - name: cardImage
+            type: file
+            value:
+              - /home/mcqeems/Documents/Project/UINIC 8.0/tiby/shared/assets/images/ocr-test.jpeg
+            contentType: image/jpeg
     response:
       status: 201
       statusText: Created
       headers:
-        - name: x-powered-by
-          value: Express
-        - name: vary
-          value: Origin
-        - name: access-control-allow-credentials
-          value: "true"
         - name: content-type
           value: application/json; charset=utf-8
-        - name: content-length
-          value: "173"
-        - name: etag
-          value: W/"ad-VoltaqFm8WzkBN4SbgBSf1oQkbc"
-        - name: date
-          value: Sat, 17 Oct 2026 16:45:17 GMT
-        - name: connection
-          value: keep-alive
-        - name: keep-alive
-          value: timeout=5
       body:
         type: json
         data: |-
           {
-            "patientName": null,
+            "patientName": "BUDI SANTOSO",
             "regimenCode": "FDC-4",
             "dailyPillQuota": 4,
-            "startDate": "2026-10-17",
-            "targetEndDate": "2027-04-15",
-            "confidence": 0.8,
-            "rawText": "Template draft without image"
+            "startDate": "2026-10-28",
+            "targetEndDate": null,
+            "confidence": 0.792916,
+            "rawText": "2308618275\nPENANGGULANGAN TBC NASIONAL\nTBC.05\nFORMULIR PERMOHONAN PEMERIKSAAN BAKTERIOLOGIS TBC\nNama Terduga\nBUDI SANTOSO\nNo. Telp. Pasien\n08123456789\nRegimen: FDC-4\nDosis: 4 butir Harian\nMulai Terapi: 28/10/2026\nWaktu Minum: 08:00 WIB",
+            "fieldConfidence": {
+              "patientName": 0.99912,
+              "regimenCode": 0.97173,
+              "dailyPillQuota": 0.99856,
+              "startDate": 0.99517,
+              "targetEndDate": 0.0
+            },
+            "uncertainties": []
+          }
+
+  - name: OCR Onboarding (503) - AI service unavailable
+    request:
+      url: "{{baseUrl}}/api/faskes/onboarding/ocr"
+      method: POST
+      body:
+        type: multipart-form
+        data:
+          - name: cardImage
+            type: file
+            value:
+              - /home/mcqeems/Documents/Project/UINIC 8.0/tiby/shared/assets/images/ocr-test.jpeg
+            contentType: image/jpeg
+    response:
+      status: 503
+      statusText: Service Unavailable
+      headers:
+        - name: content-type
+          value: application/json; charset=utf-8
+      body:
+        type: json
+        data: |-
+          {
+            "code": "INTERNAL",
+            "message": "Card scan is unavailable. Fill the form manually, or try again later."
           }

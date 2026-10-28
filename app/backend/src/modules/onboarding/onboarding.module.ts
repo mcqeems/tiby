@@ -10,9 +10,11 @@ import { Facility } from "../facilities/entities/facilities.entity.js";
 import { FacilityAlert } from "../alerts/entities/facility-alert.entity.js";
 import { PatientStatusHistory } from "../patients/entities/patient-status-history.entity.js";
 import { AuditLog } from "../internal/audit/entities/audit-log.entity.js";
+import { AiClientModule } from "../internal/ai-client/ai-client.module.js";
 
 @Module({
   imports: [
+    AiClientModule,
     TypeOrmModule.forFeature([
       AuthUser,
       TreatmentPlan,

@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
-import { ServiceUnavailableException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ServiceUnavailableException,
+  UnprocessableEntityException,
+} from "@nestjs/common";
 import { AiClientService } from "../src/modules/internal/ai-client/ai-client.service.js";
+import { OnboardingService } from "../src/modules/onboarding/services/onboarding.service.js";
 
 describe("AiClientService Unit Tests", () => {
   const service = new AiClientService();
@@ -176,5 +181,143 @@ describe("AiClientService Unit Tests", () => {
         ServiceUnavailableException,
       );
     });
+  });
+});
+
+describe("AiClientService OCR bridge", () => {
+  const service = new AiClientService();
+  const DRAFT = {
+    patientName: "BUDI SANTOSO",
+    regimenCode: "FDC-4",
+    dailyPillQuota: 4,
+    startDate: "2026-10-28",
+    targetEndDate: null,
+    confidence: 0.792916,
+    rawText: "PENANGGULANGAN TBC NASIONAL",
+    fieldConfidence: { patientName: 0.99912, regimenCode: 0.97173 },
+    uncertainties: [],
+  };
+  const jsonResponse = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { "content-type": "application/json" },
+    });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("posts the file as multipart to /ai/ocr/extract and validates the draft", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(DRAFT));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const draft = await service.extractOnboardingCard(
+      Buffer.from("jpeg-bytes"),
+      "card.jpg",
+      "image/jpeg",
+    );
+
+    expect(draft.patientName).toBe("BUDI SANTOSO");
+    expect(draft.dailyPillQuota).toBe(4);
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("/ai/ocr/extract");
+    expect(init.method).toBe("POST");
+    expect(init.body).toBeInstanceOf(FormData);
+    expect((init.body as FormData).get("cardImage")).toBeTruthy();
+  });
+
+  it("never invents a draft when the service is unreachable", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+
+    await expect(
+      service.extractOnboardingCard(Buffer.from("x"), "card.jpg", "image/jpeg"),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
+  });
+
+  it("never invents a draft when the response drifted from the contract", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse({ ...DRAFT, confidence: 4 })),
+    );
+
+    await expect(
+      service.extractOnboardingCard(Buffer.from("x"), "card.jpg", "image/jpeg"),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
+  });
+
+  it("forwards an undecodable image as 422 instead of 'unavailable'", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({ code: "INVALID_REQUEST", message: "not an image" }, 422),
+      ),
+    );
+
+    await expect(
+      service.extractOnboardingCard(Buffer.from("x"), "card.jpg", "image/jpeg"),
+    ).rejects.toBeInstanceOf(UnprocessableEntityException);
+  });
+});
+
+describe("OnboardingService.extractOcr", () => {
+  const DRAFT = {
+    patientName: "BUDI SANTOSO",
+    regimenCode: "FDC-4",
+    dailyPillQuota: 4,
+    startDate: "2026-10-28",
+    targetEndDate: null,
+    confidence: 0.79,
+    rawText: "text",
+    fieldConfidence: {},
+    uncertainties: [],
+  };
+
+  it("rejects a request with no image instead of returning defaults", async () => {
+    const aiClient = { extractOnboardingCard: vi.fn() };
+    // Every repository is unused by extractOcr; only the AI client matters here.
+    const service = new OnboardingService(
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      aiClient as never,
+    );
+
+    await expect(service.extractOcr(undefined)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    expect(aiClient.extractOnboardingCard).not.toHaveBeenCalled();
+  });
+
+  it("delegates the uploaded image to the AI client", async () => {
+    const aiClient = {
+      extractOnboardingCard: vi.fn().mockResolvedValue(DRAFT),
+    };
+    const service = new OnboardingService(
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      aiClient as never,
+    );
+    const file = {
+      buffer: Buffer.from("bytes"),
+      originalname: "card.jpg",
+      mimetype: "image/jpeg",
+    } as Express.Multer.File;
+
+    const draft = await service.extractOcr(file);
+
+    expect(aiClient.extractOnboardingCard).toHaveBeenCalledWith(
+      file.buffer,
+      "card.jpg",
+      "image/jpeg",
+    );
+    expect(draft).toEqual(DRAFT);
   });
 });

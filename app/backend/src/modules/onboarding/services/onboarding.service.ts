@@ -10,7 +10,7 @@ import { Facility } from "../../facilities/entities/facilities.entity.js";
 import { PatientStatusHistory } from "../../patients/entities/patient-status-history.entity.js";
 import { AuditLog } from "../../internal/audit/entities/audit-log.entity.js";
 import { auth } from "../../../auth/auth.config.js";
-import { AI_SERVICE_TIMEOUT_MS } from "../../internal/ai-client/ai-client.service.js";
+import { AiClientService } from "../../internal/ai-client/ai-client.service.js";
 import type {
   CreateOnboardingDto,
   OnboardingCredentials,
@@ -49,6 +49,7 @@ export class OnboardingService {
     private readonly historyRepo: Repository<PatientStatusHistory>,
     @InjectRepository(AuditLog)
     private readonly auditRepo: Repository<AuditLog>,
+    private readonly aiClient: AiClientService,
   ) {}
 
   async createOnboarding(
@@ -270,51 +271,26 @@ export class OnboardingService {
     };
   }
 
+  /**
+   * Bridge to the AI service's treatment-card OCR.
+   *
+   * The draft is unconfirmed input for the form, never a saved treatment plan:
+   * the Nakes reviews every field and then posts `/api/faskes/onboarding`
+   * themselves. A failed scan is reported, not papered over with defaults.
+   */
   async extractOcr(file?: Express.Multer.File): Promise<OcrOnboardingDraft> {
-    const today = new Date().toISOString().slice(0, 10);
-    const targetEndDate = calculateTargetEndDate(today, 180);
-
     if (!file) {
-      return {
-        patientName: null,
-        regimenCode: "FDC-4",
-        dailyPillQuota: 4,
-        startDate: today,
-        targetEndDate,
-        confidence: 0.8,
-        rawText: "Template draft without image",
-      };
-    }
-
-    // Call FastAPI AI service or fallback
-    const aiServiceUrl = process.env.AI_SERVICE_URL || "http://localhost:8000";
-    try {
-      const formData = new FormData();
-      const blob = new Blob([new Uint8Array(file.buffer)], { type: file.mimetype });
-      formData.append("cardImage", blob, file.originalname);
-
-      const res = await fetch(`${aiServiceUrl}/ocr/extract`, {
-        method: "POST",
-        body: formData,
-        signal: AbortSignal.timeout(AI_SERVICE_TIMEOUT_MS),
+      throw new BadRequestException({
+        code: "INVALID_REQUEST",
+        message: "cardImage is required.",
       });
-
-      if (res.ok) {
-        return (await res.json()) as OcrOnboardingDraft;
-      }
-    } catch {
-      // Graceful fallback when FastAPI is offline in test or local dev
     }
 
-    return {
-      patientName: null,
-      regimenCode: "FDC-4",
-      dailyPillQuota: 4,
-      startDate: today,
-      targetEndDate,
-      confidence: 0.85,
-      rawText: `Scanned file: ${file.originalname}`,
-    };
+    return this.aiClient.extractOnboardingCard(
+      file.buffer,
+      file.originalname,
+      file.mimetype,
+    );
   }
 
 }
