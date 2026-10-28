@@ -36,11 +36,7 @@ export function RoleGuard({
   }, [data, isPending, router, allowed]);
 
   if (isPending) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-tiby-muted">
-        Loading...
-      </div>
-    );
+    return <>{children}</>;
   }
 
   if (!data?.user) return null;

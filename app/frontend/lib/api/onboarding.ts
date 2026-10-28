@@ -2,7 +2,7 @@ import { apiFetch } from "./client";
 import type {
   OnboardingPayload,
   OnboardingCredentials,
-  OcrOnboardingResult,
+  OcrOnboardingDraft,
 } from "../types/onboarding";
 
 export const onboardingApi = {
@@ -13,10 +13,10 @@ export const onboardingApi = {
     });
   },
 
-  async ocrExtract(file: File | Blob): Promise<OcrOnboardingResult> {
+  async ocrExtract(file: File | Blob): Promise<OcrOnboardingDraft> {
     const formData = new FormData();
     formData.append("cardImage", file); // Pastikan key 'cardImage' sesuai backend
-    return apiFetch<OcrOnboardingResult>("/api/faskes/onboarding/ocr", {
+    return apiFetch<OcrOnboardingDraft>("/api/faskes/onboarding/ocr", {
       method: "POST",
       body: formData,
     });

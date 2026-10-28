@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import { usersApi } from "@/lib/api/users";
 import { onboardingApi } from "@/lib/api/onboarding";
 import { usePopup } from "@/components/ui/popup-provider";
@@ -201,7 +201,6 @@ function Avatar({ name, size = "md" }: { name: string; size?: "md" | "lg" }) {
 
 export default function OnboardingForm() {
   const { confirm, notify } = usePopup();
-  const todayStr = new Date().toISOString().slice(0, 10);
 
   const [form, setForm] = useState<OnboardingPayload>({
     patient: { fullName: "", username: "", whatsappNumber: "" },
@@ -220,7 +219,7 @@ export default function OnboardingForm() {
     dailyPillQuota: 4,
     reminderTimeLocal: "08:00",
     timezone: "Asia/Jakarta",
-    startDate: todayStr,
+    startDate: "",
   });
 
   const [pmoMode, setPmoMode] = useState<PmoMode>("baru");
@@ -235,6 +234,15 @@ export default function OnboardingForm() {
   const [submitting, setSubmitting] = useState(false);
   const [createdCredentials, setCreatedCredentials] =
     useState<OnboardingCredentials | null>(null);
+
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    startTransition(() => {
+      setForm((prev) =>
+        prev.startDate ? prev : { ...prev, startDate: today },
+      );
+    });
+  }, []);
 
   const handleSwitchToExistingPmo = async () => {
     setPmoMode("existing");
@@ -418,7 +426,7 @@ export default function OnboardingForm() {
       dailyPillQuota: 4,
       reminderTimeLocal: "08:00",
       timezone: "Asia/Jakarta",
-      startDate: todayStr,
+      startDate: new Date().toISOString().slice(0, 10),
     });
   };
 

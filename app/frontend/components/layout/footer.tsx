@@ -1,7 +1,16 @@
+"use client";
+
+import { startTransition, useEffect, useState } from "react";
 import { Heart } from "lucide-react";
 
 export default function Footer() {
-  const currentYear = new Date().getFullYear();
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
+
+  useEffect(() => {
+    startTransition(() => {
+      setCurrentYear(new Date().getFullYear());
+    });
+  }, []);
 
   return (
     <footer className="mt-auto w-full border-t border-gray-100 pt-6 pb-16 md:pb-0 px-6 md:px-8">
@@ -12,7 +21,8 @@ export default function Footer() {
           </p>
           <span className="hidden md:inline text-gray-300">|</span>
           <p className="text-xs text-tiby-muted">
-            &copy; {currentYear} Tim Argon - Universitas Darussalam Gontor.
+            &copy; {currentYear ?? "…"} Tim Argon - Universitas Darussalam
+            Gontor.
           </p>
         </div>
 
