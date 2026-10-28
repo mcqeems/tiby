@@ -113,7 +113,11 @@ export default function CheckInView({
 
   return (
     <div className="flex h-full w-full flex-1 flex-col">
-      <div className="m-auto w-full max-w-md py-6">
+      <div
+        className={`m-auto w-full py-6 ${
+          state.step === "fallback" ? "max-w-3xl" : "max-w-md"
+        }`}
+      >
         {role === "PMO" && state.step === "record" && !urlPatientId && (
         <div className="mb-6 p-5 bg-white border border-tiby-teal-100 rounded-2xl shadow-sm">
           <label className="text-xs font-bold text-tiby-ink mb-2 block">

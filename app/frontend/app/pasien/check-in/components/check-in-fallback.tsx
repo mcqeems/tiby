@@ -76,7 +76,7 @@ export default function CheckInFallback({
   };
 
   return (
-    <div className="w-full max-w-md rounded-3xl border border-gray-100 bg-white p-6 shadow-xl">
+    <div className="w-full rounded-3xl border border-gray-100 bg-white p-6 shadow-xl">
       <div className="mb-6 flex items-center">
         {step > 1 ? (
           <button

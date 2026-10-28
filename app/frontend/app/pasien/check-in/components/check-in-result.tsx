@@ -411,9 +411,6 @@ export default function CheckInResult({ result }: CheckInResultProps) {
           </div>
         )}
 
-        <p className="mt-3 break-all border-t border-gray-100 pt-2 font-mono text-[9px] text-tiby-muted">
-          ID laporan: {result.checkInId}
-        </p>
       </div>
 
       {result.educationalCard && (
