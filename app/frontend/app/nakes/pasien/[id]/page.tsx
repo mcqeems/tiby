@@ -685,7 +685,6 @@ export default function PatientDetailPage() {
             onClick={loadMoreHistory}
           />
 
-          <FamilyContactsCard patientId={patientId} viewer="nakes" />
         </div>
 
         {/* ─── KANAN: SIDEBAR INFO & RESET PW ─── */}
@@ -698,6 +697,8 @@ export default function PatientDetailPage() {
               </InfoRow>
             </dl>
           </DetailCard>
+
+          <FamilyContactsCard patientId={patientId} viewer="nakes" />
 
           {/* ✅ KARTU PMO & RESET PASSWORD PMO */}
           <DetailCard icon={Users} title="Pengawas (PMO)">

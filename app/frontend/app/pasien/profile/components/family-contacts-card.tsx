@@ -131,7 +131,7 @@ export default function FamilyContactsCard({
   };
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs mt-6">
+    <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
       <header className="flex items-center justify-between border-b border-gray-100 bg-linear-to-r from-tiby-teal-50/70 to-white px-6 py-4 sm:px-8">
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-tiby-teal-700 shadow-sm ring-1 ring-tiby-teal-100">
@@ -192,7 +192,7 @@ export default function FamilyContactsCard({
             </button>
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             {contacts.map((contact) => (
               <div
                 key={contact.id}
