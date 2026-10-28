@@ -1,54 +1,72 @@
-import { readFileSync } from "node:fs";
-import { globSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 /**
- * Guards for the two invariants a leak would be silent and costly:
- * zero-stigma outbound copy, and PMO transcript blindness.
+ * Guards for the invariants a leak would be silent and costly:
+ * zero-stigma copy, and PMO transcript blindness.
  * See AGENTS.md "Invariants (do not break)".
+ *
+ * These read source files instead of rendering, so they run without a DOM.
  */
 
+const filesUnder = (dir: string, match: RegExp): string[] =>
+  readdirSync(dir, { recursive: true })
+    .map(String)
+    .filter((f) => match.test(f))
+    .map((f) => `${dir}/${f}`);
+
 const read = (paths: string[]) =>
-  paths.map((p) => ({ path: p, text: readFileSync(p, "utf8") }));
+  paths.map((path) => ({ path, text: readFileSync(path, "utf8") }));
+
+const offenders = (paths: string[], pattern: RegExp) =>
+  read(paths)
+    .filter((f) => pattern.test(f.text))
+    .map((f) => f.path);
 
 const FORBIDDEN = /TBC|Tuberkulosis|tuberkulosis/;
 
 describe("zero-stigma copy", () => {
   it("outbound message surfaces never name the disease", () => {
     const files = read([
-      ...globSync("components/push/**/*.tsx"),
-      ...globSync("components/whatsapp/**/*.tsx"),
-      ...globSync("components/notifications/**/*.tsx"),
+      ...filesUnder("components/push", /\.tsx$/),
+      ...filesUnder("components/whatsapp", /\.tsx$/),
+      ...filesUnder("components/notifications", /\.tsx$/),
     ]);
     expect(files.length).toBeGreaterThan(0);
-    const offenders = files.filter((f) => FORBIDDEN.test(f.text)).map((f) => f.path);
-    expect(offenders).toEqual([]);
+    expect(files.filter((f) => FORBIDDEN.test(f.text)).map((f) => f.path)).toEqual([]);
   });
 
-  it("the in-app system messages rendered by the popup never name it", () => {
-    const offenders = read(["lib/push-utils.ts"])
-      .filter((f) => FORBIDDEN.test(f.text))
-      .map((f) => f.path);
-    expect(offenders).toEqual([]);
+  it("the in-app system messages never name it", () => {
+    expect(offenders(["lib/push-utils.ts"], FORBIDDEN)).toEqual([]);
+  });
+
+  it("no signed-in route describes the patient by disease in its metadata", () => {
+    // app/layout.tsx and app/page.tsx are the public marketing surface and
+    // name the disease on purpose; everything behind auth does not.
+    const files = read([
+      ...filesUnder("app/admin", /page\.tsx$/),
+      ...filesUnder("app/nakes", /page\.tsx$/),
+      ...filesUnder("app/pmo", /page\.tsx$/),
+      ...filesUnder("app/pasien", /page\.tsx$/),
+      ...filesUnder("app/dashboard", /page\.tsx$/),
+    ]);
+    expect(files.length).toBeGreaterThan(0);
+    expect(files.filter((f) => FORBIDDEN.test(f.text)).map((f) => f.path)).toEqual([]);
   });
 });
 
 describe("PMO transcript blindness", () => {
   it("no PMO screen reads transcripts or symptom detail", () => {
-    const files = read(globSync("app/pmo/**/*.tsx"));
+    const files = read(filesUnder("app/pmo", /\.tsx$/));
     expect(files.length).toBeGreaterThan(0);
-    const offenders = files
-      .filter((f) => /transcript/i.test(f.text))
-      .map((f) => f.path);
-    expect(offenders).toEqual([]);
+    expect(offenders(files.map((f) => f.path), /transcript/i)).toEqual([]);
   });
 });
 
 describe("consent gate", () => {
   it("both patient-facing layouts mount the consent modal", () => {
     for (const layout of ["app/pasien/layout.tsx", "app/pmo/layout.tsx"]) {
-      const text = readFileSync(layout, "utf8");
-      expect(text, layout).toContain("ConsentModal");
+      expect(readFileSync(layout, "utf8"), layout).toContain("ConsentModal");
     }
   });
 });

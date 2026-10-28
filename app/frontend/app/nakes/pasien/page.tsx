@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Daftar Pasien Nakes",
   description:
-    "Pantau status risiko dan kepatuhan seluruh pasien TBC di fasilitas kesehatan Anda.",
+    "Pantau status risiko dan kepatuhan pasien di fasilitas kesehatan Anda.",
   robots: "noindex, nofollow",
 };
 

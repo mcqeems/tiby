@@ -210,7 +210,7 @@ export default function EducationManager({
           <p className="text-sm text-tiby-muted">
             {scope === "admin"
               ? "Materi admin berlaku untuk semua faskes."
-              : "Materi bacaan untuk pasien TBC."}
+              : "Materi bacaan untuk pasien."}
           </p>
         </div>
         <button
