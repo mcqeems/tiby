@@ -24,6 +24,9 @@ const offenders = (paths: string[], pattern: RegExp) =>
     .map((f) => f.path);
 
 const FORBIDDEN = /TBC|Tuberkulosis|tuberkulosis/;
+/** The disease name the app promises not to use, including the short form
+ * that slipped into the Tanya Pandu starter questions. */
+const FORBIDDEN_STRICT = /\bTB\b|anti-TB|TBC|Tuberkulosis/;
 
 describe("zero-stigma copy", () => {
   it("outbound message surfaces never name the disease", () => {
@@ -40,6 +43,12 @@ describe("zero-stigma copy", () => {
     expect(offenders(["lib/push-utils.ts"], FORBIDDEN)).toEqual([]);
   });
 
+  it("the Tanya Pandu copy never names the disease", () => {
+    const files = read(filesUnder("components/guidance", /\.tsx$/));
+    expect(files.length).toBeGreaterThan(0);
+    expect(files.filter((f) => FORBIDDEN_STRICT.test(f.text)).map((f) => f.path)).toEqual([]);
+  });
+
   it("no signed-in route describes the patient by disease in its metadata", () => {
     // app/layout.tsx and app/page.tsx are the public marketing surface and
     // name the disease on purpose; everything behind auth does not.
@@ -51,7 +60,7 @@ describe("zero-stigma copy", () => {
       ...filesUnder("app/dashboard", /page\.tsx$/),
     ]);
     expect(files.length).toBeGreaterThan(0);
-    expect(files.filter((f) => FORBIDDEN.test(f.text)).map((f) => f.path)).toEqual([]);
+    expect(files.filter((f) => FORBIDDEN_STRICT.test(f.text)).map((f) => f.path)).toEqual([]);
   });
 });
 

@@ -119,9 +119,5 @@ export function useGuidance() {
     [ask],
   );
 
-  const dismiss = useCallback((id: string) => {
-    setTurns((current) => current.filter((turn) => turn.id !== id));
-  }, []);
-
-  return { turns, thinking, elapsedMs, ask, stop, retry, dismiss };
+  return { turns, thinking, elapsedMs, ask, stop, retry };
 }
