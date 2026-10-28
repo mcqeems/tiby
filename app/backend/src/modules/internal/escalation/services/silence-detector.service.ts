@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, In } from "typeorm";
+import { Repository, In, LessThanOrEqual, MoreThanOrEqual } from "typeorm";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { TreatmentPlan } from "../../../patients/entities/treatment-plan.entity.js";
 import { DailyCheckIn } from "../../../check-ins/entities/daily-check-in.entity.js";
@@ -9,6 +9,32 @@ import { PatientStatusHistory } from "../../../patients/entities/patient-status-
 import { InterventionTicket } from "../../../tickets/entities/intervention-ticket.entity.js";
 import { FacilityAlert } from "../../../alerts/entities/facility-alert.entity.js";
 import { NotificationTriggerEvent } from "../../../../common/events/notification-trigger.event.js";
+
+function pad(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+/** `YYYY-MM-DD` in the server's local calendar. */
+export function localDateString(date: Date): string {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/**
+ * The calendar day that just ended where the cron runs.
+ *
+ * The cron fires at server-local midnight. `toISOString()` is UTC, which in
+ * WIB (UTC+7) points one day too far back at that instant (2026-10-28 00:00
+ * WIB is still 2026-10-27 17:00 UTC), so a one-day absence was not detected
+ * until the following midnight.
+ *
+ * ponytail: one server timezone; group by plan.timezone if multi-TZ support
+ * is ever needed.
+ */
+export function previousLocalDate(now: Date): string {
+  return localDateString(
+    new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1),
+  );
+}
 
 @Injectable()
 export class SilenceDetectorService {
@@ -35,13 +61,16 @@ export class SilenceDetectorService {
   }
 
   async runMidnightSilenceCheck(targetDateStr?: string): Promise<{ processed: number; silenced: number }> {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const dateToCheck = targetDateStr || yesterday.toISOString().slice(0, 10);
+    const dateToCheck = targetDateStr || previousLocalDate(new Date());
 
     const activePlans = await this.planRepo.find({
       where: {
-        patientState: In(["AKTIF", "BERISIKO"]),
+        // PUTUS_FOLLOW_UP keeps counting silence / resetting the streak; the
+        // escalation ladder below never fires again for it.
+        patientState: In(["AKTIF", "BERISIKO", "PUTUS_FOLLOW_UP"]),
+        // A plan that has not started, or has already ended, is not "absent".
+        startDate: LessThanOrEqual(dateToCheck),
+        targetEndDate: MoreThanOrEqual(dateToCheck),
       },
       relations: {
         patientUser: true,
@@ -103,8 +132,14 @@ export class SilenceDetectorService {
           }),
         );
 
-        // Escalation Ladder
-        if (plan.consecutiveSilenceDays === 1) {
+        // Escalation ladder. Only exact thresholds fire, so H+3 does not
+        // reopen a ticket every day after the third missed dose.
+        const silence = plan.consecutiveSilenceDays;
+
+        if (previousState === "PUTUS_FOLLOW_UP") {
+          // Counters keep moving; a lost patient is never escalated again,
+          // and silence must not downgrade them back to BERISIKO.
+        } else if (silence === 1) {
           this.eventEmitter.emit(
             "notification.trigger",
             new NotificationTriggerEvent(
@@ -114,7 +149,7 @@ export class SilenceDetectorService {
               plan.patientUserId,
             ),
           );
-        } else if (plan.consecutiveSilenceDays === 2) {
+        } else if (silence === 2) {
           plan.patientState = "BERISIKO";
           plan.riskScore += 15;
 
@@ -148,10 +183,8 @@ export class SilenceDetectorService {
               "KELUARGA",
             ),
           );
-        } else if (plan.consecutiveSilenceDays >= 3) {
-          const prolonged = plan.consecutiveSilenceDays >= 7;
-          const newState = prolonged ? "PUTUS_FOLLOW_UP" : "BERISIKO";
-          plan.patientState = newState;
+        } else if (silence === 3) {
+          plan.patientState = "BERISIKO";
           plan.riskScore += 25;
 
           // Open SILENCE_H3 critical intervention ticket
@@ -171,7 +204,7 @@ export class SilenceDetectorService {
               treatmentPlanId: plan.id,
               eventType: "TICKET_OPENED",
               previousState,
-              newState,
+              newState: plan.patientState,
               previousStreak: 0,
               newStreak: 0,
               actorRole: "SYSTEM",
@@ -197,7 +230,7 @@ export class SilenceDetectorService {
               treatmentPlanId: plan.id,
               eventType: "STATE_TRANSITION",
               previousState,
-              newState,
+              newState: plan.patientState,
               previousStreak: 0,
               newStreak: 0,
               actorRole: "SYSTEM",
@@ -221,6 +254,23 @@ export class SilenceDetectorService {
               plan.id,
               "KELUARGA",
             ),
+          );
+        } else if (silence >= 7) {
+          // Prolonged silence: the ladder ends here, once.
+          plan.patientState = "PUTUS_FOLLOW_UP";
+          plan.riskScore += 10;
+
+          await this.historyRepo.save(
+            this.historyRepo.create({
+              treatmentPlanId: plan.id,
+              eventType: "STATE_TRANSITION",
+              previousState,
+              newState: "PUTUS_FOLLOW_UP",
+              previousStreak: 0,
+              newStreak: 0,
+              actorRole: "SYSTEM",
+              reasonOrSummary: `Prolonged silence (${silence} days): moved to PUTUS_FOLLOW_UP`,
+            }),
           );
         }
 

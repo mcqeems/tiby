@@ -194,4 +194,110 @@ describe("SilenceDetectorService Unit Tests", () => {
     expect(plans[0].consecutiveSilenceDays).toBe(0); // fulfilled -> untouched
     expect(plans[1].consecutiveSilenceDays).toBe(1); // missed -> incremented
   });
+  it("checks the day that just ended in local time, not the UTC day", async () => {
+    vi.useFakeTimers();
+    try {
+      // 2026-10-28 00:00 local (WIB). toISOString() is still 2026-10-27 17:00Z.
+      vi.setSystemTime(new Date(2026, 9, 28, 0, 0, 0));
+      mockPlanRepo.find.mockResolvedValue([
+        { id: "plan-1", patientState: "AKTIF", currentStreak: 1, consecutiveSilenceDays: 0, facilityId: "f1" },
+      ]);
+
+      await service.runMidnightSilenceCheck();
+
+      expect(mockCheckInRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ checkInDate: "2026-10-27" }),
+        }),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("queries lost patients and only plans inside their treatment window", async () => {
+    mockPlanRepo.find.mockResolvedValue([]);
+
+    await service.runMidnightSilenceCheck("2026-10-27");
+
+    const where = mockPlanRepo.find.mock.calls[0][0].where;
+    expect(where.patientState.value).toEqual([
+      "AKTIF",
+      "BERISIKO",
+      "PUTUS_FOLLOW_UP",
+    ]);
+    expect(where.startDate).toBeDefined();
+    expect(where.targetEndDate).toBeDefined();
+  });
+
+  it("does not reopen an H+3 ticket after day 3", async () => {
+    const plan = {
+      id: "plan-1",
+      patientUserId: "user-1",
+      facilityId: "faskes-1",
+      patientState: "BERISIKO",
+      currentStreak: 0,
+      consecutiveSilenceDays: 3,
+      riskScore: 40,
+    };
+    mockPlanRepo.find.mockResolvedValue([plan]);
+    mockCheckInRepo.find.mockResolvedValue([]);
+
+    await service.runMidnightSilenceCheck("2026-10-16");
+
+    expect(plan.consecutiveSilenceDays).toBe(4);
+    expect(mockTicketRepo.save).not.toHaveBeenCalled();
+    expect(mockAlertRepo.save).not.toHaveBeenCalled();
+    expect(mockEventEmitter.emit).not.toHaveBeenCalled();
+  });
+
+  it("moves to PUTUS_FOLLOW_UP once at day 7", async () => {
+    const plan = {
+      id: "plan-1",
+      patientUserId: "user-1",
+      facilityId: "faskes-1",
+      patientState: "BERISIKO",
+      currentStreak: 0,
+      consecutiveSilenceDays: 6,
+      riskScore: 40,
+    };
+    mockPlanRepo.find.mockResolvedValue([plan]);
+    mockCheckInRepo.find.mockResolvedValue([]);
+
+    await service.runMidnightSilenceCheck("2026-10-19");
+
+    expect(plan.consecutiveSilenceDays).toBe(7);
+    expect(plan.patientState).toBe("PUTUS_FOLLOW_UP");
+    expect(plan.riskScore).toBe(50);
+    expect(mockHistoryRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: "STATE_TRANSITION",
+        newState: "PUTUS_FOLLOW_UP",
+      }),
+    );
+    expect(mockTicketRepo.save).not.toHaveBeenCalled();
+    expect(mockEventEmitter.emit).not.toHaveBeenCalled();
+  });
+
+  it("keeps counting silence for a lost patient without escalating again", async () => {
+    const plan = {
+      id: "plan-1",
+      patientUserId: "user-1",
+      facilityId: "faskes-1",
+      patientState: "PUTUS_FOLLOW_UP",
+      currentStreak: 0,
+      consecutiveSilenceDays: 9,
+      riskScore: 50,
+    };
+    mockPlanRepo.find.mockResolvedValue([plan]);
+    mockCheckInRepo.find.mockResolvedValue([]);
+
+    await service.runMidnightSilenceCheck("2026-10-21");
+
+    expect(plan.consecutiveSilenceDays).toBe(10);
+    expect(plan.patientState).toBe("PUTUS_FOLLOW_UP");
+    expect(mockTicketRepo.save).not.toHaveBeenCalled();
+    expect(mockAlertRepo.save).not.toHaveBeenCalled();
+    expect(mockEventEmitter.emit).not.toHaveBeenCalled();
+  });
 });
