@@ -1,39 +1,34 @@
 """Provider-facing types shared by the HTTP layer.
 
-Protocols describe what the service needs from providers; the error taxonomy
-lets the routes map failures onto contract status codes — 503 not configured,
-504 timeout, 502 everything else — while providers stay free of HTTP concerns.
+Error taxonomy lets routes map failures onto contract status codes:
+503 not configured, 504 timeout, 502 everything else.
 """
 
+import os
 from dataclasses import dataclass
 from typing import ClassVar, Protocol
 
 from contracts import CheckInRequest, CheckInResponse
 
 
-class CheckInExtractor(Protocol):
-    """Anything that turns a check-in request into extracted facts."""
-
-    async def extract(self, request: CheckInRequest) -> CheckInResponse: ...
-
-
 @dataclass(frozen=True)
 class Transcription:
-    """Result of one speech-to-text run, with the provider that produced it."""
+    """Result of one speech-to-text run."""
 
     text: str
     provider: str
     model: str
 
 
-class Transcriber(Protocol):
-    """Speech-to-text adapter contract.
+# --- Protocols (kontrak interface) ---
+class CheckInExtractor(Protocol):
+    """Anything that turns a check-in request into extracted facts."""
 
-    Implementations expose their accepted upload limits and raise:
-    - ProviderConfigurationError when credentials are missing;
-    - ProviderTimeoutError when the upstream call times out;
-    - TranscriptionError for any other provider failure.
-    """
+    async def extract(self, request: CheckInRequest) -> CheckInResponse: ...
+
+
+class Transcriber(Protocol):
+    """Speech-to-text adapter contract."""
 
     supported_content_types: ClassVar[set[str]]
     max_upload_bytes: int
@@ -43,17 +38,38 @@ class Transcriber(Protocol):
     ) -> Transcription: ...
 
 
+# --- Error taxonomy ---
 class ProviderConfigurationError(RuntimeError):
-    pass
+    """Credentials or endpoint missing."""
 
 
 class ProviderError(RuntimeError):
-    pass
+    """Any provider failure other than timeout/config."""
 
 
 class ProviderTimeoutError(ProviderError):
-    pass
+    """Upstream call timed out."""
 
 
 class TranscriptionError(ProviderError):
-    pass
+    """Speech-to-text failed."""
+
+
+# --- Env helpers ---
+
+def env_str(key: str, default: str = "") -> str:
+    return os.getenv(key, default).strip()
+
+
+def env_float(key: str, default: float) -> float:
+    try:
+        return float(os.getenv(key, str(default)))
+    except ValueError:
+        return default
+
+
+def env_int(key: str, default: int) -> int:
+    try:
+        return int(os.getenv(key, str(default)))
+    except ValueError:
+        return default

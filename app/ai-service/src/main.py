@@ -1,85 +1,24 @@
 """HTTP surface of the AI service.
 
-Every route follows the OpenCollection contract in ``shared/api-contract``
-(Bruno format); all error responses
-use the same ``ApiError`` envelope, and provider failures map to contract
-status codes (503 not configured, 504 timeout, 502 anything else) without
-leaking credentials. Dependency wiring (extractor/transcriber factories)
-happens here so the providers stay free of transport and env concerns.
+Mounts the per-domain routers; all error envelopes and OpenAPI error
+documentation live in :mod:`errors`. Dependency wiring (retriever
+lifespan) stays here because it is app-scoped, not route-scoped.
 """
 
 from contextlib import asynccontextmanager
-from typing import Any
 
-from fastapi import FastAPI, File, Request, UploadFile
+from dotenv import load_dotenv
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from contracts import (
-    AiAudioExtractionResponse,
-    ApiError,
-    CheckInRequest,
-    GuidanceRequest,
-    GuidanceResponse,
-    TranscriptResponse,
-)
 from errors import api_error
-from extraction.mapper import to_backend_extraction
-from extraction.service import extract_check_in as run_extraction
-from extraction.service import transcribe_audio
+from extraction.router import router as extraction_router
 from guidance.retrieval import SQLiteRetriever
-from guidance.service import GroundedAnswerer, pack_evidence
-from onboarding_ocr import router as onboarding_ocr_router
-from providers.base import (
-    ProviderConfigurationError,
-    ProviderError,
-    ProviderTimeoutError,
-)
-from providers.factory import (
-    extraction_service,
-    transcription_service,
-)
+from guidance.router import router as guidance_router
+from onboarding_ocr.router import router as onboarding_ocr_router
 
-EXTRACTION_ERRORS: dict[int | str, dict[str, Any]] = {
-    422: {"model": ApiError, "description": "Request validation failed."},
-    502: {
-        "model": ApiError,
-        "description": "Extraction provider failed or returned invalid output.",
-    },
-    503: {
-        "model": ApiError,
-        "description": "Extraction provider is not configured on the server.",
-    },
-    504: {"model": ApiError, "description": "Extraction provider timed out."},
-}
-AUDIO_ERRORS: dict[int | str, dict[str, Any]] = {
-    413: {
-        "model": ApiError,
-        "description": "Audio file is empty or exceeds the 10 MB limit.",
-    },
-    415: {"model": ApiError, "description": "Unsupported audio content type."},
-    502: {
-        "model": ApiError,
-        "description": "Transcription provider failed.",
-    },
-    503: {
-        "model": ApiError,
-        "description": "Transcription provider is not configured on the server.",
-    },
-    504: {
-        "model": ApiError,
-        "description": "Transcription provider timed out.",
-    },
-}
-
-
-GUIDANCE_ERRORS: dict[int | str, dict[str, Any]] = {
-    422: {"model": ApiError, "description": "Request validation failed."},
-    503: {
-        "model": ApiError,
-        "description": "Guidance provider is not configured on the server.",
-    },
-}
+load_dotenv()
 
 
 @asynccontextmanager
@@ -97,11 +36,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Domain modules own their own routes, the way each NestJS module declares its
-# controllers; this file only composes the application.
+
+# Routers
 app.include_router(onboarding_ocr_router)
+app.include_router(extraction_router)
+app.include_router(guidance_router)
 
 
+# Exception handlers
 @app.exception_handler(RequestValidationError)
 async def request_validation_handler(
     _: Request, __: RequestValidationError
@@ -110,122 +52,14 @@ async def request_validation_handler(
     return api_error(422, "INVALID_REQUEST", "Request does not match the API contract.")
 
 
-@app.get("/ai/health")
+# Health
+@app.get("/ai/health", tags=["health"])
+@app.get("/health", include_in_schema=False)
 def health() -> dict[str, str]:
-    """Liveness probe for orchestrators and dev scripts."""
+    """Liveness probe for orchestrators and dev scripts.
+
+    ``/health`` is a private alias for infrastructure probes (containers, dev
+    harnesses) that assume the conventional path; it stays out of the OpenAPI
+    contract, so the public route is still ``/ai/health``.
+    """
     return {"status": "ok"}
-
-
-@app.post(
-    "/ai/extractions/check-in",
-    response_model=AiAudioExtractionResponse,
-    response_model_exclude_unset=True,
-    responses=EXTRACTION_ERRORS,
-)
-@app.post(
-    "/text/extract",
-    response_model=AiAudioExtractionResponse,
-    response_model_exclude_unset=True,
-    responses=EXTRACTION_ERRORS,
-    include_in_schema=False,
-)
-async def extract_check_in_endpoint(
-    request: CheckInRequest,
-) -> AiAudioExtractionResponse | JSONResponse:
-    """Extract structured facts from a check-in transcript.
-
-    Facts only: the response never contains a diagnosis, risk level, or
-    treatment instruction, and null means the transcript did not state it.
-    """
-    try:
-        result = await run_extraction(extraction_service(), request)
-        return to_backend_extraction(request.transcript, result)
-    except ProviderConfigurationError as exc:
-        return api_error(503, "INTERNAL", str(exc))
-    except ProviderTimeoutError as exc:
-        return api_error(504, "PROVIDER_TIMEOUT", str(exc))
-    except ProviderError as exc:
-        return api_error(502, "EXTRACTION_FAILED", str(exc))
-
-
-@app.post("/ai/guidance", response_model=GuidanceResponse, responses=GUIDANCE_ERRORS)
-async def guidance_endpoint(
-    payload: GuidanceRequest, request: Request,
-) -> GuidanceResponse | JSONResponse:
-    """Answer a general educational question from approved-source evidence.
-
-    Fails closed (``answer: null``) when no evidence matches or when the local
-    guard detects a personal decision request such as dosing or start/stop
-    questions; citations are allowlisted against the retrieved evidence.
-    """
-    retriever = getattr(request.app.state, "guidance_retriever", None)
-    if retriever is None:
-        retriever = request.app.state.guidance_retriever = SQLiteRetriever()
-    question = payload.question
-    if payload.transcript:
-        question = f"{payload.question} {payload.transcript}"
-    evidence = retriever.search(question, limit=4)
-    if not evidence:
-        return GuidanceResponse(
-            answer=None,
-            grounded=False,
-            limitations=[
-                "Belum ada evidence yang cocok dari dokumen rujukan resmi.",
-                "Informasi ini bukan diagnosis atau instruksi pengobatan.",
-            ],
-        )
-    try:
-        if getattr(request.app.state, "guidance_answerer", None) is None:
-            request.app.state.guidance_answerer = GroundedAnswerer()
-        return await request.app.state.guidance_answerer.answer(
-            payload.question, payload.transcript, pack_evidence(evidence)
-        )
-    except ProviderConfigurationError as exc:
-        return api_error(503, "INTERNAL", str(exc))
-    except ProviderError as exc:
-        return GuidanceResponse(answer=None, grounded=False, limitations=[str(exc)])
-
-
-@app.post(
-    "/ai/extractions/check-in/audio",
-    response_model=TranscriptResponse,
-    response_model_exclude_unset=True,
-    responses=AUDIO_ERRORS,
-)
-@app.post(
-    "/audio/extract",
-    response_model=TranscriptResponse,
-    response_model_exclude_unset=True,
-    responses=AUDIO_ERRORS,
-    include_in_schema=False,
-)
-async def extract_audio_endpoint(
-    audio: UploadFile = File(...),  # noqa: B008 - FastAPI requires File metadata here.
-) -> TranscriptResponse | JSONResponse:
-    """Transcribe an uploaded check-in audio file.
-
-    The response carries the transcript only: facts are extracted in a second,
-    JSON call (``/ai/extractions/check-in``) after the patient confirms or
-    corrects the transcript. Every other outcome is a JSON body, errors
-    included, so the bridge never has to parse prose.
-    """
-    transcriber = transcription_service()
-    if audio.content_type not in transcriber.supported_content_types:
-        return api_error(415, "INVALID_REQUEST", "Unsupported audio content type.")
-    content = await audio.read(transcriber.max_upload_bytes + 1)
-    if not content or len(content) > transcriber.max_upload_bytes:
-        return api_error(
-            413, "INVALID_REQUEST", "Audio must be between 1 byte and 10 MB."
-        )
-    try:
-        transcription = await transcribe_audio(
-            transcriber, content, audio.filename or "check-in.wav"
-        )
-    except ProviderConfigurationError as exc:
-        return api_error(503, "INTERNAL", str(exc))
-    except ProviderTimeoutError as exc:
-        return api_error(504, "PROVIDER_TIMEOUT", str(exc))
-    # TranscriptionError is a ProviderError; keep the message the same either way.
-    except ProviderError:
-        return api_error(502, "EXTRACTION_FAILED", "Speech transcription failed.")
-    return TranscriptResponse(transcript=transcription.text)

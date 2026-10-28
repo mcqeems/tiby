@@ -1,7 +1,7 @@
 import pytest
 
 from contracts import CheckInResponse
-from extraction.mapper import to_backend_extraction
+from extraction.extractor import to_backend_extraction
 
 
 def result(*, taken, intent, symptoms=None, confidence=0.9):

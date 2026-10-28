@@ -1,4 +1,3 @@
-import os
 from typing import ClassVar
 
 import httpx
@@ -8,15 +7,17 @@ from providers.base import (
     ProviderTimeoutError,
     Transcription,
     TranscriptionError,
+    env_float,
+    env_int,
+    env_str,
 )
 
 
 class FishAudioTranscriber:
-    """Fish Audio speech-to-text adapter (opt-in via ``TIBY_TRANSCRIBER=fish``)."""
+    """Fish Audio speech-to-text adapter (opt-in via TIBY_TRANSCRIBER=fish)."""
 
-    endpoint = "https://api.fish.audio/v1/asr"
-    model = "transcribe-1-pro"
     max_upload_bytes = 10 * 1024 * 1024
+
     supported_content_types: ClassVar[set[str]] = {
         "audio/wav",
         "video/wav",
@@ -30,18 +31,28 @@ class FishAudioTranscriber:
         "video/ogg",
     }
 
-    def __init__(self, *, api_token: str | None = None, timeout_seconds: float = 60.0):
+    def __init__(
+        self, *, api_token: str | None = None, timeout_seconds: float | None = None
+    ):
         self.api_token = (
-            api_token or os.getenv("FISH_AUDIO_API_TOKEN") or os.getenv("FISH_API_KEY")
+            api_token or env_str("FISH_AUDIO_API_TOKEN") or env_str("FISH_API_KEY")
         )
-        self.timeout_seconds = timeout_seconds
+        self.endpoint = env_str("FISH_ENDPOINT")
+        self.model = env_str("FISH_MODEL", "transcribe-1-pro")
+        self.timeout_seconds = timeout_seconds or env_float(
+            "FISH_TIMEOUT_SECONDS", 60.0
+        )
+        self.max_upload_bytes = env_int(
+            "MAX_AUDIO_UPLOAD_BYTES", type(self).max_upload_bytes
+        )
 
     async def transcribe(
         self, audio: bytes, filename: str = "check-in.wav"
     ) -> Transcription:
-        """Transcribe raw audio bytes; raises ProviderConfigurationError without a token."""
         if not self.api_token:
             raise ProviderConfigurationError("FISH_AUDIO_API_TOKEN is not configured.")
+        if not self.endpoint:
+            raise ProviderConfigurationError("FISH_ENDPOINT is not configured.")
         try:
             async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
                 response = await client.post(
