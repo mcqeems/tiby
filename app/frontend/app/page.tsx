@@ -1,20 +1,30 @@
-export default function Home() {
+"use client";
+
+import { MotionConfig } from "motion/react";
+import Navbar from "../components/landing/navbar";
+import Hero from "../components/landing/hero";
+import Features from "../components/landing/features";
+import Personas from "../components/landing/personas";
+import Testimonials from "../components/landing/testimonials";
+import CTA from "../components/landing/cta";
+import FAQ from "../components/landing/faq";
+import Footer from "../components/landing/footer";
+
+export default function LandingPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-tiby-white px-4">
-      <div className="text-center">
-        <h1 className="font-heading text-3xl font-600 text-tiby-ink">
-          Tiby
-        </h1>
-        <p className="mt-2 text-sm text-tiby-muted font-body">
-          Pendamping harian kesehatan Anda
-        </p>
-        <a
-          href="/login"
-          className="mt-6 inline-block rounded-full bg-tiby-teal-600 px-6 py-3 text-white font-medium font-body transition hover:bg-tiby-teal-700"
-        >
-          Masuk
-        </a>
+    <MotionConfig reducedMotion="user">
+      <div className="min-h-screen overflow-x-clip bg-white font-body text-tiby-ink selection:bg-tiby-teal-100 selection:text-tiby-teal-700">
+        <Navbar />
+        <main>
+          <Hero />
+          <Features />
+          <Personas />
+          <Testimonials />
+          <CTA />
+          <FAQ />
+        </main>
+        <Footer />
       </div>
-    </div>
+    </MotionConfig>
   );
 }
