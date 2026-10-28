@@ -111,7 +111,6 @@ function Stepper() {
 function SectionCard({
   id,
   icon: Icon,
-  eyebrow,
   title,
   description,
   aside,
@@ -134,10 +133,9 @@ function SectionCard({
       >
         <div className="flex items-center gap-3.5">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-tiby-teal-700 shadow-sm ring-1 ring-tiby-teal-100">
-            <Icon className="h-[18px] w-[18px]" />
+            <Icon className="h-4.5 w-4.5" />
           </span>
           <div className="min-w-0">
-       
             <h3 className="font-heading text-base font-semibold leading-tight text-tiby-ink">
               {title}
             </h3>
@@ -244,7 +242,6 @@ export default function OnboardingForm() {
 
     setLoadingUsers(true);
     try {
-      // ✅ FIX 4: Panggil usersApi.list()
       const res = await usersApi.list({ role: "PMO", limit: 100 });
       setExistingUsers(res.items as ExistingUser[]);
     } catch {
@@ -358,7 +355,7 @@ export default function OnboardingForm() {
           includeFamily && form.familyContact?.fullName
             ? form.familyContact
             : undefined,
-        pmo: form.pmo, // Default
+        pmo: form.pmo,
       };
 
       if (pmoMode === "existing" && selectedExistingPmo) {
@@ -369,7 +366,11 @@ export default function OnboardingForm() {
       }
 
       const creds = await onboardingApi.onboard(payload);
-      setCreatedCredentials(creds);
+
+      setCreatedCredentials({
+        ...creds,
+        pmoCreated: creds.pmoCreated ?? pmoMode === "baru",
+      });
 
       await notify({
         variant: "success",

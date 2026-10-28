@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { usePopup } from "@/components/ui/popup-provider";
-import type { OnboardingCredentials } from "@tiby/ts-shared";
+import type { OnboardingCredentials } from "@/lib/types/onboarding";
 import {
   Check,
   Copy,
@@ -19,10 +19,6 @@ interface OnboardingSuccessCardProps {
   credentials: OnboardingCredentials;
   onReset: () => void;
 }
-
-/* ────────────────────────────────────────────────────────────────
-   Presentational helpers (di luar komponen utama)
-   ──────────────────────────────────────────────────────────────── */
 
 function CredentialCard({
   icon: Icon,
@@ -47,10 +43,9 @@ function CredentialCard({
 }) {
   return (
     <article className="flex flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
-      {/* Header kartu */}
       <div className="mb-4 flex items-center gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-tiby-teal-50 text-tiby-teal-700 ring-1 ring-tiby-teal-100">
-          <Icon className="h-[18px] w-[18px]" />
+          <Icon className="h-4.5 w-4.5" />
         </span>
         <div className="min-w-0">
           <h4 className="font-heading text-sm font-semibold leading-tight text-tiby-ink">
@@ -60,7 +55,6 @@ function CredentialCard({
         </div>
       </div>
 
-      {/* Detail login */}
       <dl className="divide-y divide-gray-100 overflow-hidden rounded-xl border border-gray-200 bg-gray-50/60">
         <div className="flex items-center justify-between gap-3 px-3.5 py-3">
           <dt className="flex shrink-0 items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-tiby-muted">
@@ -82,13 +76,12 @@ function CredentialCard({
         </div>
       </dl>
 
-      {/* Aksi */}
       <div className="mt-4 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={onCopy}
           aria-live="polite"
-          className={`inline-flex min-w-[9.5rem] flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tiby-teal-600 ${
+          className={`inline-flex min-w-38 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tiby-teal-600 ${
             copied
               ? "bg-emerald-600 hover:bg-emerald-600"
               : "bg-tiby-teal-600 hover:bg-tiby-teal-700"
@@ -118,8 +111,6 @@ function CredentialCard({
     </article>
   );
 }
-
-/* ──────────────────────────── Komponen utama ──────────────────────────── */
 
 export default function OnboardingSuccessCard({
   credentials,
@@ -162,12 +153,13 @@ export default function OnboardingSuccessCard({
     }
   };
 
+  const isNewPmo = credentials.pmoCreated !== false;
+
   return (
     <section
       aria-label="Kredensial akun yang berhasil dibuat"
       className="animate-fadeIn overflow-hidden rounded-2xl border border-tiby-teal-100 bg-white shadow-[0_1px_3px_rgba(16,24,40,0.05)]"
     >
-      {/* ───────── Header status ───────── */}
       <header className="flex flex-col gap-4 border-b border-tiby-teal-100/70 bg-tiby-teal-50/60 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
         <div className="flex items-start gap-4">
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm ring-4 ring-emerald-100">
@@ -185,7 +177,7 @@ export default function OnboardingSuccessCard({
           </div>
         </div>
 
-        <div className="shrink-0 rounded-xl border border-tiby-teal-100 bg-white px-3.5 py-2.5 sm:max-w-[15rem]">
+        <div className="shrink-0 rounded-xl border border-tiby-teal-100 bg-white px-3.5 py-2.5 sm:max-w-60">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-tiby-muted">
             ID Rencana Terapi
           </p>
@@ -195,9 +187,7 @@ export default function OnboardingSuccessCard({
         </div>
       </header>
 
-      {/* ───────── Isi ───────── */}
       <div className="space-y-5 px-5 py-6 sm:px-7">
-        {/* Catatan penting */}
         <div
           role="note"
           className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3"
@@ -235,12 +225,10 @@ export default function OnboardingSuccessCard({
           <CredentialCard
             icon={Users}
             role={
-              credentials.pmoCreated
-                ? "Akun PMO (Pengawas)"
-                : "PMO Terhubung (Akun Lama)"
+              isNewPmo ? "Akun PMO (Pengawas)" : "PMO Terhubung (Akun Lama)"
             }
             caption={
-              credentials.pmoCreated
+              isNewPmo
                 ? "Untuk memantau kepatuhan minum obat"
                 : "Akun PMO sudah ada — password tidak berubah"
             }
@@ -250,7 +238,7 @@ export default function OnboardingSuccessCard({
             copied={copiedKey === "pmo"}
             onCopy={() =>
               copyToClipboard(
-                credentials.pmoCreated
+                isNewPmo
                   ? `Akun Tiby PMO:\nUsername: ${credentials.pmoUsername}\nPassword: ${credentials.pmoPassword}`
                   : `Akun Tiby PMO:\nUsername: ${credentials.pmoUsername}`,
                 "pmo",
@@ -264,7 +252,6 @@ export default function OnboardingSuccessCard({
         </div>
       </div>
 
-      {/* ───────── Footer aksi ───────── */}
       <footer className="flex flex-col gap-3 border-t border-tiby-teal-100/70 bg-gray-50/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
         <p className="text-xs text-tiby-muted">
           Sudah selesai? Lanjutkan dengan pasien berikutnya.

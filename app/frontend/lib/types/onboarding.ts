@@ -42,9 +42,10 @@ export interface OnboardingCredentials {
   patientUsername: string;
   patientPassword: string;
   pmoUsername: string;
-  pmoPassword: string | null; // Sesuaikan dengan respons backend
+  pmoPassword: string | null; 
   patientUserId: string;
   pmoUserId: string | null;
+  pmoCreated?: boolean; 
 }
 
 export type OnboardingPayload = CreateOnboardingDto;
