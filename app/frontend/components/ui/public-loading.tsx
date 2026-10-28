@@ -15,14 +15,15 @@ export default function PublicLoading({
     <div className="flex flex-col items-center justify-center p-8 text-center">
       <div className="relative mb-4 flex items-center justify-center pt-2">
         <div className="absolute inset-0 rounded-full bg-radial from-tiby-teal-500/20 to-transparent blur-xl scale-125 pointer-events-none" />
-        <Mascot
-          animated
-          emotion="idle"
-          size={80}
-          altText="Maskot Pandu Memuat"
-          priority
-          className="relative drop-shadow-md"
-        />
+        <div className="motion-safe:animate-float">
+          <Mascot
+            emotion="happy"
+            size={80}
+            altText="Maskot Pandu Memuat"
+            priority
+            className="relative drop-shadow-md motion-safe:animate-blink"
+          />
+        </div>
       </div>
 
       <h4 className="font-heading text-sm font-semibold text-tiby-ink">
