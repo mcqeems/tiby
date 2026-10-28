@@ -3,6 +3,8 @@ from dataclasses import dataclass
 
 import httpx
 
+from contracts import CheckInRequest, CheckInResponse
+from extraction.prompts import CHECKIN_EXTRACTION_SYSTEM, render_checkin_user_prompt
 from providers.base import (
     ProviderConfigurationError,
     ProviderError,
@@ -11,7 +13,7 @@ from providers.base import (
     env_str,
 )
 
-DEFAULT_MODEL = "agnes-2.5-flash"
+DEFAULT_MODEL = "laguna-s-2.1"
 
 
 @dataclass(frozen=True)
@@ -80,4 +82,27 @@ class NaraRouterClient:
         except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as exc:
             raise ProviderError(
                 "The language model provider failed or returned an invalid response."
+            ) from exc
+
+
+class NaraRouterExtractor:
+    """Check-in fact extraction through the NaraRouter chat-completions API.
+
+    Named after the provider, not the model: ``TIBY_LLM_MODEL`` picks the model
+    (``laguna-s-2.1`` by default) and can change without touching this class.
+    """
+
+    def __init__(self, client: NaraRouterClient | None = None):
+        self.client = client or NaraRouterClient()
+
+    async def extract(self, request: CheckInRequest) -> CheckInResponse:
+        """Extract facts; provider output is schema-validated, deviations raise ProviderError."""
+        provider_result = await self.client.chat_json(
+            CHECKIN_EXTRACTION_SYSTEM, render_checkin_user_prompt(request.transcript)
+        )
+        try:
+            return CheckInResponse.model_validate(provider_result)
+        except ValueError as exc:
+            raise ProviderError(
+                "The extraction provider returned an invalid check-in payload."
             ) from exc
