@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { errorMessage } from "@/lib/errors";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { facilitiesApi } from "@/lib/api/facilities";
@@ -62,7 +63,7 @@ export default function FacilityDetail() {
       await Promise.all([loadFacility(), loadStaff()]);
     } catch (err: unknown) {
       setError(
-        err instanceof Error ? err.message : "Gagal memuat data faskes.",
+        errorMessage(err, "Gagal memuat data faskes."),
       );
     } finally {
       setLoading(false);

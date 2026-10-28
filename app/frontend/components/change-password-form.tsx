@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { errorMessage } from "@/lib/errors";
 import { AnimatePresence, motion } from "motion/react";
 import { banner } from "@/lib/motion";
 import { usersApi } from "@/lib/api/users";
@@ -39,7 +40,7 @@ export default function ChangePasswordForm() {
       setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
     } catch (err: unknown) {
       setErrorMsg(
-        err instanceof Error ? err.message : "Gagal mengubah password. Periksa password lama Anda.",
+        errorMessage(err, "Gagal mengubah password. Periksa password lama Anda."),
       );
     } finally {
       setLoading(false);

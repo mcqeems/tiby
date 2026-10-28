@@ -1,6 +1,8 @@
 "use client";
 
 import { startTransition, useEffect, useState } from "react";
+import { errorMessage } from "@/lib/errors";
+import { formatLongDateUtc } from "@/lib/format";
 import { usersApi } from "@/lib/api/users";
 import { onboardingApi } from "@/lib/api/onboarding";
 import { usePopup } from "@/components/ui/popup-provider";
@@ -62,12 +64,7 @@ function formatDateId(iso: string) {
   if (!iso) return "-";
   const d = new Date(`${iso}T00:00:00Z`);
   if (Number.isNaN(d.getTime())) return "-";
-  return d.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  });
+  return formatLongDateUtc(d);
 }
 
 function Stepper() {
@@ -305,9 +302,7 @@ export default function OnboardingForm() {
         badgeText: "Pindai Kartu",
         title: "Foto Tidak Terbaca Otomatis",
         description:
-          err instanceof Error
-            ? err.message
-            : "Pastikan foto kartu pengobatan cukup terang, atau isi kolom formulir secara manual.",
+          errorMessage(err, "Pastikan foto kartu pengobatan cukup terang, atau isi kolom formulir secara manual."),
         confirmLabel: "Isi Manual",
       });
     } finally {
@@ -394,9 +389,7 @@ export default function OnboardingForm() {
         badgeText: "Gagal",
         title: "Pendaftaran Tidak Berhasil",
         description:
-          err instanceof Error
-            ? err.message
-            : "Terjadi kendala saat menerbitkan rencana terapi. Pastikan data terisi dengan benar.",
+          errorMessage(err, "Terjadi kendala saat menerbitkan rencana terapi. Pastikan data terisi dengan benar."),
         confirmLabel: "Tutup",
       });
     } finally {

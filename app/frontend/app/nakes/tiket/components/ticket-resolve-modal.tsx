@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { errorMessage } from "@/lib/errors";
 import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import { faskesApi } from "@/lib/api/faskes";
 import { usePopup } from "@/components/ui/popup-provider";
@@ -65,7 +66,7 @@ export default function TicketResolveModal({
         variant: "danger",
         title: "Gagal Menutup Tiket",
         description:
-          err instanceof Error ? err.message : "Terjadi kesalahan pada server.",
+          errorMessage(err, "Terjadi kesalahan pada server."),
         confirmLabel: "Tutup",
       });
     } finally {

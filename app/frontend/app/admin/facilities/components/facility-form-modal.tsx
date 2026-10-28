@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { errorMessage } from "@/lib/errors";
 import { facilitiesApi } from "@/lib/api/facilities";
 import type { CreateFacilityDto, FacilityItem } from "@/lib/types/facilities";
 import { usePopup } from "@/components/ui/popup-provider";
@@ -61,9 +62,7 @@ export default function FacilityFormModal({
         variant: "danger",
         title: "Gagal",
         description:
-          err instanceof Error
-            ? err.message
-            : "Terjadi kesalahan pada server.",
+          errorMessage(err, "Terjadi kesalahan pada server."),
         confirmLabel: "Tutup",
       });
     } finally {

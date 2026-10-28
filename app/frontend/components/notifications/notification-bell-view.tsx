@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { formatTime } from "@/lib/format";
 import { AnimatePresence, motion } from "motion/react";
 import { Bell, Check, Info, Loader2, ShieldAlert } from "lucide-react";
 import { popover } from "@/lib/motion";
@@ -139,10 +140,7 @@ export default function NotificationBellView({
                               {item.message}
                             </p>
                             <p className="mt-1 text-[10px] text-gray-400">
-                              {new Date(item.createdAt).toLocaleString("id-ID", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
+                              {formatTime(item.createdAt)}
                               {item.meta ? ` - ${item.meta}` : ""}
                             </p>
                           </div>

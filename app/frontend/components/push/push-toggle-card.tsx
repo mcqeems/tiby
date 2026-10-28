@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { errorMessage } from "@/lib/errors";
 import { pushApi } from "@/lib/api/push";
 import { urlBase64ToUint8Array } from "@/lib/push-utils";
 import { Bell, BellOff, Loader2, ShieldCheck } from "lucide-react";
@@ -83,9 +84,7 @@ export default function PushToggleCard({ bare = false }: { bare?: boolean }) {
     } catch (err: unknown) {
       setState("error");
       setError(
-        err instanceof Error
-          ? err.message
-          : "Gagal mengaktifkan notifikasi di perangkat ini.",
+        errorMessage(err, "Gagal mengaktifkan notifikasi di perangkat ini."),
       );
     }
   };
@@ -104,7 +103,7 @@ export default function PushToggleCard({ bare = false }: { bare?: boolean }) {
     } catch (err: unknown) {
       setState("error");
       setError(
-        err instanceof Error ? err.message : "Gagal menonaktifkan notifikasi.",
+        errorMessage(err, "Gagal menonaktifkan notifikasi."),
       );
     }
   };

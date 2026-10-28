@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Pagination from "@/components/ui/pagination";
+import { errorMessage } from "@/lib/errors";
 import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import { AnimatePresence } from "motion/react";
 import { usersApi, type UserItem } from "@/lib/api/users";
@@ -13,8 +15,6 @@ import {
   UserPlus,
   Building2,
   ShieldCheck,
-  ChevronLeft,
-  ChevronRight,
   Pencil,
   KeyRound,
   Search,
@@ -235,25 +235,7 @@ export default function UserManager() {
               <strong>{total}</strong> data
             </span>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1 || loading}
-                className="p-1.5 rounded-lg border border-gray-200 bg-white text-tiby-ink disabled:opacity-50 hover:bg-gray-50 cursor-pointer"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="text-xs font-medium text-tiby-ink px-2">
-                Hal {page} / {totalPages || 1}
-              </span>
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages || loading}
-                className="p-1.5 rounded-lg border border-gray-200 bg-white text-tiby-ink disabled:opacity-50 hover:bg-gray-50 cursor-pointer"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+              <Pagination page={page} totalPages={totalPages} loading={loading} onChange={setPage} />
             </div>
           </div>
         )}
@@ -327,9 +309,7 @@ export default function UserManager() {
                       variant: "danger",
                       title: "Gagal",
                       description:
-                        err instanceof Error
-                          ? err.message
-                          : "Tidak dapat mereset password.",
+                        errorMessage(err, "Tidak dapat mereset password."),
                       confirmLabel: "Tutup",
                     });
                   } finally {

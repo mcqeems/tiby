@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { errorMessage } from "@/lib/errors";
 import { AnimatePresence } from "motion/react";
 import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import { familyContactsApi } from "@/lib/api/family-contacts";
@@ -47,9 +48,7 @@ export default function FamilyContactsCard({
       setContacts(res || []);
     } catch (err: unknown) {
       setLoadError(
-        err instanceof Error
-          ? err.message
-          : "Tidak dapat memuat kontak darurat.",
+        errorMessage(err, "Tidak dapat memuat kontak darurat."),
       );
     } finally {
       setLoading(false);
@@ -93,7 +92,7 @@ export default function FamilyContactsCard({
         variant: "danger",
         title: "Gagal",
         description:
-          err instanceof Error ? err.message : "Tidak dapat menghapus kontak.",
+          errorMessage(err, "Tidak dapat menghapus kontak."),
         confirmLabel: "Tutup",
       });
     }
@@ -130,7 +129,7 @@ export default function FamilyContactsCard({
         variant: "danger",
         title: "Gagal Menambah Kontak",
         description:
-          err instanceof Error ? err.message : "Terjadi kesalahan pada server.",
+          errorMessage(err, "Terjadi kesalahan pada server."),
         confirmLabel: "Tutup",
       });
     } finally {

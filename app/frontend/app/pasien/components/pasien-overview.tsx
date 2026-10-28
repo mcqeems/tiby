@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatMonthYear, localDateKey } from "@/lib/format";
 import { fadeDown, listItem, popItem, scaleIn, slideIn, staggerParent } from "@/lib/motion";
 import Link from "next/link";
 import { motion } from "motion/react";
@@ -30,11 +31,6 @@ import {
   Stethoscope,
 } from "lucide-react";
 
-const getLocalDateStr = (dateString: string) => {
-  const d = new Date(dateString);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
-
 const ComplianceCalendar = ({ history }: { history: CheckInHistoryItem[] }) => {
   const today = new Date();
   const year = today.getFullYear();
@@ -48,21 +44,21 @@ const ComplianceCalendar = ({ history }: { history: CheckInHistoryItem[] }) => {
 
   const checkInMap = new Map<string, CheckInHistoryItem>();
   history.forEach((item) => {
-    checkInMap.set(getLocalDateStr(item.submittedAt), item);
+    checkInMap.set(localDateKey(item.submittedAt), item);
   });
 
   const startDate =
     history.length > 0
-      ? getLocalDateStr(
+      ? localDateKey(
           [...history].sort(
             (a, b) =>
               new Date(a.submittedAt).getTime() -
               new Date(b.submittedAt).getTime(),
           )[0].submittedAt,
         )
-      : getLocalDateStr(new Date().toISOString());
+      : localDateKey(new Date().toISOString());
 
-  const todayStr = getLocalDateStr(today.toISOString());
+  const todayStr = localDateKey(today.toISOString());
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs">
@@ -71,10 +67,7 @@ const ComplianceCalendar = ({ history }: { history: CheckInHistoryItem[] }) => {
           <CalendarDays className="w-4 h-4 text-tiby-teal-600" /> Check In
         </h3>
         <span className="text-[10px] font-bold text-tiby-muted uppercase tracking-wider">
-          {today.toLocaleDateString("id-ID", {
-            month: "long",
-            year: "numeric",
-          })}
+          {formatMonthYear(today)}
         </span>
       </div>
 

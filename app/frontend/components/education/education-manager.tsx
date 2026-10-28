@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Pagination from "@/components/ui/pagination";
 import { AnimatePresence } from "motion/react";
 import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import {
@@ -20,8 +21,6 @@ import {
   X,
   Loader2,
   Save,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 
 const LIMIT = 10;
@@ -288,25 +287,7 @@ export default function EducationManager({
             <strong>{total}</strong> materi
           </span>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1 || loading}
-              className="p-1.5 rounded-lg border border-gray-200 bg-white text-tiby-ink disabled:opacity-50 hover:bg-gray-50 cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="text-xs font-medium text-tiby-ink px-2">
-              Hal {page} / {totalPages || 1}
-            </span>
-            <button
-              type="button"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages || loading}
-              className="p-1.5 rounded-lg border border-gray-200 bg-white text-tiby-ink disabled:opacity-50 hover:bg-gray-50 cursor-pointer"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            <Pagination page={page} totalPages={totalPages} loading={loading} onChange={setPage} />
           </div>
         </div>
       )}

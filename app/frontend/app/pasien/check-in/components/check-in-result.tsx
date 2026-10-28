@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { formatLongDateTime } from "@/lib/format";
 import { CheckCircle2, AlertTriangle, ShieldAlert, Flame } from "lucide-react";
 import Mascot from "@/components/mascot";
 import type { CheckInVerdictResponse } from "@/lib/types/check-in";
@@ -22,13 +23,7 @@ const RULE_LABELS: Record<string, string> = {
 function formatSubmittedAt(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatLongDateTime(date);
 }
 
 const cssVars = (vars: Record<string, string | number>) =>

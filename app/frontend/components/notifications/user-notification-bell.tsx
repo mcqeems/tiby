@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { errorMessage } from "@/lib/errors";
 import { notificationsApi } from "@/lib/api/notifications";
 import { usePopup } from "@/components/ui/popup-provider";
 import NotificationBellView, {
@@ -44,9 +45,7 @@ export default function UserNotificationBell() {
         variant: "danger",
         title: "Gagal",
         description:
-          err instanceof Error
-            ? err.message
-            : "Tidak dapat menandai notifikasi.",
+          errorMessage(err, "Tidak dapat menandai notifikasi."),
         confirmLabel: "Tutup",
       });
     }

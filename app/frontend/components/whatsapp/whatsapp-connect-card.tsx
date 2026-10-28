@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { errorMessage } from "@/lib/errors";
+import { formatDate } from "@/lib/format";
 import { whatsappApi } from "@/lib/api/whatsapp";
 import type {
   WhatsappConnectChallenge,
@@ -86,7 +88,7 @@ export default function WhatsappConnectCard({
       return res;
     } catch (err: unknown) {
       setError(
-        err instanceof Error ? err.message : "Gagal memuat status WhatsApp.",
+        errorMessage(err, "Gagal memuat status WhatsApp."),
       );
       return null;
     } finally {
@@ -176,7 +178,7 @@ export default function WhatsappConnectCard({
       setCopied(false);
     } catch (err: unknown) {
       setError(
-        err instanceof Error ? err.message : "Gagal membuat kode verifikasi.",
+        errorMessage(err, "Gagal membuat kode verifikasi."),
       );
     } finally {
       setSubmitting(false);
@@ -240,7 +242,7 @@ export default function WhatsappConnectCard({
                 <p className="text-xs text-emerald-700">
                   {status?.phoneNumber || "-"}
                   {status?.verifiedAt
-                    ? ` · ${new Date(status.verifiedAt).toLocaleDateString("id-ID")}`
+                    ? ` · ${formatDate(status.verifiedAt)}`
                     : ""}
                 </p>
               </div>

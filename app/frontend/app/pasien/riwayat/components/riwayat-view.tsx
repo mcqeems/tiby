@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatShortDate, formatTime, localDateKey } from "@/lib/format";
 import { motion } from "motion/react";
 import { checkInsApi } from "@/lib/api/check-in";
 import { statsApi } from "@/lib/api/stats";
@@ -18,11 +19,6 @@ import {
   Loader2,
   FileText,
 } from "lucide-react";
-
-const getLocalDateStr = (dateString: string) => {
-  const d = new Date(dateString);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
 
 const getVerdictStyle = (verdict: string) => {
   switch (verdict) {
@@ -104,14 +100,14 @@ export default function RiwayatView() {
 
   const startDate =
     history.length > 0
-      ? getLocalDateStr(
+      ? localDateKey(
           [...history].sort(
             (a, b) =>
               new Date(a.submittedAt).getTime() -
               new Date(b.submittedAt).getTime(),
           )[0].submittedAt,
         )
-      : getLocalDateStr(new Date().toISOString());
+      : localDateKey(new Date().toISOString());
 
   return (
     <div className="space-y-6">
@@ -214,11 +210,7 @@ export default function RiwayatView() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5 text-tiby-ink font-semibold text-sm">
                           <CalendarDays className="w-3.5 h-3.5 text-tiby-muted" />
-                          {date.toLocaleDateString("id-ID", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
+                          {formatShortDate(date)}
                         </div>
                         <div
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${style.bg} ${style.text} ${style.border}`}
@@ -227,10 +219,7 @@ export default function RiwayatView() {
                         </div>
                       </div>
                       <span className="text-[11px] text-tiby-muted bg-gray-50 w-fit px-1.5 py-0.5 rounded">
-                        {date.toLocaleTimeString("id-ID", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}{" "}
+                        {formatTime(date)}{" "}
                         WIB
                       </span>
                     </div>

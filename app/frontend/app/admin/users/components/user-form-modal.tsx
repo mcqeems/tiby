@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { errorMessage } from "@/lib/errors";
 import { usersApi, type UserItem } from "@/lib/api/users";
 import type { FacilityItem } from "@/lib/types/facilities";
 import { usePopup } from "@/components/ui/popup-provider";
@@ -112,10 +113,7 @@ export default function UserFormModal({
       }
       onSuccess();
     } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Pastikan format email benar dan username belum dipakai.";
+      const message = errorMessage(err, "Pastikan format email benar dan username belum dipakai.");
       await notify({
         variant: "danger",
         title: isEdit ? "Gagal Memperbarui Akun" : "Gagal Membuat Akun",

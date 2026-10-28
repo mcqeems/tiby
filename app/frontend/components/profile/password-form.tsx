@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { errorMessage } from "@/lib/errors";
 import { usersApi } from "@/lib/api/users";
 import { usePopup } from "@/components/ui/popup-provider";
 import { Check, Eye, EyeOff, KeyRound, Loader2, Lock, ShieldCheck } from "lucide-react";
@@ -152,9 +153,7 @@ export default function PasswordForm({ onSuccess }: { onSuccess?: () => void }) 
         badgeText: "Gagal",
         title: "Gagal Mengubah Password",
         description:
-          err instanceof Error
-            ? err.message
-            : "Pastikan password lama Anda benar.",
+          errorMessage(err, "Pastikan password lama Anda benar."),
         confirmLabel: "Tutup",
       });
     } finally {

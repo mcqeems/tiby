@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { errorMessage } from "@/lib/errors";
+import { formatLocale } from "@/lib/format";
 import { AnimatePresence } from "motion/react";
 import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import { useParams } from "next/navigation";
@@ -196,7 +198,7 @@ function TimelineList({
                   {entry.reasonOrSummary || entry.eventType}
                 </p>
                 <time className="text-[11px] text-tiby-muted">
-                  {new Date(entry.createdAt).toLocaleString("id-ID")}
+                  {formatLocale(entry.createdAt)}
                 </time>
               </div>
               <div className="mt-1.5 flex gap-1.5">
@@ -357,7 +359,7 @@ export default function PatientDetailPage() {
       } catch (err: unknown) {
         if (active)
           setErrorMsg(
-            err instanceof Error ? err.message : "Gagal memuat data.",
+            errorMessage(err, "Gagal memuat data."),
           );
       } finally {
         if (active) setLoading(false);
@@ -427,7 +429,7 @@ export default function PatientDetailPage() {
       await notify({
         variant: "danger",
         title: "Gagal",
-        description: err instanceof Error ? err.message : "Server error",
+        description: errorMessage(err, "Server error"),
         confirmLabel: "Tutup",
       });
     } finally {
@@ -467,7 +469,7 @@ export default function PatientDetailPage() {
       await notify({
         variant: "danger",
         title: "Gagal",
-        description: err instanceof Error ? err.message : "Server error",
+        description: errorMessage(err, "Server error"),
         confirmLabel: "Tutup",
       });
     } finally {
@@ -488,9 +490,7 @@ export default function PatientDetailPage() {
         variant: "danger",
         title: "Gagal",
         description:
-          err instanceof Error
-            ? err.message
-            : "Tidak dapat memuat riwayat lebih lama.",
+          errorMessage(err, "Tidak dapat memuat riwayat lebih lama."),
         confirmLabel: "Tutup",
       });
     } finally {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { errorMessage } from "@/lib/errors";
 import { ModalCard, ModalFrame } from "@/components/ui/modal-frame";
 import Mascot from "@/components/mascot";
 import { consentApi } from "@/lib/api/consent";
@@ -129,7 +130,7 @@ export default function ConsentModal({
         variant: "danger",
         title: "Gagal Menyimpan",
         description:
-          err instanceof Error ? err.message : "Terjadi kesalahan pada server.",
+          errorMessage(err, "Terjadi kesalahan pada server."),
         confirmLabel: "Tutup",
       });
     } finally {

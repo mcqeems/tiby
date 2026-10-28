@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { errorMessage } from "@/lib/errors";
 import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import { pmoApi } from "@/lib/api/pmo";
 import { usePopup } from "@/components/ui/popup-provider";
@@ -106,7 +107,7 @@ export default function PmoFollowUpModal({
         variant: "danger",
         title: "Gagal Menyimpan",
         description:
-          err instanceof Error ? err.message : "Terjadi kesalahan pada server.",
+          errorMessage(err, "Terjadi kesalahan pada server."),
         confirmLabel: "Tutup",
       });
     } finally {

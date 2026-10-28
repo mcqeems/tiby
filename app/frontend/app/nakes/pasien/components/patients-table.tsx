@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { AnimatePresence } from "motion/react";
+import ErrorNotice from "@/components/ui/error-notice";
+import Pagination from "@/components/ui/pagination";
+import { errorMessage } from "@/lib/errors";
 import Link from "next/link"; // ✅ Pastikan import Link
 import { faskesApi } from "@/lib/api/faskes";
 import type {
@@ -17,8 +21,6 @@ import {
   Eye,
   Users,
   RefreshCw,
-  ChevronLeft,
-  ChevronRight,
   ShieldAlert,
   UserPlus,
 } from "lucide-react";
@@ -55,7 +57,7 @@ export default function PatientsTable() {
       setTotal(res.total || 0);
     } catch (err: unknown) {
       setErrorMsg(
-        err instanceof Error ? err.message : "Gagal memuat daftar pasien.",
+        errorMessage(err, "Gagal memuat daftar pasien."),
       );
     } finally {
       setLoading(false);
@@ -128,18 +130,23 @@ export default function PatientsTable() {
         </div>
       </div>
 
-      {errorMsg && (
-        <div className="rounded-2xl border border-red-100 bg-red-50 p-3 text-xs text-red-700 flex justify-between items-center">
-          <span>{errorMsg}</span>
-          <button
-            type="button"
-            onClick={() => setErrorMsg(null)}
-            className="font-bold cursor-pointer"
-          >
-            ✕
-          </button>
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {errorMsg && (
+          <ErrorNotice className="items-center">
+            <div className="flex items-center justify-between gap-3">
+              <span>{errorMsg}</span>
+              <button
+                type="button"
+                onClick={() => setErrorMsg(null)}
+                aria-label="Tutup peringatan"
+                className="font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          </ErrorNotice>
+        )}
+      </AnimatePresence>
 
       {/* FILTER TOOLBAR */}
       <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-2xs">
@@ -307,25 +314,7 @@ export default function PatientsTable() {
               <strong>{total}</strong> data
             </span>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1 || loading}
-                className="p-1.5 rounded-lg border border-gray-200 bg-white text-tiby-ink disabled:opacity-50 hover:bg-gray-50 cursor-pointer"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="text-xs font-medium text-tiby-ink px-2">
-                Hal {page} / {totalPages || 1}
-              </span>
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages || totalPages === 0 || loading}
-                className="p-1.5 rounded-lg border border-gray-200 bg-white text-tiby-ink disabled:opacity-50 hover:bg-gray-50 cursor-pointer"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+              <Pagination page={page} totalPages={totalPages} loading={loading} onChange={setPage} />
             </div>
           </div>
         </div>

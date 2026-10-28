@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { errorMessage } from "@/lib/errors";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -150,10 +151,7 @@ export default function LoginView() {
       const role = (user?.role || "PASIEN").toUpperCase();
       router.push(ROLE_PATHS[role] ?? "/pasien");
     } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Username/email atau password salah";
+      const message = errorMessage(err, "Username/email atau password salah");
       setError(message);
     } finally {
       setLoading(false);

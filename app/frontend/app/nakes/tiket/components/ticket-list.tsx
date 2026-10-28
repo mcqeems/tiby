@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Pagination from "@/components/ui/pagination";
+import ErrorNotice from "@/components/ui/error-notice";
+import { errorMessage } from "@/lib/errors";
+import { formatLocale } from "@/lib/format";
 import { AnimatePresence } from "motion/react";
 import { faskesApi } from "@/lib/api/faskes";
 import type { FaskesTicket } from "@/lib/types/faskes";
@@ -11,8 +15,6 @@ import {
   CheckCircle2,
   RefreshCw,
   FileText,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 
 const LIMIT = 20;
@@ -41,7 +43,7 @@ export default function TicketList() {
       setTickets(res.items || []);
       setTotal(res.total || 0);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : "Gagal memuat tiket.");
+      setErrorMsg(errorMessage(err, "Gagal memuat tiket."));
     } finally {
       setLoading(false);
     }
@@ -87,11 +89,11 @@ export default function TicketList() {
         </button>
       </div>
 
-      {errorMsg && (
-        <div className="p-4 bg-red-50 text-red-700 text-sm rounded-xl border border-red-200">
-          {errorMsg}
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {errorMsg && (
+          <ErrorNotice className="text-sm">{errorMsg}</ErrorNotice>
+        )}
+      </AnimatePresence>
 
       {loading ? (
         <PublicLoading message="Memuat tiket tindak lanjut..." />
@@ -140,7 +142,7 @@ export default function TicketList() {
                     </span>
                     <span className="text-xs text-tiby-muted flex items-center gap-1 ml-auto md:ml-0">
                       <Clock className="w-3.5 h-3.5" />
-                      {new Date(ticket.openedAt).toLocaleString("id-ID")}
+                      {formatLocale(ticket.openedAt)}
                     </span>
                   </div>
 
@@ -175,7 +177,7 @@ export default function TicketList() {
                         Diselesaikan pada:
                       </p>
                       <p className="text-sm text-tiby-ink">
-                        {new Date(ticket.closedAt!).toLocaleString("id-ID")}
+                        {formatLocale(ticket.closedAt!)}
                       </p>
                       {/* ✅ FIX: Ganti kutip dua dengan entitas HTML */}
                       <p className="text-xs text-tiby-muted italic max-w-xs md:text-right mt-2">
@@ -206,27 +208,12 @@ export default function TicketList() {
             <strong>{total}</strong> tiket
           </span>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1 || loading}
-              className="p-1.5 rounded-lg border border-gray-200 bg-white text-tiby-ink disabled:opacity-50 hover:bg-gray-50 cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="text-xs font-medium text-tiby-ink px-2">
-              Hal {page} / {Math.ceil(total / LIMIT) || 1}
-            </span>
-            <button
-              type="button"
-              onClick={() =>
-                setPage((p) => Math.min(Math.ceil(total / LIMIT), p + 1))
-              }
-              disabled={page >= Math.ceil(total / LIMIT) || loading}
-              className="p-1.5 rounded-lg border border-gray-200 bg-white text-tiby-ink disabled:opacity-50 hover:bg-gray-50 cursor-pointer"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            <Pagination
+              page={page}
+              totalPages={Math.ceil(total / LIMIT)}
+              loading={loading}
+              onChange={setPage}
+            />
           </div>
         </div>
       )}

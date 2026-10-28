@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { errorMessage } from "@/lib/errors";
 import { guidanceApi } from "@/lib/api/guidance";
 import type { GuidanceResponse } from "@tiby/ts-shared";
 import {
@@ -45,9 +46,7 @@ export default function GuidanceView() {
       setAnswer(res);
     } catch (err: unknown) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Pandu belum bisa menjawab sekarang. Coba lagi nanti.",
+        errorMessage(err, "Pandu belum bisa menjawab sekarang. Coba lagi nanti."),
       );
     } finally {
       setLoading(false);

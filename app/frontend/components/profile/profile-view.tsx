@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { errorMessage } from "@/lib/errors";
+import { formatMonthYear } from "@/lib/format";
 import Link from "next/link";
 import { useSession, type TibyUser } from "@/lib/auth-client";
 import { usersApi, type UserItem } from "@/lib/api/users";
@@ -168,7 +170,7 @@ export default function ProfileView() {
         variant: "danger",
         title: "Gagal Mencabut",
         description:
-          err instanceof Error ? err.message : "Terjadi kesalahan pada server.",
+          errorMessage(err, "Terjadi kesalahan pada server."),
         confirmLabel: "Tutup",
       });
       setRevoking(false);
@@ -227,10 +229,7 @@ export default function ProfileView() {
   }
 
   const joined = user.createdAt
-    ? new Date(user.createdAt).toLocaleDateString("id-ID", {
-        month: "long",
-        year: "numeric",
-      })
+    ? formatMonthYear(user.createdAt)
     : "-";
 
   return (
