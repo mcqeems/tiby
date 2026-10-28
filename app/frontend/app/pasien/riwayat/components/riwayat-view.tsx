@@ -193,7 +193,7 @@ export default function RiwayatView() {
             Detail Laporan
           </h2>
 
-          <div className="max-h-200 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+          <div className="max-h-200 overflow-y-auto pr-2 space-y-3">
             {history.length === 0 ? (
               <div className="text-center py-10 bg-white rounded-2xl border border-gray-200">
                 <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />

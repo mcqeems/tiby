@@ -14,6 +14,8 @@
 
   --color-tiby-teal-50: #F1FAF9;
   --color-tiby-teal-100: #DDF0EE;
+  --color-tiby-teal-200: #BFE3DF;
+  --color-tiby-teal-500: #2AA7A4;
   --color-tiby-teal-600: #1B9E9B;
   --color-tiby-teal-700: #127A78;
   --color-tiby-white: #FCFCFA;
@@ -38,4 +40,38 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-body);
+}
+
+/* Thin Tiby scrollbar for every scroll container. */
+@layer base {
+  /* Firefox (and engines without ::-webkit-scrollbar). Chromium ignores the
+     webkit rules when scrollbar-width is set, so keep them separate. */
+  @supports (-moz-appearance: none) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-tiby-teal-200) transparent;
+    }
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--color-tiby-teal-200);
+    border-radius: 9999px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-tiby-teal-600);
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
 }

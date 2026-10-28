@@ -6,6 +6,7 @@ import FamilyContactsCard from "@/app/pasien/profile/components/family-contacts-
 import Link from "next/link";
 import {
   ArrowLeft,
+  ArrowRight,
   CheckCircle2,
   Clock,
   Flame,
@@ -29,6 +30,7 @@ import {
 import { faskesApi } from "@/lib/api/faskes";
 import { usersApi } from "@/lib/api/users";
 import { usePopup } from "@/components/ui/popup-provider";
+import Dialog from "@/components/ui/dialog";
 import type {
   RiskSortedPatientItem,
   PatientHistoryItem,
@@ -208,6 +210,79 @@ function TimelineList({
   );
 }
 
+function HistorySection({
+  icon,
+  title,
+  badgeClass,
+  items,
+  emptyMessage,
+  onOpen,
+}: {
+  icon: LucideIcon;
+  title: string;
+  badgeClass: string;
+  items: PatientHistoryItem[];
+  emptyMessage: string;
+  onOpen: () => void;
+}) {
+  return (
+    <DetailCard
+      icon={icon}
+      title={title}
+      aside={
+        <span
+          className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${badgeClass}`}
+        >
+          {items.length} catatan
+        </span>
+      }
+    >
+      <TimelineList items={items.slice(0, 3)} emptyMessage={emptyMessage} />
+      {items.length > 3 && (
+        <button
+          type="button"
+          onClick={onOpen}
+          className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-tiby-ink transition hover:border-tiby-teal-200 hover:bg-tiby-teal-50"
+        >
+          Lihat semua ({items.length} catatan)
+          <ArrowRight className="h-3.5 w-3.5" />
+        </button>
+      )}
+    </DetailCard>
+  );
+}
+
+function LoadMoreHistoryButton({
+  loading,
+  loaded,
+  total,
+  onClick,
+}: {
+  loading: boolean;
+  loaded: number;
+  total: number;
+  onClick: () => void;
+}) {
+  if (loaded >= total) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={loading}
+      className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-tiby-ink transition hover:bg-gray-50 disabled:opacity-50"
+    >
+      {loading ? (
+        <>
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Memuat...
+        </>
+      ) : (
+        `Muat lebih banyak (${loaded} dari ${total})`
+      )}
+    </button>
+  );
+}
+
 // ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
 
 export default function PatientDetailPage() {
@@ -222,6 +297,9 @@ export default function PatientDetailPage() {
   const [historyPage, setHistoryPage] = useState(1);
   const [historyTotal, setHistoryTotal] = useState(0);
   const [loadingMoreHistory, setLoadingMoreHistory] = useState(false);
+  const [historyDialog, setHistoryDialog] = useState<
+    "pmo" | "checkin" | "system" | null
+  >(null);
 
   // State User ID untuk Reset Password
   const [patientUserId, setPatientUserId] = useState<string | null>(null);
@@ -395,6 +473,29 @@ export default function PatientDetailPage() {
     }
   };
 
+  const loadMoreHistory = async () => {
+    if (loadingMoreHistory) return;
+    setLoadingMoreHistory(true);
+    try {
+      const nextPage = historyPage + 1;
+      const res = await faskesApi.getPatientHistory(patientId, nextPage, 50);
+      setHistory((prev) => [...prev, ...(res.items || [])]);
+      setHistoryPage(nextPage);
+    } catch (err: unknown) {
+      await notify({
+        variant: "danger",
+        title: "Gagal",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Tidak dapat memuat riwayat lebih lama.",
+        confirmLabel: "Tutup",
+      });
+    } finally {
+      setLoadingMoreHistory(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-10 text-center text-tiby-muted">
@@ -550,77 +651,39 @@ export default function PatientDetailPage() {
       <div className="grid gap-5 lg:grid-cols-3">
         {/* ─── KIRI: 3 TIMELINE ─── */}
         <div className="lg:col-span-2 space-y-5">
-          <DetailCard
+          <HistorySection
             icon={MessageSquarePlus}
             title="Log Tindak Lanjut PMO"
-            aside={
-              <span className="rounded-full bg-purple-100 px-2.5 py-0.5 text-[11px] font-semibold text-purple-700">
-                {pmoFollowUps.length} catatan
-              </span>
-            }
-          >
-            <TimelineList
-              items={pmoFollowUps}
-              emptyMessage="PMO belum memberikan catatan tindak lanjut."
-            />
-          </DetailCard>
+            badgeClass="bg-purple-100 text-purple-700"
+            items={pmoFollowUps}
+            emptyMessage="PMO belum memberikan catatan tindak lanjut."
+            onOpen={() => setHistoryDialog("pmo")}
+          />
 
-          <DetailCard
+          <HistorySection
             icon={CheckCircle2}
             title="Riwayat Check-In Pasien"
-            aside={
-              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
-                {checkInHistory.length} catatan
-              </span>
-            }
-          >
-            <TimelineList
-              items={checkInHistory}
-              emptyMessage="Pasien belum pernah melakukan check-in."
-            />
-          </DetailCard>
+            badgeClass="bg-emerald-100 text-emerald-700"
+            items={checkInHistory}
+            emptyMessage="Pasien belum pernah melakukan check-in."
+            onOpen={() => setHistoryDialog("checkin")}
+          />
 
-          <DetailCard
+          <HistorySection
             icon={Activity}
             title="Log Aktivitas & Sistem"
-            aside={
-              <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-[11px] font-semibold text-gray-600">
-                {systemLogs.length} catatan
-              </span>
-            }
-          >
-            <TimelineList
-              items={systemLogs}
-              emptyMessage="Belum ada aktivitas sistem."
-            />
-          </DetailCard>
+            badgeClass="bg-gray-100 text-gray-600"
+            items={systemLogs}
+            emptyMessage="Belum ada aktivitas sistem."
+            onOpen={() => setHistoryDialog("system")}
+          />
 
-          {historyTotal > history.length && (
-            <button
-              type="button"
-              onClick={async () => {
-                setLoadingMoreHistory(true);
-                try {
-                  const nextPage = historyPage + 1;
-                  const res = await faskesApi.getPatientHistory(
-                    patientId,
-                    nextPage,
-                    50,
-                  );
-                  setHistory((prev) => [...prev, ...(res.items || [])]);
-                  setHistoryPage(nextPage);
-                } finally {
-                  setLoadingMoreHistory(false);
-                }
-              }}
-              disabled={loadingMoreHistory}
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-tiby-ink hover:bg-gray-50 disabled:opacity-50"
-            >
-              {loadingMoreHistory
-                ? "Memuat..."
-                : `Muat lebih banyak (${history.length} dari ${historyTotal})`}
-            </button>
-          )}
+          <LoadMoreHistoryButton
+            loading={loadingMoreHistory}
+            loaded={history.length}
+            total={historyTotal}
+            onClick={loadMoreHistory}
+          />
 
           <FamilyContactsCard patientId={patientId} viewer="nakes" />
         </div>
@@ -751,6 +814,64 @@ export default function PatientDetailPage() {
           </div>
         </div>
       )}
+
+      {/* ─── DIALOG RIWAYAT LENGKAP ─── */}
+      <Dialog
+        open={historyDialog === "pmo"}
+        onClose={() => setHistoryDialog(null)}
+        title="Log Tindak Lanjut PMO"
+        description={`${pmoFollowUps.length} catatan dimuat.`}
+        size="lg"
+      >
+        <TimelineList
+          items={pmoFollowUps}
+          emptyMessage="PMO belum memberikan catatan tindak lanjut."
+        />
+        <LoadMoreHistoryButton
+          loading={loadingMoreHistory}
+          loaded={history.length}
+          total={historyTotal}
+          onClick={loadMoreHistory}
+        />
+      </Dialog>
+
+      <Dialog
+        open={historyDialog === "checkin"}
+        onClose={() => setHistoryDialog(null)}
+        title="Riwayat Check-In Pasien"
+        description={`${checkInHistory.length} catatan dimuat.`}
+        size="lg"
+      >
+        <TimelineList
+          items={checkInHistory}
+          emptyMessage="Pasien belum pernah melakukan check-in."
+        />
+        <LoadMoreHistoryButton
+          loading={loadingMoreHistory}
+          loaded={history.length}
+          total={historyTotal}
+          onClick={loadMoreHistory}
+        />
+      </Dialog>
+
+      <Dialog
+        open={historyDialog === "system"}
+        onClose={() => setHistoryDialog(null)}
+        title="Log Aktivitas & Sistem"
+        description={`${systemLogs.length} catatan dimuat.`}
+        size="lg"
+      >
+        <TimelineList
+          items={systemLogs}
+          emptyMessage="Belum ada aktivitas sistem."
+        />
+        <LoadMoreHistoryButton
+          loading={loadingMoreHistory}
+          loaded={history.length}
+          total={historyTotal}
+          onClick={loadMoreHistory}
+        />
+      </Dialog>
 
       {/* ─── MODAL RESET PASSWORD (Pasien & PMO) ─── */}
       {resetOpen && (

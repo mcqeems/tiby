@@ -186,7 +186,7 @@ export default function EducationView({
               </button>
             </div>
 
-            <div className="p-6 sm:p-10 overflow-y-auto custom-scrollbar bg-white">
+            <div className="p-6 sm:p-10 overflow-y-auto bg-white">
               <div className="prose prose-sm sm:prose-base prose-teal max-w-none">
                 {selectedCard.contentMarkdown
                   .split("\n")
