@@ -43,3 +43,4 @@ testpaths = ["tests"]
 
 [tool.mypy]
 explicit_package_bases = true
+mypy_path = "$MYPY_CONFIG_FILE_DIR/src"

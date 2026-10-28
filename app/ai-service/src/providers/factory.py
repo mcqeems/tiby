@@ -2,7 +2,7 @@
 
 import logging
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 
 from starlette.concurrency import run_in_threadpool
 
@@ -35,7 +35,7 @@ TRANSCRIBERS: dict[str, Callable[[], Transcriber]] = {
 }
 
 
-def _pick(env_name: str, default: str, choices: dict[str, object]) -> str:
+def _pick(env_name: str, default: str, choices: Mapping[str, object]) -> str:
     value = os.getenv(env_name, default).strip().lower()
     if value not in choices:
         raise ValueError(

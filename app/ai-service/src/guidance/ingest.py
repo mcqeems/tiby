@@ -3,7 +3,7 @@
 Extracts text page by page, normalizes whitespace and line-break hyphenation,
 and chunks by word count with overlap. Chunk IDs encode document, PDF page,
 and part (``…-p12-c3``) so citations stay stable across rebuilds. Run through
-``src/ingest_knowledge.py``; this module never runs during requests.
+``scripts/ingest_knowledge.py``; this module never runs during requests.
 """
 
 import hashlib

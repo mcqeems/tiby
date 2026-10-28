@@ -18,7 +18,8 @@ import asyncio
 import json
 from pathlib import Path
 
-from env import load_env
+from dotenv import load_dotenv
+
 from guidance.retrieval import SQLiteRetriever
 from guidance.safety import detect_action_request
 from guidance.service import GroundedAnswerer, pack_evidence
@@ -29,7 +30,7 @@ CASES = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "guidance" 
 
 def main() -> None:
     """Load the cases, run each through retrieval + answerer, print results."""
-    load_env()
+    load_dotenv()
     retriever = SQLiteRetriever()
     answerer = GroundedAnswerer()
     cases = [json.loads(line) for line in CASES.read_text(encoding="utf-8").splitlines() if line.strip()]

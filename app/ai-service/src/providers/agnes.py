@@ -1,5 +1,5 @@
 from contracts import CheckInRequest, CheckInResponse
-from prompts import CHECKIN_EXTRACTION_SYSTEM, checkin_extraction_user
+from extraction.prompts import CHECKIN_EXTRACTION_SYSTEM, render_checkin_user_prompt
 from providers.base import ProviderError
 from providers.nararouter import NaraRouterClient
 
@@ -13,7 +13,7 @@ class AgnesExtractor:
     async def extract(self, request: CheckInRequest) -> CheckInResponse:
         """Extract facts; provider output is schema-validated, deviations raise ProviderError."""
         provider_result = await self.client.chat_json(
-            CHECKIN_EXTRACTION_SYSTEM, checkin_extraction_user(request.transcript)
+            CHECKIN_EXTRACTION_SYSTEM, render_checkin_user_prompt(request.transcript)
         )
         try:
             return CheckInResponse.model_validate(provider_result)

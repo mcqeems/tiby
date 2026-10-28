@@ -1,7 +1,8 @@
 """HTTP routes for extraction + audio transcription.
 
-Thin layer: validate input, call service, map provider errors to
-``ApiError`` envelopes. Business logic lives in ``extraction.service``.
+Thin layer: validate input, call the provider factory, map provider errors to
+``ApiError`` envelopes. Business logic lives in :mod:`providers.factory` and
+:mod:`extraction.extractor`.
 """
 
 from fastapi import APIRouter, File, UploadFile
@@ -16,8 +17,6 @@ from providers.base import (
     ProviderTimeoutError,
 )
 from providers.factory import extraction_service, transcription_service
-
-router = APIRouter(tags=["extraction"])
 
 router = APIRouter(tags=["extraction"])
 

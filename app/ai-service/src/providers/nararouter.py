@@ -17,7 +17,7 @@ DEFAULT_MODEL = "agnes-2.5-flash"
 @dataclass(frozen=True)
 class NaraRouterSettings:
     api_key: str
-    endpoint: str
+    base_url: str
     model: str = DEFAULT_MODEL
     timeout_seconds: float = 90.0
 
@@ -25,8 +25,8 @@ class NaraRouterSettings:
     def from_env(cls) -> "NaraRouterSettings":
         return cls(
             api_key=env_str("NARAROUTER_API_TOKEN") or env_str("NARAROUTER_API_KEY"),
-            endpoint=env_str("NARAROUTER_ENDPOINT"),
-            model=env_str("NARAROUTER_MODEL", DEFAULT_MODEL),
+            base_url=env_str("NARAROUTER_BASE_URL").rstrip("/"),
+            model=env_str("TIBY_LLM_MODEL", DEFAULT_MODEL),
             timeout_seconds=env_float("NARAROUTER_TIMEOUT_SECONDS", 90.0),
         )
 
@@ -36,9 +36,9 @@ class NaraRouterClient:
 
     def __init__(self, settings: NaraRouterSettings | None = None):
         self.settings = settings or NaraRouterSettings.from_env()
-        if not self.settings.api_key or not self.settings.endpoint:
+        if not self.settings.api_key or not self.settings.base_url:
             raise ProviderConfigurationError(
-                "Set NARAROUTER_API_TOKEN (or NARAROUTER_API_KEY) and NARAROUTER_ENDPOINT."
+                "Set NARAROUTER_API_TOKEN (or NARAROUTER_API_KEY) and NARAROUTER_BASE_URL."
             )
 
     async def chat_json(self, system: str, user: str) -> dict:
@@ -57,7 +57,7 @@ class NaraRouterClient:
                 timeout=self.settings.timeout_seconds
             ) as client:
                 response = await client.post(
-                    self.settings.endpoint,
+                    f"{self.settings.base_url}/chat/completions",
                     headers={"Authorization": f"Bearer {self.settings.api_key}"},
                     json=payload,
                 )

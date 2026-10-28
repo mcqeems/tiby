@@ -12,9 +12,28 @@ from providers.base import (
     env_str,
 )
 
+TRANSCRIPTIONS_PATH = "/audio/transcriptions"
+
+
+def _transcriptions_url(value: str) -> str:
+    """Accept either the base URL or the full transcription endpoint from env."""
+    base = value.rstrip("/")
+    if not base or base.endswith(TRANSCRIPTIONS_PATH):
+        return base
+    return f"{base}{TRANSCRIPTIONS_PATH}"
+
 
 class GroqTranscriber:
-    """Groq Whisper speech-to-text adapter (default transcriber)."""
+    """Groq Whisper speech-to-text adapter (default transcriber).
+
+    Upload limits and accepted content types are part of the ``Transcriber``
+    protocol so the HTTP layer can enforce them before calling the provider.
+    """
+
+    endpoint = "https://api.groq.com/openai/v1/audio/transcriptions"
+    model = "whisper-large-v3-turbo"
+    # Keep the service upload boundary compatible with the backend.
+    max_upload_bytes = 10 * 1024 * 1024
 
     supported_content_types: ClassVar[set[str]] = {
         "audio/wav",
@@ -33,12 +52,16 @@ class GroqTranscriber:
         self, *, api_key: str | None = None, timeout_seconds: float | None = None
     ):
         self.api_key = api_key or env_str("GROQ_API_KEY")
-        self.endpoint = env_str("GROQ_ENDPOINT")
-        self.model = env_str("GROQ_MODEL", "whisper-large-v3-turbo")
+        self.endpoint = _transcriptions_url(
+            env_str("GROQ_ENDPOINT", type(self).endpoint)
+        )
+        self.model = env_str("GROQ_MODEL", type(self).model)
         self.timeout_seconds = timeout_seconds or env_float(
             "GROQ_TIMEOUT_SECONDS", 60.0
         )
-        self.max_upload_bytes = env_int("MAX_AUDIO_UPLOAD_BYTES", 10 * 1024 * 1024)
+        self.max_upload_bytes = env_int(
+            "MAX_AUDIO_UPLOAD_BYTES", type(self).max_upload_bytes
+        )
 
     async def transcribe(
         self, audio: bytes, filename: str = "check-in.wav"

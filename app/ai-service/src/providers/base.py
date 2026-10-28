@@ -4,7 +4,9 @@ Error taxonomy lets routes map failures onto contract status codes:
 503 not configured, 504 timeout, 502 everything else.
 """
 
+import os
 from dataclasses import dataclass
+from typing import ClassVar, Protocol
 
 from contracts import CheckInRequest, CheckInResponse
 
@@ -28,7 +30,7 @@ class CheckInExtractor(Protocol):
 class Transcriber(Protocol):
     """Speech-to-text adapter contract."""
 
-    supported_content_types: set[str]
+    supported_content_types: ClassVar[set[str]]
     max_upload_bytes: int
 
     async def transcribe(
@@ -54,8 +56,6 @@ class TranscriptionError(ProviderError):
 
 
 # --- Env helpers ---
-import os
-
 
 def env_str(key: str, default: str = "") -> str:
     return os.getenv(key, default).strip()

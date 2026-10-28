@@ -19,7 +19,6 @@ src/
   main.py       # composes the app; mounts domain routers
   errors.py     # the shared ApiError envelope
   contracts.py  # HTTP contract, mirroring shared/ts-shared
-  prompts.py    # extraction + guidance prompt text
   extraction/  guidance/  onboarding_ocr/  providers/
 ```
 
@@ -44,7 +43,7 @@ Set in `.env`; also read per request, never logged. Anything already in the real
 | ------------------------------------------------ | ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | `NARAROUTER_API_TOKEN` (or `NARAROUTER_API_KEY`) | check-in extraction + guidance     | requires `NARAROUTER_BASE_URL` including `/v1`; model via `TIBY_LLM_MODEL`, default `agnes-2.5-flash` |
 | `GROQ_API_KEY`                                   | `/ai/extractions/check-in/audio`   | default transcriber (`TIBY_TRANSCRIBER=groq`)                                                         |
-| `FISH_AUDIO_API_TOKEN` (or `FISH_API_KEY`)       | audio when `TIBY_TRANSCRIBER=fish` | optional alternative transcriber                                                                      |
+| `FISH_AUDIO_API_TOKEN` (or `FISH_API_KEY`)       | audio when `TIBY_TRANSCRIBER=fish` | also requires `FISH_ENDPOINT`; optional alternative transcriber                                      |
 
 Missing token → 503, provider failure → 502, timeout → 504. Real providers are the default on `TIBY_EXTRACTOR` and `TIBY_TRANSCRIBER`; `TIBY_EXTRACTOR=rules` is the offline keyword baseline for deterministic tests only, and any unrecognised value is rejected at startup rather than falling through to a paid provider.
 
@@ -83,7 +82,7 @@ Run `ruff`, `mypy`, and `pytest` from `app/ai-service`, not the repo root: `pypr
 `/ai/guidance` reads `dataset/knowledge/tiby.db`, built from the PDFs in `dataset/knowledge/manifest.json`:
 
 ```bash
-uv run python src/ingest_knowledge.py
+uv run python scripts/ingest_knowledge.py
 ```
 
 Fresh clone without the index → guidance returns `answer: null`. TB-specific; verify issuer and edition before relying on any document. See `dataset/knowledge/README.md`.

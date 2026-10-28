@@ -16,7 +16,6 @@ import re
 from pathlib import Path
 
 import yaml
-from fastapi.routing import APIRoute
 from pydantic import BaseModel
 
 from contracts import CheckInRequest, GuidanceRequest
@@ -46,11 +45,11 @@ def route_of(request: dict) -> tuple[str, str]:
 
 
 def app_routes() -> set[tuple[str, str]]:
+    """Effective routes from the OpenAPI schema (FastAPI resolves included routers lazily)."""
     return {
-        (method, route.path)
-        for route in app.routes
-        if isinstance(route, APIRoute) and route.include_in_schema
-        for method in route.methods or set()
+        (method.upper(), path)
+        for path, operations in app.openapi()["paths"].items()
+        for method in operations
     }
 
 

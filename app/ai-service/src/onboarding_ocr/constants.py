@@ -64,17 +64,22 @@ MODEL_DIR_ENV = "TIBY_OCR_MODEL_DIR"
 MODEL_LOCK = Path(__file__).with_name("models.lock.json")
 
 RAPIDOCR_PARAMS: dict[str, str] = {
-    "Det.engine_type": "onnxruntime",
+    "Det.engine_type": "ONNXRUNTIME",
     "Det.lang_type": "id",
-    "Det.model_type": "small",
+    "Det.model_type": "SMALL",
     "Det.ocr_version": "PPOCRV6",
-    "Rec.engine_type": "onnxruntime",
+    "Rec.engine_type": "ONNXRUNTIME",
     "Rec.lang_type": "id",
-    "Rec.model_type": "small",
+    "Rec.model_type": "SMALL",
     "Rec.ocr_version": "PPOCRV6",
-    "Cls.engine_type": "onnxruntime",
+    "Cls.engine_type": "ONNXRUNTIME",
     "Cls.lang_type": "multi",
-    "Cls.model_type": "mobile",
+    "Cls.model_type": "MOBILE",
     "Cls.ocr_version": "PPOCRV4",
 }
-"""Static RapidOCR parameters; the model_root_dir is injected at runtime."""
+"""Static RapidOCR parameters; the model_root_dir is injected at runtime.
+
+Plain strings on purpose: this module must stay importable without the OCR
+stack (``card_parser`` imports it). Engine/model/version values are RapidOCR
+enum *member names*, resolved in ``ocr_service``.
+"""

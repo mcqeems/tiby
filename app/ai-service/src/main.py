@@ -7,18 +7,18 @@ lifespan) stays here because it is app-scoped, not route-scoped.
 
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from env import load_env
-from errors import AppException, api_error
+from errors import api_error
 from extraction.router import router as extraction_router
 from guidance.retrieval import SQLiteRetriever
 from guidance.router import router as guidance_router
 from onboarding_ocr.router import router as onboarding_ocr_router
 
-load_env()
+load_dotenv()
 
 
 @asynccontextmanager
@@ -50,12 +50,6 @@ async def request_validation_handler(
 ) -> JSONResponse:
     """Wrap FastAPI's built-in request validation errors in ``ApiError``."""
     return api_error(422, "INVALID_REQUEST", "Request does not match the API contract.")
-
-
-@app.exception_handler(AppException)
-async def app_exception_handler(_: Request, exc: AppException) -> JSONResponse:
-    """Render every ``AppException`` using the shared ``ApiError`` envelope."""
-    return api_error(exc.status_code, exc.code, exc.message)
 
 
 # Health

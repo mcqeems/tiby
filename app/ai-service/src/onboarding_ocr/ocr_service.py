@@ -31,6 +31,12 @@ from onboarding_ocr.constants import (
     RAPIDOCR_PARAMS,
 )
 
+_ENUM_PARAMS: dict[str, type[EngineType | ModelType | OCRVersion]] = {
+    "engine_type": EngineType,
+    "model_type": ModelType,
+    "ocr_version": OCRVersion,
+}
+
 
 class OcrModelError(RuntimeError):
     """A weight file is missing or does not match the lock. Never a download."""
@@ -90,18 +96,24 @@ class OcrEngine(Protocol):
     def __call__(self, image: np.ndarray) -> object: ...
 
 
+def _engine_params() -> dict[str, str | EngineType | ModelType | OCRVersion]:
+    """Resolve the static parameter table into the enum instances RapidOCR demands."""
+    params: dict[str, str | EngineType | ModelType | OCRVersion] = {
+        "Global.model_root_dir": str(model_dir())
+    }
+    for key, value in RAPIDOCR_PARAMS.items():
+        enum_cls = _ENUM_PARAMS.get(key.rsplit(".", 1)[-1])
+        params[key] = enum_cls[value] if enum_cls is not None else value
+    return params
+
+
 @lru_cache(maxsize=1)
 def _engine() -> OcrEngine:
     """Load one local ONNX model pipeline per worker process."""
     verify_models()
     return cast(
         OcrEngine,
-        RapidOCR(
-            params={
-                "Global.model_root_dir": str(model_dir()),
-                **RAPIDOCR_PARAMS,
-            },
-        ),
+        RapidOCR(params=_engine_params()),
     )
 
 

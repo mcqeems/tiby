@@ -13,15 +13,10 @@ from providers.base import (
 )
 
 
-FISH_TRANSCRIPTION_SYSTEM = (
-    "Transcribe the supplied audio faithfully in Indonesian. "
-    "Preserve negation, hesitation, uncertainty, and self-corrections. "
-    "Do not summarize, interpret symptoms, or add medical conclusions."
-)
-
-
 class FishAudioTranscriber:
     """Fish Audio speech-to-text adapter (opt-in via TIBY_TRANSCRIBER=fish)."""
+
+    max_upload_bytes = 10 * 1024 * 1024
 
     supported_content_types: ClassVar[set[str]] = {
         "audio/wav",
@@ -47,7 +42,9 @@ class FishAudioTranscriber:
         self.timeout_seconds = timeout_seconds or env_float(
             "FISH_TIMEOUT_SECONDS", 60.0
         )
-        self.max_upload_bytes = env_int("MAX_AUDIO_UPLOAD_BYTES", 10 * 1024 * 1024)
+        self.max_upload_bytes = env_int(
+            "MAX_AUDIO_UPLOAD_BYTES", type(self).max_upload_bytes
+        )
 
     async def transcribe(
         self, audio: bytes, filename: str = "check-in.wav"
