@@ -2,10 +2,9 @@
 
 Deliberately no embeddings: every hit keeps its document ID and PDF page so
 citations can be traced back to the source PDF. The database file is a build
-artifact (gitignored) rebuilt by ``src/ingest_knowledge.py``.
+artifact (gitignored) rebuilt by ``scripts/ingest_knowledge.py``.
 """
 
-import json
 import re
 import sqlite3
 from dataclasses import dataclass
@@ -95,10 +94,3 @@ class SQLiteRetriever:
                 (match, limit),
             ).fetchall()
         return [Evidence(Citation(*row[:8]), row[8]) for row in rows]
-
-    def seed_json(self, path: str | Path) -> int:
-        """Bulk-load ``[{"metadata": ..., "chunks": [...]}, ...]``; returns the count."""
-        data = json.loads(Path(path).read_text())
-        for item in data:
-            self.add_document(item["metadata"], item["chunks"])
-        return len(data)

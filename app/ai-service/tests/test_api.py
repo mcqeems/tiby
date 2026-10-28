@@ -9,22 +9,25 @@ from fastapi.testclient import TestClient
 from contracts import CheckInRequest, GuidanceResponse
 from guidance.retrieval import Citation, Evidence
 from guidance.service import GroundedAnswerer
-from main import (
-    app,
-    extraction_service,
-    transcription_service,
-)
-from providers.agnes import AgnesExtractor
+from main import app
 from providers.base import (
     ProviderConfigurationError,
     ProviderError,
     ProviderTimeoutError,
     Transcription,
 )
-from providers.factory import RuleBasedExtractor
+from providers.factory import (
+    RuleBasedExtractor,
+    extraction_service,
+    transcription_service,
+)
 from providers.fish import FishAudioTranscriber
 from providers.groq import GroqTranscriber
-from providers.nararouter import NaraRouterClient, NaraRouterSettings
+from providers.nararouter import (
+    NaraRouterClient,
+    NaraRouterExtractor,
+    NaraRouterSettings,
+)
 
 client = TestClient(app)
 
@@ -106,7 +109,7 @@ def test_text_extract_alias_uses_the_same_response_contract(monkeypatch):
 
 def test_check_in_maps_unconfigured_provider_to_api_error(monkeypatch):
     with patch(
-        "main.extraction_service",
+        "extraction.router.extraction_service",
         side_effect=ProviderConfigurationError("missing secret"),
     ):
         response = client.post(
@@ -122,7 +125,7 @@ def test_check_in_maps_unconfigured_provider_to_api_error(monkeypatch):
 
 def test_check_in_maps_provider_failure_to_api_error():
     with patch(
-        "main.extraction_service",
+        "extraction.router.extraction_service",
         side_effect=ProviderError("provider failed"),
     ):
         response = client.post(
@@ -149,11 +152,11 @@ def test_check_in_rejects_decision_fields(monkeypatch):
 
 
 def test_check_in_timeout_maps_to_provider_timeout(monkeypatch):
-    monkeypatch.setenv("TIBY_EXTRACTOR", "agnes")
+    monkeypatch.setenv("TIBY_EXTRACTOR", "nararouter")
     monkeypatch.setenv("NARAROUTER_API_TOKEN", "test-router-token")
     monkeypatch.setenv("NARAROUTER_BASE_URL", "https://router.test/v1")
     with patch.object(
-        AgnesExtractor,
+        NaraRouterExtractor,
         "extract",
         new=AsyncMock(side_effect=ProviderTimeoutError("timed out")),
     ):
@@ -168,7 +171,7 @@ def test_audio_endpoint_returns_the_transcript_only(monkeypatch):
     """Facts are extracted later, from the transcript the patient confirmed."""
     with (
         patch(
-            "main.transcription_service",
+            "extraction.router.transcription_service",
             return_value=GroqTranscriber(api_key="test-token"),
         ),
         patch.object(
@@ -180,7 +183,7 @@ def test_audio_endpoint_returns_the_transcript_only(monkeypatch):
                 )
             ),
         ) as transcribe,
-        patch("main.extraction_service") as extraction,
+        patch("extraction.router.extraction_service") as extraction,
     ):
         response = client.post(
             "/ai/extractions/check-in/audio",
@@ -240,7 +243,7 @@ def test_audio_extract_alias_uses_the_same_audio_contract(monkeypatch):
 
 
 def test_audio_endpoint_rejects_oversized_upload(monkeypatch):
-    monkeypatch.setattr(GroqTranscriber, "max_upload_bytes", 4)
+    monkeypatch.setenv("MAX_AUDIO_UPLOAD_BYTES", "4")
     response = client.post(
         "/ai/extractions/check-in/audio",
         files={"audio": ("speech.wav", b"12345", "audio/wav")},
@@ -284,7 +287,7 @@ def test_audio_endpoint_maps_transcription_timeout(monkeypatch):
 
 
 def test_guidance_endpoint_returns_null_without_evidence():
-    with patch("main.SQLiteRetriever") as retriever_cls:
+    with patch("guidance.router.SQLiteRetriever") as retriever_cls:
         retriever_cls.return_value.search.return_value = []
         response = client.post(
             "/ai/guidance", json={"question": "Topik yang tidak ada di indeks."}
@@ -314,8 +317,8 @@ def test_guidance_endpoint_packs_evidence_for_answerer():
     expected = GuidanceResponse(answer="ok", grounded=False, limitations=[])
     from main import app
 
-    retriever = patch("main.SQLiteRetriever").start()
-    answerer = patch("main.GroundedAnswerer").start()
+    retriever = patch("guidance.router.SQLiteRetriever").start()
+    answerer = patch("guidance.router.GroundedAnswerer").start()
     try:
         app.state.guidance_retriever = retriever.return_value
         app.state.guidance_answerer = answerer.return_value
@@ -364,7 +367,7 @@ def test_onboarding_ocr_route_returns_a_draft(monkeypatch):
         "fieldConfidence": {},
         "uncertainties": [],
     }
-    with patch("onboarding_ocr.controller.extract_onboarding_card", return_value=expected):
+    with patch("onboarding_ocr.router.extract_onboarding_card", return_value=expected):
         response = client.post(
             "/ocr/extract",
             files={"cardImage": ("card.png", b"image-bytes", "image/png")},
@@ -393,7 +396,7 @@ def test_onboarding_ocr_accepts_jpg_mime_type(monkeypatch):
         "fieldConfidence": {},
         "uncertainties": [],
     }
-    with patch("onboarding_ocr.controller.extract_onboarding_card", return_value=draft):
+    with patch("onboarding_ocr.router.extract_onboarding_card", return_value=draft):
         response = client.post(
             "/ocr/extract", files={"cardImage": ("card.jpg", b"bytes", "image/jpg")}
         )
@@ -401,7 +404,7 @@ def test_onboarding_ocr_accepts_jpg_mime_type(monkeypatch):
     assert response.json() == draft
 
 
-def test_agnes_provider_builds_configured_request_and_validates_response():
+def test_nararouter_provider_builds_configured_request_and_validates_response():
     seen = {}
 
     def handler(request):
@@ -423,7 +426,7 @@ def test_agnes_provider_builds_configured_request_and_validates_response():
             "providers.nararouter.httpx.AsyncClient",
             side_effect=lambda **kwargs: real_client(transport=transport, **kwargs),
         ):
-            extractor = AgnesExtractor(router_client(model="agnes-2.5-flash"))
+            extractor = NaraRouterExtractor(router_client(model="laguna-s-2.1"))
             result = await extractor.extract(
                 CheckInRequest(transcript="Sudah minum obat empat biji.")
             )
@@ -432,12 +435,12 @@ def test_agnes_provider_builds_configured_request_and_validates_response():
     asyncio.run(run_test())
     assert seen["url"] == "https://router.test/v1/chat/completions"
     assert seen["authorization"] == "Bearer test-token"
-    assert seen["body"]["model"] == "agnes-2.5-flash"
+    assert seen["body"]["model"] == "laguna-s-2.1"
     assert seen["body"]["response_format"] == {"type": "json_object"}
     assert "Do not diagnose" in seen["body"]["messages"][0]["content"]
 
 
-def test_agnes_provider_rejects_unexpected_risk_decision():
+def test_nararouter_provider_rejects_unexpected_risk_decision():
     invalid = response_payload()
     invalid["extraction"]["risk_status"] = "controlled"
     transport = httpx.MockTransport(
@@ -453,7 +456,7 @@ def test_agnes_provider_rejects_unexpected_risk_decision():
             "providers.nararouter.httpx.AsyncClient",
             side_effect=lambda **kwargs: real_client(transport=transport, **kwargs),
         ):
-            extractor = AgnesExtractor(router_client())
+            extractor = NaraRouterExtractor(router_client())
             with pytest.raises(ProviderError):
                 await extractor.extract(CheckInRequest(transcript="Sudah minum obat."))
 
@@ -550,7 +553,7 @@ def test_guidance_general_question_can_continue_to_grounded_answerer(monkeypatch
 
 
 def test_prompt_defines_strict_fact_only_boundaries():
-    from prompts import CHECKIN_EXTRACTION_SYSTEM
+    from extraction.prompts import CHECKIN_EXTRACTION_SYSTEM
 
     assert "intent to stop taking the medication only" in CHECKIN_EXTRACTION_SYSTEM
     assert "return []" in CHECKIN_EXTRACTION_SYSTEM
@@ -562,8 +565,8 @@ def test_prompt_defines_strict_fact_only_boundaries():
 
 
 def test_prompt_keeps_ambiguous_transcript_as_quoted_data():
-    from prompts import checkin_extraction_user
+    from extraction.prompts import render_checkin_user_prompt
 
-    prompt = checkin_extraction_user("lupa {json} dan belum minum")
+    prompt = render_checkin_user_prompt("lupa {json} dan belum minum")
     assert '"lupa {json} dan belum minum"' in prompt
     assert "{transcript}" not in prompt

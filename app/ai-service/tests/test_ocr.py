@@ -25,8 +25,6 @@ from onboarding_ocr.card_parser import (
 from onboarding_ocr.ocr_service import extract_onboarding_card
 
 DATASET = Path(__file__).resolve().parents[1] / "dataset" / "ocr"
-LAYOUTS = DATASET / "layouts"
-PHOTOS = DATASET / "photos"
 
 
 def read(*parts: str) -> bytes:

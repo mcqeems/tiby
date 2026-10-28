@@ -4,20 +4,10 @@ This is the only place that knows OpenCV and RapidOCR exist. It decodes the
 upload, runs the local ONNX pipeline, and hands the detected rows — each with
 the engine's own score — to :mod:`.card_parser`.
 
-There is deliberately no image conditioning step here: no deskew, no contrast
-normalisation, no upscale. That was tried and measured against the card
-fixtures. PPOCRv6-small already reads a rotated, shadowed, underexposed,
-0.4x-scaled photo at full field coverage on its own, and conditioning never beat
-the raw image in any scenario, while upscaling a very small card made it
-strictly worse. When the engine does fail, the honest signal is the per-field
-confidence dropping, which is what a Nakes needs to see anyway.
-
-Model weights are hash-locked and verified *before* the engine is built, because
-RapidOCR's own behaviour when a weight file is missing is to download ~30 MB
-from ModelScope on the spot. In production that turns a cold start into a
-network dependency and lets an unverified file load silently. Pre-stage the
-files and point ``TIBY_OCR_MODEL_DIR`` at them; a missing or mismatched weight
-raises :class:`OcrModelError` instead of reaching for the network.
+Model weights are hash-locked and verified *before* the engine is built.
+Pre-stage the files and point ``TIBY_OCR_MODEL_DIR`` at them; a missing or
+mismatched weight raises :class:`OcrModelError` instead of reaching for the
+network.
 """
 
 from __future__ import annotations
@@ -35,18 +25,17 @@ from rapidocr import EngineType, ModelType, OCRVersion, RapidOCR
 
 from contracts import OcrOnboardingDraft
 from onboarding_ocr.card_parser import OcrLine, parse_onboarding_lines
+from onboarding_ocr.constants import (
+    MODEL_DIR_ENV,
+    MODEL_LOCK,
+    RAPIDOCR_PARAMS,
+)
 
-MODEL_DIR_ENV = "TIBY_OCR_MODEL_DIR"
-MODEL_LOCK = Path(__file__).with_name("models.lock.json")
-def _default_model_dir() -> Path:
-    """The cache RapidOCR ships with, found through the installed package.
-
-    Resolved from ``rapidocr`` rather than by walking up to ``.venv``: the
-    interpreter version in the path changes, and this does not.
-    """
-    import rapidocr
-
-    return Path(rapidocr.__file__).parent / "models"
+_ENUM_PARAMS: dict[str, type[EngineType | ModelType | OCRVersion]] = {
+    "engine_type": EngineType,
+    "model_type": ModelType,
+    "ocr_version": OCRVersion,
+}
 
 
 class OcrModelError(RuntimeError):
@@ -58,15 +47,25 @@ class LockedModel(NamedTuple):
     sha256: str
 
 
-def locked_models() -> list[LockedModel]:
-    lock = json.loads(MODEL_LOCK.read_text(encoding="utf-8"))
-    return [LockedModel(name, sha) for name, sha in sorted(lock["models"].items())]
+def _default_model_dir() -> Path:
+    """The cache RapidOCR ships with, found through the installed package.
+
+    Resolved from ``rapidocr`` rather than by walking up to ``.venv``.
+    """
+    import rapidocr
+
+    return Path(rapidocr.__file__).parent / "models"
 
 
 def model_dir() -> Path:
     """Where weights must already be, staged ahead of time."""
     override = os.getenv(MODEL_DIR_ENV)
     return Path(override) if override else _default_model_dir()
+
+
+def locked_models() -> list[LockedModel]:
+    lock = json.loads(MODEL_LOCK.read_text(encoding="utf-8"))
+    return [LockedModel(name, sha) for name, sha in sorted(lock["models"].items())]
 
 
 def verify_models(directory: Path | None = None) -> None:
@@ -97,29 +96,24 @@ class OcrEngine(Protocol):
     def __call__(self, image: np.ndarray) -> object: ...
 
 
+def _engine_params() -> dict[str, str | EngineType | ModelType | OCRVersion]:
+    """Resolve the static parameter table into the enum instances RapidOCR demands."""
+    params: dict[str, str | EngineType | ModelType | OCRVersion] = {
+        "Global.model_root_dir": str(model_dir())
+    }
+    for key, value in RAPIDOCR_PARAMS.items():
+        enum_cls = _ENUM_PARAMS.get(key.rsplit(".", 1)[-1])
+        params[key] = enum_cls[value] if enum_cls is not None else value
+    return params
+
+
 @lru_cache(maxsize=1)
 def _engine() -> OcrEngine:
     """Load one local ONNX model pipeline per worker process."""
     verify_models()
     return cast(
         OcrEngine,
-        RapidOCR(
-            params={
-                "Global.model_root_dir": model_dir(),
-                "Det.engine_type": EngineType.ONNXRUNTIME,
-                "Det.lang_type": "id",
-                "Det.model_type": ModelType.SMALL,
-                "Det.ocr_version": OCRVersion.PPOCRV6,
-                "Rec.engine_type": EngineType.ONNXRUNTIME,
-                "Rec.lang_type": "id",
-                "Rec.model_type": ModelType.SMALL,
-                "Rec.ocr_version": OCRVersion.PPOCRV6,
-                "Cls.engine_type": EngineType.ONNXRUNTIME,
-                "Cls.lang_type": "multi",
-                "Cls.model_type": ModelType.MOBILE,
-                "Cls.ocr_version": OCRVersion.PPOCRV4,
-            },
-        ),
+        RapidOCR(params=_engine_params()),
     )
 
 

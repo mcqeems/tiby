@@ -1,18 +1,19 @@
-"""Minimal OpenAI-compatible chat-completions client shared by LLM call sites."""
-
 import json
-import os
 from dataclasses import dataclass
 
 import httpx
 
+from contracts import CheckInRequest, CheckInResponse
+from extraction.prompts import CHECKIN_EXTRACTION_SYSTEM, render_checkin_user_prompt
 from providers.base import (
     ProviderConfigurationError,
     ProviderError,
     ProviderTimeoutError,
+    env_float,
+    env_str,
 )
 
-DEFAULT_MODEL = "agnes-2.5-flash"
+DEFAULT_MODEL = "laguna-s-2.1"
 
 
 @dataclass(frozen=True)
@@ -25,9 +26,10 @@ class NaraRouterSettings:
     @classmethod
     def from_env(cls) -> "NaraRouterSettings":
         return cls(
-            api_key=os.getenv("NARAROUTER_API_TOKEN") or os.getenv("NARAROUTER_API_KEY") or "",
-            base_url=os.getenv("NARAROUTER_BASE_URL", "").rstrip("/"),
-            model=os.getenv("TIBY_LLM_MODEL", DEFAULT_MODEL),
+            api_key=env_str("NARAROUTER_API_TOKEN") or env_str("NARAROUTER_API_KEY"),
+            base_url=env_str("NARAROUTER_BASE_URL").rstrip("/"),
+            model=env_str("TIBY_LLM_MODEL", DEFAULT_MODEL),
+            timeout_seconds=env_float("NARAROUTER_TIMEOUT_SECONDS", 90.0),
         )
 
 
@@ -53,7 +55,9 @@ class NaraRouterClient:
             ],
         }
         try:
-            async with httpx.AsyncClient(timeout=self.settings.timeout_seconds) as client:
+            async with httpx.AsyncClient(
+                timeout=self.settings.timeout_seconds
+            ) as client:
                 response = await client.post(
                     f"{self.settings.base_url}/chat/completions",
                     headers={"Authorization": f"Bearer {self.settings.api_key}"},
@@ -62,12 +66,43 @@ class NaraRouterClient:
                 response.raise_for_status()
                 content = response.json()["choices"][0]["message"]["content"]
                 if isinstance(content, list):
-                    content = "".join(part.get("text", "") for part in content if isinstance(part, dict))
+                    content = "".join(
+                        part.get("text", "")
+                        for part in content
+                        if isinstance(part, dict)
+                    )
                 parsed = json.loads(content)
                 if not isinstance(parsed, dict):
                     raise TypeError("Provider returned JSON that is not an object.")
                 return parsed
         except httpx.TimeoutException as exc:
-            raise ProviderTimeoutError("The language model provider timed out.") from exc
+            raise ProviderTimeoutError(
+                "The language model provider timed out."
+            ) from exc
         except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as exc:
-            raise ProviderError("The language model provider failed or returned an invalid response.") from exc
+            raise ProviderError(
+                "The language model provider failed or returned an invalid response."
+            ) from exc
+
+
+class NaraRouterExtractor:
+    """Check-in fact extraction through the NaraRouter chat-completions API.
+
+    Named after the provider, not the model: ``TIBY_LLM_MODEL`` picks the model
+    (``laguna-s-2.1`` by default) and can change without touching this class.
+    """
+
+    def __init__(self, client: NaraRouterClient | None = None):
+        self.client = client or NaraRouterClient()
+
+    async def extract(self, request: CheckInRequest) -> CheckInResponse:
+        """Extract facts; provider output is schema-validated, deviations raise ProviderError."""
+        provider_result = await self.client.chat_json(
+            CHECKIN_EXTRACTION_SYSTEM, render_checkin_user_prompt(request.transcript)
+        )
+        try:
+            return CheckInResponse.model_validate(provider_result)
+        except ValueError as exc:
+            raise ProviderError(
+                "The extraction provider returned an invalid check-in payload."
+            ) from exc
