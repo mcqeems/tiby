@@ -6,15 +6,24 @@ import { errorMessage } from "@/lib/errors";
 import { formatLongDateUtc } from "@/lib/format";
 import { usersApi } from "@/lib/api/users";
 import { onboardingApi } from "@/lib/api/onboarding";
+import {
+  mergeOcrDraft,
+  missingMandatoryFields,
+  ocrSummary,
+  OCR_FIELD_LABELS,
+  type OcrFieldKey,
+} from "@/lib/onboarding-ocr";
 import { usePopup } from "@/components/ui/popup-provider";
 import PublicLoading from "@/components/ui/public-loading";
 import OnboardingSuccessCard from "./onboarding-success-card";
+import type { OcrOnboardingDraft } from "@tiby/ts-shared";
 import type {
   OnboardingPayload,
   OnboardingCredentials,
   PmoRelationship,
 } from "@/lib/types/onboarding";
 import {
+  AlertCircle,
   Camera,
   UserPlus,
   Users,
@@ -155,31 +164,72 @@ function Field({
   hint,
   icon: Icon,
   children,
+  fieldKey,
+  error,
+  fromCard,
+  confidence,
+  wiggleToken,
 }: {
   label: string;
   required?: boolean;
   hint?: string;
   icon?: LucideIcon;
   children: React.ReactNode;
+  /** Dotted form path, so a missing field can be focused by name. */
+  fieldKey?: string;
+  /** Shown under the field, and rings it red. */
+  error?: string;
+  /** True when OCR supplied this value. */
+  fromCard?: boolean;
+  confidence?: number;
+  /** Bump to replay the one-shot nudge. */
+  wiggleToken?: number;
 }) {
   return (
-    <label className="block">
-      <span className="mb-1.5 flex items-center gap-1 text-xs font-semibold text-tiby-ink">
+    <label className="block" data-field={fieldKey}>
+      <span className="mb-1.5 flex flex-wrap items-center gap-1 text-xs font-semibold text-tiby-ink">
         {label}
         {required && (
           <span aria-hidden="true" className="text-red-500">
             *
           </span>
         )}
+        {fromCard && (
+          <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-tiby-teal-50 px-2 py-0.5 text-[10px] font-semibold text-tiby-teal-700 ring-1 ring-tiby-teal-100">
+            dari kartu
+            {typeof confidence === "number" && (
+              <span className="text-tiby-teal-600/70">
+                {Math.round(confidence * 100)}%
+              </span>
+            )}
+          </span>
+        )}
       </span>
-      <span className="relative block">
+      <span
+        key={wiggleToken}
+        className={`relative block rounded-xl ${
+          error ? "ring-2 ring-red-400/80 motion-safe:animate-wiggle" : ""
+        }`}
+      >
         {children}
         {Icon && (
           <Icon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 transition-colors peer-focus:text-tiby-teal-600" />
         )}
       </span>
-      {hint && (
-        <span className="mt-1.5 block text-[11px] text-tiby-muted">{hint}</span>
+      {error ? (
+        <span
+          role="alert"
+          className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-red-600"
+        >
+          <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          {error}
+        </span>
+      ) : (
+        hint && (
+          <span className="mt-1.5 block text-[11px] text-tiby-muted">
+            {hint}
+          </span>
+        )
       )}
     </label>
   );
@@ -229,9 +279,51 @@ export default function OnboardingForm() {
 
   const [includeFamily, setIncludeFamily] = useState(false);
   const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrResult, setOcrResult] = useState<{
+    draft: OcrOnboardingDraft;
+    filled: OcrFieldKey[];
+    skipped: OcrFieldKey[];
+  } | null>(null);
+  const [ocrPreview, setOcrPreview] = useState<string | null>(null);
+  const [showOcrText, setShowOcrText] = useState(false);
+  /** Which OCR-fillable fields the Nakes has typed in since the scan. */
+  const [touched, setTouched] = useState<ReadonlySet<OcrFieldKey>>(new Set());
+  /** Red rings + inline messages start only after a scan, never on a blank form. */
+  const [highlightMissing, setHighlightMissing] = useState(false);
+  const [wiggleToken, setWiggleToken] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [createdCredentials, setCreatedCredentials] =
     useState<OnboardingCredentials | null>(null);
+
+  // Release the preview blob when it is replaced or the page unmounts.
+  useEffect(
+    () => () => {
+      if (ocrPreview) URL.revokeObjectURL(ocrPreview);
+    },
+    [ocrPreview],
+  );
+
+  const missing = missingMandatoryFields(form, {
+    pmoMode,
+    hasExistingPmo: Boolean(selectedExistingPmo),
+    includeFamily,
+  });
+  const missingLabels = new Map(missing.map((item) => [item.key, item.label]));
+  const errorFor = (key: string) =>
+    highlightMissing ? missingLabels.get(key) : undefined;
+  const confidenceFor = (key: OcrFieldKey) =>
+    ocrResult?.draft.fieldConfidence?.[key];
+  const fromCard = (key: OcrFieldKey) =>
+    Boolean(ocrResult?.filled.includes(key)) && !touched.has(key);
+
+  const markTouched = (key: OcrFieldKey) =>
+    setTouched((prev) => (prev.has(key) ? prev : new Set(prev).add(key)));
+
+  const focusField = (key: string) => {
+    const wrapper = document.querySelector<HTMLElement>(`[data-field="${key}"]`);
+    wrapper?.scrollIntoView({ block: "center", behavior: "smooth" });
+    wrapper?.querySelector<HTMLInputElement>("input")?.focus({ preventScroll: true });
+  };
 
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -275,35 +367,59 @@ export default function OnboardingForm() {
     if (!file) return;
 
     setOcrLoading(true);
+    setOcrPreview(URL.createObjectURL(file));
 
     try {
       const draft = await onboardingApi.ocrExtract(file);
+      const merged = mergeOcrDraft(form, draft, touched);
 
-      setForm((prev) => ({
-        ...prev,
-        patient: {
-          ...prev.patient,
-          fullName: draft.patientName || prev.patient.fullName,
-        },
-        regimenCode: draft.regimenCode || prev.regimenCode,
-        dailyPillQuota: draft.dailyPillQuota ?? prev.dailyPillQuota,
-        startDate: draft.startDate || prev.startDate,
-      }));
+      setForm(merged.form);
+      setOcrResult({ draft, filled: merged.filled, skipped: merged.skipped });
+      setShowOcrText(false);
 
-      await notify({
-        variant: "success",
-        badgeText: "Ekstraksi OCR",
-        title: "Data Kartu Berhasil Dibaca",
-        description: `Nama pasien, regimen (${draft.regimenCode || form.regimenCode}), dan dosis berhasil diisi otomatis oleh sistem.`,
-        confirmLabel: "Lanjutkan",
+      // The scan only proposes values; every remaining mandatory field is now
+      // flagged, because the Nakes is about to submit a treatment plan.
+      const stillMissing = missingMandatoryFields(merged.form, {
+        pmoMode,
+        hasExistingPmo: Boolean(selectedExistingPmo),
+        includeFamily,
       });
+      setHighlightMissing(true);
+      setWiggleToken((token) => token + 1);
+
+      if (stillMissing.length > 0) {
+        const labels = stillMissing
+          .slice(0, 3)
+          .map((field) => field.label)
+          .join(", ");
+        await notify({
+          variant: "warning",
+          badgeText: "Pindai Kartu",
+          title: `${stillMissing.length} kolom wajib masih kosong`,
+          description: `Kartu terbaca, tetapi ${labels}${
+            stillMissing.length > 3 ? ", dan lainnya" : ""
+          } belum terisi. Lengkapi dulu sebelum menerbitkan akun.`,
+          confirmLabel: "Isi Sekarang",
+        });
+        focusField(stillMissing[0].key);
+      } else {
+        await notify({
+          variant: "success",
+          badgeText: "Ekstraksi OCR",
+          title: "Semua kolom wajib sudah terisi",
+          description: `Dari kartu: ${ocrSummary(draft)}. Periksa lagi sebelum menerbitkan akun.`,
+          confirmLabel: "Periksa",
+        });
+      }
     } catch (err: unknown) {
       await notify({
         variant: "warning",
         badgeText: "Pindai Kartu",
         title: "Foto Tidak Terbaca Otomatis",
-        description:
-          errorMessage(err, "Pastikan foto kartu pengobatan cukup terang, atau isi kolom formulir secara manual."),
+        description: errorMessage(
+          err,
+          "Pastikan foto kartu pengobatan cukup terang, atau isi kolom formulir secara manual.",
+        ),
         confirmLabel: "Isi Manual",
       });
     } finally {
@@ -491,12 +607,102 @@ export default function OnboardingForm() {
               <input
                 type="file"
                 accept="image/*"
+                capture="environment"
                 onChange={handleOcrFile}
                 disabled={ocrLoading}
                 className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-wait"
               />
             </label>
           </div>
+
+          {ocrResult && (
+            <div className="mt-4 rounded-2xl border border-white/25 bg-white/10 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-white/70">
+                    Hasil pembacaan
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-white">
+                    {ocrSummary(ocrResult.draft)}
+                  </p>
+                  {ocrResult.skipped.length > 0 && (
+                    <p className="mt-1 text-[11px] leading-relaxed text-white/75">
+                      Tidak ditimpa karena sudah Anda isi:{" "}
+                      {ocrResult.skipped
+                        .map((key) => OCR_FIELD_LABELS[key])
+                        .join(", ")}
+                      .
+                    </p>
+                  )}
+                </div>
+
+                {ocrPreview && (
+                  // The scan is only a draft: show the photo beside the fields
+                  // so they can be checked against the card.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={ocrPreview}
+                    alt="Pratinjau kartu pengobatan yang dipindai"
+                    className="h-16 w-24 rounded-lg object-cover ring-1 ring-white/30"
+                  />
+                )}
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {(Object.keys(OCR_FIELD_LABELS) as OcrFieldKey[]).map((key) => {
+                  const filledNow = ocrResult.filled.includes(key);
+                  const value = ocrResult.draft[key];
+                  const confidence = ocrResult.draft.fieldConfidence?.[key];
+                  return (
+                    <span
+                      key={key}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold ${
+                        filledNow
+                          ? "bg-white text-tiby-teal-700"
+                          : value
+                            ? "bg-amber-200/90 text-amber-900"
+                            : "bg-white/15 text-white/70 ring-1 ring-white/25"
+                      }`}
+                    >
+                      {OCR_FIELD_LABELS[key]}
+                      {typeof confidence === "number" && value ? (
+                        <span className="font-bold">
+                          {Math.round(confidence * 100)}%
+                        </span>
+                      ) : null}
+                      {!value && <span className="font-normal">tidak terbaca</span>}
+                    </span>
+                  );
+                })}
+              </div>
+
+              {ocrResult.draft.rawText && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowOcrText((open) => !open)}
+                    aria-expanded={showOcrText}
+                    className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-white/90 underline decoration-white/40 underline-offset-2 hover:text-white"
+                  >
+                    {showOcrText ? "Sembunyikan teks terbaca" : "Lihat teks terbaca"}
+                  </button>
+                  {showOcrText && (
+                    <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-xl bg-black/25 p-3 text-[10px] leading-relaxed text-white/80">
+                      {ocrResult.draft.rawText}
+                    </pre>
+                  )}
+                </>
+              )}
+
+              {missing.length > 0 && (
+                <p className="mt-3 flex items-start gap-1.5 rounded-xl bg-amber-100/90 px-3 py-2 text-[11px] font-semibold text-amber-900">
+                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  {missing.length} kolom wajib belum terisi. Kolom yang ditandai
+                  merah harus dilengkapi sebelum akun bisa diterbitkan.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -510,17 +716,27 @@ export default function OnboardingForm() {
             description="Data akun yang akan digunakan pasien untuk masuk ke aplikasi."
           >
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <Field label="Nama Lengkap Pasien" required icon={User}>
+              <Field
+                label="Nama Lengkap Pasien"
+                required
+                icon={User}
+                fieldKey="patient.fullName"
+                error={errorFor("patient.fullName")}
+                fromCard={fromCard("patientName")}
+                confidence={confidenceFor("patientName")}
+                wiggleToken={wiggleToken}
+              >
                 <input
                   type="text"
                   required
                   value={form.patient.fullName}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    markTouched("patientName");
                     setForm({
                       ...form,
                       patient: { ...form.patient, fullName: e.target.value },
-                    })
-                  }
+                    });
+                  }}
                   placeholder="cth: Budi Santoso"
                   className={`${inputCls} pl-10`}
                 />
@@ -529,6 +745,9 @@ export default function OnboardingForm() {
                 label="Username Pasien"
                 required
                 icon={AtSign}
+                fieldKey="patient.username"
+                error={errorFor("patient.username")}
+                wiggleToken={wiggleToken}
                 hint="3–30 karakter."
               >
                 <input
@@ -551,6 +770,9 @@ export default function OnboardingForm() {
                 label="Nomor WhatsApp Pasien"
                 required
                 icon={Phone}
+                fieldKey="patient.whatsappNumber"
+                error={errorFor("patient.whatsappNumber")}
+                wiggleToken={wiggleToken}
                 hint="Minimal 8 digit angka."
               >
                 <input
@@ -722,7 +944,14 @@ export default function OnboardingForm() {
 
             {pmoMode === "baru" && (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <Field label="Nama Lengkap PMO" required icon={User}>
+                <Field
+                  label="Nama Lengkap PMO"
+                  required
+                  icon={User}
+                  fieldKey="pmo.fullName"
+                  error={errorFor("pmo.fullName")}
+                  wiggleToken={wiggleToken}
+                >
                   <input
                     type="text"
                     required
@@ -741,6 +970,9 @@ export default function OnboardingForm() {
                   label="Username PMO"
                   required
                   icon={AtSign}
+                  fieldKey="pmo.username"
+                  error={errorFor("pmo.username")}
+                  wiggleToken={wiggleToken}
                   hint="3–30 karakter."
                 >
                   <input
@@ -759,7 +991,14 @@ export default function OnboardingForm() {
                     className={`${inputCls} pl-10`}
                   />
                 </Field>
-                <Field label="WhatsApp PMO" required icon={Phone}>
+                <Field
+                  label="WhatsApp PMO"
+                  required
+                  icon={Phone}
+                  fieldKey="pmo.whatsappNumber"
+                  error={errorFor("pmo.whatsappNumber")}
+                  wiggleToken={wiggleToken}
+                >
                   <input
                     type="tel"
                     required
@@ -806,14 +1045,24 @@ export default function OnboardingForm() {
             description="Regimen, dosis harian, dan jadwal pengingat minum obat."
           >
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Field label="Regimen" required icon={Pill}>
+              <Field
+                label="Regimen"
+                required
+                icon={Pill}
+                fieldKey="regimenCode"
+                error={errorFor("regimenCode")}
+                fromCard={fromCard("regimenCode")}
+                confidence={confidenceFor("regimenCode")}
+                wiggleToken={wiggleToken}
+              >
                 <input
                   type="text"
                   required
                   value={form.regimenCode}
-                  onChange={(e) =>
-                    setForm({ ...form, regimenCode: e.target.value })
-                  }
+                  onChange={(e) => {
+                    markTouched("regimenCode");
+                    setForm({ ...form, regimenCode: e.target.value });
+                  }}
                   placeholder="cth: FDC-4"
                   className={`${inputCls} pl-10`}
                 />
@@ -822,6 +1071,11 @@ export default function OnboardingForm() {
                 label="Butir Harian"
                 required
                 icon={Hash}
+                fieldKey="dailyPillQuota"
+                error={errorFor("dailyPillQuota")}
+                fromCard={fromCard("dailyPillQuota")}
+                confidence={confidenceFor("dailyPillQuota")}
+                wiggleToken={wiggleToken}
                 hint="Antara 1–12 butir."
               >
                 <input
@@ -830,16 +1084,24 @@ export default function OnboardingForm() {
                   max={12}
                   required
                   value={form.dailyPillQuota}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    markTouched("dailyPillQuota");
                     setForm({
                       ...form,
                       dailyPillQuota: parseInt(e.target.value, 10) || 1,
-                    })
-                  }
+                    });
+                  }}
                   className={`${inputCls} pl-10`}
                 />
               </Field>
-              <Field label="Jam Pengingat" required icon={Clock}>
+              <Field
+                label="Jam Pengingat"
+                required
+                icon={Clock}
+                fieldKey="reminderTimeLocal"
+                error={errorFor("reminderTimeLocal")}
+                wiggleToken={wiggleToken}
+              >
                 <input
                   type="time"
                   required
@@ -850,14 +1112,24 @@ export default function OnboardingForm() {
                   className={`${inputCls} pl-10`}
                 />
               </Field>
-              <Field label="Tanggal Mulai" required icon={CalendarDays}>
+              <Field
+                label="Tanggal Mulai"
+                required
+                icon={CalendarDays}
+                fieldKey="startDate"
+                error={errorFor("startDate")}
+                fromCard={fromCard("startDate")}
+                confidence={confidenceFor("startDate")}
+                wiggleToken={wiggleToken}
+              >
                 <input
                   type="date"
                   required
                   value={form.startDate}
-                  onChange={(e) =>
-                    setForm({ ...form, startDate: e.target.value })
-                  }
+                  onChange={(e) => {
+                    markTouched("startDate");
+                    setForm({ ...form, startDate: e.target.value });
+                  }}
                   className={`${inputCls} pl-10`}
                 />
               </Field>
@@ -915,7 +1187,13 @@ export default function OnboardingForm() {
           >
             {includeFamily && (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Nama Kontak Darurat" icon={User}>
+                <Field
+                  label="Nama Kontak Darurat"
+                  icon={User}
+                  fieldKey="familyContact.fullName"
+                  error={errorFor("familyContact.fullName")}
+                  wiggleToken={wiggleToken}
+                >
                   <input
                     type="text"
                     value={form.familyContact?.fullName || ""}
@@ -934,7 +1212,13 @@ export default function OnboardingForm() {
                     className={`${inputCls} pl-10`}
                   />
                 </Field>
-                <Field label="Nomor WhatsApp Darurat" icon={Phone}>
+                <Field
+                  label="Nomor WhatsApp Darurat"
+                  icon={Phone}
+                  fieldKey="familyContact.whatsappNumber"
+                  error={errorFor("familyContact.whatsappNumber")}
+                  wiggleToken={wiggleToken}
+                >
                   <input
                     type="tel"
                     value={form.familyContact?.whatsappNumber || ""}
@@ -965,14 +1249,34 @@ export default function OnboardingForm() {
                 Data akan dikonfirmasi sekali lagi sebelum akun diterbitkan.
               </span>
             </p>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-tiby-teal-600 px-7 py-3 text-sm font-semibold text-white shadow-[0_6px_16px_-6px_rgba(13,148,136,0.6)] transition hover:-translate-y-0.5 hover:bg-tiby-teal-700 hover:shadow-[0_10px_20px_-8px_rgba(13,148,136,0.7)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tiby-teal-600 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
-            >
-              <Send className="h-4 w-4" />
-              <span>Simpan &amp; Terbitkan Akun</span>
-            </button>
+            <div className="flex flex-col gap-2 sm:items-end">
+              {missing.length > 0 && (
+                <p
+                  id="onboarding-missing"
+                  role="status"
+                  className="flex items-start gap-1.5 text-[11px] font-semibold text-red-600 sm:text-right"
+                >
+                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  <span>
+                    {missing.length} kolom wajib belum diisi:{" "}
+                    {missing
+                      .slice(0, 2)
+                      .map((field) => field.label)
+                      .join(", ")}
+                    {missing.length > 2 ? `, dan ${missing.length - 2} lainnya` : ""}.
+                  </span>
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={submitting || missing.length > 0}
+                aria-describedby={missing.length > 0 ? "onboarding-missing" : undefined}
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-tiby-teal-600 px-7 py-3 text-sm font-semibold text-white shadow-[0_6px_16px_-6px_rgba(13,148,136,0.6)] transition hover:-translate-y-0.5 hover:bg-tiby-teal-700 hover:shadow-[0_10px_20px_-8px_rgba(13,148,136,0.7)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tiby-teal-600 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+              >
+                <Send className="h-4 w-4" />
+                <span>Simpan &amp; Terbitkan Akun</span>
+              </button>
+            </div>
           </div>
         </form>
       )}
