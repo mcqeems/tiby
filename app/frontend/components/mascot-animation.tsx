@@ -42,12 +42,6 @@ export default function MascotAnimation({
 
   return (
     <div className={`relative flex items-center justify-center ${className}`}>
-      {/* Soft ambient aura blending directly into the canvas */}
-      <div
-        className="absolute rounded-full bg-tiby-teal-50/90 blur-sm pointer-events-none"
-        style={{ width: size * 1.08, height: size * 1.08 }}
-      />
-
       {/* Lottie Animation */}
       <div
         ref={containerRef}

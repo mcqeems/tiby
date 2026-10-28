@@ -148,7 +148,7 @@ export default function RiwayatView() {
               <div className="relative w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm shrink-0">
                 {currentStreak > 0 && (
                   <motion.div
-                    className="absolute inset-0 bg-orange-500/40 rounded-full blur-xl"
+                    className="absolute inset-0 bg-orange-500/20 rounded-full blur-xl"
                     animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0.8, 0.4] }}
                     transition={{
                       duration: 1.5,
@@ -176,7 +176,7 @@ export default function RiwayatView() {
                   <Flame
                     className={`w-10 h-10 transition-colors duration-500 ${
                       currentStreak > 0
-                        ? "text-orange-400 fill-orange-400 drop-shadow-[0_0_12px_rgba(249,115,22,0.8)]"
+                        ? "text-orange-300 fill-orange-300 drop-shadow-[0_0_12px_rgba(249,115,22,0.8)]"
                         : "text-white/40 fill-white/10"
                     }`}
                   />
