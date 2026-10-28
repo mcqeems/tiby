@@ -12,6 +12,8 @@ import type {
   EducationCardList,
   EducationQuery,
   EducationCardManaged,
+  EducationCardManagedList,
+  EducationListQuery,
   CreateEducationCardDto,
   UpdateEducationCardDto,
   EducationCategory,
@@ -144,27 +146,47 @@ export class EducationService implements OnModuleInit {
   }
 
   /** Admin/Nakes listing. ADMIN sees everything; NAKES sees global + own. */
-  async listCards(caller: EducationCaller): Promise<EducationCardManaged[]> {
+  async listCards(
+    caller: EducationCaller,
+    query: EducationListQuery,
+  ): Promise<EducationCardManagedList> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const pagination = {
+      // `id` breaks ties so a page boundary never repeats or drops a card.
+      order: {
+        facilityId: "ASC",
+        sortOrder: "ASC",
+        createdAt: "ASC",
+        id: "ASC",
+      } as const,
+      skip: (page - 1) * limit,
+      take: limit,
+    };
+
+    let rows: EducationCard[];
+    let total: number;
+
     if (caller.role === "ADMIN") {
-      const all = await this.cardRepo.find({
-        order: { facilityId: "ASC", sortOrder: "ASC", createdAt: "ASC" },
-      });
-      return all.map(toManaged);
-    }
-
-    if (!caller.facilityId) {
-      const globals = await this.cardRepo.find({
+      [rows, total] = await this.cardRepo.findAndCount(pagination);
+    } else if (!caller.facilityId) {
+      [rows, total] = await this.cardRepo.findAndCount({
         where: { facilityId: IsNull() },
-        order: { sortOrder: "ASC", createdAt: "ASC" },
+        ...pagination,
       });
-      return globals.map(toManaged);
+    } else {
+      [rows, total] = await this.cardRepo.findAndCount({
+        where: [{ facilityId: IsNull() }, { facilityId: caller.facilityId }],
+        ...pagination,
+      });
     }
 
-    const cards = await this.cardRepo.find({
-      where: [{ facilityId: IsNull() }, { facilityId: caller.facilityId }],
-      order: { facilityId: "ASC", sortOrder: "ASC", createdAt: "ASC" },
-    });
-    return cards.map(toManaged);
+    return {
+      items: rows.map(toManaged),
+      total,
+      page,
+      limit,
+    };
   }
 
   async createCard(

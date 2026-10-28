@@ -29,6 +29,7 @@ describe("EducationService Unit Tests", () => {
   beforeEach(() => {
     mockCardRepo = {
       find: vi.fn().mockResolvedValue([]),
+      findAndCount: vi.fn().mockResolvedValue([[], 0]),
       findOneBy: vi.fn(),
       countBy: vi.fn().mockResolvedValue(0),
       create: vi.fn((d) => d),
@@ -103,21 +104,46 @@ describe("EducationService Unit Tests", () => {
 
   describe("listCards", () => {
     it("gives ADMIN every card with no facility scoping", async () => {
-      await service.listCards({ id: "admin", role: "ADMIN" });
+      await service.listCards({ id: "admin", role: "ADMIN" }, {});
 
-      expect(mockCardRepo.find).toHaveBeenCalledWith({
-        order: { facilityId: "ASC", sortOrder: "ASC", createdAt: "ASC" },
+      expect(mockCardRepo.findAndCount).toHaveBeenCalledWith({
+        order: {
+          facilityId: "ASC",
+          sortOrder: "ASC",
+          createdAt: "ASC",
+          id: "ASC",
+        },
+        skip: 0,
+        take: 20,
       });
     });
 
     it("scopes NAKES to global plus their own facility", async () => {
-      await service.listCards({ id: "nakes", role: "NAKES", facilityId: "fac-1" });
+      await service.listCards(
+        { id: "nakes", role: "NAKES", facilityId: "fac-1" },
+        {},
+      );
 
-      expect(mockCardRepo.find).toHaveBeenCalledWith(
+      expect(mockCardRepo.findAndCount).toHaveBeenCalledWith(
         expect.objectContaining({
           where: [{ facilityId: expect.anything() }, { facilityId: "fac-1" }],
         }),
       );
+    });
+
+    it("applies offset pagination and returns the envelope", async () => {
+      mockCardRepo.findAndCount.mockResolvedValue([[makeCard()], 21]);
+
+      const res = await service.listCards(
+        { id: "nakes", role: "NAKES", facilityId: "fac-1" },
+        { page: 3, limit: 10 },
+      );
+
+      expect(mockCardRepo.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 20, take: 10 }),
+      );
+      expect(res).toMatchObject({ total: 21, page: 3, limit: 10 });
+      expect(res.items).toHaveLength(1);
     });
   });
 

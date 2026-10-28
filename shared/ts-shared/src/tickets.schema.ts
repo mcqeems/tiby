@@ -107,6 +107,9 @@ export const EducationQuerySchema = z.object({
 });
 export type EducationQuery = z.infer<typeof EducationQuerySchema>;
 
+export const EducationListQuerySchema = PaginationQuerySchema;
+export type EducationListQuery = z.infer<typeof EducationListQuerySchema>;
+
 export const EducationCardSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -156,3 +159,13 @@ export const EducationCardManagedSchema = EducationCardSchema.extend({
   updatedAt: z.string(),
 });
 export type EducationCardManaged = z.infer<typeof EducationCardManagedSchema>;
+
+export const EducationCardManagedListSchema = z.object({
+  items: z.array(EducationCardManagedSchema),
+  total: z.number(),
+  page: z.number(),
+  limit: z.number(),
+});
+export type EducationCardManagedList = z.infer<
+  typeof EducationCardManagedListSchema
+>;

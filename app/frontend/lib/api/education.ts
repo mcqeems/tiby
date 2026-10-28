@@ -21,6 +21,13 @@ export interface EducationItem {
   updatedAt: string;
 }
 
+export interface EducationListResponse {
+  items: EducationItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface CreateEducationDto {
   title: string;
   summary: string;
@@ -40,8 +47,18 @@ export const educationApi = {
   },
 
   // Untuk Nakes
-  async getAll(): Promise<EducationItem[]> {
-    return apiFetch<EducationItem[]>("/api/education", { method: "GET" });
+  async getAll(
+    params: { page?: number; limit?: number } = {},
+  ): Promise<EducationListResponse> {
+    const searchParams = new URLSearchParams();
+    if (params.page) searchParams.set("page", String(params.page));
+    if (params.limit) searchParams.set("limit", String(params.limit));
+
+    const qs = searchParams.toString();
+    return apiFetch<EducationListResponse>(
+      `/api/education${qs ? `?${qs}` : ""}`,
+      { method: "GET" },
+    );
   },
 
   async create(dto: CreateEducationDto): Promise<EducationItem> {

@@ -10,7 +10,19 @@ import {
 } from "@/lib/api/education";
 import { usePopup } from "@/components/ui/popup-provider";
 import PublicLoading from "@/components/ui/public-loading";
-import { BookOpen, Plus, Edit2, Trash2, X, Loader2, Save } from "lucide-react";
+import {
+  BookOpen,
+  Plus,
+  Edit2,
+  Trash2,
+  X,
+  Loader2,
+  Save,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+
+const LIMIT = 10;
 
 const CATEGORIES: { value: EducationCategory; label: string }[] = [
   { value: "ADHERENCE", label: "Kepatuhan Obat" },
@@ -28,6 +40,8 @@ const PHASES: { value: EducationPhase; label: string }[] = [
 export default function EducationManager() {
   const { notify, confirm } = usePopup();
   const [cards, setCards] = useState<EducationItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,8 +60,9 @@ export default function EducationManager() {
   const fetchCards = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await educationApi.getAll();
-      setCards(res);
+      const res = await educationApi.getAll({ page, limit: LIMIT });
+      setCards(res.items || []);
+      setTotal(res.total || 0);
     } catch {
       await notify({
         variant: "danger",
@@ -58,7 +73,7 @@ export default function EducationManager() {
     } finally {
       setLoading(false);
     }
-  }, [notify]);
+  }, [notify, page]);
 
   useEffect(() => {
     let active = true;
@@ -116,7 +131,12 @@ export default function EducationManager() {
         description: "Materi berhasil dihapus.",
         confirmLabel: "Tutup",
       });
-      fetchCards();
+      // Deleting the last card on a page would leave an empty page behind.
+      if (cards.length === 1 && page > 1) {
+        setPage((p) => p - 1);
+      } else {
+        fetchCards();
+      }
     } catch {
       await notify({
         variant: "danger",
@@ -172,6 +192,8 @@ export default function EducationManager() {
   };
 
   if (loading) return <PublicLoading message="Memuat materi edukasi..." />;
+
+  const totalPages = Math.ceil(total / LIMIT);
 
   return (
     <div className="space-y-5">
@@ -244,6 +266,37 @@ export default function EducationManager() {
           ))
         )}
       </div>
+
+      {total > 0 && (
+        <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-5 py-3">
+          <span className="text-xs text-tiby-muted">
+            Menampilkan <strong>{(page - 1) * LIMIT + 1}</strong> -{" "}
+            <strong>{Math.min(page * LIMIT, total)}</strong> dari{" "}
+            <strong>{total}</strong> materi
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1 || loading}
+              className="p-1.5 rounded-lg border border-gray-200 bg-white text-tiby-ink disabled:opacity-50 hover:bg-gray-50 cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-xs font-medium text-tiby-ink px-2">
+              Hal {page} / {totalPages || 1}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages || loading}
+              className="p-1.5 rounded-lg border border-gray-200 bg-white text-tiby-ink disabled:opacity-50 hover:bg-gray-50 cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* MODAL FORM */}
       {isModalOpen && (

@@ -1,5 +1,8 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { INestApplication } from "@nestjs/common";
+import {
+  INestApplication,
+  StandardSchemaValidationPipe,
+} from "@nestjs/common";
 import { describe, beforeAll, afterAll, it, expect } from "vitest";
 import request from "supertest";
 import { DataSource } from "typeorm";
@@ -38,6 +41,10 @@ describe("Education Cards CRUD (e2e)", () => {
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix("api");
+    // Mirror main.ts so query params are coerced/validated like production.
+    app.useGlobalPipes(
+      new StandardSchemaValidationPipe({ validateCustomDecorators: true }),
+    );
     await app.init();
 
     dataSource = app.get(DataSource);
@@ -199,27 +206,40 @@ describe("Education Cards CRUD (e2e)", () => {
 
   it("6. NAKES listing includes global and own-facility cards, not other facilities", async () => {
     const res = await request(app.getHttpServer())
-      .get("/api/education")
+      .get("/api/education?limit=100")
       .set("Cookie", nakesCookie);
 
     expect(res.status).toBe(200);
-    const ids = res.body.map((c: any) => c.id);
+    expect(res.body).toMatchObject({ page: 1, limit: 100 });
+    expect(res.body.total).toBeGreaterThanOrEqual(2);
+    const ids = res.body.items.map((c: any) => c.id);
     expect(ids).toContain(facilityCardId);
     expect(ids).toContain(globalCardId);
-    for (const card of res.body) {
+    for (const card of res.body.items) {
       expect([null, facilityId]).toContain(card.facilityId);
     }
   });
 
   it("7. ADMIN listing sees every card", async () => {
     const res = await request(app.getHttpServer())
-      .get("/api/education")
+      .get("/api/education?limit=100")
       .set("Cookie", adminCookie);
 
     expect(res.status).toBe(200);
-    const ids = res.body.map((c: any) => c.id);
+    const ids = res.body.items.map((c: any) => c.id);
     expect(ids).toContain(facilityCardId);
     expect(ids).toContain(globalCardId);
+  });
+
+  it("7b. listing paginates with limit", async () => {
+    const res = await request(app.getHttpServer())
+      .get("/api/education?page=1&limit=1")
+      .set("Cookie", adminCookie);
+
+    expect(res.status).toBe(200);
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.page).toBe(1);
+    expect(res.body.limit).toBe(1);
   });
 
   it("8. NAKES edits their own facility card", async () => {

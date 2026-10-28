@@ -17,11 +17,14 @@ import { Roles } from "../../../common/decorators/roles.decorator.js";
 import type { AuthenticatedRequest } from "../../../common/types/auth-request.type.js";
 import {
   EducationQuerySchema,
+  EducationListQuerySchema,
   CreateEducationCardSchema,
   UpdateEducationCardSchema,
   type EducationQuery,
+  type EducationListQuery,
   type EducationCardList,
   type EducationCardManaged,
+  type EducationCardManagedList,
   type CreateEducationCardDto,
   type UpdateEducationCardDto,
   type UserRole,
@@ -61,8 +64,9 @@ export class EducationController {
   @Roles(["ADMIN", "NAKES"])
   async listCards(
     @Req() req: AuthenticatedRequest,
-  ): Promise<EducationCardManaged[]> {
-    return this.educationService.listCards(this.extractCaller(req));
+    @Query({ schema: EducationListQuerySchema }) query: EducationListQuery,
+  ): Promise<EducationCardManagedList> {
+    return this.educationService.listCards(this.extractCaller(req), query);
   }
 
   @Post()
