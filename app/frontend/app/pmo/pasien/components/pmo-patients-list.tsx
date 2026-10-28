@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { AnimatePresence } from "motion/react";
 import Link from "next/link";
 import { pmoApi } from "@/lib/api/pmo";
 import PublicLoading from "@/components/ui/public-loading";
@@ -190,17 +191,19 @@ export default function PmoPatientsList() {
         </div>
       )}
 
-      {selectedPatient && (
-        <PmoFollowUpModal
-          patientId={selectedPatient.treatmentPlanId}
-          patientName={selectedPatient.patientName}
-          onClose={() => setSelectedPatient(null)}
-          onSuccess={() => {
-            setSelectedPatient(null);
-            fetchPatients();
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {selectedPatient && (
+          <PmoFollowUpModal
+            patientId={selectedPatient.treatmentPlanId}
+            patientName={selectedPatient.patientName}
+            onClose={() => setSelectedPatient(null)}
+            onSuccess={() => {
+              setSelectedPatient(null);
+              fetchPatients();
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

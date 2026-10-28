@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import { faskesApi } from "@/lib/api/faskes";
 import { usePopup } from "@/components/ui/popup-provider";
 import type { FaskesTicket } from "@/lib/types/faskes";
@@ -73,8 +74,8 @@ export default function TicketResolveModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-lg rounded-3xl bg-white shadow-xl overflow-hidden animate-in zoom-in-95">
+    <ModalOverlay onClose={onClose}>
+      <ModalCard className="w-full max-w-lg rounded-3xl bg-white shadow-xl overflow-hidden">
         <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 bg-gray-50/50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-tiby-teal-100 flex items-center justify-center">
@@ -159,7 +160,7 @@ export default function TicketResolveModal({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      </ModalCard>
+    </ModalOverlay>
   );
 }

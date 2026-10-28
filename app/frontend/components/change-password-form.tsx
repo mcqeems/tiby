@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { banner } from "@/lib/motion";
 import { usersApi } from "@/lib/api/users";
 
 export default function ChangePasswordForm() {
@@ -53,31 +55,47 @@ export default function ChangePasswordForm() {
         </p>
       </div>
 
-      {successMsg && (
-        <div className="rounded-2xl border border-teal-100 bg-tiby-teal-50 px-4 py-3 text-xs text-tiby-teal-700 flex justify-between items-center animate-fadeIn">
-          <span>✓ {successMsg}</span>
-          <button
-            type="button"
-            onClick={() => setSuccessMsg(null)}
-            className="ml-2 font-bold cursor-pointer"
+      <AnimatePresence initial={false}>
+        {successMsg && (
+          <motion.div
+            variants={banner}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="rounded-2xl border border-teal-100 bg-tiby-teal-50 px-4 py-3 text-xs text-tiby-teal-700 flex justify-between items-center"
           >
-            ✕
-          </button>
-        </div>
-      )}
+            <span>✓ {successMsg}</span>
+            <button
+              type="button"
+              onClick={() => setSuccessMsg(null)}
+              className="ml-2 font-bold cursor-pointer"
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {errorMsg && (
-        <div className="rounded-2xl border border-red-100 bg-tiby-danger px-4 py-3 text-xs text-tiby-danger-text flex justify-between items-center animate-fadeIn">
-          <span>{errorMsg}</span>
-          <button
-            type="button"
-            onClick={() => setErrorMsg(null)}
-            className="ml-2 font-bold cursor-pointer"
+      <AnimatePresence initial={false}>
+        {errorMsg && (
+          <motion.div
+            variants={banner}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="rounded-2xl border border-red-100 bg-tiby-danger px-4 py-3 text-xs text-tiby-danger-text flex justify-between items-center"
           >
-            ✕
-          </button>
-        </div>
-      )}
+            <span>{errorMsg}</span>
+            <button
+              type="button"
+              onClick={() => setErrorMsg(null)}
+              className="ml-2 font-bold cursor-pointer"
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <form onSubmit={handleSubmit} className="space-y-3">
         {/* Password Lama */}

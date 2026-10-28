@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import { pmoApi } from "@/lib/api/pmo";
 import { usePopup } from "@/components/ui/popup-provider";
 // ✅ Import LucideIcon untuk typing
@@ -114,8 +115,8 @@ export default function PmoFollowUpModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-md max-h-[90vh] flex flex-col rounded-3xl bg-white shadow-xl overflow-hidden animate-in zoom-in-95">
+    <ModalOverlay onClose={onClose}>
+      <ModalCard className="w-full max-w-md max-h-[90vh] flex flex-col rounded-3xl bg-white shadow-xl overflow-hidden">
         <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 bg-gray-50/50 shrink-0">
           <div>
             <h3 className="font-heading font-bold text-tiby-ink">
@@ -209,7 +210,7 @@ export default function PmoFollowUpModal({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      </ModalCard>
+    </ModalOverlay>
   );
 }

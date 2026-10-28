@@ -1,10 +1,21 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { AnimatePresence } from "motion/react";
+import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import { familyContactsApi } from "@/lib/api/family-contacts";
 import type { FamilyContact } from "@/lib/types/family-contact";
 import { usePopup } from "@/components/ui/popup-provider";
-import { Users, Plus, Trash2, X, Phone, Loader2, Save, BadgeCheck } from "lucide-react";
+import {
+  Users,
+  Plus,
+  Trash2,
+  X,
+  Phone,
+  Loader2,
+  Save,
+  BadgeCheck,
+} from "lucide-react";
 import WhatsappConnectCard from "@/components/whatsapp/whatsapp-connect-card";
 
 export default function FamilyContactsCard({
@@ -25,9 +36,8 @@ export default function FamilyContactsCard({
   const [fullName, setFullName] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [connectingContact, setConnectingContact] = useState<FamilyContact | null>(
-    null,
-  );
+  const [connectingContact, setConnectingContact] =
+    useState<FamilyContact | null>(null);
 
   const fetchContacts = useCallback(async () => {
     setLoading(true);
@@ -120,9 +130,7 @@ export default function FamilyContactsCard({
         variant: "danger",
         title: "Gagal Menambah Kontak",
         description:
-          err instanceof Error
-            ? err.message
-            : "Terjadi kesalahan pada server.",
+          err instanceof Error ? err.message : "Terjadi kesalahan pada server.",
         confirmLabel: "Tutup",
       });
     } finally {
@@ -238,96 +246,100 @@ export default function FamilyContactsCard({
       </div>
 
       {/* MODAL TAMBAH KONTAK */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 bg-gray-50/50">
-              <h3 className="font-heading font-bold text-tiby-ink">
-                Tambah Kontak Darurat
-              </h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:bg-gray-200 p-1.5 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
-                  Nama Lengkap
-                </label>
-                <input
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Contoh: Ibu Siti"
-                  className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
-                  Nomor WhatsApp
-                </label>
-                <input
-                  type="tel"
-                  value={whatsappNumber}
-                  onChange={(e) => setWhatsappNumber(e.target.value)}
-                  placeholder="Contoh: 08123456789"
-                  className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none"
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
+      <AnimatePresence>
+        {isModalOpen && (
+          <ModalOverlay>
+            <ModalCard className="w-full max-w-md rounded-2xl bg-white shadow-xl">
+              <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+                <h3 className="font-heading font-bold text-tiby-ink">
+                  Tambah Kontak Darurat
+                </h3>
                 <button
-                  type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 h-11 rounded-xl border border-gray-200 text-xs font-semibold hover:bg-gray-50"
+                  className="text-gray-400 hover:bg-gray-200 p-1.5 rounded-lg"
                 >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 h-11 rounded-xl bg-tiby-teal-600 text-white text-xs font-semibold hover:bg-tiby-teal-700 flex justify-center items-center gap-2 disabled:opacity-50"
-                >
-                  {submitting ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                  {submitting ? "Menyimpan..." : "Simpan"}
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+              <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
+                    Nama Lengkap
+                  </label>
+                  <input
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Contoh: Ibu Siti"
+                    className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
+                    Nomor WhatsApp
+                  </label>
+                  <input
+                    type="tel"
+                    value={whatsappNumber}
+                    onChange={(e) => setWhatsappNumber(e.target.value)}
+                    placeholder="Contoh: 08123456789"
+                    className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none"
+                  />
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="flex-1 h-11 rounded-xl border border-gray-200 text-xs font-semibold hover:bg-gray-50"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="flex-1 h-11 rounded-xl bg-tiby-teal-600 text-white text-xs font-semibold hover:bg-tiby-teal-700 flex justify-center items-center gap-2 disabled:opacity-50"
+                  >
+                    {submitting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    {submitting ? "Menyimpan..." : "Simpan"}
+                  </button>
+                </div>
+              </form>
+            </ModalCard>
+          </ModalOverlay>
+        )}
+      </AnimatePresence>
 
-      {connectingContact && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto">
-            <div className="mb-2 flex justify-end">
-              <button
-                onClick={() => setConnectingContact(null)}
-                className="rounded-lg bg-white/90 p-1.5 text-gray-500 hover:bg-white"
-                aria-label="Tutup"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <WhatsappConnectCard
-              key={connectingContact.id}
-              familyContactId={connectingContact.id}
-              defaultPhoneNumber={connectingContact.whatsappNumber}
-              title={`WhatsApp ${connectingContact.fullName}`}
-              description="Kirim kode dari nomor kontak ini untuk mengaktifkan pemberitahuan."
-              onVerified={() => {
-                setConnectingContact(null);
-                fetchContacts();
-              }}
-            />
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {connectingContact && (
+          <ModalOverlay>
+            <ModalCard className="max-h-[90vh] w-full max-w-md overflow-y-auto">
+              <div className="mb-2 flex justify-end">
+                <button
+                  onClick={() => setConnectingContact(null)}
+                  className="rounded-lg bg-white/90 p-1.5 text-gray-500 hover:bg-white"
+                  aria-label="Tutup"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <WhatsappConnectCard
+                key={connectingContact.id}
+                familyContactId={connectingContact.id}
+                defaultPhoneNumber={connectingContact.whatsappNumber}
+                title={`WhatsApp ${connectingContact.fullName}`}
+                description="Kirim kode dari nomor kontak ini untuk mengaktifkan pemberitahuan."
+                onVerified={() => {
+                  setConnectingContact(null);
+                  fetchContacts();
+                }}
+              />
+            </ModalCard>
+          </ModalOverlay>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

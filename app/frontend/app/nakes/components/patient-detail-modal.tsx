@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "motion/react";
+import { overlay, popIn } from "@/lib/motion";
 import { usersApi } from "@/lib/api/users";
 import { usePopup } from "@/components/ui/popup-provider";
 import {
@@ -148,13 +150,21 @@ export default function PatientDetailModal({
   };
 
   return (
-    <div
+    <motion.div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-3 sm:p-4 animate-fadeIn"
+      variants={overlay}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-3 sm:p-4"
       onClick={onClose}
     >
-      <div
+      <motion.div
+        variants={popIn}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
         onClick={(e) => e.stopPropagation()}
         className="relative flex flex-col w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl"
       >
@@ -558,7 +568,7 @@ export default function PatientDetailModal({
             Tutup
           </button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

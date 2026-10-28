@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "motion/react";
+import { banner } from "@/lib/motion";
 import { usePopup } from "@/components/ui/popup-provider";
 import type { OnboardingCredentials } from "@/lib/types/onboarding";
 import {
@@ -156,9 +158,12 @@ export default function OnboardingSuccessCard({
   const isNewPmo = credentials.pmoCreated !== false;
 
   return (
-    <section
+    <motion.section
       aria-label="Kredensial akun yang berhasil dibuat"
-      className="animate-fadeIn overflow-hidden rounded-2xl border border-tiby-teal-100 bg-white shadow-[0_1px_3px_rgba(16,24,40,0.05)]"
+      variants={banner}
+      initial="hidden"
+      animate="visible"
+      className="overflow-hidden rounded-2xl border border-tiby-teal-100 bg-white shadow-[0_1px_3px_rgba(16,24,40,0.05)]"
     >
       <header className="flex flex-col gap-4 border-b border-tiby-teal-100/70 bg-tiby-teal-50/60 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
         <div className="flex items-start gap-4">
@@ -274,6 +279,6 @@ export default function OnboardingSuccessCard({
           <span>Daftarkan Pasien Baru Lainnya</span>
         </button>
       </footer>
-    </section>
+    </motion.section>
   );
 }

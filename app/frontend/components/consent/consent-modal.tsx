@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ModalCard, ModalFrame } from "@/components/ui/modal-frame";
 import Mascot from "@/components/mascot";
 import { consentApi } from "@/lib/api/consent";
 import { usePopup } from "@/components/ui/popup-provider";
@@ -136,11 +137,9 @@ export default function ConsentModal({
     }
   };
 
-  if (checking || !needsConsent) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in">
-      <div className="flex w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-xl animate-in zoom-in-95 max-h-[90vh] lg:max-h-[calc(100vh-2rem)]">
+    <ModalFrame open={!checking && needsConsent}>
+      <ModalCard className="flex w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-xl max-h-[90vh] lg:max-h-[calc(100vh-2rem)]">
         <div className="overflow-y-auto p-6 lg:overflow-hidden lg:p-5">
           <div className="space-y-6 lg:space-y-3">
             <div className="text-center space-y-3 lg:space-y-1.5">
@@ -266,7 +265,7 @@ export default function ConsentModal({
             )}
           </button>
         </div>
-      </div>
-    </div>
+      </ModalCard>
+    </ModalFrame>
   );
 }

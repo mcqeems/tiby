@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
+import { AnimatePresence } from "motion/react";
 import { usersApi, type UserItem } from "@/lib/api/users";
 import { facilitiesApi } from "@/lib/api/facilities";
 import type { FacilityItem } from "@/lib/types/facilities";
@@ -257,128 +259,132 @@ export default function UserManager() {
         )}
       </div>
 
-      {isModalOpen && (
-        <UserFormModal
-          facilities={facilities}
-          defaultFacilityId={facilityFilter || undefined}
-          onClose={() => setIsModalOpen(false)}
-          onSuccess={() => {
-            setIsModalOpen(false);
-            fetchData();
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {isModalOpen && (
+          <UserFormModal
+            facilities={facilities}
+            defaultFacilityId={facilityFilter || undefined}
+            onClose={() => setIsModalOpen(false)}
+            onSuccess={() => {
+              setIsModalOpen(false);
+              fetchData();
+            }}
+          />
+        )}
 
-      {editingUser && (
-        <UserFormModal
-          facilities={facilities}
-          editingUser={editingUser}
-          onClose={() => setEditingUser(null)}
-          onSuccess={() => {
-            setEditingUser(null);
-            fetchData();
-          }}
-        />
-      )}
+        {editingUser && (
+          <UserFormModal
+            facilities={facilities}
+            editingUser={editingUser}
+            onClose={() => setEditingUser(null)}
+            onSuccess={() => {
+              setEditingUser(null);
+              fetchData();
+            }}
+          />
+        )}
+      </AnimatePresence>
 
-      {resetUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 px-5 py-4">
-              <h3 className="font-heading font-bold text-tiby-ink">
-                Reset Password
-              </h3>
-              <button
-                onClick={() => setResetUser(null)}
-                className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-200"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (resetPassword.length < 8) {
-                  return notify({
-                    variant: "warning",
-                    title: "Validasi Gagal",
-                    description: "Password minimal 8 karakter.",
-                    confirmLabel: "Mengerti",
-                  });
-                }
-                setResetSubmitting(true);
-                try {
-                  await usersApi.resetPassword(resetUser.id, resetPassword);
-                  await notify({
-                    variant: "success",
-                    title: "Berhasil",
-                    description: `Password ${resetUser.username} telah direset.`,
-                    confirmLabel: "Tutup",
-                  });
-                  setResetUser(null);
-                  setResetPassword("");
-                } catch (err: unknown) {
-                  await notify({
-                    variant: "danger",
-                    title: "Gagal",
-                    description:
-                      err instanceof Error
-                        ? err.message
-                        : "Tidak dapat mereset password.",
-                    confirmLabel: "Tutup",
-                  });
-                } finally {
-                  setResetSubmitting(false);
-                }
-              }}
-              className="space-y-4 p-5"
-            >
-              <p className="text-xs text-tiby-muted">
-                Password baru untuk{" "}
-                <span className="font-semibold text-tiby-ink">
-                  @{resetUser.username}
-                </span>
-                . Sampaikan ke pengguna setelah disimpan.
-              </p>
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-tiby-ink">
-                  Password Baru
-                </label>
-                <input
-                  type="text"
-                  value={resetPassword}
-                  onChange={(e) => setResetPassword(e.target.value)}
-                  minLength={8}
-                  required
-                  placeholder="Minimal 8 karakter"
-                  className="h-10 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none focus:ring-2 focus:ring-tiby-teal-600"
-                />
-              </div>
-              <div className="flex gap-3 border-t border-gray-100 pt-4">
+      <AnimatePresence>
+        {resetUser && (
+          <ModalOverlay>
+            <ModalCard className="w-full max-w-md rounded-2xl bg-white shadow-xl">
+              <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 px-5 py-4">
+                <h3 className="font-heading font-bold text-tiby-ink">
+                  Reset Password
+                </h3>
                 <button
-                  type="button"
                   onClick={() => setResetUser(null)}
-                  className="h-11 flex-1 rounded-xl border border-gray-200 text-xs font-semibold hover:bg-gray-50"
+                  className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-200"
                 >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={resetSubmitting}
-                  className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-tiby-teal-600 text-xs font-semibold text-white hover:bg-tiby-teal-700 disabled:opacity-50"
-                >
-                  {resetSubmitting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <KeyRound className="h-4 w-4" />
-                  )}
-                  Simpan Password
+                  <X className="h-5 w-5" />
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (resetPassword.length < 8) {
+                    return notify({
+                      variant: "warning",
+                      title: "Validasi Gagal",
+                      description: "Password minimal 8 karakter.",
+                      confirmLabel: "Mengerti",
+                    });
+                  }
+                  setResetSubmitting(true);
+                  try {
+                    await usersApi.resetPassword(resetUser.id, resetPassword);
+                    await notify({
+                      variant: "success",
+                      title: "Berhasil",
+                      description: `Password ${resetUser.username} telah direset.`,
+                      confirmLabel: "Tutup",
+                    });
+                    setResetUser(null);
+                    setResetPassword("");
+                  } catch (err: unknown) {
+                    await notify({
+                      variant: "danger",
+                      title: "Gagal",
+                      description:
+                        err instanceof Error
+                          ? err.message
+                          : "Tidak dapat mereset password.",
+                      confirmLabel: "Tutup",
+                    });
+                  } finally {
+                    setResetSubmitting(false);
+                  }
+                }}
+                className="space-y-4 p-5"
+              >
+                <p className="text-xs text-tiby-muted">
+                  Password baru untuk{" "}
+                  <span className="font-semibold text-tiby-ink">
+                    @{resetUser.username}
+                  </span>
+                  . Sampaikan ke pengguna setelah disimpan.
+                </p>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-tiby-ink">
+                    Password Baru
+                  </label>
+                  <input
+                    type="text"
+                    value={resetPassword}
+                    onChange={(e) => setResetPassword(e.target.value)}
+                    minLength={8}
+                    required
+                    placeholder="Minimal 8 karakter"
+                    className="h-10 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none focus:ring-2 focus:ring-tiby-teal-600"
+                  />
+                </div>
+                <div className="flex gap-3 border-t border-gray-100 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setResetUser(null)}
+                    className="h-11 flex-1 rounded-xl border border-gray-200 text-xs font-semibold hover:bg-gray-50"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={resetSubmitting}
+                    className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-tiby-teal-600 text-xs font-semibold text-white hover:bg-tiby-teal-700 disabled:opacity-50"
+                  >
+                    {resetSubmitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <KeyRound className="h-4 w-4" />
+                    )}
+                    Simpan Password
+                  </button>
+                </div>
+              </form>
+            </ModalCard>
+          </ModalOverlay>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

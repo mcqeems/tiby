@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { AnimatePresence, motion } from "motion/react";
 import { useCheckIn } from "../lib/use-check-in";
 import CheckInVoice from "./check-in-voice";
 import CheckInReview from "./check-in-review";
 import CheckInFallback from "./check-in-fallback";
 import CheckInResult from "./check-in-result";
 import PublicLoading from "@/components/ui/public-loading";
+import { fadeUp } from "@/lib/motion";
 import { pmoApi } from "@/lib/api/pmo";
 import { CheckCircle2 } from "lucide-react";
 import type { FallbackButtonsPayload } from "@/lib/types/check-in";
@@ -88,7 +90,12 @@ export default function CheckInView({
   if (state.step === "locked") {
     return (
       <div className="flex h-full w-full flex-1 flex-col">
-        <div className="m-auto flex w-full max-w-md flex-col items-center px-4 py-6 text-center animate-in fade-in zoom-in-95 duration-500">
+        <motion.div
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+          className="m-auto flex w-full max-w-md flex-col items-center px-4 py-6 text-center"
+        >
           <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full border-4 border-emerald-100 bg-emerald-50 text-emerald-600 shadow-sm">
             <CheckCircle2 className="h-12 w-12" />
           </div>
@@ -106,7 +113,7 @@ export default function CheckInView({
           >
             Kembali ke Beranda
           </button>
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -157,49 +164,63 @@ export default function CheckInView({
           </div>
         )}
 
-      {role === "PMO" && !selectedPatientId && state.step === "record" ? (
-        <div className="text-center py-10 opacity-50">
-          <div className="w-36 h-36 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-4xl text-gray-300">🐼</span>
-          </div>
-          <p className="text-sm font-semibold text-gray-400">
-            Menunggu pasien dipilih...
-          </p>
-        </div>
-      ) : (
-        <>
-          {state.step === "record" && (
-            <CheckInVoice
-              onStart={() => startRecording(selectedPatientId || undefined)}
-              onStop={stopRecording}
-              onFallback={goToFallback}
-            />
-          )}
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={
+            role === "PMO" && !selectedPatientId && state.step === "record"
+              ? "record-waiting"
+              : state.step
+          }
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+        >
+          {role === "PMO" && !selectedPatientId && state.step === "record" ? (
+            <div className="text-center py-10 opacity-50">
+              <div className="w-36 h-36 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-4xl text-gray-300">🐼</span>
+              </div>
+              <p className="text-sm font-semibold text-gray-400">
+                Menunggu pasien dipilih...
+              </p>
+            </div>
+          ) : (
+            <>
+              {state.step === "record" && (
+                <CheckInVoice
+                  onStart={() => startRecording(selectedPatientId || undefined)}
+                  onStop={stopRecording}
+                  onFallback={goToFallback}
+                />
+              )}
 
-          {state.step === "review" && (
-            <CheckInReview
-              transcript={state.transcript}
-              onSubmit={(text: string) =>
-                submitVoice(text, selectedPatientId || undefined)
-              }
-              onRetry={goToRecord}
-            />
-          )}
+              {state.step === "review" && (
+                <CheckInReview
+                  transcript={state.transcript}
+                  onSubmit={(text: string) =>
+                    submitVoice(text, selectedPatientId || undefined)
+                  }
+                  onRetry={goToRecord}
+                />
+              )}
 
-          {state.step === "fallback" && (
-            <CheckInFallback
-              onBackToVoice={goToRecord}
-              onSubmit={(data: FallbackButtonsPayload) =>
-                submitFallback(data, selectedPatientId || undefined)
-              }
-            />
-          )}
+              {state.step === "fallback" && (
+                <CheckInFallback
+                  onBackToVoice={goToRecord}
+                  onSubmit={(data: FallbackButtonsPayload) =>
+                    submitFallback(data, selectedPatientId || undefined)
+                  }
+                />
+              )}
 
-          {state.step === "result" && state.verdict && (
-            <CheckInResult result={state.verdict} />
+              {state.step === "result" && state.verdict && (
+                <CheckInResult result={state.verdict} />
+              )}
+            </>
           )}
-        </>
-      )}
+        </motion.div>
+      </AnimatePresence>
       </div>
     </div>
   );

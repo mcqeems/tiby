@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AnimatePresence } from "motion/react";
+import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import { useParams } from "next/navigation";
 import FamilyContactsCard from "@/app/pasien/profile/components/family-contacts-card";
 import Link from "next/link";
@@ -750,71 +752,73 @@ export default function PatientDetailPage() {
       </div>
 
       {/* ─── MODAL BUAT TIKET MANUAL ─── */}
-      {ticketOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 bg-amber-50/50">
-              <h3 className="font-heading text-sm font-semibold text-tiby-ink">
-                Buat Tiket Manual
-              </h3>
-              <button
-                onClick={() => setTicketOpen(false)}
-                className="text-gray-400 hover:bg-gray-100 p-1 rounded-lg"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <form onSubmit={handleCreateTicket} className="p-5 space-y-4">
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-tiby-ink">
-                  Prioritas
-                </label>
-                {/* ✅ FIX ERROR ANY DI SINI */}
-                <select
-                  value={ticketPriority}
-                  onChange={(e) =>
-                    setTicketPriority(e.target.value as "HIGH" | "CRITICAL")
-                  }
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none"
-                >
-                  <option value="HIGH">High (Perlu Perhatian)</option>
-                  <option value="CRITICAL">Critical (Darurat)</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-tiby-ink">
-                  Alasan
-                </label>
-                <textarea
-                  value={ticketReason}
-                  onChange={(e) => setTicketReason(e.target.value)}
-                  placeholder="Contoh: Pasien terlihat sangat lemas..."
-                  className="w-full h-24 rounded-xl border border-gray-200 p-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none resize-none"
-                />
-              </div>
-              <div className="flex gap-2 pt-2">
+      <AnimatePresence>
+        {ticketOpen && (
+          <ModalOverlay>
+            <ModalCard className="w-full max-w-md rounded-2xl bg-white shadow-xl">
+              <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 bg-amber-50/50">
+                <h3 className="font-heading text-sm font-semibold text-tiby-ink">
+                  Buat Tiket Manual
+                </h3>
                 <button
-                  type="button"
                   onClick={() => setTicketOpen(false)}
-                  className="flex-1 rounded-xl border border-gray-200 py-2.5 text-xs font-semibold hover:bg-gray-50"
+                  className="text-gray-400 hover:bg-gray-100 p-1 rounded-lg"
                 >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={ticketLoading}
-                  className="flex-1 rounded-xl bg-tiby-teal-600 text-white py-2.5 text-xs font-semibold hover:bg-tiby-teal-700 disabled:opacity-50 flex justify-center items-center gap-2"
-                >
-                  {ticketLoading && (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  )}{" "}
-                  Kirim
+                  <X className="h-4 w-4" />
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+              <form onSubmit={handleCreateTicket} className="p-5 space-y-4">
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-tiby-ink">
+                    Prioritas
+                  </label>
+                  {/* ✅ FIX ERROR ANY DI SINI */}
+                  <select
+                    value={ticketPriority}
+                    onChange={(e) =>
+                      setTicketPriority(e.target.value as "HIGH" | "CRITICAL")
+                    }
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none"
+                  >
+                    <option value="HIGH">High (Perlu Perhatian)</option>
+                    <option value="CRITICAL">Critical (Darurat)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-tiby-ink">
+                    Alasan
+                  </label>
+                  <textarea
+                    value={ticketReason}
+                    onChange={(e) => setTicketReason(e.target.value)}
+                    placeholder="Contoh: Pasien terlihat sangat lemas..."
+                    className="w-full h-24 rounded-xl border border-gray-200 p-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none resize-none"
+                  />
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setTicketOpen(false)}
+                    className="flex-1 rounded-xl border border-gray-200 py-2.5 text-xs font-semibold hover:bg-gray-50"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={ticketLoading}
+                    className="flex-1 rounded-xl bg-tiby-teal-600 text-white py-2.5 text-xs font-semibold hover:bg-tiby-teal-700 disabled:opacity-50 flex justify-center items-center gap-2"
+                  >
+                    {ticketLoading && (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    )}{" "}
+                    Kirim
+                  </button>
+                </div>
+              </form>
+            </ModalCard>
+          </ModalOverlay>
+        )}
+      </AnimatePresence>
 
       {/* ─── DIALOG RIWAYAT LENGKAP ─── */}
       <Dialog
@@ -875,81 +879,83 @@ export default function PatientDetailPage() {
       </Dialog>
 
       {/* ─── MODAL RESET PASSWORD (Pasien & PMO) ─── */}
-      {resetOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-              <h3 className="font-heading text-sm font-semibold text-tiby-ink">
-                Reset Password {resetTarget}
-              </h3>
-              <button
-                onClick={() => setResetOpen(false)}
-                className="text-gray-400 hover:bg-gray-100 p-1 rounded-lg"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <form onSubmit={handleResetPassword} className="p-5 space-y-4">
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-tiby-ink">
-                  Password Baru
-                </label>
-                <div className="relative">
+      <AnimatePresence>
+        {resetOpen && (
+          <ModalOverlay>
+            <ModalCard className="w-full max-w-md rounded-2xl bg-white shadow-xl">
+              <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+                <h3 className="font-heading text-sm font-semibold text-tiby-ink">
+                  Reset Password {resetTarget}
+                </h3>
+                <button
+                  onClick={() => setResetOpen(false)}
+                  className="text-gray-400 hover:bg-gray-100 p-1 rounded-lg"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <form onSubmit={handleResetPassword} className="p-5 space-y-4">
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-tiby-ink">
+                    Password Baru
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Minimal 8 karakter"
+                      className="w-full rounded-xl border border-gray-200 px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-tiby-teal-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 p-1"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-tiby-ink">
+                    Konfirmasi
+                  </label>
                   <input
                     type={showPassword ? "text" : "password"}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Minimal 8 karakter"
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-tiby-teal-600"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Ulangi password"
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-tiby-teal-600"
                   />
+                </div>
+                <div className="flex gap-2 pt-2">
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 p-1"
+                    onClick={() => setResetOpen(false)}
+                    className="flex-1 rounded-xl border border-gray-200 py-2.5 text-xs font-semibold hover:bg-gray-50"
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={resetLoading}
+                    className="flex-1 rounded-xl bg-tiby-teal-600 text-white py-2.5 text-xs font-semibold hover:bg-tiby-teal-700 disabled:opacity-50 flex justify-center items-center gap-2"
+                  >
+                    {resetLoading && (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    )}{" "}
+                    Simpan
                   </button>
                 </div>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-tiby-ink">
-                  Konfirmasi
-                </label>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Ulangi password"
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-tiby-teal-600"
-                />
-              </div>
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setResetOpen(false)}
-                  className="flex-1 rounded-xl border border-gray-200 py-2.5 text-xs font-semibold hover:bg-gray-50"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={resetLoading}
-                  className="flex-1 rounded-xl bg-tiby-teal-600 text-white py-2.5 text-xs font-semibold hover:bg-tiby-teal-700 disabled:opacity-50 flex justify-center items-center gap-2"
-                >
-                  {resetLoading && (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  )}{" "}
-                  Simpan
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+              </form>
+            </ModalCard>
+          </ModalOverlay>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

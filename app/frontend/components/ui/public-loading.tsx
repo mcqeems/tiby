@@ -1,6 +1,8 @@
 "use client";
 
+import { motion } from "motion/react";
 import Mascot from "@/components/mascot";
+import { fadeUp } from "@/lib/motion";
 
 interface PublicLoadingProps {
   message?: string;
@@ -12,7 +14,12 @@ export default function PublicLoading({
   fullScreen = false,
 }: PublicLoadingProps) {
   const content = (
-    <div className="flex flex-col items-center justify-center p-8 text-center">
+    <motion.div
+      variants={fadeUp}
+      initial="hidden"
+      animate="visible"
+      className="flex flex-col items-center justify-center p-8 text-center"
+    >
       <div className="relative mb-4 flex items-center justify-center pt-2">
         <div className="absolute inset-0 rounded-full bg-radial from-tiby-teal-500/20 to-transparent blur-xl scale-125 pointer-events-none" />
         <div className="motion-safe:animate-float">
@@ -32,7 +39,7 @@ export default function PublicLoading({
       <p className="mt-1 text-xs text-tiby-muted">
         Mohon tunggu sebentar, sistem sedang menyiapkan semuanya untuk Anda.
       </p>
-    </div>
+    </motion.div>
   );
 
   if (fullScreen) {

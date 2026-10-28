@@ -82,6 +82,13 @@ export const listItem: Variants = {
   visible: { opacity: 1, y: 0, transition: TRANS.out },
 };
 
+/** In-flow banners and notices: drop in from just above, leave the same way. */
+export const banner: Variants = {
+  hidden: { opacity: 0, y: -8 },
+  visible: { opacity: 1, y: 0, transition: TRANS.out },
+  exit: { opacity: 0, y: -8, transition: TRANS.fast },
+};
+
 /**
  * Parent that sequences its children. Motion owns the timing, so children
  * never hand-roll `delay: i * n`.

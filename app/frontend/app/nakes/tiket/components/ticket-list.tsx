@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { AnimatePresence } from "motion/react";
 import { faskesApi } from "@/lib/api/faskes";
 import type { FaskesTicket } from "@/lib/types/faskes";
 import PublicLoading from "@/components/ui/public-loading";
@@ -230,16 +231,18 @@ export default function TicketList() {
         </div>
       )}
 
-      {selectedTicket && (
-        <TicketResolveModal
-          ticket={selectedTicket}
-          onClose={() => setSelectedTicket(null)}
-          onSuccess={() => {
-            setSelectedTicket(null);
-            fetchTickets();
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {selectedTicket && (
+          <TicketResolveModal
+            ticket={selectedTicket}
+            onClose={() => setSelectedTicket(null)}
+            onSuccess={() => {
+              setSelectedTicket(null);
+              fetchTickets();
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

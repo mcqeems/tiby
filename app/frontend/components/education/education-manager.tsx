@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { AnimatePresence } from "motion/react";
+import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import {
   educationApi,
   type EducationItem,
@@ -310,160 +312,162 @@ export default function EducationManager({
       )}
 
       {/* MODAL FORM */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-xl overflow-hidden animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 bg-gray-50/50 shrink-0">
-              <h3 className="font-heading font-bold text-tiby-ink">
-                {editingId ? "Edit Materi Edukasi" : "Tambah Materi Edukasi"}
-              </h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:bg-gray-200 p-1.5 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form
-              onSubmit={handleSubmit}
-              className="p-6 overflow-y-auto space-y-4"
-            >
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
-                    Judul
-                  </label>
-                  <input
-                    value={formData.title}
-                    onChange={(e) =>
-                      setFormData({ ...formData, title: e.target.value })
-                    }
-                    className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none"
-                    placeholder="Judul materi..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
-                    Kategori
-                  </label>
-                  <select
-                    value={formData.category}
-                    // ✅ FIX: Ganti any dengan EducationCategory
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        category: e.target.value as EducationCategory,
-                      })
-                    }
-                    className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none cursor-pointer"
-                  >
-                    {CATEGORIES.map((c) => (
-                      <option key={c.value} value={c.value}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
-                    Fase Pengobatan
-                  </label>
-                  <select
-                    value={formData.phase}
-                    // ✅ FIX: Ganti any dengan EducationPhase
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        phase: e.target.value as EducationPhase,
-                      })
-                    }
-                    className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none cursor-pointer"
-                  >
-                    {PHASES.map((p) => (
-                      <option key={p.value} value={p.value}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
-                    Urutan (Sort Order)
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.sortOrder}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        sortOrder: parseInt(e.target.value) || 0,
-                      })
-                    }
-                    className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
-                  Ringkasan Singkat
-                </label>
-                <input
-                  value={formData.summary}
-                  onChange={(e) =>
-                    setFormData({ ...formData, summary: e.target.value })
-                  }
-                  className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none"
-                  placeholder="Tampil di halaman depan kartu..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
-                  Isi Materi (Markdown)
-                </label>
-                <textarea
-                  value={formData.contentMarkdown}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      contentMarkdown: e.target.value,
-                    })
-                  }
-                  className="w-full h-40 rounded-xl border border-gray-200 p-3 text-sm font-mono focus:ring-2 focus:ring-tiby-teal-600 outline-none resize-none"
-                  placeholder="### Judul Materi&#10;Isi materi di sini...&#10;- Poin 1&#10;- Poin 2"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4 border-t border-gray-100 shrink-0">
+      <AnimatePresence>
+        {isModalOpen && (
+          <ModalOverlay>
+            <ModalCard className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-xl overflow-hidden">
+              <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 bg-gray-50/50 shrink-0">
+                <h3 className="font-heading font-bold text-tiby-ink">
+                  {editingId ? "Edit Materi Edukasi" : "Tambah Materi Edukasi"}
+                </h3>
                 <button
-                  type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 h-11 rounded-xl border border-gray-200 text-xs font-semibold hover:bg-gray-50"
+                  className="text-gray-400 hover:bg-gray-200 p-1.5 rounded-lg"
                 >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 h-11 rounded-xl bg-tiby-teal-600 text-white text-xs font-semibold hover:bg-tiby-teal-700 flex justify-center items-center gap-2 disabled:opacity-50"
-                >
-                  {submitting ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                  {submitting ? "Menyimpan..." : "Simpan Materi"}
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+
+              <form
+                onSubmit={handleSubmit}
+                className="p-6 overflow-y-auto space-y-4"
+              >
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
+                      Judul
+                    </label>
+                    <input
+                      value={formData.title}
+                      onChange={(e) =>
+                        setFormData({ ...formData, title: e.target.value })
+                      }
+                      className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none"
+                      placeholder="Judul materi..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
+                      Kategori
+                    </label>
+                    <select
+                      value={formData.category}
+                      // ✅ FIX: Ganti any dengan EducationCategory
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          category: e.target.value as EducationCategory,
+                        })
+                      }
+                      className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none cursor-pointer"
+                    >
+                      {CATEGORIES.map((c) => (
+                        <option key={c.value} value={c.value}>
+                          {c.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
+                      Fase Pengobatan
+                    </label>
+                    <select
+                      value={formData.phase}
+                      // ✅ FIX: Ganti any dengan EducationPhase
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          phase: e.target.value as EducationPhase,
+                        })
+                      }
+                      className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none cursor-pointer"
+                    >
+                      {PHASES.map((p) => (
+                        <option key={p.value} value={p.value}>
+                          {p.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
+                      Urutan (Sort Order)
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.sortOrder}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          sortOrder: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
+                    Ringkasan Singkat
+                  </label>
+                  <input
+                    value={formData.summary}
+                    onChange={(e) =>
+                      setFormData({ ...formData, summary: e.target.value })
+                    }
+                    className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none"
+                    placeholder="Tampil di halaman depan kartu..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
+                    Isi Materi (Markdown)
+                  </label>
+                  <textarea
+                    value={formData.contentMarkdown}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        contentMarkdown: e.target.value,
+                      })
+                    }
+                    className="w-full h-40 rounded-xl border border-gray-200 p-3 text-sm font-mono focus:ring-2 focus:ring-tiby-teal-600 outline-none resize-none"
+                    placeholder="### Judul Materi&#10;Isi materi di sini...&#10;- Poin 1&#10;- Poin 2"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-gray-100 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="flex-1 h-11 rounded-xl border border-gray-200 text-xs font-semibold hover:bg-gray-50"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="flex-1 h-11 rounded-xl bg-tiby-teal-600 text-white text-xs font-semibold hover:bg-tiby-teal-700 flex justify-center items-center gap-2 disabled:opacity-50"
+                  >
+                    {submitting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    {submitting ? "Menyimpan..." : "Simpan Materi"}
+                  </button>
+                </div>
+              </form>
+            </ModalCard>
+          </ModalOverlay>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

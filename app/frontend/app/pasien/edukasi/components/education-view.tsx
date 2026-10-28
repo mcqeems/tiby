@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "motion/react";
+import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
+import { AnimatePresence, motion } from "motion/react";
 import { educationApi, type EducationItem } from "@/lib/api/education";
 import PublicLoading from "@/components/ui/public-loading";
 import Mascot from "@/components/mascot";
@@ -172,86 +173,88 @@ export default function EducationView({
         </div>
       )}
 
-      {selectedCard && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-3xl bg-white shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5 bg-gray-50/80 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-tiby-teal-100 flex items-center justify-center">
-                  <BookOpen className="w-4.5 h-4.5 text-tiby-teal-700" />
+      <AnimatePresence>
+        {selectedCard && (
+          <ModalOverlay>
+            <ModalCard className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-3xl bg-white shadow-2xl overflow-hidden">
+              <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5 bg-gray-50/80 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-tiby-teal-100 flex items-center justify-center">
+                    <BookOpen className="w-4.5 h-4.5 text-tiby-teal-700" />
+                  </div>
+                  <h3 className="font-heading font-bold text-tiby-ink truncate pr-4 text-lg sm:text-xl">
+                    {selectedCard.title}
+                  </h3>
                 </div>
-                <h3 className="font-heading font-bold text-tiby-ink truncate pr-4 text-lg sm:text-xl">
-                  {selectedCard.title}
-                </h3>
+                <button
+                  onClick={() => setSelectedCard(null)}
+                  className="p-2 text-gray-400 hover:text-tiby-ink hover:bg-gray-200 rounded-full transition shrink-0"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button
-                onClick={() => setSelectedCard(null)}
-                className="p-2 text-gray-400 hover:text-tiby-ink hover:bg-gray-200 rounded-full transition shrink-0"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <div className="p-6 sm:p-10 overflow-y-auto bg-white">
-              <div className="prose prose-sm sm:prose-base prose-teal max-w-none">
-                {selectedCard.contentMarkdown
-                  .split("\n")
-                  .map((paragraph, idx) => {
-                    if (paragraph.startsWith("###")) {
-                      return (
-                        <h4
-                          key={idx}
-                          className="font-heading font-bold text-xl text-tiby-ink mt-8 mb-4"
-                        >
-                          {paragraph.replace("###", "").trim()}
-                        </h4>
-                      );
-                    }
-                    if (paragraph.startsWith("**")) {
-                      const text = paragraph.replace(/\*\*/g, "");
+              <div className="p-6 sm:p-10 overflow-y-auto bg-white">
+                <div className="prose prose-sm sm:prose-base prose-teal max-w-none">
+                  {selectedCard.contentMarkdown
+                    .split("\n")
+                    .map((paragraph, idx) => {
+                      if (paragraph.startsWith("###")) {
+                        return (
+                          <h4
+                            key={idx}
+                            className="font-heading font-bold text-xl text-tiby-ink mt-8 mb-4"
+                          >
+                            {paragraph.replace("###", "").trim()}
+                          </h4>
+                        );
+                      }
+                      if (paragraph.startsWith("**")) {
+                        const text = paragraph.replace(/\*\*/g, "");
+                        return (
+                          <p
+                            key={idx}
+                            className="font-bold text-base text-tiby-ink mt-6 mb-2"
+                          >
+                            {text}
+                          </p>
+                        );
+                      }
+                      if (paragraph.startsWith("-")) {
+                        return (
+                          <li
+                            key={idx}
+                            className="text-base text-tiby-muted ml-4 mb-3 leading-relaxed"
+                          >
+                            {paragraph.replace("-", "").trim()}
+                          </li>
+                        );
+                      }
+                      if (paragraph.trim() === "") return <br key={idx} />;
                       return (
                         <p
                           key={idx}
-                          className="font-bold text-base text-tiby-ink mt-6 mb-2"
+                          className="text-base text-tiby-muted leading-relaxed mb-5"
                         >
-                          {text}
+                          {paragraph}
                         </p>
                       );
-                    }
-                    if (paragraph.startsWith("-")) {
-                      return (
-                        <li
-                          key={idx}
-                          className="text-base text-tiby-muted ml-4 mb-3 leading-relaxed"
-                        >
-                          {paragraph.replace("-", "").trim()}
-                        </li>
-                      );
-                    }
-                    if (paragraph.trim() === "") return <br key={idx} />;
-                    return (
-                      <p
-                        key={idx}
-                        className="text-base text-tiby-muted leading-relaxed mb-5"
-                      >
-                        {paragraph}
-                      </p>
-                    );
-                  })}
+                    })}
+                </div>
               </div>
-            </div>
 
-            <div className="p-4 sm:p-6 border-t border-gray-100 bg-gray-50 shrink-0">
-              <button
-                onClick={() => setSelectedCard(null)}
-                className="w-full h-12 bg-tiby-teal-600 text-white rounded-xl font-semibold text-sm hover:bg-tiby-teal-700 transition shadow-sm"
-              >
-                Selesai Membaca
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              <div className="p-4 sm:p-6 border-t border-gray-100 bg-gray-50 shrink-0">
+                <button
+                  onClick={() => setSelectedCard(null)}
+                  className="w-full h-12 bg-tiby-teal-600 text-white rounded-xl font-semibold text-sm hover:bg-tiby-teal-700 transition shadow-sm"
+                >
+                  Selesai Membaca
+                </button>
+              </div>
+            </ModalCard>
+          </ModalOverlay>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

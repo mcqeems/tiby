@@ -4,6 +4,7 @@ import type {
   RiskSortedPatientItem,
   PatientStatusHistoryItem,
 } from "@tiby/ts-shared";
+import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 
 interface PatientHistoryModalProps {
   patient: RiskSortedPatientItem;
@@ -19,8 +20,8 @@ export default function PatientHistoryModal({
   onClose,
 }: PatientHistoryModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs px-4">
-      <div className="w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl border border-tiby-teal-100 animate-fadeIn max-h-[85vh] flex flex-col">
+    <ModalOverlay className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs px-4">
+      <ModalCard className="w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl border border-tiby-teal-100 max-h-[85vh] flex flex-col">
         {/* Header Modal */}
         <div className="flex items-start justify-between pb-3 border-b border-tiby-teal-100">
           <div>
@@ -88,7 +89,7 @@ export default function PatientHistoryModal({
             Tutup
           </button>
         </div>
-      </div>
-    </div>
+      </ModalCard>
+    </ModalOverlay>
   );
 }

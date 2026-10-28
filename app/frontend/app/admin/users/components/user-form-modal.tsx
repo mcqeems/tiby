@@ -4,6 +4,7 @@ import { useState } from "react";
 import { usersApi, type UserItem } from "@/lib/api/users";
 import type { FacilityItem } from "@/lib/types/facilities";
 import { usePopup } from "@/components/ui/popup-provider";
+import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import { X, Loader2, Save } from "lucide-react";
 
 interface UserFormModalProps {
@@ -127,8 +128,8 @@ export default function UserFormModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl overflow-hidden animate-in zoom-in-95">
+    <ModalOverlay onClose={onClose}>
+      <ModalCard className="w-full max-w-lg rounded-2xl bg-white shadow-xl overflow-hidden">
         <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 bg-gray-50/50">
           <h3 className="font-heading font-bold text-tiby-ink">
             {isEdit ? "Edit Akun" : "Buat Akun Nakes Baru"}
@@ -272,7 +273,7 @@ export default function UserFormModal({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      </ModalCard>
+    </ModalOverlay>
   );
 }
