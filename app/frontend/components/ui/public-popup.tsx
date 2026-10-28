@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
 import Mascot, {
   type MascotEmotion,
 } from "@/components/mascot";
+import { overlay, popIn } from "@/lib/motion";
 
 export type PopupVariant = "success" | "danger" | "warning" | "info";
 
@@ -22,8 +24,6 @@ export interface PublicPopupProps {
   onConfirm?: () => void;
   onClose: () => void;
 }
-
-const EXIT_MS = 200;
 
 const VARIANT_CONFIG: Record<
   PopupVariant,
@@ -141,21 +141,6 @@ const cssVars = (vars: Record<string, string | number>) =>
   vars as React.CSSProperties;
 
 const POPUP_CSS = `
-/* ---------- Overlay & card ---------- */
-@keyframes tp-fade { from { opacity: 0 } to { opacity: 1 } }
-@keyframes tp-fade-out { to { opacity: 0 } }
-@keyframes tp-card-in {
-  0%   { opacity: 0; transform: translateY(32px) scale(.92); }
-  100% { opacity: 1; transform: none; }
-}
-@keyframes tp-card-out {
-  to { opacity: 0; transform: translateY(12px) scale(.96); }
-}
-.tp-overlay-in  { animation: tp-fade .25s ease-out both; }
-.tp-overlay-out { animation: tp-fade-out ${EXIT_MS}ms ease-in both; }
-.tp-card-in  { animation: tp-card-in .5s cubic-bezier(.34,1.56,.64,1) both; }
-.tp-card-out { animation: tp-card-out ${EXIT_MS}ms ease-in both; }
-
 /* Getar seluruh card (danger) setelah card selesai masuk */
 @keyframes tp-shake {
   0%, 100% { transform: translateX(0); }
@@ -305,16 +290,6 @@ export default function PublicPopup({
 }: PublicPopupProps) {
   const cfg = VARIANT_CONFIG[variant] || VARIANT_CONFIG.info;
 
-  // `mounted` menahan komponen tetap ada selama animasi keluar berjalan
-  const [mounted, setMounted] = useState(open);
-  if (open && !mounted) setMounted(true);
-
-  useEffect(() => {
-    if (open || !mounted) return;
-    const t = setTimeout(() => setMounted(false), EXIT_MS);
-    return () => clearTimeout(t);
-  }, [open, mounted]);
-
   // Tombol Escape
   useEffect(() => {
     if (!open) return;
@@ -325,157 +300,161 @@ export default function PublicPopup({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, loading, onClose]);
 
-  if (!mounted) return null;
-
-  const closing = !open;
-
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="tiby-popup-title"
-      className={`tp-root fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-xs p-3 sm:p-4 ${
-        closing ? "tp-overlay-out pointer-events-none" : "tp-overlay-in"
-      }`}
-      onClick={() => {
-        if (!loading) onClose();
-      }}
-    >
-      <style>{POPUP_CSS}</style>
-
-      {/* Wrapper luar: khusus getaran (danger) agar tidak bentrok dengan animasi masuk card */}
-      <div className={`w-full max-w-md ${open ? cfg.wrapAnim : ""}`}>
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className={`relative w-full rounded-3xl border border-tiby-teal-100 bg-white p-6 sm:p-7 shadow-[0_20px_60px_rgba(15,41,38,0.16)] ${
-            closing ? "tp-card-out" : "tp-card-in"
-          }`}
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tiby-popup-title"
+          variants={overlay}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          className="tp-root fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-xs p-3 sm:p-4"
+          onClick={() => {
+            if (!loading) onClose();
+          }}
         >
-          {/* Tombol Tutup */}
-          <button
-            type="button"
-            disabled={loading}
-            onClick={onClose}
-            aria-label="Tutup pop up"
-            className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-transparent text-tiby-muted hover:border-tiby-teal-100 hover:bg-tiby-teal-50/50 hover:text-tiby-ink transition cursor-pointer disabled:opacity-40 z-10"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <style>{POPUP_CSS}</style>
 
-          <div className="flex flex-col items-center text-center">
-            {/* Maskot + efek sesuai varian */}
-            <div className="relative mb-2 flex items-center justify-center pt-2">
-              {/* Glow */}
-              <div
-                className={`absolute inset-0 rounded-full bg-radial ${cfg.glowColor} blur-xl pointer-events-none ${cfg.glowAnim}`}
-              />
-
-              {/* Cincin gelombang (success & danger) */}
-              {Array.from({ length: cfg.ringCount }).map((_, i) => (
-                <span
-                  key={i}
-                  aria-hidden
-                  style={cssVars({ animationDelay: `${300 + i * 220}ms` })}
-                  className={`tp-ring pointer-events-none absolute left-1/2 top-1/2 -ml-12 -mt-10 h-24 w-24 rounded-full border-2 ${cfg.ringClass}`}
-                />
-              ))}
-
-              {/* Confetti (success) */}
-              {cfg.confetti &&
-                CONFETTI.map((p, i) => (
-                  <span
-                    key={i}
-                    aria-hidden
-                    style={cssVars({
-                      "--tx": `${p.tx}px`,
-                      "--ty": `${p.ty}px`,
-                      "--r": `${p.rot}deg`,
-                      "--d": `${p.delay}ms`,
-                    })}
-                    className={`tp-confetti pointer-events-none absolute left-1/2 top-1/2 h-1.5 w-1.5 ${
-                      p.round ? "rounded-full" : "rounded-[2px]"
-                    } ${p.color}`}
-                  />
-                ))}
-
-              <Mascot
-                animated={cfg.animated}
-                emotion={cfg.emotion}
-                size={96}
-                altText="Maskot Pandu Tiby"
-                className={`drop-shadow-md ${cfg.mascotAnim}`}
-              />
-            </div>
-
-            {/* Badge */}
-            <span
-              style={cssVars({ "--d": "220ms" })}
-              className={`tp-rise inline-flex items-center gap-1 rounded-full border px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider mb-2 ${cfg.badgeBg} ${cfg.badgeText} ${cfg.badgeAnim}`}
+          {/* Wrapper luar: khusus getaran (danger) agar tidak bentrok dengan animasi masuk card */}
+          <div className={`w-full max-w-md ${cfg.wrapAnim}`}>
+            <motion.div
+              variants={popIn}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full rounded-3xl border border-tiby-teal-100 bg-white p-6 sm:p-7 shadow-[0_20px_60px_rgba(15,41,38,0.16)]"
             >
-              {badgeText || cfg.defaultBadge}
-            </span>
-
-            <h3
-              id="tiby-popup-title"
-              style={cssVars({ "--d": "280ms" })}
-              className="tp-rise font-heading text-lg sm:text-xl font-600 text-tiby-ink leading-snug"
-            >
-              {title}
-            </h3>
-
-            {description && (
-              <p
-                style={cssVars({ "--d": "340ms" })}
-                className="tp-rise mt-1.5 text-xs sm:text-sm text-tiby-muted leading-relaxed max-w-sm"
-              >
-                {description}
-              </p>
-            )}
-          </div>
-
-          {/* Custom Slot */}
-          {children && (
-            <div className="tp-rise mt-4" style={cssVars({ "--d": "380ms" })}>
-              {children}
-            </div>
-          )}
-
-          {/* Tombol Aksi */}
-          <div
-            style={cssVars({ "--d": "430ms" })}
-            className="tp-rise mt-6 flex flex-col-reverse sm:flex-row items-center justify-center gap-2.5"
-          >
-            {!hideCancel && (
+              {/* Tombol Tutup */}
               <button
                 type="button"
                 disabled={loading}
                 onClick={onClose}
-                className="w-full sm:flex-1 rounded-full border border-tiby-teal-100 bg-white px-5 py-2.5 text-xs font-semibold text-tiby-muted hover:bg-gray-50 hover:text-tiby-ink active:scale-95 transition cursor-pointer disabled:opacity-50"
+                aria-label="Tutup pop up"
+                className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-transparent text-tiby-muted hover:border-tiby-teal-100 hover:bg-tiby-teal-50/50 hover:text-tiby-ink transition cursor-pointer disabled:opacity-40 z-10"
               >
-                {cancelLabel}
+                <X className="w-4 h-4" />
               </button>
-            )}
 
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => {
-                if (onConfirm) onConfirm();
-                else onClose();
-              }}
-              className={`w-full sm:flex-1 inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold shadow-sm active:scale-95 transition cursor-pointer disabled:opacity-50 ${cfg.confirmBtn}`}
-            >
-              {loading && (
+              <div className="flex flex-col items-center text-center">
+                {/* Maskot + efek sesuai varian */}
+                <div className="relative mb-2 flex items-center justify-center pt-2">
+                  {/* Glow */}
+                  <div
+                    className={`absolute inset-0 rounded-full bg-radial ${cfg.glowColor} blur-xl pointer-events-none ${cfg.glowAnim}`}
+                  />
+
+                  {/* Cincin gelombang (success & danger) */}
+                  {Array.from({ length: cfg.ringCount }).map((_, i) => (
+                    <span
+                      key={i}
+                      aria-hidden
+                      style={cssVars({ animationDelay: `${300 + i * 220}ms` })}
+                      className={`tp-ring pointer-events-none absolute left-1/2 top-1/2 -ml-12 -mt-10 h-24 w-24 rounded-full border-2 ${cfg.ringClass}`}
+                    />
+                  ))}
+
+                  {/* Confetti (success) */}
+                  {cfg.confetti &&
+                    CONFETTI.map((p, i) => (
+                      <span
+                        key={i}
+                        aria-hidden
+                        style={cssVars({
+                          "--tx": `${p.tx}px`,
+                          "--ty": `${p.ty}px`,
+                          "--r": `${p.rot}deg`,
+                          "--d": `${p.delay}ms`,
+                        })}
+                        className={`tp-confetti pointer-events-none absolute left-1/2 top-1/2 h-1.5 w-1.5 ${
+                          p.round ? "rounded-full" : "rounded-[2px]"
+                        } ${p.color}`}
+                      />
+                    ))}
+
+                  <Mascot
+                    animated={cfg.animated}
+                    emotion={cfg.emotion}
+                    size={96}
+                    altText="Maskot Pandu Tiby"
+                    className={`drop-shadow-md ${cfg.mascotAnim}`}
+                  />
+                </div>
+
+                {/* Badge */}
                 <span
-                  aria-hidden
-                  className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white"
-                />
+                  style={cssVars({ "--d": "220ms" })}
+                  className={`tp-rise inline-flex items-center gap-1 rounded-full border px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider mb-2 ${cfg.badgeBg} ${cfg.badgeText} ${cfg.badgeAnim}`}
+                >
+                  {badgeText || cfg.defaultBadge}
+                </span>
+
+                <h3
+                  id="tiby-popup-title"
+                  style={cssVars({ "--d": "280ms" })}
+                  className="tp-rise font-heading text-lg sm:text-xl font-600 text-tiby-ink leading-snug"
+                >
+                  {title}
+                </h3>
+
+                {description && (
+                  <p
+                    style={cssVars({ "--d": "340ms" })}
+                    className="tp-rise mt-1.5 text-xs sm:text-sm text-tiby-muted leading-relaxed max-w-sm"
+                  >
+                    {description}
+                  </p>
+                )}
+              </div>
+
+              {/* Custom Slot */}
+              {children && (
+                <div className="tp-rise mt-4" style={cssVars({ "--d": "380ms" })}>
+                  {children}
+                </div>
               )}
-              {loading ? "Memproses..." : confirmLabel}
-            </button>
+
+              {/* Tombol Aksi */}
+              <div
+                style={cssVars({ "--d": "430ms" })}
+                className="tp-rise mt-6 flex flex-col-reverse sm:flex-row items-center justify-center gap-2.5"
+              >
+                {!hideCancel && (
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={onClose}
+                    className="w-full sm:flex-1 rounded-full border border-tiby-teal-100 bg-white px-5 py-2.5 text-xs font-semibold text-tiby-muted hover:bg-gray-50 hover:text-tiby-ink active:scale-95 transition cursor-pointer disabled:opacity-50"
+                  >
+                    {cancelLabel}
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => {
+                    if (onConfirm) onConfirm();
+                    else onClose();
+                  }}
+                  className={`w-full sm:flex-1 inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold shadow-sm active:scale-95 transition cursor-pointer disabled:opacity-50 ${cfg.confirmBtn}`}
+                >
+                  {loading && (
+                    <span
+                      aria-hidden
+                      className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                    />
+                  )}
+                  {loading ? "Memproses..." : confirmLabel}
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
