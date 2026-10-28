@@ -11,7 +11,7 @@ import {
 } from "motion/react";
 
 interface CheckInVoiceProps {
-  onStart: () => void;
+  onStart: () => Promise<boolean>;
   onStop: () => void;
   onFallback: () => void;
 }
@@ -39,15 +39,24 @@ export default function CheckInVoice({
   onFallback,
 }: CheckInVoiceProps) {
   const [isRecording, setIsRecording] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
   const reduceMotion = useReducedMotion();
 
-  const toggleRecord = () => {
+  const toggleRecord = async () => {
     if (isRecording) {
       onStop();
-    } else {
-      onStart();
+      setIsRecording(false);
+      return;
     }
-    setIsRecording(!isRecording);
+
+    if (isStarting) return;
+    setIsStarting(true);
+    try {
+      const started = await onStart();
+      setIsRecording(started);
+    } finally {
+      setIsStarting(false);
+    }
   };
 
   const glow = isRecording ? "239,68,68" : "13,148,136";
@@ -225,7 +234,8 @@ export default function CheckInVoice({
       {/* ---------- Tombol rekam ---------- */}
       <motion.div variants={item}>
         <motion.button
-          onClick={toggleRecord}
+          onClick={() => void toggleRecord()}
+          disabled={isStarting}
           aria-label={isRecording ? "Berhenti merekam" : "Mulai merekam"}
           whileHover={isRecording ? undefined : { scale: 1.06 }}
           whileTap={{ scale: 0.9 }}

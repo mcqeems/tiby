@@ -67,46 +67,54 @@ export default function CheckInView({
     };
   }, [role, urlPatientId]);
 
+  const inlineLoader = (message: string) => (
+    <div className="flex h-full w-full flex-1 flex-col">
+      <div className="m-auto w-full max-w-md py-6">
+        <PublicLoading message={message} />
+      </div>
+    </div>
+  );
+
   if (loadingPatients || isCheckingStatus) {
-    return <PublicLoading fullScreen message="Memeriksa status check-in..." />;
+    return inlineLoader("Memeriksa status check-in...");
   }
 
   if (state.step === "loading") {
-    return (
-      <PublicLoading
-        fullScreen
-        message="Pandu sedang memproses laporanmu... (Bisa memakan waktu hingga 40 detik)"
-      />
+    return inlineLoader(
+      "Pandu sedang memproses laporanmu... (Bisa memakan waktu hingga 40 detik)",
     );
   }
 
   if (state.step === "locked") {
     return (
-      <div className="flex flex-1 w-full h-full flex-col items-center justify-center text-center px-4 animate-in fade-in zoom-in-95 duration-500 pb-20">
-        <div className="w-24 h-24 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-6 border-4 border-emerald-100 shadow-sm">
-          <CheckCircle2 className="w-12 h-12" />
+      <div className="flex h-full w-full flex-1 flex-col">
+        <div className="m-auto flex w-full max-w-md flex-col items-center px-4 py-6 text-center animate-in fade-in zoom-in-95 duration-500">
+          <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full border-4 border-emerald-100 bg-emerald-50 text-emerald-600 shadow-sm">
+            <CheckCircle2 className="h-12 w-12" />
+          </div>
+          <h2 className="mb-2 font-heading text-2xl font-bold text-tiby-ink">
+            Laporan sudah dikirim hari ini!
+          </h2>
+          <p className="mx-auto max-w-xs text-sm leading-relaxed text-tiby-muted">
+            Data check-in sudah tercatat dengan aman. Kembali lagi besok ya.
+          </p>
+          <button
+            onClick={() =>
+              router.push(role === "PMO" ? "/pmo/pasien" : "/pasien")
+            }
+            className="mt-8 rounded-xl bg-tiby-teal-600 px-8 py-3 font-semibold text-white transition-all hover:bg-tiby-teal-700 hover:shadow-lg"
+          >
+            Kembali ke Beranda
+          </button>
         </div>
-        <h2 className="text-2xl font-heading font-bold text-tiby-ink mb-2">
-          Laporan sudah dikirim hari ini!
-        </h2>
-        <p className="text-sm text-tiby-muted max-w-xs mx-auto leading-relaxed">
-          Data check-in sudah tercatat dengan aman. Kembali lagi besok ya.
-        </p>
-        <button
-          onClick={() =>
-            router.push(role === "PMO" ? "/pmo/pasien" : "/pasien")
-          }
-          className="mt-8 px-8 py-3 bg-tiby-teal-600 text-white rounded-xl font-semibold hover:bg-tiby-teal-700 hover:shadow-lg transition-all"
-        >
-          Kembali ke Beranda
-        </button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto w-full">
-      {role === "PMO" && state.step === "record" && !urlPatientId && (
+    <div className="flex h-full w-full flex-1 flex-col">
+      <div className="m-auto w-full max-w-md py-6">
+        {role === "PMO" && state.step === "record" && !urlPatientId && (
         <div className="mb-6 p-5 bg-white border border-tiby-teal-100 rounded-2xl shadow-sm">
           <label className="text-xs font-bold text-tiby-ink mb-2 block">
             Pilih Pasien yang Didampingi:
@@ -170,6 +178,7 @@ export default function CheckInView({
               onSubmit={(text: string) =>
                 submitVoice(text, selectedPatientId || undefined)
               }
+              onRetry={goToRecord}
             />
           )}
 
@@ -183,14 +192,11 @@ export default function CheckInView({
           )}
 
           {state.step === "result" && state.verdict && (
-            <CheckInResult
-              verdict={state.verdict.verdict}
-              message={state.verdict.message}
-              streak={state.verdict.currentStreak}
-            />
+            <CheckInResult result={state.verdict} />
           )}
         </>
       )}
+      </div>
     </div>
   );
 }

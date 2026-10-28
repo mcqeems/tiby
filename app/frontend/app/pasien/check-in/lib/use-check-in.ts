@@ -47,7 +47,9 @@ export function useCheckIn(treatmentPlanId?: string) {
   const updateStep = (step: CheckInState["step"]) =>
     setState((s) => ({ ...s, step }));
 
-  const startRecording = async (treatmentPlanId?: string) => {
+  const startRecording = async (
+    treatmentPlanId?: string,
+  ): Promise<boolean> => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
@@ -67,6 +69,7 @@ export function useCheckIn(treatmentPlanId?: string) {
       };
 
       mediaRecorder.start();
+      return true;
     } catch {
       await notify({
         variant: "warning",
@@ -76,6 +79,7 @@ export function useCheckIn(treatmentPlanId?: string) {
           "Kami tidak dapat mengakses mikrofon. Silakan gunakan tombol manual di bawah.",
         confirmLabel: "Mengerti",
       });
+      return false;
     }
   };
 

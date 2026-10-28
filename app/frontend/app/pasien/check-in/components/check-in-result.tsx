@@ -3,11 +3,32 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { CheckCircle2, AlertTriangle, ShieldAlert, Flame } from "lucide-react";
+import type { CheckInVerdictResponse } from "@/lib/types/check-in";
 
 interface CheckInResultProps {
-  verdict: string;
-  message: string;
-  streak: number;
+  result: CheckInVerdictResponse;
+}
+
+const RULE_LABELS: Record<string, string> = {
+  RULE_DOSE_FULFILLED_NO_SYMPTOMS: "Dosis lengkap tanpa keluhan",
+  RULE_DOSE_FULFILLED_MINOR_SIDE_EFFECTS:
+    "Dosis lengkap dengan keluhan ringan",
+  RULE_INCOMPLETE_DOSE_RETRY_REQUIRED: "Dosis belum lengkap",
+  RULE_FAIL_SAFE_LOW_CONFIDENCE: "Laporan perlu diperjelas",
+  RULE_CRITICAL_RED_FLAG: "Gejala perlu perhatian medis",
+  RULE_INTENT_TO_STOP: "Ada keinginan berhenti minum obat",
+};
+
+function formatSubmittedAt(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 const cssVars = (vars: Record<string, string | number>) =>
@@ -214,11 +235,9 @@ function useCountUp(target: number, delay = 900, duration = 1000) {
   return value;
 }
 
-export default function CheckInResult({
-  verdict,
-  message,
-  streak,
-}: CheckInResultProps) {
+export default function CheckInResult({ result }: CheckInResultProps) {
+  const verdict = result.verdict;
+  const streak = result.currentStreak;
   const isGood = verdict === "TERKENDALI";
   const isWarn = verdict === "PERLU_PERHATIAN";
 
@@ -262,15 +281,6 @@ export default function CheckInResult({
         };
 
   const Icon = config.icon;
-
-  let displayMessage = message;
-  if (isGood) {
-    displayMessage =
-      streak === 1
-        ? "Api semangatmu baru saja dinyalakan kembali! Ayo jaga konsistensi minum obatmu besok ya."
-        : `Luar biasa! Kamu sudah konsisten selama ${streak} hari. Pertahankan semangatmu!`;
-  }
-
   const count = useCountUp(isGood ? streak : 0);
   const isMilestone = isGood && streak > 1 && streak % 7 === 0;
 
@@ -336,9 +346,92 @@ export default function CheckInResult({
           style={cssVars({ "--d": "500ms" })}
           className="ci-rise text-sm text-tiby-muted leading-relaxed max-w-sm mx-auto"
         >
-          {displayMessage}
+          {result.message}
         </p>
       </div>
+
+      {/* Rincian lengkap dari response */}
+      <div
+        style={cssVars({ "--d": "650ms" })}
+        className="ci-rise w-full max-w-sm rounded-2xl border border-gray-100 bg-white p-4 text-left shadow-2xs"
+      >
+        <p className="text-[10px] font-bold uppercase tracking-wider text-tiby-muted">
+          Rincian Laporan
+        </p>
+        <dl className="mt-2.5 space-y-2 text-xs">
+          <div className="flex items-center justify-between gap-3">
+            <dt className="text-tiby-muted">Dosis hari ini</dt>
+            <dd
+              className={`font-semibold ${
+                result.isDoseFulfilled ? "text-emerald-700" : "text-amber-700"
+              }`}
+            >
+              {result.isDoseFulfilled ? "Terpenuhi" : "Belum terpenuhi"}
+            </dd>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <dt className="text-tiby-muted">Perlu check-in ulang hari ini</dt>
+            <dd
+              className={`font-semibold ${
+                result.redoRequiredToday ? "text-amber-700" : "text-tiby-ink"
+              }`}
+            >
+              {result.redoRequiredToday ? "Ya" : "Tidak"}
+            </dd>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <dt className="text-tiby-muted">Streak saat ini</dt>
+            <dd className="font-semibold text-tiby-ink">
+              {result.currentStreak} hari
+            </dd>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <dt className="text-tiby-muted">Waktu laporan</dt>
+            <dd className="text-right font-semibold text-tiby-ink">
+              {formatSubmittedAt(result.submittedAt)}
+            </dd>
+          </div>
+        </dl>
+
+        {result.matchedRules.length > 0 && (
+          <div className="mt-3 border-t border-gray-100 pt-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-tiby-muted">
+              Aturan yang cocok
+            </p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {result.matchedRules.map((rule) => (
+                <span
+                  key={rule}
+                  className="rounded-full bg-tiby-teal-50 px-2 py-0.5 text-[10px] font-semibold text-tiby-teal-700 ring-1 ring-tiby-teal-100"
+                >
+                  {RULE_LABELS[rule] ?? rule}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <p className="mt-3 break-all border-t border-gray-100 pt-2 font-mono text-[9px] text-tiby-muted">
+          ID laporan: {result.checkInId}
+        </p>
+      </div>
+
+      {result.educationalCard && (
+        <div
+          style={cssVars({ "--d": "750ms" })}
+          className="ci-rise w-full max-w-sm rounded-2xl border border-tiby-teal-100 bg-tiby-teal-50/50 p-4 text-left"
+        >
+          <p className="text-[10px] font-bold uppercase tracking-wider text-tiby-teal-700">
+            Bacaan untukmu
+          </p>
+          <h3 className="mt-1 font-heading text-sm font-semibold text-tiby-ink">
+            {result.educationalCard.title}
+          </h3>
+          <p className="mt-1 text-xs leading-relaxed text-tiby-muted">
+            {result.educationalCard.summary}
+          </p>
+        </div>
+      )}
 
       {/* Kartu streak */}
       {isGood && (

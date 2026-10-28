@@ -2,16 +2,18 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Edit3, CheckCircle2 } from "lucide-react";
+import { Edit3, CheckCircle2, Mic } from "lucide-react";
 
 interface CheckInReviewProps {
   transcript: string;
   onSubmit: (editedText: string) => void;
+  onRetry: () => void;
 }
 
 export default function CheckInReview({
   transcript,
   onSubmit,
+  onRetry,
 }: CheckInReviewProps) {
   const [text, setText] = useState(transcript);
   const [isEditing, setIsEditing] = useState(false);
@@ -64,12 +66,20 @@ export default function CheckInReview({
         </div>
       </div>
 
-      <button
-        onClick={() => onSubmit(text)}
-        className="w-full h-12 bg-tiby-teal-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-tiby-teal-700 transition shadow-md shadow-tiby-teal-600/20"
-      >
-        <CheckCircle2 className="w-5 h-5" /> Kirim Laporan
-      </button>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <button
+          onClick={onRetry}
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white font-semibold text-tiby-ink transition hover:bg-gray-50"
+        >
+          <Mic className="h-5 w-5" /> Rekam ulang
+        </button>
+        <button
+          onClick={() => onSubmit(text)}
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tiby-teal-600 font-semibold text-white shadow-md shadow-tiby-teal-600/20 transition hover:bg-tiby-teal-700"
+        >
+          <CheckCircle2 className="h-5 w-5" /> Kirim Laporan
+        </button>
+      </div>
     </div>
   );
 }

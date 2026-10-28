@@ -44,6 +44,14 @@ export interface AiAudioExtractionResponse {
   emotionalSentiment?: string;
 }
 
+export interface CheckInEducationalCard {
+  id: string;
+  title: string;
+  summary: string;
+  contentMarkdown: string;
+  category: string;
+}
+
 export interface CheckInVerdictResponse {
   checkInId: string;
   verdict: "TERKENDALI" | "PERLU_PERHATIAN" | "SEGERA_KE_FASKES";
@@ -52,6 +60,7 @@ export interface CheckInVerdictResponse {
   currentStreak: number;
   message: string;
   matchedRules: string[];
+  educationalCard?: CheckInEducationalCard;
   submittedAt: string;
 }
 
