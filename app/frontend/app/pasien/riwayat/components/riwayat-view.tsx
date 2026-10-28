@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Skeleton, SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
 import { formatShortDate, formatTime, localDateKey } from "@/lib/format";
 import { motion } from "motion/react";
 import { checkInsApi } from "@/lib/api/check-in";
@@ -16,7 +17,6 @@ import {
   Pill,
   Activity,
   Flame,
-  Loader2,
   FileText,
 } from "lucide-react";
 
@@ -89,9 +89,19 @@ export default function RiwayatView() {
 
   if (loading) {
     return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-tiby-teal-600" />
-      </div>
+      <SkeletonRegion label="Memuat riwayat check-in" className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-48" />
+          <Skeleton className="h-3.5 w-72" />
+        </div>
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
+            <Skeleton className="h-32 w-full rounded-3xl" />
+            <Skeleton className="h-72 w-full rounded-2xl" />
+          </div>
+          <SkeletonRows rows={5} />
+        </div>
+      </SkeletonRegion>
     );
   }
 

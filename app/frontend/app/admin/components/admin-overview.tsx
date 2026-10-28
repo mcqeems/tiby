@@ -1,6 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import {
+  Skeleton,
+  SkeletonRegion,
+  SkeletonStats,
+} from "@/components/ui/skeleton";
 import { fadeDown, listItem, scaleIn, slideIn, staggerParent } from "@/lib/motion";
 import Link from "next/link";
 import { motion } from "motion/react";
@@ -9,7 +14,6 @@ import { statsApi } from "@/lib/api/stats";
 import { facilitiesApi } from "@/lib/api/facilities";
 import type { AdminStats } from "@/lib/types/stats";
 import type { FacilityItem } from "@/lib/types/facilities";
-import PublicLoading from "@/components/ui/public-loading";
 import Mascot from "@/components/mascot";
 import {
   ArrowRight,
@@ -81,7 +85,25 @@ export default function AdminOverview() {
   }, []);
 
   if (loading)
-    return <PublicLoading fullScreen message="Menyiapkan dashboard..." />;
+    return (
+      <SkeletonRegion label="Menyiapkan dashboard" className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-3.5 w-28" />
+          <Skeleton className="h-7 w-56" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 items-start gap-6">
+          <div className="space-y-6 lg:col-span-2">
+            {/* hero card */}
+            <Skeleton className="h-40 w-full rounded-3xl" />
+            <SkeletonStats count={4} className="grid grid-cols-2 gap-4 sm:grid-cols-4" />
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-32 w-full rounded-2xl" />
+            <Skeleton className="h-24 w-full rounded-2xl" />
+          </div>
+        </div>
+      </SkeletonRegion>
+    );
 
   const totalFacilities = stats?.totalFacilities ?? 0;
   const totalNakes = stats?.totalNakes ?? 0;

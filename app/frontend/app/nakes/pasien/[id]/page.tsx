@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Skeleton, SkeletonRegion, SkeletonRows, SkeletonStats } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import { formatLocale } from "@/lib/format";
 import { AnimatePresence } from "motion/react";
@@ -500,9 +501,18 @@ export default function PatientDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-10 text-center text-tiby-muted">
-        Memuat data pasien...
-      </div>
+      <SkeletonRegion label="Memuat data pasien" className="space-y-5">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-24 w-full rounded-2xl" />
+        <SkeletonStats
+          count={4}
+          className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+        />
+        <SkeletonRows
+          rows={5}
+          rowClassName="rounded-2xl border border-gray-200 bg-white p-4"
+        />
+      </SkeletonRegion>
     );
   }
 

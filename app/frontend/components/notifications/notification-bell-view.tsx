@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
 import { formatTime } from "@/lib/format";
 import { AnimatePresence, motion } from "motion/react";
 import { Bell, Check, Info, Loader2, ShieldAlert } from "lucide-react";
@@ -98,9 +99,13 @@ export default function NotificationBellView({
 
               <div className="max-h-75 overflow-y-auto">
                 {loading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-tiby-teal-600" />
-                  </div>
+                  <SkeletonRegion label="Memuat notifikasi" className="p-4">
+                    <SkeletonRows
+                      rows={3}
+                      avatar
+                      rowClassName="rounded-xl bg-gray-50/60 p-3"
+                    />
+                  </SkeletonRegion>
                 ) : items.length === 0 ? (
                   <div className="px-4 py-10 text-center">
                     <Bell className="mx-auto mb-2 h-8 w-8 text-gray-300" />

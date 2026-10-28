@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Skeleton, SkeletonCards, SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import { formatMonthYear } from "@/lib/format";
 import Link from "next/link";
@@ -8,7 +9,6 @@ import { useSession, type TibyUser } from "@/lib/auth-client";
 import { usersApi, type UserItem } from "@/lib/api/users";
 import { consentApi } from "@/lib/api/consent";
 import { usePopup } from "@/components/ui/popup-provider";
-import PublicLoading from "@/components/ui/public-loading";
 import Dialog from "@/components/ui/dialog";
 import PasswordForm from "@/components/profile/password-form";
 import WhatsappConnectCard from "@/components/whatsapp/whatsapp-connect-card";
@@ -116,7 +116,24 @@ export default function ProfileView() {
     };
   }, [userId]);
 
-  if (isPending) return <PublicLoading fullScreen message="Memuat profil..." />;
+  if (isPending)
+    return (
+      <SkeletonRegion label="Memuat profil" className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Skeleton circle className="h-16 w-16" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-3.5 w-56" />
+          </div>
+        </div>
+        <SkeletonRows rows={4} rowClassName="rounded-xl border border-gray-100 p-3" />
+        <SkeletonCards
+          count={2}
+          lines={2}
+          className="grid gap-4 sm:grid-cols-2"
+        />
+      </SkeletonRegion>
+    );
 
   if (!user) {
     return (

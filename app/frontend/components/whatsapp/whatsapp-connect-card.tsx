@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Skeleton, SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import { formatDate } from "@/lib/format";
 import { whatsappApi } from "@/lib/api/whatsapp";
@@ -226,9 +227,10 @@ export default function WhatsappConnectCard({
 
       <div className={bare ? "space-y-4" : "space-y-4 p-6 sm:p-8"}>
         {loading ? (
-          <div className="flex justify-center py-4">
-            <Loader2 className="h-5 w-5 animate-spin text-tiby-teal-600" />
-          </div>
+          <SkeletonRegion label="Memuat status WhatsApp" className="space-y-4">
+            <Skeleton className="h-20 w-full rounded-xl" />
+            <SkeletonRows rows={2} />
+          </SkeletonRegion>
         ) : verified ? (
           <div className="flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">

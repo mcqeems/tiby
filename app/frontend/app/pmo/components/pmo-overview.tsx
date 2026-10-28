@@ -1,13 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import {
+  Skeleton,
+  SkeletonRegion,
+  SkeletonStats,
+} from "@/components/ui/skeleton";
 import { fadeDown, listItem, scaleIn, slideIn, staggerParent } from "@/lib/motion";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { useSession, type TibyUser } from "@/lib/auth-client";
 import { statsApi } from "@/lib/api/stats";
 import type { PmoStats } from "@/lib/types/stats";
-import PublicLoading from "@/components/ui/public-loading";
 import Mascot from "@/components/mascot";
 import {
   Users,
@@ -54,7 +58,25 @@ export default function PmoOverview() {
   };
 
   if (loading)
-    return <PublicLoading fullScreen message="Menyiapkan dashboard..." />;
+    return (
+      <SkeletonRegion label="Menyiapkan dashboard" className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-3.5 w-28" />
+          <Skeleton className="h-7 w-56" />
+        </div>
+        <div className="grid grid-cols-1  items-start gap-6">
+          <div className="space-y-6 lg:col-span-2">
+            {/* hero card */}
+            <Skeleton className="h-40 w-full rounded-3xl" />
+            <SkeletonStats count={4} className="grid grid-cols-1 gap-4 sm:grid-cols-2" />
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-32 w-full rounded-2xl" />
+            <Skeleton className="h-24 w-full rounded-2xl" />
+          </div>
+        </div>
+      </SkeletonRegion>
+    );
 
   const totalPatients = stats?.totalPatients ?? 0;
   const checkedInToday = stats?.checkedInToday ?? 0;

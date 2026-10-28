@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useEffect, useState } from "react";
+import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import { formatLongDateUtc } from "@/lib/format";
 import { usersApi } from "@/lib/api/users";
@@ -640,7 +641,13 @@ export default function OnboardingForm() {
                 </div>
 
                 {loadingUsers ? (
-                  <PublicLoading message="Memuat daftar pengawas..." />
+                  <SkeletonRegion label="Memuat daftar pengawas">
+                    <SkeletonRows
+                      rows={3}
+                      avatar
+                      rowClassName="rounded-xl border border-gray-100 p-3"
+                    />
+                  </SkeletonRegion>
                 ) : filteredUsers.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-tiby-teal-100 bg-tiby-teal-50/30 px-4 py-8 text-center">
                     <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-tiby-muted ring-1 ring-tiby-teal-100">

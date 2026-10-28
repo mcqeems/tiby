@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
 import Pagination from "@/components/ui/pagination";
 import { AnimatePresence } from "motion/react";
 import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
@@ -12,7 +13,6 @@ import {
   type EducationPhase, // ✅ Import tipe
 } from "@/lib/api/education";
 import { usePopup } from "@/components/ui/popup-provider";
-import PublicLoading from "@/components/ui/public-loading";
 import {
   BookOpen,
   Plus,
@@ -196,8 +196,6 @@ export default function EducationManager({
     }
   };
 
-  if (loading) return <PublicLoading message="Memuat materi edukasi..." />;
-
   const totalPages = Math.ceil(total / LIMIT);
 
   return (
@@ -223,7 +221,14 @@ export default function EducationManager({
       </div>
 
       <div className="grid gap-4">
-        {cards.length === 0 ? (
+        {loading ? (
+          <SkeletonRegion label="Memuat materi edukasi">
+            <SkeletonRows
+              rows={4}
+              rowClassName="rounded-2xl border border-gray-200 bg-white p-5 shadow-2xs"
+            />
+          </SkeletonRegion>
+        ) : cards.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-gray-200">
             <BookOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <p className="text-sm text-tiby-muted">

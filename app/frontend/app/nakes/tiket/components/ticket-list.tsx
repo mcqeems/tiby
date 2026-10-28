@@ -4,11 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 import Pagination from "@/components/ui/pagination";
 import ErrorNotice from "@/components/ui/error-notice";
 import { errorMessage } from "@/lib/errors";
+import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
 import { formatLocale } from "@/lib/format";
 import { AnimatePresence } from "motion/react";
 import { faskesApi } from "@/lib/api/faskes";
 import type { FaskesTicket } from "@/lib/types/faskes";
-import PublicLoading from "@/components/ui/public-loading";
 import TicketResolveModal from "./ticket-resolve-modal";
 import {
   Clock,
@@ -96,7 +96,12 @@ export default function TicketList() {
       </AnimatePresence>
 
       {loading ? (
-        <PublicLoading message="Memuat tiket tindak lanjut..." />
+        <SkeletonRegion label="Memuat tiket tindak lanjut">
+          <SkeletonRows
+            rows={4}
+            rowClassName="rounded-2xl border border-gray-200 bg-white p-4 shadow-2xs"
+          />
+        </SkeletonRegion>
       ) : tickets.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-3xl border border-gray-200">
           <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-3" />

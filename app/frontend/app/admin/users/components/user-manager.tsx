@@ -3,13 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import Pagination from "@/components/ui/pagination";
 import { errorMessage } from "@/lib/errors";
+import { SkeletonRegion, SkeletonTable } from "@/components/ui/skeleton";
 import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import { AnimatePresence } from "motion/react";
 import { usersApi, type UserItem } from "@/lib/api/users";
 import { facilitiesApi } from "@/lib/api/facilities";
 import type { FacilityItem } from "@/lib/types/facilities";
 import { usePopup } from "@/components/ui/popup-provider";
-import PublicLoading from "@/components/ui/public-loading";
 import UserFormModal from "./user-form-modal";
 import {
   UserPlus,
@@ -90,9 +90,6 @@ export default function UserManager() {
     };
   }, [fetchData]);
 
-  if (loading && users.length === 0)
-    return <PublicLoading message="Memuat data pengguna..." />;
-
   const totalPages = Math.ceil(total / LIMIT);
 
   return (
@@ -162,84 +159,90 @@ export default function UserManager() {
         </select>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-2xs overflow-hidden">
-        <table className="w-full text-left text-sm border-collapse">
-          <thead className="bg-gray-50 border-b border-gray-100 text-xs text-gray-600 uppercase font-semibold">
-            <tr>
-              <th className="px-5 py-4">Nama / Username</th>
-              <th className="px-5 py-4">Peran</th>
-              <th className="px-5 py-4">Faskes Penempatan</th>
-              <th className="px-5 py-4 text-right">Aksi</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {users.map((u) => (
-              <tr key={u.id} className="hover:bg-gray-50/50">
-                <td className="px-5 py-4">
-                  <p className="font-semibold text-tiby-ink">{u.name}</p>
-                  <p className="text-xs font-mono text-tiby-muted">
-                    @{u.username}
-                  </p>
-                </td>
-                <td className="px-5 py-4">
-                  <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                      u.role === "ADMIN"
-                        ? "bg-purple-100 text-purple-700"
-                        : "bg-tiby-teal-100 text-tiby-teal-700"
-                    }`}
-                  >
-                    {u.role === "ADMIN" && <ShieldCheck className="w-3 h-3" />}
-                    {u.role}
-                  </span>
-                </td>
-                <td className="px-5 py-4">
-                  <div className="flex items-center gap-2 text-xs font-medium text-tiby-ink">
-                    <Building2 className="w-4 h-4 text-gray-400" />
-                    {u.facility || "-"}
-                  </div>
-                </td>
-                <td className="px-5 py-4">
-                  <div className="flex items-center justify-end gap-1">
-                    <button
-                      type="button"
-                      title="Edit akun"
-                      onClick={() => setEditingUser(u)}
-                      className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-tiby-teal-700"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      title="Reset password"
-                      onClick={() => {
-                        setResetUser(u);
-                        setResetPassword("");
-                      }}
-                      className="rounded-lg p-2 text-gray-400 transition hover:bg-amber-50 hover:text-amber-600"
-                    >
-                      <KeyRound className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
+      {loading ? (
+        <SkeletonRegion label="Memuat data pengguna">
+          <SkeletonTable rows={6} columns={4} className="shadow-2xs" />
+        </SkeletonRegion>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-2xs overflow-hidden">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead className="bg-gray-50 border-b border-gray-100 text-xs text-gray-600 uppercase font-semibold">
+              <tr>
+                <th className="px-5 py-4">Nama / Username</th>
+                <th className="px-5 py-4">Peran</th>
+                <th className="px-5 py-4">Faskes Penempatan</th>
+                <th className="px-5 py-4 text-right">Aksi</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {users.map((u) => (
+                <tr key={u.id} className="hover:bg-gray-50/50">
+                  <td className="px-5 py-4">
+                    <p className="font-semibold text-tiby-ink">{u.name}</p>
+                    <p className="text-xs font-mono text-tiby-muted">
+                      @{u.username}
+                    </p>
+                  </td>
+                  <td className="px-5 py-4">
+                    <span
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                        u.role === "ADMIN"
+                          ? "bg-purple-100 text-purple-700"
+                          : "bg-tiby-teal-100 text-tiby-teal-700"
+                      }`}
+                    >
+                      {u.role === "ADMIN" && <ShieldCheck className="w-3 h-3" />}
+                      {u.role}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-2 text-xs font-medium text-tiby-ink">
+                      <Building2 className="w-4 h-4 text-gray-400" />
+                      {u.facility || "-"}
+                    </div>
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        type="button"
+                        title="Edit akun"
+                        onClick={() => setEditingUser(u)}
+                        className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-tiby-teal-700"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        title="Reset password"
+                        onClick={() => {
+                          setResetUser(u);
+                          setResetPassword("");
+                        }}
+                        className="rounded-lg p-2 text-gray-400 transition hover:bg-amber-50 hover:text-amber-600"
+                      >
+                        <KeyRound className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-        {total > 0 && (
-          <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-5 py-3">
-            <span className="text-xs text-tiby-muted">
-              Menampilkan <strong>{(page - 1) * LIMIT + 1}</strong> -{" "}
-              <strong>{Math.min(page * LIMIT, total)}</strong> dari{" "}
-              <strong>{total}</strong> data
-            </span>
-            <div className="flex items-center gap-2">
-              <Pagination page={page} totalPages={totalPages} loading={loading} onChange={setPage} />
+          {total > 0 && (
+            <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-5 py-3">
+              <span className="text-xs text-tiby-muted">
+                Menampilkan <strong>{(page - 1) * LIMIT + 1}</strong> -{" "}
+                <strong>{Math.min(page * LIMIT, total)}</strong> dari{" "}
+                <strong>{total}</strong> data
+              </span>
+              <div className="flex items-center gap-2">
+                <Pagination page={page} totalPages={totalPages} loading={loading} onChange={setPage} />
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
+      )}
 
       <AnimatePresence>
         {isModalOpen && (

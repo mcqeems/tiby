@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Skeleton, SkeletonRegion, SkeletonRows, SkeletonStats } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { facilitiesApi } from "@/lib/api/facilities";
 import { usersApi, type UserItem } from "@/lib/api/users";
 import type { FacilityItem } from "@/lib/types/facilities";
-import PublicLoading from "@/components/ui/public-loading";
 import FacilityFormModal from "../../components/facility-form-modal";
 import {
   ArrowLeft,
@@ -81,7 +81,15 @@ export default function FacilityDetail() {
     };
   }, [load]);
 
-  if (loading) return <PublicLoading message="Memuat detail faskes..." />;
+  if (loading)
+    return (
+      <SkeletonRegion label="Memuat detail faskes" className="space-y-5">
+        <Skeleton className="h-6 w-40" />
+        <Skeleton className="h-28 w-full rounded-2xl" />
+        <SkeletonStats count={3} className="grid gap-4 sm:grid-cols-3" />
+        <SkeletonRows rows={4} />
+      </SkeletonRegion>
+    );
 
   if (error || !facility) {
     return (

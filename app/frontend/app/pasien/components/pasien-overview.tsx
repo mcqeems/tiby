@@ -1,6 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import {
+  Skeleton,
+  SkeletonRegion,
+  SkeletonStats,
+} from "@/components/ui/skeleton";
 import { formatMonthYear, localDateKey } from "@/lib/format";
 import { fadeDown, listItem, popItem, scaleIn, slideIn, staggerParent } from "@/lib/motion";
 import Link from "next/link";
@@ -12,7 +17,6 @@ import { educationApi, type EducationItem } from "@/lib/api/education";
 import { usersApi } from "@/lib/api/users";
 import type { CheckInHistoryItem } from "@/lib/types/check-in";
 import type { PatientStats } from "@/lib/types/stats";
-import PublicLoading from "@/components/ui/public-loading";
 import Dialog from "@/components/ui/dialog";
 import Mascot from "@/components/mascot";
 import {
@@ -250,7 +254,25 @@ export default function PasienOverview() {
   };
 
   if (loading)
-    return <PublicLoading fullScreen message="Menyiapkan dashboard..." />;
+    return (
+      <SkeletonRegion label="Menyiapkan dashboard" className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-3.5 w-28" />
+          <Skeleton className="h-7 w-56" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 items-start gap-6">
+          <div className="space-y-6 lg:col-span-2">
+            {/* hero card */}
+            <Skeleton className="h-40 w-full rounded-3xl" />
+            <SkeletonStats count={3} className="grid grid-cols-1 gap-4 sm:grid-cols-3" />
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-32 w-full rounded-2xl" />
+            <Skeleton className="h-24 w-full rounded-2xl" />
+          </div>
+        </div>
+      </SkeletonRegion>
+    );
 
   const isCheckedInToday =
     stats?.todayCheckInStatus !== "BELUM_CHECK_IN" &&

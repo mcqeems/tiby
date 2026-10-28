@@ -79,3 +79,46 @@ describe("consent gate", () => {
     }
   });
 });
+
+describe("loading placeholders", () => {
+  /** Waiting on a gate or an action, where a mascot and a message is right. */
+  const GATES_AND_ACTIONS = new Set([
+    "app/pasien/layout.tsx",
+    "app/pmo/layout.tsx",
+    "app/nakes/onboarding/components/onboarding-form.tsx",
+    "app/pasien/check-in/components/check-in-view.tsx",
+  ]);
+
+  it("PublicLoading is only used for gates and actions, never to load data", () => {
+    const users = [
+      ...filesUnder("app", /\.tsx$/),
+      ...filesUnder("components", /\.tsx$/),
+    ].filter(
+      (path) =>
+        path !== "components/ui/public-loading.tsx" &&
+        readFileSync(path, "utf8").includes("components/ui/public-loading"),
+    );
+    expect(users.filter((path) => !GATES_AND_ACTIONS.has(path))).toEqual([]);
+  });
+
+  it("the data screens keep their skeletons", () => {
+    const screens = [
+      "app/admin/components/admin-overview.tsx",
+      "app/nakes/components/nakes-overview.tsx",
+      "app/pmo/components/pmo-overview.tsx",
+      "app/pasien/components/pasien-overview.tsx",
+      "app/admin/facilities/components/facility-manager.tsx",
+      "app/admin/users/components/user-manager.tsx",
+      "app/nakes/pasien/components/patients-table.tsx",
+      "app/nakes/tiket/components/ticket-list.tsx",
+      "app/pmo/pasien/components/pmo-patients-list.tsx",
+      "components/education/education-manager.tsx",
+      "app/pasien/riwayat/components/riwayat-view.tsx",
+      "components/profile/profile-view.tsx",
+    ];
+    const missing = screens.filter(
+      (path) => !readFileSync(path, "utf8").includes("components/ui/skeleton"),
+    );
+    expect(missing).toEqual([]);
+  });
+});

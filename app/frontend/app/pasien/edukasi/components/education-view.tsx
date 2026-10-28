@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Skeleton, SkeletonCards, SkeletonRegion } from "@/components/ui/skeleton";
 import { fadeDown, listItem, staggerParent } from "@/lib/motion";
 import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import { AnimatePresence, motion } from "motion/react";
 import { educationApi, type EducationItem } from "@/lib/api/education";
-import PublicLoading from "@/components/ui/public-loading";
 import Mascot from "@/components/mascot";
 import {
   BookOpen,
@@ -47,7 +47,15 @@ export default function EducationView({
   }, []);
 
   if (loading) {
-    return <PublicLoading fullScreen message="Memuat materi edukasi..." />;
+    return (
+      <SkeletonRegion label="Memuat materi edukasi" className="space-y-8">
+        <Skeleton className="h-44 w-full rounded-3xl" />
+        <SkeletonCards
+          count={6}
+          className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+        />
+      </SkeletonRegion>
+    );
   }
 
   const getCategoryStyle = (category: string) => {

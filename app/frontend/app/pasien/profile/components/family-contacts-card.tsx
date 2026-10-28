@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import { AnimatePresence } from "motion/react";
 import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
@@ -167,9 +168,13 @@ export default function FamilyContactsCard({
 
       <div className="p-6 sm:p-8">
         {loading ? (
-          <div className="flex justify-center py-4">
-            <Loader2 className="w-5 h-5 animate-spin text-tiby-teal-600" />
-          </div>
+          <SkeletonRegion label="Memuat kontak darurat">
+            <SkeletonRows
+              rows={2}
+              avatar
+              rowClassName="rounded-xl border border-gray-100 p-3"
+            />
+          </SkeletonRegion>
         ) : loadError ? (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
             <p className="text-xs font-semibold text-red-700">

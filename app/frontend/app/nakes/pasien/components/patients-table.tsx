@@ -5,6 +5,7 @@ import { AnimatePresence } from "motion/react";
 import ErrorNotice from "@/components/ui/error-notice";
 import Pagination from "@/components/ui/pagination";
 import { errorMessage } from "@/lib/errors";
+import { SkeletonRegion, SkeletonTable } from "@/components/ui/skeleton";
 import Link from "next/link"; // ✅ Pastikan import Link
 import { faskesApi } from "@/lib/api/faskes";
 import type {
@@ -12,7 +13,6 @@ import type {
   PatientState,
   TreatmentPhase,
 } from "@/lib/types/faskes";
-import PublicLoading from "@/components/ui/public-loading";
 import {
   Search,
   CheckCircle2,
@@ -187,7 +187,9 @@ export default function PatientsTable() {
 
       {/* TABLE SECTION */}
       {loading ? (
-        <PublicLoading message="Memuat daftar pasien..." />
+        <SkeletonRegion label="Memuat daftar pasien">
+          <SkeletonTable rows={6} columns={7} />
+        </SkeletonRegion>
       ) : patients.length === 0 ? (
         <div className="rounded-2xl border border-gray-200 bg-white p-10 text-center space-y-2">
           <Users className="w-8 h-8 text-gray-400 mx-auto" />

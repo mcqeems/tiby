@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
 import { AnimatePresence } from "motion/react";
 import Link from "next/link";
 import { pmoApi } from "@/lib/api/pmo";
-import PublicLoading from "@/components/ui/public-loading";
 import PmoFollowUpModal from "./pmo-follow-up-modal";
 import {
   User,
@@ -60,12 +60,6 @@ export default function PmoPatientsList() {
     };
   }, [fetchPatients]);
 
-  if (loading) {
-    return (
-      <PublicLoading fullScreen message="Memuat daftar pasien binaan..." />
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -86,7 +80,15 @@ export default function PmoPatientsList() {
       </div>
 
       {/* KONTEN UTAMA */}
-      {patients.length === 0 ? (
+      {loading ? (
+        <SkeletonRegion label="Memuat daftar pasien binaan">
+          <SkeletonRows
+            rows={5}
+            avatar
+            rowClassName="rounded-2xl border border-gray-200 bg-white p-4 shadow-2xs"
+          />
+        </SkeletonRegion>
+      ) : patients.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-dashed border-gray-300">
           <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-4">
             <User className="w-8 h-8 text-gray-300" />

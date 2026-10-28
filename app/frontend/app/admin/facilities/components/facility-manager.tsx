@@ -3,12 +3,12 @@
 import { useState, useEffect, useCallback } from "react";
 import Pagination from "@/components/ui/pagination";
 import { errorMessage } from "@/lib/errors";
+import { SkeletonCards, SkeletonRegion } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { facilitiesApi } from "@/lib/api/facilities";
 import type { FacilityItem } from "@/lib/types/facilities";
 import FacilityFormModal from "./facility-form-modal";
 import { usePopup } from "@/components/ui/popup-provider";
-import PublicLoading from "@/components/ui/public-loading";
 import {
   Building2,
   Plus,
@@ -108,9 +108,6 @@ export default function FacilityManager() {
     }
   };
 
-  if (loading && facilities.length === 0)
-    return <PublicLoading message="Memuat data faskes..." />;
-
   const totalPages = Math.ceil(total / LIMIT);
 
   return (
@@ -147,7 +144,14 @@ export default function FacilityManager() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {facilities.length === 0 ? (
+        {loading ? (
+          <SkeletonRegion label="Memuat data faskes" className="col-span-full">
+            <SkeletonCards
+              count={6}
+              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            />
+          </SkeletonRegion>
+        ) : facilities.length === 0 ? (
           <div className="col-span-full text-center py-16 bg-white rounded-2xl border border-gray-200">
             <Building2 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <p className="text-sm text-tiby-muted">
