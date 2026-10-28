@@ -20,7 +20,7 @@ export default function NakesNotificationBell() {
   const fetchAlerts = async () => {
     try {
       setLoading(true);
-      const res = await faskesApi.getAlerts({ limit: 5 }); // Ambil 5 terbaru
+      const res = await faskesApi.getAlerts({ limit: 50 }); // Ambil semua
       setAlerts(res.items || []);
     } catch {
       // Abaikan error agar lonceng tidak crash
