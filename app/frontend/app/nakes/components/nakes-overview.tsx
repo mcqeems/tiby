@@ -58,7 +58,7 @@ export default function NakesOverview() {
   const adherencePercent = stats ? Math.round(stats.adherenceRate * 100) : 0;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 md:pb-10">
+    <div className="space-y-6">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}

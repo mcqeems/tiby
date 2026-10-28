@@ -51,7 +51,7 @@ export default function MascotAnimation({
       {/* Lottie Animation */}
       <div
         ref={containerRef}
-        className="relative z-10 transition-opacity duration-300"
+        className="pointer-events-none relative transition-opacity duration-300"
         style={{ width: size, height: size, opacity: isLoaded ? 1 : 0.7 }}
         aria-label="Maskot Pandu menyapa"
       />

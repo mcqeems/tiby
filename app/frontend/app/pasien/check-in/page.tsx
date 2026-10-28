@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function PasienCheckInPage() {
   return (
-    <div className="flex h-full w-full flex-col bg-tiby-white pt-2">
+    <div className="flex h-full w-full flex-col bg-tiby-white">
       <CheckInView role="PASIEN" />
     </div>
   );

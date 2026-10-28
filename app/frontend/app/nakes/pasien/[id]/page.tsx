@@ -444,7 +444,7 @@ export default function PatientDetailPage() {
   );
 
   return (
-    <div className="space-y-5 max-w-5xl mx-auto pb-10">
+    <div className="space-y-5">
       <Link
         href="/nakes/pasien"
         className="group inline-flex items-center gap-1.5 text-xs font-semibold text-tiby-muted transition hover:text-tiby-teal-700"

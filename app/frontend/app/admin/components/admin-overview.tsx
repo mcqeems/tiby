@@ -1,36 +1,79 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { motion } from "motion/react";
 import { useSession, type TibyUser } from "@/lib/auth-client";
 import { statsApi } from "@/lib/api/stats";
+import { facilitiesApi } from "@/lib/api/facilities";
 import type { AdminStats } from "@/lib/types/stats";
+import type { FacilityItem } from "@/lib/types/facilities";
 import PublicLoading from "@/components/ui/public-loading";
 import MascotAnimation from "@/components/mascot-animation";
-import { Building2, Users, ShieldCheck, Ticket, User } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  Building2,
+  ChevronRight,
+  MapPin,
+  ShieldCheck,
+  Ticket,
+  User,
+  UserPlus,
+  Users,
+} from "lucide-react";
+
+const QUICK_ACTIONS = [
+  {
+    href: "/admin/facilities",
+    label: "Tambah Faskes",
+    description: "Daftarkan puskesmas atau klinik baru.",
+    icon: Building2,
+  },
+  {
+    href: "/admin/users",
+    label: "Buat Akun",
+    description: "Tambahkan akun Nakes atau admin.",
+    icon: UserPlus,
+  },
+  {
+    href: "/admin/education",
+    label: "Kelola Edukasi",
+    description: "Atur materi global untuk semua faskes.",
+    icon: BookOpen,
+  },
+];
 
 export default function AdminOverview() {
   const { data: session } = useSession();
   const user = session?.user as TibyUser | undefined;
 
   const [stats, setStats] = useState<AdminStats | null>(null);
+  const [facilities, setFacilities] = useState<FacilityItem[]>([]);
+  const [facilityTotal, setFacilityTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
-    async function fetchStats() {
+    async function fetchData() {
       try {
-        const res = await statsApi.getStats();
-        if (active && res.role === "ADMIN") {
-          setStats(res as AdminStats);
+        const [statsRes, facilitiesRes] = await Promise.all([
+          statsApi.getStats(),
+          facilitiesApi.list({ limit: 5 }),
+        ]);
+        if (!active) return;
+        if (statsRes.role === "ADMIN") {
+          setStats(statsRes as AdminStats);
         }
+        setFacilities(facilitiesRes.items || []);
+        setFacilityTotal(facilitiesRes.total || 0);
       } catch (err) {
-        console.error("Gagal memuat stats Admin:", err);
+        console.error("Gagal memuat dashboard Admin:", err);
       } finally {
         if (active) setLoading(false);
       }
     }
-    fetchStats();
+    fetchData();
     return () => {
       active = false;
     };
@@ -40,7 +83,7 @@ export default function AdminOverview() {
     return <PublicLoading fullScreen message="Menyiapkan dashboard..." />;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 md:pb-10">
+    <div className="space-y-6">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -165,22 +208,101 @@ export default function AdminOverview() {
         </div>
 
         <div className="lg:col-span-1">
-          <motion.div
+          <motion.section
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-tiby-teal-50 rounded-2xl border border-tiby-teal-100 p-6 shadow-2xs h-full flex flex-col justify-center"
+            className="h-full rounded-2xl border border-gray-200 bg-white p-5 shadow-2xs"
           >
-            <h3 className="font-heading font-bold text-lg text-tiby-teal-900 mb-2">
-              Pusat Kendali
+            <h3 className="font-heading text-base font-semibold text-tiby-ink">
+              Aksi Cepat
             </h3>
-            <p className="text-sm text-tiby-teal-700 leading-relaxed mb-6">
-              Gunakan menu di samping untuk mengelola data Master Faskes dan
-              Akun Tenaga Kesehatan.
+            <p className="mt-0.5 text-xs text-tiby-muted">
+              Tugas admin yang paling sering dipakai.
             </p>
-          </motion.div>
+            <div className="mt-3 space-y-2">
+              {QUICK_ACTIONS.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <Link
+                    key={action.href}
+                    href={action.href}
+                    className="group flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/60 px-3 py-3 transition hover:border-tiby-teal-200 hover:bg-tiby-teal-50/50"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-tiby-teal-700 ring-1 ring-gray-200">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-xs font-semibold text-tiby-ink">
+                        {action.label}
+                      </span>
+                      <span className="mt-0.5 block text-[11px] leading-snug text-tiby-muted">
+                        {action.description}
+                      </span>
+                    </span>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-gray-300 transition group-hover:translate-x-0.5 group-hover:text-tiby-teal-600" />
+                  </Link>
+                );
+              })}
+            </div>
+          </motion.section>
         </div>
       </div>
+
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35 }}
+        className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xs"
+      >
+        <header className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4 sm:px-6">
+          <div>
+            <h3 className="font-heading text-base font-semibold text-tiby-ink">
+              Faskes Terdaftar
+            </h3>
+            <p className="mt-0.5 text-xs text-tiby-muted">
+              {facilityTotal} faskes di platform.
+            </p>
+          </div>
+          <Link
+            href="/admin/facilities"
+            className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-tiby-teal-700 hover:text-tiby-teal-800"
+          >
+            Lihat semua <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </header>
+
+        {facilities.length === 0 ? (
+          <p className="px-5 py-8 text-center text-sm text-tiby-muted">
+            Belum ada faskes terdaftar.
+          </p>
+        ) : (
+          <ul className="divide-y divide-gray-100">
+            {facilities.map((facility) => (
+              <li key={facility.id}>
+                <Link
+                  href={`/admin/facilities/${facility.id}`}
+                  className="flex items-center gap-3 px-5 py-3 transition hover:bg-gray-50 sm:px-6"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-tiby-teal-50 text-tiby-teal-700 ring-1 ring-tiby-teal-100">
+                    <Building2 className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-tiby-ink">
+                      {facility.name}
+                    </span>
+                    <span className="mt-0.5 flex items-center gap-1 text-[11px] text-tiby-muted">
+                      <MapPin className="h-3 w-3" />
+                      {facility.district || "-"} · {facility.code}
+                    </span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-gray-300" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </motion.section>
     </div>
   );
 }

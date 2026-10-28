@@ -1,27 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession, type TibyUser } from "@/lib/auth-client";
-import { usersApi } from "@/lib/api/users";
+import { usersApi, type UserItem } from "@/lib/api/users";
 import { consentApi } from "@/lib/api/consent";
 import { usePopup } from "@/components/ui/popup-provider";
 import PublicLoading from "@/components/ui/public-loading";
-import FamilyContactsCard from "@/app/pasien/profile/components/family-contacts-card";
+import Dialog from "@/components/ui/dialog";
+import PasswordForm from "@/components/profile/password-form";
 import WhatsappConnectCard from "@/components/whatsapp/whatsapp-connect-card";
 import PushToggleCard from "@/components/push/push-toggle-card";
-
+import FamilyContactsCard from "@/app/pasien/profile/components/family-contacts-card";
 import {
   AtSign,
-  Check,
-  Eye,
-  EyeOff,
+  Bell,
+  Building2,
+  CalendarDays,
+  ChevronRight,
   KeyRound,
   Loader2,
   Lock,
   Mail,
-  ShieldCheck,
+  MessageCircle,
   ShieldAlert,
+  ShieldCheck,
+  Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -35,25 +39,13 @@ const ROLE_LABEL: Record<string, string> = {
 const roleLabel = (role?: string | null) =>
   (role && ROLE_LABEL[role.toUpperCase()]) || role || "-";
 
-const inputCls =
-  "peer h-11 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-11 text-sm text-tiby-ink placeholder:text-gray-400 shadow-[0_1px_2px_rgba(16,24,40,0.03)] transition hover:border-tiby-teal-200 focus:border-tiby-teal-600 focus:outline-none focus:ring-4 focus:ring-tiby-teal-600/10";
+type ActionKey = "password" | "whatsapp" | "push" | "family" | "privacy";
 
-function getPasswordStrength(pw: string) {
-  if (!pw) return { score: 0, label: "", bar: "bg-gray-200", text: "" };
-  let score = 0;
-  if (pw.length >= 8) score += 1;
-  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score += 1;
-  if (/\d/.test(pw)) score += 1;
-  if (/[^A-Za-z0-9]/.test(pw) || pw.length >= 12) score += 1;
-  if (pw.length < 8) score = Math.min(score, 1);
-  const levels = [
-    { label: "Lemah", bar: "bg-red-500", text: "text-red-600" },
-    { label: "Lemah", bar: "bg-red-500", text: "text-red-600" },
-    { label: "Cukup", bar: "bg-amber-500", text: "text-amber-700" },
-    { label: "Baik", bar: "bg-tiby-teal-600", text: "text-tiby-teal-700" },
-    { label: "Kuat", bar: "bg-emerald-500", text: "text-emerald-700" },
-  ];
-  return { score, ...levels[score] };
+interface ProfileAction {
+  key: ActionKey;
+  icon: LucideIcon;
+  title: string;
+  description: string;
 }
 
 function InfoItem({
@@ -86,96 +78,33 @@ function InfoItem({
   );
 }
 
-function PasswordField({
-  id,
-  label,
-  value,
-  onChange,
-  placeholder,
-  autoComplete,
-  visible,
-  onToggleVisible,
-}: {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-  autoComplete: string;
-  visible: boolean;
-  onToggleVisible: () => void;
-}) {
-  return (
-    <div>
-      <label
-        htmlFor={id}
-        className="mb-1.5 block text-xs font-semibold text-tiby-ink"
-      >
-        {label}
-      </label>
-      <div className="relative">
-        <input
-          id={id}
-          type={visible ? "text" : "password"}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          required
-          autoComplete={autoComplete}
-          placeholder={placeholder}
-          className={inputCls}
-        />
-        <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 transition-colors peer-focus:text-tiby-teal-600" />
-        <button
-          type="button"
-          onClick={onToggleVisible}
-          aria-label={visible ? "Sembunyikan password" : "Tampilkan password"}
-          aria-pressed={visible}
-          className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-tiby-ink"
-        >
-          {visible ? (
-            <EyeOff className="h-4 w-4" />
-          ) : (
-            <Eye className="h-4 w-4" />
-          )}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function Requirement({
-  met,
-  children,
-}: {
-  met: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <li
-      className={`inline-flex items-center gap-1.5 text-xs transition-colors ${met ? "font-semibold text-emerald-700" : "text-tiby-muted"}`}
-    >
-      <span
-        className={`flex h-4 w-4 items-center justify-center rounded-full transition-colors ${met ? "bg-emerald-500 text-white" : "bg-gray-200 text-transparent"}`}
-      >
-        <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
-      </span>
-      {children}
-    </li>
-  );
-}
-
 export default function ProfileView() {
   const { data: session, isPending } = useSession();
   const { notify, confirm } = usePopup();
 
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [me, setMe] = useState<UserItem | null>(null);
+  const [activeDialog, setActiveDialog] = useState<ActionKey | null>(null);
   const [revoking, setRevoking] = useState(false);
 
   const user = session?.user as TibyUser | undefined;
+  const userId = user?.id;
+
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await usersApi.getMe();
+        if (active) setMe(res);
+      } catch {
+        // The session still has enough to render the page.
+      }
+    }, 0);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [userId]);
 
   if (isPending) return <PublicLoading fullScreen message="Memuat profil..." />;
 
@@ -198,54 +127,8 @@ export default function ProfileView() {
     );
   }
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPassword.length < 8) {
-      return notify({
-        variant: "warning",
-        title: "Password Terlalu Pendek",
-        description: "Password baru minimal 8 karakter.",
-        confirmLabel: "Mengerti",
-      });
-    }
-    if (newPassword !== confirmPassword) {
-      return notify({
-        variant: "warning",
-        title: "Konfirmasi Tidak Cocok",
-        description: "Pastikan konfirmasi password sama dengan password baru.",
-        confirmLabel: "Mengerti",
-      });
-    }
-
-    try {
-      setLoading(true);
-      await usersApi.changePassword(currentPassword, newPassword);
-      await notify({
-        variant: "success",
-        badgeText: "Keamanan Akun",
-        title: "Password Berhasil Diubah",
-        description:
-          "Gunakan password baru Anda untuk login di sesi berikutnya.",
-        confirmLabel: "Tutup",
-      });
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch (err: unknown) {
-      await notify({
-        variant: "danger",
-        badgeText: "Gagal",
-        title: "Gagal Mengubah Password",
-        description:
-          err instanceof Error
-            ? err.message
-            : "Pastikan password lama Anda benar.",
-        confirmLabel: "Tutup",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const isPasien = user.role === "PASIEN";
+  const hasWhatsapp = ["PASIEN", "PMO", "NAKES"].includes(user.role);
 
   const handleRevokeConsent = async () => {
     const isConfirmed = await confirm({
@@ -284,15 +167,60 @@ export default function ProfileView() {
     }
   };
 
-  const toggleVisible = () => setShowPassword(!showPassword);
-  const strength = getPasswordStrength(newPassword);
-  const lengthOk = newPassword.length >= 8;
-  const matchOk = confirmPassword !== "" && confirmPassword === newPassword;
-  const isPasien = user.role === "PASIEN";
-  const showWhatsapp = ["PASIEN", "PMO", "NAKES"].includes(user.role);
+  const actions: ProfileAction[] = [
+    {
+      key: "password",
+      icon: KeyRound,
+      title: "Keamanan Akun",
+      description: "Perbarui kata sandi untuk masuk di sesi berikutnya.",
+    },
+  ];
+
+  if (hasWhatsapp) {
+    actions.push(
+      {
+        key: "whatsapp",
+        icon: MessageCircle,
+        title: "WhatsApp",
+        description: me?.whatsappNumber
+          ? `Nomor terdaftar: ${me.whatsappNumber}. Kelola verifikasi.`
+          : "Hubungkan nomor untuk menerima pengingat dari Pandu.",
+      },
+      {
+        key: "push",
+        icon: Bell,
+        title: "Notifikasi Push",
+        description: "Atur pengingat dan pemberitahuan di perangkat ini.",
+      },
+    );
+  }
+
+  if (isPasien) {
+    actions.push(
+      {
+        key: "family",
+        icon: Users,
+        title: "Kontak Darurat",
+        description: "Kelola keluarga yang dihubungi jika Anda tidak melapor.",
+      },
+      {
+        key: "privacy",
+        icon: ShieldAlert,
+        title: "Privasi & Data",
+        description: "Lihat dan kelola izin berbagi data pengobatan Anda.",
+      },
+    );
+  }
+
+  const joined = user.createdAt
+    ? new Date(user.createdAt).toLocaleDateString("id-ID", {
+        month: "long",
+        year: "numeric",
+      })
+    : "-";
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 pb-8 md:pb-10">
+    <div className="space-y-6">
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight text-tiby-ink">
           Profil Saya
@@ -302,219 +230,172 @@ export default function ProfileView() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-        <div className="flex flex-col gap-6">
-          <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs flex-1 flex flex-col">
-            <div className="relative h-28 overflow-hidden bg-linear-to-r from-tiby-teal-600 to-tiby-teal-700 shrink-0">
-              <span
-                aria-hidden="true"
-                className="absolute -right-8 -top-12 h-44 w-44 rounded-full bg-white/10"
-              />
-              <span
-                aria-hidden="true"
-                className="absolute -bottom-16 left-1/3 h-36 w-36 rounded-full bg-white/5"
-              />
-            </div>
-
-            <div className="px-6 pb-6 flex-1 flex flex-col">
-              <div className="-mt-12 flex flex-col items-center text-center gap-3 shrink-0">
-                <span className="relative z-10 flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-tiby-teal-50 font-heading text-3xl font-semibold uppercase text-tiby-teal-700 shadow-md ring-4 ring-white">
-                  {user.name?.charAt(0) || user.username?.charAt(0) || "?"}
-                </span>
-                <div className="min-w-0">
-                  <h2 className="truncate font-heading text-xl font-semibold text-tiby-ink">
-                    {user.name || user.username}
-                  </h2>
-                  <p className="font-mono text-sm text-tiby-muted">
-                    @{user.username}
-                  </p>
-                </div>
-              </div>
-
-              {/* ✅ mt-auto agar info turun ke bawah jika card ditarik panjang */}
-              <dl className="grid gap-3 mt-auto">
-                <InfoItem
-                  icon={AtSign}
-                  label="Username"
-                  value={user.username || "-"}
-                  mono
-                />
-                <InfoItem
-                  icon={ShieldCheck}
-                  label="Peran"
-                  value={roleLabel(user.role)}
-                />
-                {user.email && (
-                  <InfoItem icon={Mail} label="Email" value={user.email} />
-                )}
-              </dl>
-            </div>
-          </section>
-
-          {isPasien && <FamilyContactsCard patientId={user.id} />}
+      <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
+        <div className="relative h-28 overflow-hidden bg-linear-to-r from-tiby-teal-600 to-tiby-teal-700">
+          <span
+            aria-hidden="true"
+            className="absolute -right-8 -top-12 h-44 w-44 rounded-full bg-white/10"
+          />
+          <span
+            aria-hidden="true"
+            className="absolute -bottom-16 left-1/3 h-36 w-36 rounded-full bg-white/5"
+          />
         </div>
 
-        {/* KOLOM KANAN */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
-            <header className="flex items-center gap-3 border-b border-gray-100 bg-linear-to-r from-tiby-teal-50/70 to-white px-6 py-4 sm:px-8">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-tiby-teal-700 shadow-sm ring-1 ring-tiby-teal-100">
-                <KeyRound className="h-4.5 w-4.5" />
-              </span>
-              <div>
-                <h3 className="font-heading text-base font-semibold leading-tight text-tiby-ink">
-                  Ubah Password
-                </h3>
-                <p className="mt-0.5 text-xs text-tiby-muted">
-                  Gunakan password baru untuk login di sesi berikutnya.
-                </p>
-              </div>
-            </header>
+        <div className="px-6 pb-6">
+          <div className="-mt-12 flex flex-col gap-4 sm:flex-row sm:items-end">
+            <span className="relative z-10 flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-tiby-teal-50 font-heading text-3xl font-semibold uppercase text-tiby-teal-700 shadow-md ring-4 ring-white">
+              {user.name?.charAt(0) || user.username?.charAt(0) || "?"}
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate font-heading text-xl font-semibold text-tiby-ink">
+                {user.name || user.username}
+              </h2>
+              <p className="font-mono text-sm text-tiby-muted">
+                @{user.username}
+              </p>
+            </div>
+            <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-tiby-teal-50 px-3 py-1 text-[11px] font-semibold text-tiby-teal-700 ring-1 ring-tiby-teal-100">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              {roleLabel(user.role)}
+            </span>
+          </div>
 
-            <form
-              onSubmit={handleChangePassword}
-              className="space-y-5 p-6 sm:p-8"
-            >
-              <PasswordField
-                id="current-password"
-                label="Password Saat Ini"
-                value={currentPassword}
-                onChange={setCurrentPassword}
-                placeholder="Masukkan password lama"
-                autoComplete="current-password"
-                visible={showPassword}
-                onToggleVisible={toggleVisible}
-              />
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <PasswordField
-                  id="new-password"
-                  label="Password Baru"
-                  value={newPassword}
-                  onChange={setNewPassword}
-                  placeholder="Minimal 8 karakter"
-                  autoComplete="new-password"
-                  visible={showPassword}
-                  onToggleVisible={toggleVisible}
-                />
-                <PasswordField
-                  id="confirm-password"
-                  label="Konfirmasi Password Baru"
-                  value={confirmPassword}
-                  onChange={setConfirmPassword}
-                  placeholder="Ulangi password baru"
-                  autoComplete="new-password"
-                  visible={showPassword}
-                  onToggleVisible={toggleVisible}
-                />
-              </div>
-
-              <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-tiby-muted">
-                    Kekuatan password
-                  </span>
-                  <span
-                    aria-live="polite"
-                    className={`text-xs font-semibold ${strength.text}`}
-                  >
-                    {strength.label || "-"}
-                  </span>
-                </div>
-                <div
-                  className="mt-2.5 grid grid-cols-4 gap-1.5"
-                  aria-hidden="true"
-                >
-                  {[1, 2, 3, 4].map((step) => (
-                    <span
-                      key={step}
-                      className={`h-1.5 rounded-full transition-colors duration-300 ${strength.score >= step ? strength.bar : "bg-gray-200"}`}
-                    />
-                  ))}
-                </div>
-                <ul className="mt-3.5 flex flex-wrap gap-x-5 gap-y-1.5">
-                  <Requirement met={lengthOk}>Minimal 8 karakter</Requirement>
-                  <Requirement met={matchOk}>Konfirmasi cocok</Requirement>
-                </ul>
-              </div>
-
-              <div className="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                <p className="flex items-center gap-2 text-xs text-tiby-muted">
-                  <ShieldCheck className="h-4 w-4 shrink-0 text-tiby-teal-600" />
-                  Pastikan password lama Anda benar.
-                </p>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-tiby-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_6px_16px_-6px_rgba(13,148,136,0.6)] transition hover:-translate-y-0.5 hover:bg-tiby-teal-700 disabled:opacity-70 disabled:shadow-none"
-                >
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <KeyRound className="h-4 w-4" />
-                  )}
-                  {loading ? "Menyimpan..." : "Simpan Password Baru"}
-                </button>
-              </div>
-            </form>
-          </section>
-
-          {showWhatsapp && (
-            <WhatsappConnectCard
-              description={
-                isPasien
-                  ? "Hubungkan nomor agar Pandu bisa mengingatkan jadwal minum obat dan mengirim pemberitahuan penting."
-                  : "Hubungkan nomor agar Anda menerima pengingat dan pemberitahuan pendampingan dari Pandu."
-              }
+          <dl className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <InfoItem
+              icon={AtSign}
+              label="Username"
+              value={user.username || "-"}
+              mono
             />
-          )}
-
-          {showWhatsapp && <PushToggleCard />}
-
-          {isPasien && (
-            <section className="overflow-hidden rounded-2xl border border-red-200 bg-white shadow-xs">
-              <header className="flex items-center gap-3 border-b border-red-100 bg-red-50/50 px-6 py-4 sm:px-8">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-red-600 shadow-sm ring-1 ring-red-100">
-                  <ShieldAlert className="h-4.5 w-4.5" />
-                </span>
-                <div>
-                  <h3 className="font-heading text-base font-semibold leading-tight text-red-900">
-                    Privasi & Keamanan Data
-                  </h3>
-                  <p className="mt-0.5 text-xs text-red-700/80">
-                    Kelola izin berbagi data pengobatan Anda.
-                  </p>
-                </div>
-              </header>
-
-              <div className="p-6 sm:p-8 space-y-4">
-                <p className="text-sm text-tiby-muted leading-relaxed">
-                  Saat ini Anda telah memberikan izin kepada Fasilitas Kesehatan
-                  dan sistem Tiby untuk memproses data pendampingan. Jika Anda
-                  mencabut izin ini, fitur pendampingan akan dinonaktifkan dan
-                  data Anda tidak akan lagi terlihat oleh petugas.
-                </p>
-
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={handleRevokeConsent}
-                    disabled={revoking}
-                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-6 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-70"
-                  >
-                    {revoking ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <ShieldAlert className="h-4 w-4" />
-                    )}
-                    {revoking ? "Memproses..." : "Cabut Persetujuan Data"}
-                  </button>
-                </div>
-              </div>
-            </section>
-          )}
+            {user.email && (
+              <InfoItem icon={Mail} label="Email" value={user.email} />
+            )}
+            <InfoItem
+              icon={Building2}
+              label="Faskes"
+              value={me?.facility || "Belum terhubung"}
+            />
+            <InfoItem icon={CalendarDays} label="Bergabung" value={joined} />
+          </dl>
         </div>
-      </div>
+      </section>
+
+      <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
+        <header className="border-b border-gray-100 px-5 py-4 sm:px-6">
+          <h2 className="font-heading text-base font-semibold text-tiby-ink">
+            Pengaturan Akun
+          </h2>
+          <p className="mt-0.5 text-xs text-tiby-muted">
+            Pilih pengaturan untuk melihat detail dan mengubahnya.
+          </p>
+        </header>
+
+        <div className="divide-y divide-gray-100">
+          {actions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <button
+                key={action.key}
+                type="button"
+                onClick={() => setActiveDialog(action.key)}
+                className="group flex w-full items-center gap-4 px-5 py-4 text-left transition hover:bg-gray-50 sm:px-6"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-tiby-teal-50 text-tiby-teal-700 ring-1 ring-tiby-teal-100">
+                  <Icon className="h-4.5 w-4.5" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-tiby-ink">
+                    {action.title}
+                  </span>
+                  <span className="mt-0.5 block truncate text-xs text-tiby-muted">
+                    {action.description}
+                  </span>
+                </span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-gray-300 transition group-hover:translate-x-0.5 group-hover:text-tiby-teal-600" />
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <Dialog
+        open={activeDialog === "password"}
+        onClose={() => setActiveDialog(null)}
+        title="Keamanan Akun"
+        description="Perbarui kata sandi akun Anda."
+        size="md"
+      >
+        <PasswordForm onSuccess={() => setActiveDialog(null)} />
+      </Dialog>
+
+      {hasWhatsapp && (
+        <Dialog
+          open={activeDialog === "whatsapp"}
+          onClose={() => setActiveDialog(null)}
+          title="WhatsApp"
+          description="Hubungkan nomor agar Pandu bisa mengirim pengingat dan pemberitahuan."
+          size="md"
+        >
+          <WhatsappConnectCard bare />
+        </Dialog>
+      )}
+
+      {hasWhatsapp && (
+        <Dialog
+          open={activeDialog === "push"}
+          onClose={() => setActiveDialog(null)}
+          title="Notifikasi Push"
+          description="Atur pengingat di perangkat ini."
+          size="md"
+        >
+          <PushToggleCard bare />
+        </Dialog>
+      )}
+
+      {isPasien && (
+        <Dialog
+          open={activeDialog === "family"}
+          onClose={() => setActiveDialog(null)}
+          title="Kontak Darurat"
+          description="Keluarga yang dihubungi sistem jika Anda tidak melapor."
+          size="xl"
+        >
+          <FamilyContactsCard patientId={user.id} />
+        </Dialog>
+      )}
+
+      {isPasien && (
+        <Dialog
+          open={activeDialog === "privacy"}
+          onClose={() => setActiveDialog(null)}
+          title="Privasi & Keamanan Data"
+          description="Kelola izin berbagi data pengobatan Anda."
+          size="md"
+        >
+          <div className="space-y-4">
+            <p className="text-sm leading-relaxed text-tiby-muted">
+              Saat ini Anda telah memberikan izin kepada Fasilitas Kesehatan dan
+              sistem Tiby untuk memproses data pendampingan. Jika Anda mencabut
+              izin ini, fitur pendampingan akan dinonaktifkan dan data Anda
+              tidak akan lagi terlihat oleh petugas.
+            </p>
+            <button
+              type="button"
+              onClick={handleRevokeConsent}
+              disabled={revoking}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-6 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-70"
+            >
+              {revoking ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ShieldAlert className="h-4 w-4" />
+              )}
+              {revoking ? "Memproses..." : "Cabut Persetujuan Data"}
+            </button>
+          </div>
+        </Dialog>
+      )}
     </div>
   );
 }

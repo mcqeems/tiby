@@ -32,6 +32,8 @@ export default function UserManager() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("ALL");
+  const [facilityFilter, setFacilityFilter] = useState("");
   const [editingUser, setEditingUser] = useState<UserItem | null>(null);
   const [resetUser, setResetUser] = useState<UserItem | null>(null);
   const [resetPassword, setResetPassword] = useState("");
@@ -44,8 +46,9 @@ export default function UserManager() {
         usersApi.list({
           page,
           limit: LIMIT,
-          role: "NAKES,ADMIN",
+          role: roleFilter === "ALL" ? undefined : roleFilter,
           search: search.trim() || undefined,
+          facilityId: facilityFilter || undefined,
         }),
         facilitiesApi.list({ limit: 100 }),
       ]);
@@ -62,7 +65,17 @@ export default function UserManager() {
     } finally {
       setLoading(false);
     }
-  }, [notify, page, search]);
+  }, [notify, page, search, roleFilter, facilityFilter]);
+
+  useEffect(() => {
+    // Deep link from the facility detail page; avoids useSearchParams during
+    // prerender. Deferred so the effect body itself stays pure.
+    const timer = setTimeout(() => {
+      const id = new URLSearchParams(window.location.search).get("facilityId");
+      if (id) setFacilityFilter(id);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -81,14 +94,14 @@ export default function UserManager() {
   const totalPages = Math.ceil(total / LIMIT);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-5 pb-20">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-heading font-bold text-tiby-ink">
             Manajemen Akun
           </h1>
           <p className="text-sm text-tiby-muted">
-            Kelola akun Tenaga Kesehatan (Nakes) tiap Faskes.
+            Kelola akun Nakes, admin, pasien, dan PMO.
           </p>
         </div>
         <button
@@ -99,17 +112,52 @@ export default function UserManager() {
         </button>
       </div>
 
-      <div className="relative max-w-xs">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-        <input
-          value={search}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative w-full sm:max-w-xs">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Cari nama, username, atau email…"
+            className="h-10 w-full rounded-xl border border-gray-200 bg-white pl-9 pr-3 text-xs text-tiby-ink outline-none focus:ring-2 focus:ring-tiby-teal-600"
+          />
+        </div>
+
+        <select
+          value={roleFilter}
           onChange={(e) => {
-            setSearch(e.target.value);
+            setRoleFilter(e.target.value);
             setPage(1);
           }}
-          placeholder="Cari nama, username, atau email…"
-          className="h-10 w-full rounded-xl border border-gray-200 bg-white pl-9 pr-3 text-xs text-tiby-ink outline-none focus:ring-2 focus:ring-tiby-teal-600"
-        />
+          aria-label="Filter peran"
+          className="h-10 rounded-xl border border-gray-200 bg-white px-3 text-xs font-semibold text-tiby-ink outline-none focus:ring-2 focus:ring-tiby-teal-600"
+        >
+          <option value="ALL">Semua Peran</option>
+          <option value="NAKES">Nakes</option>
+          <option value="ADMIN">Admin</option>
+          <option value="PASIEN">Pasien</option>
+          <option value="PMO">PMO</option>
+        </select>
+
+        <select
+          value={facilityFilter}
+          onChange={(e) => {
+            setFacilityFilter(e.target.value);
+            setPage(1);
+          }}
+          aria-label="Filter faskes"
+          className="h-10 max-w-full rounded-xl border border-gray-200 bg-white px-3 text-xs font-semibold text-tiby-ink outline-none focus:ring-2 focus:ring-tiby-teal-600"
+        >
+          <option value="">Semua Faskes</option>
+          {facilities.map((facility) => (
+            <option key={facility.id} value={facility.id}>
+              {facility.name} ({facility.code})
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-200 shadow-2xs overflow-hidden">
@@ -212,6 +260,7 @@ export default function UserManager() {
       {isModalOpen && (
         <UserFormModal
           facilities={facilities}
+          defaultFacilityId={facilityFilter || undefined}
           onClose={() => setIsModalOpen(false)}
           onSuccess={() => {
             setIsModalOpen(false);

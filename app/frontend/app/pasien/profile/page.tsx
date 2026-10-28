@@ -7,10 +7,6 @@ export const metadata: Metadata = {
   robots: "noindex, nofollow",
 };
 
-export default function AdminProfilePage() {
-  return (
-    <div className="min-h-screen">
-      <ProfileView />
-    </div>
-  );
+export default function PasienProfilePage() {
+  return <ProfileView />;
 }

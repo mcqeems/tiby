@@ -13,8 +13,8 @@ export default function Footer() {
   }, []);
 
   return (
-    <footer className="mt-auto w-full border-t border-gray-100 pt-6 pb-16 md:pb-0 px-6 md:px-8">
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 max-w-6xl mx-auto">
+    <footer className="mt-auto w-full border-t border-gray-100 pt-6 pb-24 md:pb-0">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 text-center md:text-left">
           <p className="text-sm font-heading font-bold text-tiby-ink">
             Tiby <span className="text-tiby-teal-600">Health</span>

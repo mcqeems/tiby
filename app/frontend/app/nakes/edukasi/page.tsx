@@ -1,4 +1,4 @@
-import EducationManager from "./components/education-manager";
+import EducationManager from "@/components/education/education-manager";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function NakesEdukasiPage() {
   return (
-    <div className="max-w-5xl mx-auto pb-20">
+    <div className="">
       <EducationManager />
     </div>
   );

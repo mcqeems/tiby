@@ -37,7 +37,11 @@ const PHASES: { value: EducationPhase; label: string }[] = [
   { value: "LANJUTAN", label: "Fase Lanjutan" },
 ];
 
-export default function EducationManager() {
+export default function EducationManager({
+  scope = "nakes",
+}: {
+  scope?: "nakes" | "admin";
+}) {
   const { notify, confirm } = usePopup();
   const [cards, setCards] = useState<EducationItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -203,7 +207,9 @@ export default function EducationManager() {
             Kelola Edukasi
           </h1>
           <p className="text-sm text-tiby-muted">
-            Materi bacaan untuk pasien TBC.
+            {scope === "admin"
+              ? "Materi admin berlaku untuk semua faskes."
+              : "Materi bacaan untuk pasien TBC."}
           </p>
         </div>
         <button
@@ -237,6 +243,11 @@ export default function EducationManager() {
                   <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100">
                     {card.phase}
                   </span>
+                  {scope === "admin" && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md border border-gray-200">
+                      {card.facilityId ? "Faskes" : "Global"}
+                    </span>
+                  )}
                 </div>
                 <h3 className="font-heading font-semibold text-base text-tiby-ink truncate">
                   {card.title}

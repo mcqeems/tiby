@@ -334,7 +334,7 @@ export default function PublicPopup({
       role="dialog"
       aria-modal="true"
       aria-labelledby="tiby-popup-title"
-      className={`tp-root fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-xs p-3 sm:p-4 ${
+      className={`tp-root fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-xs p-3 sm:p-4 ${
         closing ? "tp-overlay-out pointer-events-none" : "tp-overlay-in"
       }`}
       onClick={() => {

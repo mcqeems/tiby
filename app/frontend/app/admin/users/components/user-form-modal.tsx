@@ -9,6 +9,7 @@ import { X, Loader2, Save } from "lucide-react";
 interface UserFormModalProps {
   facilities: FacilityItem[];
   editingUser?: UserItem;
+  defaultFacilityId?: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -16,6 +17,7 @@ interface UserFormModalProps {
 export default function UserFormModal({
   facilities,
   editingUser,
+  defaultFacilityId,
   onClose,
   onSuccess,
 }: UserFormModalProps) {
@@ -29,7 +31,7 @@ export default function UserFormModal({
     email: editingUser?.email ?? "",
     password: "",
     role: editingUser?.role ?? "NAKES",
-    facilityId: editingUser?.facilityId ?? "",
+    facilityId: editingUser?.facilityId ?? defaultFacilityId ?? "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {

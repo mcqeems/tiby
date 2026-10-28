@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { facilitiesApi } from "@/lib/api/facilities";
-import type { FacilityItem, CreateFacilityDto } from "@/lib/types/facilities";
+import type { FacilityItem } from "@/lib/types/facilities";
+import FacilityFormModal from "./facility-form-modal";
 import { usePopup } from "@/components/ui/popup-provider";
 import PublicLoading from "@/components/ui/public-loading";
 import {
@@ -10,13 +12,11 @@ import {
   Plus,
   Edit2,
   Trash2,
-  X,
-  Loader2,
-  Save,
   MapPin,
   Phone,
   ChevronLeft,
   ChevronRight,
+  Search,
 } from "lucide-react";
 
 const LIMIT = 12;
@@ -26,25 +26,22 @@ export default function FacilityManager() {
   const [facilities, setFacilities] = useState<FacilityItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  // Form State (Disesuaikan dengan API Contract baru)
-  const [formData, setFormData] = useState<CreateFacilityDto>({
-    code: "",
-    name: "",
-    district: "",
-    emergencyPhone: "",
-  });
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingFacility, setEditingFacility] = useState<FacilityItem | null>(
+    null,
+  );
 
   const fetchFacilities = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await facilitiesApi.list({ page, limit: LIMIT });
+      const res = await facilitiesApi.list({
+        page,
+        limit: LIMIT,
+        search: search.trim() || undefined,
+      });
       setFacilities(res.items || []);
       setTotal(res.total || 0);
     } catch {
@@ -57,7 +54,7 @@ export default function FacilityManager() {
     } finally {
       setLoading(false);
     }
-  }, [notify, page]);
+  }, [notify, page, search]);
 
   useEffect(() => {
     let active = true;
@@ -71,25 +68,13 @@ export default function FacilityManager() {
   }, [fetchFacilities]);
 
   const handleOpenCreate = () => {
-    setEditingId(null);
-    setFormData({
-      code: "",
-      name: "",
-      district: "",
-      emergencyPhone: "",
-    });
-    setIsModalOpen(true);
+    setEditingFacility(null);
+    setFormOpen(true);
   };
 
   const handleOpenEdit = (facility: FacilityItem) => {
-    setEditingId(facility.id);
-    setFormData({
-      code: facility.code || "",
-      name: facility.name || "",
-      district: facility.district || "",
-      emergencyPhone: facility.emergencyPhone || "",
-    });
-    setIsModalOpen(true);
+    setEditingFacility(facility);
+    setFormOpen(true);
   };
 
   const handleDelete = async (id: string, name: string) => {
@@ -112,57 +97,14 @@ export default function FacilityManager() {
         confirmLabel: "Tutup",
       });
       fetchFacilities();
-    } catch {
+    } catch (err: unknown) {
       await notify({
         variant: "danger",
         title: "Gagal",
-        description: "Tidak dapat menghapus faskes.",
+        description:
+          err instanceof Error ? err.message : "Tidak dapat menghapus faskes.",
         confirmLabel: "Tutup",
       });
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (formData.name.length < 3 || formData.code.length < 2) {
-      return notify({
-        variant: "warning",
-        title: "Validasi Gagal",
-        description: "Nama dan Kode Faskes minimal 3 karakter.",
-        confirmLabel: "Mengerti",
-      });
-    }
-
-    try {
-      setSubmitting(true);
-      if (editingId) {
-        await facilitiesApi.update(editingId, formData);
-        await notify({
-          variant: "success",
-          title: "Berhasil",
-          description: "Data faskes diperbarui.",
-          confirmLabel: "Tutup",
-        });
-      } else {
-        await facilitiesApi.create(formData);
-        await notify({
-          variant: "success",
-          title: "Berhasil",
-          description: "Faskes baru ditambahkan.",
-          confirmLabel: "Tutup",
-        });
-      }
-      setIsModalOpen(false);
-      fetchFacilities();
-    } catch {
-      await notify({
-        variant: "danger",
-        title: "Gagal",
-        description: "Terjadi kesalahan pada server.",
-        confirmLabel: "Tutup",
-      });
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -191,12 +133,27 @@ export default function FacilityManager() {
         </button>
       </div>
 
+      <div className="relative max-w-xs">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <input
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          placeholder="Cari kode, nama, atau wilayah…"
+          className="h-10 w-full rounded-xl border border-gray-200 bg-white pl-9 pr-3 text-xs text-tiby-ink outline-none focus:ring-2 focus:ring-tiby-teal-600"
+        />
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {facilities.length === 0 ? (
           <div className="col-span-full text-center py-16 bg-white rounded-2xl border border-gray-200">
             <Building2 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <p className="text-sm text-tiby-muted">
-              Belum ada data faskes yang ditambahkan.
+              {search.trim()
+                ? `Tidak ada faskes yang cocok dengan "${search.trim()}".`
+                : "Belum ada data faskes yang ditambahkan."}
             </p>
           </div>
         ) : (
@@ -212,7 +169,12 @@ export default function FacilityManager() {
                   </div>
                   <div>
                     <h3 className="font-heading font-semibold text-base text-tiby-ink line-clamp-1">
-                      {facility.name || "Tanpa Nama"}
+                      <Link
+                        href={`/admin/facilities/${facility.id}`}
+                        className="transition hover:text-tiby-teal-700"
+                      >
+                        {facility.name || "Tanpa Nama"}
+                      </Link>
                     </h3>
                     <span className="inline-block mt-1 px-2 py-0.5 rounded-md bg-gray-100 text-[10px] font-bold uppercase tracking-wider text-gray-600">
                       {facility.code || "-"}
@@ -283,107 +245,15 @@ export default function FacilityManager() {
         </div>
       )}
 
-      {/* MODAL FORM */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-xl overflow-hidden animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 bg-gray-50/50 shrink-0">
-              <h3 className="font-heading font-bold text-tiby-ink">
-                {editingId ? "Edit Data Faskes" : "Tambah Faskes Baru"}
-              </h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:bg-gray-200 p-1.5 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form
-              onSubmit={handleSubmit}
-              className="p-6 overflow-y-auto space-y-4"
-            >
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
-                    Kode Faskes
-                  </label>
-                  <input
-                    value={formData.code}
-                    onChange={(e) =>
-                      setFormData({ ...formData, code: e.target.value })
-                    }
-                    className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none"
-                    placeholder="Contoh: PUSK-001"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
-                    Nama Faskes
-                  </label>
-                  <input
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none"
-                    placeholder="Contoh: Puskesmas Gambir"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
-                  Kecamatan / Wilayah (District)
-                </label>
-                <input
-                  value={formData.district}
-                  onChange={(e) =>
-                    setFormData({ ...formData, district: e.target.value })
-                  }
-                  className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none"
-                  placeholder="Contoh: Jakarta Pusat"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
-                  Nomor Telepon Darurat
-                </label>
-                <input
-                  value={formData.emergencyPhone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, emergencyPhone: e.target.value })
-                  }
-                  className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none"
-                  placeholder="Contoh: 0811-2233-4455"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4 border-t border-gray-100 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 h-11 rounded-xl border border-gray-200 text-xs font-semibold hover:bg-gray-50"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 h-11 rounded-xl bg-tiby-teal-600 text-white text-xs font-semibold hover:bg-tiby-teal-700 flex justify-center items-center gap-2 disabled:opacity-50"
-                >
-                  {submitting ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                  {submitting ? "Menyimpan..." : "Simpan Data"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {formOpen && (
+        <FacilityFormModal
+          facility={editingFacility}
+          onClose={() => setFormOpen(false)}
+          onSuccess={() => {
+            setFormOpen(false);
+            fetchFacilities();
+          }}
+        />
       )}
     </div>
   );

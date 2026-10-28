@@ -47,28 +47,30 @@ export default function PmoLayout({ children }: { children: React.ReactNode }) {
           roleTitle="Pengawas Menelan Obat"
           items={pmoMenuItems}
         />
-        <main className="flex flex-1 flex-col overflow-y-auto p-6 md:p-8 pb-8 md:pb-8">
-          <div className="shrink-0">
-            <PageHeader />
-          </div>
+        <main className="flex flex-1 flex-col overflow-y-auto p-6 md:p-8">
+          <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col">
+            <div className="shrink-0">
+              <PageHeader />
+            </div>
 
-          <div className="flex-1">
-            {consentGranted === null ? (
-              <PublicLoading fullScreen message="Memeriksa izin akses..." />
-            ) : (
-              <div
-                key={consentGranted ? "granted" : "pending"}
-                className={`h-full ${
-                  consentGranted ? "" : "pointer-events-none select-none"
-                }`}
-                aria-hidden={!consentGranted}
-              >
-                {children}
-              </div>
-            )}
-          </div>
+            <div className="flex-1">
+              {consentGranted === null ? (
+                <PublicLoading fullScreen message="Memeriksa izin akses..." />
+              ) : (
+                <div
+                  key={consentGranted ? "granted" : "pending"}
+                  className={`h-full ${
+                    consentGranted ? "" : "pointer-events-none select-none"
+                  }`}
+                  aria-hidden={!consentGranted}
+                >
+                  {children}
+                </div>
+              )}
+            </div>
 
-          <Footer />
+            <Footer />
+          </div>
         </main>
       </div>
 

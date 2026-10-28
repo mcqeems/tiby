@@ -78,7 +78,7 @@ export default function EducationView({
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-8 pb-24 md:pb-10">
+    <div className="w-full space-y-8">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}

@@ -14,7 +14,7 @@ type PushState =
   | "working"
   | "error";
 
-export default function PushToggleCard() {
+export default function PushToggleCard({ bare = false }: { bare?: boolean }) {
   const [state, setState] = useState<PushState>("loading");
   const [error, setError] = useState<string | null>(null);
 
@@ -112,23 +112,31 @@ export default function PushToggleCard() {
   const busy = state === "loading" || state === "working";
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
-      <header className="flex items-center gap-3 border-b border-gray-100 bg-linear-to-r from-tiby-teal-50/70 to-white px-6 py-4 sm:px-8">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-tiby-teal-700 shadow-sm ring-1 ring-tiby-teal-100">
-          <Bell className="h-4.5 w-4.5" />
-        </span>
-        <div className="min-w-0">
-          <h3 className="font-heading text-base font-semibold leading-tight text-tiby-ink">
-            Notifikasi Push
-          </h3>
-          <p className="mt-0.5 text-xs text-tiby-muted">
-            Terima pengingat minum obat dan pemberitahuan penting di perangkat
-            ini.
-          </p>
-        </div>
-      </header>
+    <section
+      className={
+        bare
+          ? ""
+          : "overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs"
+      }
+    >
+      {!bare && (
+        <header className="flex items-center gap-3 border-b border-gray-100 bg-linear-to-r from-tiby-teal-50/70 to-white px-6 py-4 sm:px-8">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-tiby-teal-700 shadow-sm ring-1 ring-tiby-teal-100">
+            <Bell className="h-4.5 w-4.5" />
+          </span>
+          <div className="min-w-0">
+            <h3 className="font-heading text-base font-semibold leading-tight text-tiby-ink">
+              Notifikasi Push
+            </h3>
+            <p className="mt-0.5 text-xs text-tiby-muted">
+              Terima pengingat minum obat dan pemberitahuan penting di perangkat
+              ini.
+            </p>
+          </div>
+        </header>
+      )}
 
-      <div className="space-y-3 p-6 sm:p-8">
+      <div className={bare ? "space-y-3" : "space-y-3 p-6 sm:p-8"}>
         {state === "unsupported" ? (
           <p className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-[11px] text-tiby-muted">
             Browser ini belum mendukung notifikasi push. Gunakan Chrome/Edge

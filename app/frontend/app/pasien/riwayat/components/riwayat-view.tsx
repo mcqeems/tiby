@@ -114,7 +114,7 @@ export default function RiwayatView() {
       : getLocalDateStr(new Date().toISOString());
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 md:pb-10">
+    <div className="space-y-6">
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight text-tiby-ink">
           Riwayat Terapi

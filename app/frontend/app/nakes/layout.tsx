@@ -39,27 +39,29 @@ export default function NakesLayout({
           />
         </Suspense>
 
-        <main className="relative flex flex-1 flex-col overflow-y-auto p-6 md:p-8 md:pb-8">
-          <div className="absolute top-6 right-6 md:top-8 md:right-8 z-10">
-            <NakesNotificationBell />
+        <main className="flex flex-1 flex-col overflow-y-auto p-6 md:p-8">
+          <div className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col">
+            <div className="absolute right-0 top-0 z-30">
+              <NakesNotificationBell />
+            </div>
+
+            <div className="shrink-0 pr-14">
+              <Suspense
+                fallback={
+                  <div
+                    aria-hidden="true"
+                    className="mb-6 h-4 border-b border-gray-200 pb-4"
+                  />
+                }
+              >
+                <PageHeader />
+              </Suspense>
+            </div>
+
+            <div className="flex-1">{children}</div>
+
+            <Footer />
           </div>
-
-          <div className="shrink-0 pr-14">
-            <Suspense
-              fallback={
-                <div
-                  aria-hidden="true"
-                  className="mb-6 h-4 border-b border-gray-200 pb-4"
-                />
-              }
-            >
-              <PageHeader />
-            </Suspense>
-          </div>
-
-          <div className="flex-1">{children}</div>
-
-          <Footer />
         </main>
       </div>
     </RoleGuard>

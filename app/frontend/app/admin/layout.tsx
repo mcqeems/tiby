@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSession } from "@/lib/auth-client";
 import { RoleGuard } from "@/app/role-guard";
 import type { TibyUser } from "@/lib/auth-client";
@@ -19,20 +20,40 @@ export default function AdminLayout({
   return (
     <RoleGuard allowed={["ADMIN"]}>
       <div className="flex h-screen bg-tiby-white text-tiby-ink font-body selection:bg-tiby-teal-100 selection:text-tiby-teal-700">
-        <UniversalSidebar
-          user={user}
-          brandName="Tiby Admin"
-          brandSubtitle="Kontrol Nasional"
-          brandInitial="A"
-          roleTitle="Administrator Pusat"
-          items={adminMenuItems}
-        />
-        <main className="flex flex-1 flex-col overflow-y-auto p-6 md:p-8 pb-24 md:pb-8">
-          <div className="shrink-0 mb-6">
-            <PageHeader />
+        <Suspense
+          fallback={
+            <aside
+              aria-hidden="true"
+              className="hidden h-screen w-66 shrink-0 border-r border-tiby-teal-100 bg-white md:block"
+            />
+          }
+        >
+          <UniversalSidebar
+            user={user}
+            brandName="Tiby Admin"
+            brandSubtitle="Kontrol Nasional"
+            brandInitial="A"
+            roleTitle="Administrator Pusat"
+            items={adminMenuItems}
+          />
+        </Suspense>
+        <main className="flex flex-1 flex-col overflow-y-auto p-6 md:p-8">
+          <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col">
+            <div className="shrink-0">
+              <Suspense
+                fallback={
+                  <div
+                    aria-hidden="true"
+                    className="mb-6 h-4 border-b border-gray-200 pb-4"
+                  />
+                }
+              >
+                <PageHeader />
+              </Suspense>
+            </div>
+            <div className="flex-1">{children}</div>
+            <Footer />
           </div>
-          <div className="flex-1">{children}</div>
-          <Footer />
         </main>
       </div>
     </RoleGuard>

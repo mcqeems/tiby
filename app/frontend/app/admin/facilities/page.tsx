@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function AdminFacilitiesPage() {
   return (
-    <div className="max-w-5xl mx-auto pb-20">
+    <div className="">
       <FacilityManager />
     </div>
   );

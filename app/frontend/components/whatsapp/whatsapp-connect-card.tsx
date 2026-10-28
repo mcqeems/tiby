@@ -22,6 +22,8 @@ interface WhatsappConnectCardProps {
   title?: string;
   description?: string;
   onVerified?: () => void;
+  /** Render only the controls, without the card chrome (for dialogs). */
+  bare?: boolean;
 }
 
 function formatRemaining(seconds: number): string {
@@ -36,6 +38,7 @@ export default function WhatsappConnectCard({
   title = "WhatsApp",
   description = "Hubungkan nomor untuk menerima pengingat dan pemberitahuan dari Pandu.",
   onVerified,
+  bare = false,
 }: WhatsappConnectCardProps) {
   const isFamilyContact = Boolean(familyContactId);
   const [status, setStatus] = useState<WhatsappConnectionStatus | null>(null);
@@ -198,20 +201,28 @@ export default function WhatsappConnectCard({
   const verified = Boolean(status?.verified) && !changing;
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
-      <header className="flex items-center gap-3 border-b border-gray-100 bg-linear-to-r from-tiby-teal-50/70 to-white px-6 py-4 sm:px-8">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-tiby-teal-700 shadow-sm ring-1 ring-tiby-teal-100">
-          <MessageCircle className="h-4.5 w-4.5" />
-        </span>
-        <div className="min-w-0">
-          <h3 className="font-heading text-base font-semibold leading-tight text-tiby-ink">
-            {title}
-          </h3>
-          <p className="mt-0.5 text-xs text-tiby-muted">{description}</p>
-        </div>
-      </header>
+    <section
+      className={
+        bare
+          ? ""
+          : "overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs"
+      }
+    >
+      {!bare && (
+        <header className="flex items-center gap-3 border-b border-gray-100 bg-linear-to-r from-tiby-teal-50/70 to-white px-6 py-4 sm:px-8">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-tiby-teal-700 shadow-sm ring-1 ring-tiby-teal-100">
+            <MessageCircle className="h-4.5 w-4.5" />
+          </span>
+          <div className="min-w-0">
+            <h3 className="font-heading text-base font-semibold leading-tight text-tiby-ink">
+              {title}
+            </h3>
+            <p className="mt-0.5 text-xs text-tiby-muted">{description}</p>
+          </div>
+        </header>
+      )}
 
-      <div className="space-y-4 p-6 sm:p-8">
+      <div className={bare ? "space-y-4" : "space-y-4 p-6 sm:p-8"}>
         {loading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-5 w-5 animate-spin text-tiby-teal-600" />
