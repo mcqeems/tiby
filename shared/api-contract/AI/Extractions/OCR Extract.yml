@@ -1,0 +1,103 @@
+info:
+  name: OCR Extract (ai/ocr/extract)
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{aiBaseUrl}}/ai/ocr/extract"
+  body:
+    type: multipart-form
+    data:
+      - name: cardImage
+        type: file
+        value:
+          - /home/mcqeems/Documents/Project/UINIC 8.0/tiby/shared/assets/images/ocr-test.jpeg
+        contentType: image/jpeg
+        description: Treatment-card photo (image/jpeg, image/png, image/webp; max 10 MB).
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Status code is 200", function() {
+          expect(res.status).to.equal(200);
+        });
+
+        test("Response is an onboarding draft", function() {
+          expect(res.body).to.have.property("patientName");
+          expect(res.body).to.have.property("regimenCode");
+          expect(res.body).to.have.property("dailyPillQuota");
+          expect(res.body).to.have.property("startDate");
+          expect(res.body).to.have.property("targetEndDate");
+          expect(res.body).to.have.property("confidence");
+          expect(res.body).to.have.property("rawText");
+          expect(res.body).to.have.property("fieldConfidence");
+          expect(res.body).to.have.property("uncertainties");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 - TBC.05 lab-request scan
+    request:
+      url: "{{aiBaseUrl}}/ai/ocr/extract"
+      method: POST
+      body:
+        type: multipart-form
+        data:
+          - name: cardImage
+            type: file
+            value:
+              - /home/mcqeems/Documents/Project/UINIC 8.0/tiby/shared/assets/images/ocr-test.jpeg
+            contentType: image/jpeg
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: content-type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "patientName": "BUDI SANTOSO",
+            "regimenCode": "FDC-4",
+            "dailyPillQuota": 4,
+            "startDate": "2026-10-28",
+            "targetEndDate": null,
+            "confidence": 0.792916,
+            "rawText": "2308618275\nPENANGGULANGAN TBC NASIONAL\nTBC.05\n-HIDMEJ15 P0PEPEB-1-1\nFORMULIR PERMOHONAN PEMERIKSAAN BAKTERIOLOGIS TBC\nNama Fasyankes\n: Puskesmas Kecamatan\nNama Dokter Pengirim\n: dr. Ahmad Fauzi, Sp.PD\nNama Fasyankes\n: Puskesmas Kecamatan\nNo. Rekam Medis\n：012345\nNama Terduga\nBUDI SANTOSO\nNo. Telp. Pasien\n：08123456789\nNo. Induk Kependudukan\n3171012345678901\nNo. BPJS\n0001234567890\nJenis Kelesmin\nV\nLaki-laki\nPerempuan\nUmur\n38\nTahun\nAleiat Kelemap\n07 8 UM 8\nNoc. Sumpal Baya\nAlamat Lengkap\n: Jl. Merdeka No. 12, RT 05 RW 03, Kec. Senen,\nJenis Terduga/Pasien TBC\nProvinsi\n: Kota Jakarta Pusat, DKI Jakarta\nTBC SO\nTBC SO\nAnak\nUTV\nDN\nNo. Jammilias Sediman\nAlasan Pemeriksaan :\n25/017/11511/0669\nV\nDiagnosis TBC\nTanggal pengambilan contoh uji\n: RATNA DEWI\nDiagnosis Baseline TBC\nHubungan : Keluarga\nTanggal pengiriman contoh uji\n:28/10/2026\nAkmir Penganatan\nTanda Tangan pengamail contoh uji\n：08812312345\nPemantasan kenagran pengamblar (Fellow uj) :\nBalan ke :\nJenis Pemeriksaan\nLokasi Anahomi\nPemeriksaan alang kor :\nMitrostopio\nV\nBaru\nBalan ke :\nV\nSpert (TCH)\nEkstreparu\nPemeriksaan setelan selesai pengakatan :\nSpert (TCH) - SDA\nLekasi:\nBalan ke :\nLDA 1lui 1\nNo.Nsg.TBC/TBC BG Paagantan\nRA849\nLDA 1lui 2\nNo.Nsg.TBC/TBC BG Raw/ Noto\n08812312345\nBiakan\nDahol stander oji kepakaan\nSecara visual dabak tempak (herilah V poda bakah)\nContah Uji\nManum lendir\nBorlat sutak\nAlr 1lur\nDamok\nSewaltu / Dagi\nLalnaya! Damek\nSowaltu / Dagi\nLingkari yang sebuai\nRegimen: FDC-4\nDosis: 4 butir Harian\nMulai Terapi: 28/10/2026\nFUSKESMAS/KLINIK\n★\nWaktu Minum: 08:00 WIB\ndr. Ahmad Fauzi, Sp.PD",
+            "fieldConfidence": {
+              "patientName": 0.99912,
+              "regimenCode": 0.97173,
+              "dailyPillQuota": 0.99856,
+              "startDate": 0.99517,
+              "targetEndDate": 0.0
+            },
+            "uncertainties": []
+          }
+
+docs: |-
+  Reads a treatment-card photo into an **unconfirmed** onboarding draft:
+  patient name, regimen code, daily pill quota, start date, target end date.
+  It never diagnoses and never recommends a dose; a Nakes re-checks every field
+  against the image before saving.
+
+  - multipart field: `cardImage` (required)
+  - accepted content types: `image/png`, `image/jpeg`, `image/jpg`, `image/webp`
+  - size limit: 10 MB -> `413`, other content type -> `415`, undecodable bytes -> `422`
+
+  Read `fieldConfidence` and `uncertainties` before trusting a value. A field
+  that is `null` with confidence `0.0` means its label was not found on that
+  layout, not that the card has no value: fill it in manually. The parser knows
+  the common Indonesian treatment-card labels (`Nama Pasien`/`Nama Terduga`,
+  `Regimen`/`Paduan Obat`, `Dosis`/`Kuota`, `Tanggal Mulai`/`Mulai Terapi`,
+  `Tanggal Selesai`) and ignores facility, clinician and identity columns, so
+  the same request works across card layouts without retraining.

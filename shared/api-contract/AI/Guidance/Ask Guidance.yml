@@ -16,7 +16,7 @@ http:
     data: |-
       {
         // Hanya menerima pertanyaan umum, maksimal 3000 karakter. Pertanyaan personal tentang dosis atau mulai/berhenti/mengganti obat akan ditolak secara fail-closed.
-        "question": "Menurut panduan, apakah mual termasuk efek samping umum obat TB?",
+        "question": "Kenapa saya mual-mual terus?",
         // jejak transkrip check-in untuk konteks. max 5000 char, scanned for fail-closed case (Optional)
         "transcript": null
       }

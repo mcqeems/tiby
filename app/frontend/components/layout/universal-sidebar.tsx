@@ -217,6 +217,7 @@ export default function UniversalSidebar({
         </div>
 
         <div className="space-y-2 border-t border-tiby-teal-100 pt-4">
+          <ThemeToggle variant="sidebar" collapsed={collapsed} />
           <div
             className={`flex items-center rounded-xl ${
               collapsed ? "justify-center" : "gap-3 bg-tiby-teal-50/60 p-2.5"
@@ -239,9 +240,7 @@ export default function UniversalSidebar({
             </div>
           </div>
 
-          <ThemeToggle variant="sidebar" collapsed={collapsed} />
-
-          <div className="group relative">
+          <div className="group relative border-t border-tiby-teal-100 pt-2">
             <button
               type="button"
               onClick={() => handleSignOut()}

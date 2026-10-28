@@ -28,7 +28,7 @@ tests read. Each `dataset/*` folder carries its own README.
 
 ### OCR weights
 
-`/ocr/extract` runs PP-OCRv6 locally, and those weights are **hash-locked and never downloaded at runtime**.
+`POST /ai/ocr/extract` runs PP-OCRv6 locally, and those weights are **hash-locked and never downloaded at runtime**.
 RapidOCR will happily fetch ~30 MB from ModelScope the moment it cannot find a file# Pre-stage here at build time (Docker: COPY the weights in), or set in `.env`:
 
 # TIBY_OCR_MODEL_DIR=/opt/tiby/ocr-models
@@ -52,9 +52,10 @@ Missing token → 503, provider failure → 502, timeout → 504. Real providers
 - `POST /ai/extractions/check-in` — JSON transcript → structured facts (`null` = unstated or uncertain, never false).
 - `POST /ai/extractions/check-in/audio` — multipart `audio` (max 10 MB) → transcript only; facts come from the JSON route above once the patient confirms the text.
 - `POST /ai/guidance` — educational answers from approved-source evidence only; fails closed (`answer: null`) on personal dosing/start-stop questions or when no evidence matches.
+- `POST /ai/ocr/extract` — multipart `cardImage` (max 10 MB) → unconfirmed onboarding draft; read `fieldConfidence` and `uncertainties` before trusting any field.
 - `GET /ai/health` — liveness.
 
-Backend aliases, kept private from the contract collection: `POST /text/extract`, `POST /audio/extract`, `POST /ocr/extract` (`cardImage`, max 10 MB). OCR returns an unconfirmed draft — read `fieldConfidence` and `uncertainties` before trusting any field. `tests/test_api_contract.py` fails if the routes and the collection drift apart.
+The OCR route carries docs, a file body, and a saved example in the Bruno collection. Backend-only aliases stay private and out of the schema: `POST /text/extract`, `POST /audio/extract`, and `POST /ocr/extract` (the same OCR handler without the `/ai` prefix). `tests/test_api_contract.py` fails if the routes and the collection drift apart.
 
 ## Test
 

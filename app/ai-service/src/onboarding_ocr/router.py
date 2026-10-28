@@ -31,6 +31,14 @@ ERRORS: dict[int | str, dict[str, object]] = {
 
 
 @router.post(
+    "/ai/ocr/extract",
+    response_model=OcrOnboardingDraft,
+    responses=ERRORS,
+    summary="Read a treatment card into an unconfirmed onboarding draft",
+)
+# Contract-facing route above; the unprefixed path stays as the backend alias
+# and is kept out of the schema, the same way ``main.py`` hides ``/text/extract``.
+@router.post(
     "/ocr/extract",
     response_model=OcrOnboardingDraft,
     responses=ERRORS,

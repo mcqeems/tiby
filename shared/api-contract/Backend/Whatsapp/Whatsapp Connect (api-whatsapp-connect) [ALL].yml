@@ -11,10 +11,10 @@ http:
     data: |-
       {
         // Indonesian WhatsApp number. 08…, 8… and +62… are normalised to 62….
-        "phoneNumber": "081234567890",
+        "phoneNumber": "08811558295",
         // Optional. Only a contact on a plan you can access (own plan, assigned
         // PMO plan, NAKES facility, or ADMIN).
-        "familyContactId": null
+        "familyContactId": "7efa06de-09bf-49f3-ba4e-1db562b995c6"
       }
   auth: inherit
 
@@ -72,5 +72,3 @@ docs: |-
     after normalisation).
   - 404: Family contact not found or not visible to the caller.
   - 503: WhatsApp is enabled but the bot number is not configured.
-  The inbound side (the user sending the code) arrives at
-  `POST /api/webhooks/waha`, which is called by WAHA — never by this client.

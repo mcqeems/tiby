@@ -9,6 +9,7 @@ field-level bug has actually lived.
 from __future__ import annotations
 
 import datetime
+import re
 from typing import NamedTuple
 
 from contracts import OcrOnboardingDraft
@@ -147,14 +148,48 @@ def _overall_confidence(confidence: dict[str, float], lines: list[OcrLine]) -> f
     return sum(read) / len(read) * coverage
 
 
+_DATE_FIELDS = frozenset({"startDate", "targetEndDate"})
+"""Fields whose value must carry a digit: ``selesai pengakatan`` is prose, not a date."""
+
+_NOT_A_PERSON = re.compile(
+    r"\b(?:fasyankes|faskes|puskesmas|klinik|rumah\s*sakit|dokter|dr|petugas)\b",
+    re.IGNORECASE,
+)
+"""A value naming a facility or a clinician is never the patient's name."""
+
+
+def _next_row_value(lines: list[OcrLine], index: int) -> str:
+    """Read the row after a label whose value sits on the following row.
+
+    Several Kemenkes forms put ``Nama Terduga`` and its fill-in value on
+    separate rows. Only an unlabelled row can be that value, so a following
+    label is never swallowed as data.
+    """
+    if index + 1 >= len(lines):
+        return ""
+    following = lines[index + 1]
+    if following.score < MIN_LINE_SCORE or segment(following.text):
+        return ""
+    return following.text.strip(" \t:.-")
+
+
 def parse_onboarding_lines(lines: list[OcrLine]) -> OcrOnboardingDraft:
     """Build a draft from detected rows, each carrying its own OCR score."""
     reads: dict[str, tuple[str, float]] = {}
-    for line in lines:
+    for index, line in enumerate(lines):
         if line.score < MIN_LINE_SCORE:
             continue
-        for field, value in segment(line.text):
-            if field is None or not value:
+        segments = segment(line.text)
+        for position, (field, value) in enumerate(segments):
+            if field is None:
+                continue
+            if not value and position == len(segments) - 1:
+                value = _next_row_value(lines, index)
+            if not value:
+                continue
+            if field in _DATE_FIELDS and not any(char.isdigit() for char in value):
+                continue
+            if field == "patientName" and _NOT_A_PERSON.search(value):
                 continue
             previous = reads.get(field)
             if previous is None or line.score > previous[1]:

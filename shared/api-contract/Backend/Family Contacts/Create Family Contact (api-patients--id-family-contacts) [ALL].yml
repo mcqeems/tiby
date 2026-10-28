@@ -8,14 +8,14 @@ http:
   url: "{{baseUrl}}/api/patients/:id/family-contacts"
   params:
     - name: id
-      value: koMUsjaDd510j9PIJL87ava43WqyO4In
+      value: 0ehKGWIZgdFr6IXIXv13X1wRB8cyHofD
       type: path
   body:
     type: json
     data: |-
       {
-        "fullName": "Ibu Siti Rahma",
-        "whatsappNumber": "081299887766",
+        "fullName": "Mustaqim",
+        "whatsappNumber": "0881558295",
         "notifyOnEscalation": true
       }
   auth: inherit

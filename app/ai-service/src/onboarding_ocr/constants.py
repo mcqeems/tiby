@@ -29,22 +29,38 @@ LABEL_START = r"(?<![A-Za-z])"
 """Guard placed in front of every label."""
 
 _LABELS: tuple[tuple[str | None, str], ...] = (
-    ("patientName", rf"{LABEL_START}nama\s*pasien\b{SEPARATOR}"),
+    (
+        "patientName",
+        rf"{LABEL_START}nama\s*(?:pasien|terduga|penderita|klien)\b{SEPARATOR}",
+    ),
     ("regimenCode", rf"{LABEL_START}(?:regimen|paduan\s*obat)\b{SEPARATOR}"),
     (
         "dailyPillQuota",
         rf"{LABEL_START}(?:kuota(?:\s*(?:pil|obat))?|dosis(?:\s*harian)?|jumlah\s*obat)\b{SEPARATOR}",
     ),
-    ("startDate", rf"{LABEL_START}(?:tanggal\s*mulai|mulai\s*berobat)\b{SEPARATOR}"),
+    # `Mulai Terapi` and `Mulai Pengobatan` appear on Kemenkes forms where the
+    # onboarding cards say `Tanggal Mulai`.
+    (
+        "startDate",
+        rf"{LABEL_START}(?:tanggal\s*|tgl\.?\s*)?mulai(?:\s*(?:terapi|berobat|pengobatan|minum))?\b{SEPARATOR}",
+    ),
     (
         "targetEndDate",
-        rf"{LABEL_START}(?:tanggal\s*selesai|target\s*selesai)\b{SEPARATOR}",
+        rf"{LABEL_START}(?:tanggal\s*|tgl\.?\s*)?(?:target\s+|akhir\s+)?(?:selesai|akhir)\b{SEPARATOR}",
     ),
     ("patientName", rf"{LABEL_START}nama\b{SEPARATOR}"),
     (None, rf"{LABEL_START}tanggal\b{SEPARATOR}"),
+    # Fields that are never a draft value, only a cut point: facility, clinician,
+    # and identity columns sit next to the patient's name on most real forms, so
+    # they must end the previous value instead of being read as one.
     (
         None,
-        rf"{LABEL_START}(?:no\.?\s*rm|no\.?\s*rekam\s*medis|alamat|no\.?\s*hp|telepon|faskes|catatan|keterangan)\b{SEPARATOR}",
+        (
+            rf"{LABEL_START}(?:no\.?\s*rm|no\.?\s*rekam\s*medis|alamat"
+            rf"|no\.?\s*(?:hp|telp|tlp)|telepon|fasyankes|faskes|puskesmas|klinik|rumah\s*sakit"
+            rf"|dokter|dr|petugas|pengirim|jenis\s*(?:kelamin|terduga)"
+            rf"|nik|bpjs|provinsi|umur|catatan|keterangan)\b{SEPARATOR}"
+        ),
     ),
 )
 """Longest and most specific label first: a later match inside an already

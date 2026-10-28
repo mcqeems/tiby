@@ -1,6 +1,4 @@
 info:
   name: Extractions
   type: folder
-  seq: 2
-
-request: {}
+  seq: 1

@@ -123,6 +123,41 @@ def test_unlabelled_text_leaves_every_field_unknown():
     assert draft.fieldConfidence == dict.fromkeys(draft.fieldConfidence, 0.0)
 
 
+def test_a_lab_request_form_reads_the_patient_not_the_facility():
+    """A Kemenkes TBC.05 request form: the patient sits under ``Nama Terduga``.
+
+    Rows are the engine's real output for ``shared/assets/images/ocr-test.jpeg``;
+    the value for ``Nama Terduga`` lands on the following row, and ``selesai``
+    appears in the prose of the examination section rather than as an end date.
+    """
+    draft = parse_onboarding_lines(
+        lines(
+            ("Nama Fasyankes", 1.0),
+            (": Puskesmas Kecamatan", 1.0),
+            ("Nama Dokter Pengirim", 0.98),
+            (": dr. Ahmad Fauzi, Sp.PD", 0.98),
+            ("Nama Terduga", 1.0),
+            ("BUDI SANTOSO", 1.0),
+            ("Regimen: FDC-4", 0.97),
+            ("Dosis: 4 butir Harian", 1.0),
+            ("Mulai Terapi: 28/10/2026", 1.0),
+            ("Pemeriksaan setelan selesai pengakatan :", 0.98),
+        )
+    )
+    assert draft.patientName == "BUDI SANTOSO"
+    assert draft.regimenCode == "FDC-4"
+    assert draft.dailyPillQuota == 4
+    assert draft.startDate == "2026-10-28"
+    assert draft.targetEndDate is None
+
+
+def test_the_value_after_a_facility_label_is_not_read_as_a_patient():
+    draft = parse_onboarding_lines(
+        lines(("Nama Fasyankes", 1.0), ("Puskesmas Tebet", 1.0))
+    )
+    assert draft.patientName is None
+
+
 def test_a_clean_fully_labelled_card_reads_at_the_row_confidence():
     draft = parse_onboarding_text(
         "Nama Pasien: Siti Aminah\nRegimen: HRZE-4\n"

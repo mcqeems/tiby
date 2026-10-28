@@ -5,13 +5,12 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/api/whatsapp/status"
+  url: "{{baseUrl}}/api/whatsapp/status?familyContactId=7efa06de-09bf-49f3-ba4e-1db562b995c6"
   params:
     - name: familyContactId
-      value: ""
+      value: 7efa06de-09bf-49f3-ba4e-1db562b995c6
       type: query
-      description: "uuid — show a family contact's status instead of the caller's"
-      disabled: true
+      description: uuid — show a family contact's status instead of the caller's
   auth: inherit
 
 settings:
@@ -74,5 +73,3 @@ docs: |-
   Responses:
   - 200: Status (verified or pending).
   - 404: Family contact not found or not visible to the caller.
-  The inbound side (the user sending the code) arrives at
-  `POST /api/webhooks/waha`, which is called by WAHA — never by this client.

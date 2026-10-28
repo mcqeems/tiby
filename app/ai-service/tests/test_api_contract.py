@@ -69,6 +69,36 @@ def test_collection_urls_stay_under_the_ai_prefix():
         assert route_of(request)[1].startswith("/ai/"), request["file"]
 
 
+def test_multipart_routes_send_the_fields_the_app_requires():
+    """A route that takes a file must ship a real multipart body.
+
+    ``body: {type: file, data: [{filePath: ...}]}`` is not the collection
+    schema: it sends no part at all, so the app answers 422 while the request
+    looks configured. Multiline bodies here are ``multipart-form`` with one
+    entry per part, named the way the app declares it.
+    """
+    schema = app.openapi()
+    for request in collection_requests():
+        method, path = route_of(request)
+        content = (
+            schema["paths"].get(path, {})
+            .get(method.lower(), {})
+            .get("requestBody", {})
+            .get("content", {})
+        )
+        multipart = content.get("multipart/form-data")
+        if multipart is None:
+            continue
+        body = request["http"].get("body") or {}
+        assert body.get("type") == "multipart-form", request["file"]
+        sent = {part.get("name") for part in body.get("data", [])}
+        declared = multipart.get("schema", {})
+        while "$ref" in declared:  # FastAPI emits a component ref, not the fields
+            declared = schema["components"]["schemas"][declared["$ref"].rsplit("/", 1)[-1]]
+        required = set(declared.get("required", []))
+        assert required <= sent, f"{request['file']}: sends {sent}, needs {required}"
+
+
 def test_collection_requests_have_docs_and_saved_examples():
     for request in collection_requests():
         assert request.get("docs"), request["file"]
