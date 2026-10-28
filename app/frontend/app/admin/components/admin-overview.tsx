@@ -97,7 +97,6 @@ export default function AdminOverview() {
             {user?.name || "Super Admin"} 👋
           </h1>
         </div>
-      
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -106,31 +105,31 @@ export default function AdminOverview() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4 }}
-            className="bg-linear-to-br from-gray-900 to-black rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden"
+            className="bg-tiby-teal-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-tiby-teal-600/20 relative overflow-hidden"
           >
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+            <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
 
             <div className="relative z-10 flex flex-col-reverse sm:flex-row items-center justify-between gap-6">
               <div className="space-y-4 text-center sm:text-left">
                 <div>
-                  <p className="text-gray-400 font-medium mb-1">
+                  <p className="text-tiby-teal-100 font-medium mb-1">
                     Kontrol Pusat Nasional
                   </p>
                   <div className="flex items-center justify-center sm:justify-start gap-2">
-                    <ShieldCheck className="w-6 h-6 text-tiby-teal-400" />
+                    <ShieldCheck className="w-6 h-6 text-emerald-300" />
                     <h2 className="text-3xl font-heading font-bold">
                       Tiby Platform
                     </h2>
                   </div>
                 </div>
 
-                <p className="text-sm text-gray-400 max-w-xs mx-auto sm:mx-0">
+                <p className="text-sm text-tiby-teal-50/80 max-w-xs mx-auto sm:mx-0">
                   Kelola seluruh fasilitas kesehatan, tenaga kesehatan, dan
                   pantau statistik platform secara keseluruhan.
                 </p>
               </div>
 
-              <div className="shrink-0 flex items-center justify-center grayscale opacity-80">
+              <div className="shrink-0 flex items-center justify-center">
                 <MascotAnimation size={140} className="drop-shadow-2xl" />
               </div>
             </div>
