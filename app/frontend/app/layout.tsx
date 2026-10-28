@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { Geist, Geist_Mono, Fredoka } from "next/font/google";
+import { MotionConfig } from "motion/react";
 import { PopupProvider } from "@/components/ui/popup-provider";
 import ServiceWorkerRegister from "@/components/pwa/service-worker-register";
 import ThemeSync from "@/components/theme/theme-sync";
@@ -71,13 +72,16 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-        <PopupProvider>
-          <Suspense fallback={null}>
-            <ThemeSync />
-          </Suspense>
-          <ServiceWorkerRegister />
-          {children}
-        </PopupProvider>
+        {/* Every animation in the app honours the OS reduced-motion setting. */}
+        <MotionConfig reducedMotion="user">
+          <PopupProvider>
+            <Suspense fallback={null}>
+              <ThemeSync />
+            </Suspense>
+            <ServiceWorkerRegister />
+            {children}
+          </PopupProvider>
+        </MotionConfig>
       </body>
     </html>
   );

@@ -1,32 +1,9 @@
 "use client";
 
-import { motion } from "framer-motion";
+import RevealBase from "@/components/ui/reveal";
 
-export const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
-
-export function Reveal({
-  children,
-  delay = 0,
-  y = 24,
-  className,
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  y?: number;
-  className?: string;
-}) {
-  return (
-    <motion.div
-      className={className}
-      initial={{ opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.8, delay, ease: EASE }}
-    >
-      {children}
-    </motion.div>
-  );
-}
+export { EASE_OUT as EASE } from "@/lib/motion";
+export { default as Reveal } from "@/components/ui/reveal";
 
 export function SectionHeading({
   eyebrow,
@@ -38,7 +15,7 @@ export function SectionHeading({
   desc?: string;
 }) {
   return (
-    <Reveal className="mx-auto mb-14 max-w-2xl text-center">
+    <RevealBase className="mx-auto mb-14 max-w-2xl text-center">
       <span className="inline-flex items-center gap-1.5 rounded-full border border-tiby-teal-100 bg-tiby-teal-50/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-tiby-teal-700">
         {eyebrow}
       </span>
@@ -50,6 +27,6 @@ export function SectionHeading({
           {desc}
         </p>
       )}
-    </Reveal>
+    </RevealBase>
   );
 }
