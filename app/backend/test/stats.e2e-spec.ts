@@ -12,6 +12,7 @@ import { DailyCheckIn } from "../src/modules/check-ins/entities/daily-check-in.e
 import { SafetyEvaluation } from "../src/modules/internal/rule-engine/entities/safety-evaluation.entity.js";
 import { FacilityAlert } from "../src/modules/alerts/entities/facility-alert.entity.js";
 import { InterventionTicket } from "../src/modules/tickets/entities/intervention-ticket.entity.js";
+import { UserNotification } from "../src/modules/notifications/entities/user-notification.entity.js";
 
 describe("Dashboard stats (e2e)", () => {
   let app: INestApplication;
@@ -159,6 +160,17 @@ describe("Dashboard stats (e2e)", () => {
         relationship: "KELUARGA",
         isPrimary: true,
         active: true,
+      }),
+    );
+    const notificationRepo = dataSource.getRepository(UserNotification);
+    await notificationRepo.save(
+      notificationRepo.create({
+        recipientUserId: pmo.id,
+        treatmentPlanId: planA.id,
+        type: "SILENCE_H2_ESCALATION",
+        severity: "WARNING",
+        title: "Pengingat Pendamping Obat",
+        message: "Pasien belum melapor kemarin.",
       }),
     );
 

@@ -67,8 +67,7 @@ const ComplianceCalendar = ({ history }: { history: CheckInHistoryItem[] }) => {
     <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-heading font-bold text-sm text-tiby-ink flex items-center gap-2">
-          <CalendarDays className="w-4 h-4 text-tiby-teal-600" /> Jejak
-          Kepatuhan
+          <CalendarDays className="w-4 h-4 text-tiby-teal-600" /> Check In
         </h3>
         <span className="text-[10px] font-bold text-tiby-muted uppercase tracking-wider">
           {today.toLocaleDateString("id-ID", {
@@ -575,9 +574,7 @@ export default function PasienOverview() {
                         key={member.id}
                         name={member.name}
                         username={member.username}
-                        badge={
-                          member.isPrimary ? "Nakes Pendaftar" : undefined
-                        }
+                        badge={member.isPrimary ? "Nakes Pendaftar" : undefined}
                         kind="nakes"
                       />
                     ))}

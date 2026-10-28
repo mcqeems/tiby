@@ -17,6 +17,9 @@ function makeService() {
   const wahaClient = {
     sendText: vi.fn().mockResolvedValue({ success: true, messageId: "wa-1" }),
   };
+  const notificationsService = {
+    createMany: vi.fn().mockResolvedValue(undefined),
+  };
 
   const service = new NotificationDispatchService(
     logRepo as any,
@@ -26,9 +29,20 @@ function makeService() {
     userRepo as any,
     pushService as any,
     wahaClient as any,
+    notificationsService as any,
   );
 
-  return { service, logRepo, planRepo, pmoRepo, familyRepo, userRepo, pushService, wahaClient };
+  return {
+    service,
+    logRepo,
+    planRepo,
+    pmoRepo,
+    familyRepo,
+    userRepo,
+    pushService,
+    wahaClient,
+    notificationsService,
+  };
 }
 
 const pasienEvent = () =>
@@ -40,11 +54,25 @@ describe("NotificationDispatchService", () => {
   });
 
   it("logs a skipped WhatsApp row per patient while WAHA is disabled", async () => {
-    const { service, logRepo, planRepo, pushService, wahaClient } = makeService();
+    const {
+      service,
+      logRepo,
+      planRepo,
+      pushService,
+      wahaClient,
+      notificationsService,
+    } = makeService();
     planRepo.findOneBy.mockResolvedValue({ id: "plan-1", patientUserId: "pasien-1" });
 
     await service.handleNotificationTrigger(pasienEvent());
 
+    expect(notificationsService.createMany).toHaveBeenCalledWith(
+      ["pasien-1"],
+      expect.objectContaining({
+        type: "DAILY_REMINDER",
+        severity: "INFO",
+      }),
+    );
     expect(pushService.sendNotificationToUser).toHaveBeenCalledWith(
       "pasien-1",
       expect.objectContaining({ title: expect.any(String) }),

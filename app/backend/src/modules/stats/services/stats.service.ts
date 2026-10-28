@@ -9,6 +9,7 @@ import { FacilityAlert } from "../../alerts/entities/facility-alert.entity.js";
 import { InterventionTicket } from "../../tickets/entities/intervention-ticket.entity.js";
 import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
 import { Facility } from "../../facilities/entities/facilities.entity.js";
+import { NotificationsService } from "../../notifications/services/notifications.service.js";
 import type {
   StatsResponse,
   TodayCheckInStatus,
@@ -96,6 +97,7 @@ export class StatsService {
     private readonly userRepo: Repository<AuthUser>,
     @InjectRepository(Facility)
     private readonly facilityRepo: Repository<Facility>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   getStats(caller: StatsCaller): Promise<StatsResponse> {
@@ -263,9 +265,7 @@ export class StatsService {
       this.planRepo.count({
         where: { id: In(planIds), patientState: In(HIGH_RISK_STATES) },
       }),
-      this.alertRepo.count({
-        where: { treatmentPlanId: In(planIds), isRead: false },
-      }),
+      this.notificationsService.unreadCount(pmoUserId),
     ]);
 
     return {

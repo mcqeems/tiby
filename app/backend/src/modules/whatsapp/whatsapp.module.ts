@@ -13,6 +13,7 @@ import { PmoAssignment } from "../patients/entities/pmo-assignment.entity.js";
 import { AuthUser } from "../../auth/entities/auth-user.entity.js";
 import { FamilyContact } from "../family-contacts/entities/family-contact.entity.js";
 import { PushModule } from "../push/push.module.js";
+import { NotificationsModule } from "../notifications/notifications.module.js";
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { PushModule } from "../push/push.module.js";
       FamilyContact,
     ]),
     PushModule,
+    NotificationsModule,
   ],
   controllers: [WhatsappController],
   providers: [NotificationDispatchService, WhatsappConnectService, WahaClientService],

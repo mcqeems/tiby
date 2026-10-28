@@ -10,9 +10,11 @@ import { FacilityAlert } from "../alerts/entities/facility-alert.entity.js";
 import { InterventionTicket } from "../tickets/entities/intervention-ticket.entity.js";
 import { AuthUser } from "../../auth/entities/auth-user.entity.js";
 import { Facility } from "../facilities/entities/facilities.entity.js";
+import { NotificationsModule } from "../notifications/notifications.module.js";
 
 @Module({
   imports: [
+    NotificationsModule,
     TypeOrmModule.forFeature([
       TreatmentPlan,
       DailyCheckIn,

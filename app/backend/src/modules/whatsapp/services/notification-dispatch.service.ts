@@ -10,6 +10,26 @@ import { FamilyContact } from "../../family-contacts/entities/family-contact.ent
 import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
 import { PushService } from "../../push/services/push.service.js";
 import { WahaClientService } from "./waha-client.service.js";
+import { NotificationsService } from "../../notifications/services/notifications.service.js";
+
+function getSeverity(circumstance: string): "INFO" | "WARNING" | "HIGH" {
+  if (
+    circumstance === "RED_FLAG_ALERT" ||
+    circumstance === "INTENT_TO_STOP_ALERT" ||
+    circumstance === "SILENCE_H3" ||
+    circumstance === "SILENCE_H3_ESCALATION"
+  ) {
+    return "HIGH";
+  }
+  if (
+    circumstance === "SILENCE_H2" ||
+    circumstance === "SILENCE_H2_ESCALATION" ||
+    circumstance === "DOSE_INCOMPLETE_NUDGE"
+  ) {
+    return "WARNING";
+  }
+  return "INFO";
+}
 
 function getMessageForCircumstance(circumstance: string, custom?: string): { title: string; body: string } {
   switch (circumstance) {
@@ -82,6 +102,7 @@ export class NotificationDispatchService {
     private readonly userRepo: Repository<AuthUser>,
     private readonly pushService: PushService,
     private readonly wahaClient: WahaClientService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   @OnEvent("notification.trigger")
@@ -144,6 +165,16 @@ export class NotificationDispatchService {
 
     const userIds = await this.resolveUserIds(event);
     if (userIds.length === 0) return;
+
+    if (recipientRole === "PASIEN" || recipientRole === "PMO") {
+      await this.notificationsService.createMany(userIds, {
+        treatmentPlanId,
+        type: circumstance,
+        severity: getSeverity(circumstance),
+        title,
+        message: body,
+      });
+    }
 
     for (const userId of userIds) {
       let deliveryStatus = "FAILED";

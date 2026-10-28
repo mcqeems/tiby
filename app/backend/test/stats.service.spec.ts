@@ -25,6 +25,7 @@ function makeService() {
   const ticketRepo = { count: vi.fn() };
   const userRepo = { count: vi.fn(), find: vi.fn().mockResolvedValue([]) };
   const facilityRepo = { count: vi.fn() };
+  const notificationsService = { unreadCount: vi.fn().mockResolvedValue(0) };
 
   const service = new StatsService(
     planRepo as any,
@@ -35,6 +36,7 @@ function makeService() {
     ticketRepo as any,
     userRepo as any,
     facilityRepo as any,
+    notificationsService as any,
   );
 
   return {
@@ -47,6 +49,7 @@ function makeService() {
     ticketRepo,
     userRepo,
     facilityRepo,
+    notificationsService,
   };
 }
 
@@ -229,7 +232,8 @@ describe("StatsService role payloads", () => {
   });
 
   it("deduplicates assigned plans and counts today's reports once", async () => {
-    const { service, pmoRepo, checkInRepo, planRepo, alertRepo } = makeService();
+    const { service, pmoRepo, checkInRepo, planRepo, notificationsService } =
+      makeService();
     pmoRepo.find.mockResolvedValue([
       { treatmentPlanId: "plan-1" },
       { treatmentPlanId: "plan-1" },
@@ -237,7 +241,7 @@ describe("StatsService role payloads", () => {
     ]);
     checkInRepo.find.mockResolvedValue([{ treatmentPlanId: "plan-1" }]);
     planRepo.count.mockResolvedValue(1);
-    alertRepo.count.mockResolvedValue(2);
+    notificationsService.unreadCount.mockResolvedValue(2);
 
     const stats = await service.getStats({ id: "pmo-1", role: "PMO" });
 

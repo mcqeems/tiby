@@ -15,6 +15,7 @@ import { InterventionTicket } from "../modules/tickets/entities/intervention-tic
 import { FacilityAlert } from "../modules/alerts/entities/facility-alert.entity.js";
 import { PatientStatusHistory } from "../modules/patients/entities/patient-status-history.entity.js";
 import { NotificationLog } from "../modules/whatsapp/entities/notification-log.entity.js";
+import { UserNotification } from "../modules/notifications/entities/user-notification.entity.js";
 import { AuditLog } from "../modules/internal/audit/entities/audit-log.entity.js";
 import { EducationCard } from "../modules/education/entities/education-card.entity.js";
 
@@ -36,6 +37,7 @@ export const entities = [
   FacilityAlert,
   PatientStatusHistory,
   NotificationLog,
+  UserNotification,
   AuditLog,
   EducationCard,
 ];
@@ -58,6 +60,7 @@ export {
   FacilityAlert,
   PatientStatusHistory,
   NotificationLog,
+  UserNotification,
   AuditLog,
   EducationCard,
 };

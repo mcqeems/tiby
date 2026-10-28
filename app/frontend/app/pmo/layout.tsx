@@ -11,6 +11,7 @@ import { consentApi } from "@/lib/api/consent";
 import { pmoMenuItems } from "./components/pmo-menu";
 import Footer from "@/components/layout/footer";
 import ConsentModal from "@/components/consent/consent-modal";
+import UserNotificationBell from "@/components/notifications/user-notification-bell";
 
 export default function PmoLayout({ children }: { children: React.ReactNode }) {
   const { data: sessionData, isPending } = useSession();
@@ -48,8 +49,11 @@ export default function PmoLayout({ children }: { children: React.ReactNode }) {
           items={pmoMenuItems}
         />
         <main className="flex flex-1 flex-col overflow-y-auto p-6 md:p-8">
-          <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col">
-            <div className="shrink-0">
+          <div className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col">
+            <div className="absolute right-0 top-0 z-30">
+              <UserNotificationBell />
+            </div>
+            <div className="shrink-0 pr-14">
               <PageHeader />
             </div>
 
