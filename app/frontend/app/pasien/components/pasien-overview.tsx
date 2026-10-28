@@ -12,7 +12,7 @@ import type { CheckInHistoryItem } from "@/lib/types/check-in";
 import type { PatientStats } from "@/lib/types/stats";
 import PublicLoading from "@/components/ui/public-loading";
 import Dialog from "@/components/ui/dialog";
-import MascotAnimation from "@/components/mascot-animation";
+import Mascot from "@/components/mascot";
 import {
   Pill,
   Flame,
@@ -350,7 +350,7 @@ export default function PasienOverview() {
               </div>
 
               <div className="shrink-0 flex items-center justify-center">
-                <MascotAnimation size={140} className="drop-shadow-2xl" />
+                <Mascot animated size={140} className="drop-shadow-2xl" />
               </div>
             </div>
           </motion.div>

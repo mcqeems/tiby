@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Mic, Square } from "lucide-react";
-import MascotAnimation from "@/components/mascot-animation";
+import Mascot from "@/components/mascot";
 import {
   motion,
   AnimatePresence,
@@ -128,7 +128,8 @@ export default function CheckInVoice({
               className="w-full h-full"
             >
               <div className="h-full w-full p-2">
-                <MascotAnimation
+                <Mascot
+                  animated
                   emotion={isRecording ? "listening" : "idle"}
                   fill
                   altText={isRecording ? "Pandu mendengarkan" : "Pandu menunggu"}

@@ -1,6 +1,6 @@
 "use client";
 
-import MascotAnimation from "@/components/mascot-animation";
+import Mascot from "@/components/mascot";
 
 interface PublicLoadingProps {
   message?: string;
@@ -15,7 +15,8 @@ export default function PublicLoading({
     <div className="flex flex-col items-center justify-center p-8 text-center">
       <div className="relative mb-4 flex items-center justify-center pt-2">
         <div className="absolute inset-0 rounded-full bg-radial from-tiby-teal-500/20 to-transparent blur-xl scale-125 pointer-events-none" />
-        <MascotAnimation
+        <Mascot
+          animated
           emotion="idle"
           size={80}
           altText="Maskot Pandu Memuat"

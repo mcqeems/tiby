@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { educationApi, type EducationItem } from "@/lib/api/education";
 import PublicLoading from "@/components/ui/public-loading";
-import MascotAnimation from "@/components/mascot-animation";
+import Mascot from "@/components/mascot";
 import {
   BookOpen,
   X,
@@ -98,7 +98,7 @@ export default function EducationView({
             </p>
           </div>
           <div className="shrink-0 flex items-center justify-center">
-            <MascotAnimation size={160} className="drop-shadow-2xl" />
+            <Mascot animated size={160} className="drop-shadow-2xl" />
           </div>
         </div>
       </motion.div>

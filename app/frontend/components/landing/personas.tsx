@@ -7,9 +7,9 @@ import {
   Stethoscope,
   type LucideIcon,
 } from "lucide-react";
-import MascotAnimation, {
+import Mascot, {
   type MascotEmotion,
-} from "@/components/mascot-animation";
+} from "@/components/mascot";
 import { EASE, SectionHeading } from "./shared";
 
 const PERSONAS: {
@@ -24,7 +24,7 @@ const PERSONAS: {
     title: "Pasien",
     desc: "Lapor tanpa takut stigma sosial.",
     gradient: "from-teal-500 to-teal-700",
-    emotion: "happy",
+    emotion: "idle",
   },
   {
     icon: ShieldCheck,
@@ -38,7 +38,7 @@ const PERSONAS: {
     title: "Tenaga Kesehatan",
     desc: "Triase risiko dan tiket tindak lanjut.",
     gradient: "from-indigo-400 to-indigo-600",
-    emotion: "thinking",
+    emotion: "listening",
   },
 ];
 
@@ -76,7 +76,8 @@ export default function Personas() {
               </p>
             </div>
             <div className="absolute -bottom-4 -right-4 h-40 w-40 transition-transform duration-500 group-hover:-translate-y-2 group-hover:rotate-3">
-              <MascotAnimation
+              <Mascot
+                animated
                 emotion={p.emotion}
                 fill
                 altText="Pandu"

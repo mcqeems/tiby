@@ -3,27 +3,33 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
-export type MascotEmotion =
-  | "wave"
-  | "idle"
-  | "listening"
-  | "happy"
-  | "empathy"
-  | "thinking"
-  | "alert";
+/** Emotions that ship a Lottie file. */
+export type AnimatedMascotEmotion = "wave" | "idle" | "listening" | "empathy";
+/** Emotions that only exist as the outlined `-stroke` artwork. */
+export type StaticMascotEmotion = "happy" | "thinking" | "alert";
+export type MascotEmotion = AnimatedMascotEmotion | StaticMascotEmotion;
 
-interface MascotAnimationProps {
-  emotion?: MascotEmotion;
+interface MascotProps<E extends MascotEmotion = MascotEmotion> {
+  emotion?: E;
+  /**
+   * Play the Lottie file. Without it (and for every emotion that has no
+   * Lottie) the static `-stroke` artwork renders, so passing this for
+   * `happy`, `thinking`, or `alert` is a type error.
+   */
+  animated?: E extends AnimatedMascotEmotion ? boolean : false;
+  /** Loop forever (default) or play once and rest on the final frame. */
+  loop?: boolean;
   size?: number;
   fill?: boolean;
   className?: string;
   altText?: string;
   priority?: boolean;
-  /** Loop forever (default) or play once and rest on the final frame. */
-  loop?: boolean;
 }
 
-const LOTTIE_LOADERS = {
+const LOTTIE_LOADERS: Record<
+  AnimatedMascotEmotion,
+  () => Promise<{ default: unknown }>
+> = {
   wave: () =>
     import("@/public/mascot/motion-graph(lottie,mp4,gif)/wave.json"),
   idle: () =>
@@ -34,13 +40,12 @@ const LOTTIE_LOADERS = {
     import("@/public/mascot/motion-graph(lottie,mp4,gif)/empathy.json"),
 };
 
-type LottieEmotion = keyof typeof LOTTIE_LOADERS;
-
-const isLottieEmotion = (emotion: MascotEmotion): emotion is LottieEmotion =>
-  emotion in LOTTIE_LOADERS;
+const isAnimatedEmotion = (
+  emotion: MascotEmotion,
+): emotion is AnimatedMascotEmotion => emotion in LOTTIE_LOADERS;
 
 /** Every static mascot uses the outlined `-stroke` artwork. */
-const STROKE_FALLBACK: Record<MascotEmotion, string> = {
+const STROKE_ART: Record<MascotEmotion, string> = {
   wave: "/mascot/happy/happy-stroke.png",
   idle: "/mascot/idle/idle-stroke.png",
   listening: "/mascot/listening/listening-stroke.png",
@@ -72,27 +77,32 @@ function usePrefersReducedMotion() {
   return reduced;
 }
 
-export default function MascotAnimation({
-  emotion = "wave",
-  size = 100,
-  fill = false,
-  className = "",
-  altText = "",
-  priority = false,
-  loop = true,
-}: MascotAnimationProps) {
+export default function Mascot<E extends MascotEmotion = MascotEmotion>(
+  props: MascotProps<E>,
+) {
+  const {
+    emotion = "wave",
+    size = 100,
+    fill = false,
+    className = "",
+    altText = "",
+    priority = false,
+    loop = true,
+  } = props;
+
   const wrapperRef = useRef<HTMLDivElement>(null);
   const lottieRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<LottieInstance | null>(null);
   const finishedRef = useRef(false);
   const [inView, setInView] = useState(false);
   const [hasBeenInView, setHasBeenInView] = useState(false);
-  const [loadedEmotion, setLoadedEmotion] = useState<LottieEmotion | null>(null);
+  const [loadedEmotion, setLoadedEmotion] =
+    useState<AnimatedMascotEmotion | null>(null);
   const reduceMotion = usePrefersReducedMotion();
 
-  const lottieEmotion = isLottieEmotion(emotion) ? emotion : null;
-  const canAnimate = !reduceMotion && lottieEmotion !== null;
-  const isLoaded = lottieEmotion !== null && loadedEmotion === lottieEmotion;
+  const animatable = isAnimatedEmotion(emotion) ? emotion : null;
+  const canAnimate = Boolean(props.animated) && animatable !== null && !reduceMotion;
+  const isLoaded = animatable !== null && loadedEmotion === animatable;
 
   // Load the JSON only once the mascot approaches the viewport, then pause it
   // again whenever it scrolls away.
@@ -117,14 +127,14 @@ export default function MascotAnimation({
   }, []);
 
   useEffect(() => {
-    if (!lottieEmotion || reduceMotion || !hasBeenInView) return;
+    if (!animatable || !canAnimate || !hasBeenInView) return;
 
     let cancelled = false;
 
     void (async () => {
       try {
         const [data, lottieModule] = await Promise.all([
-          LOTTIE_LOADERS[lottieEmotion](),
+          LOTTIE_LOADERS[animatable](),
           import("lottie-web"),
         ]);
 
@@ -144,7 +154,7 @@ export default function MascotAnimation({
           finishedRef.current = true;
         });
         animationRef.current = instance;
-        setLoadedEmotion(lottieEmotion);
+        setLoadedEmotion(animatable);
       } catch {
         // Keep the stroke image visible if the animation cannot load.
       }
@@ -155,7 +165,7 @@ export default function MascotAnimation({
       animationRef.current?.destroy();
       animationRef.current = null;
     };
-  }, [lottieEmotion, reduceMotion, hasBeenInView, loop]);
+  }, [animatable, canAnimate, hasBeenInView, loop]);
 
   useEffect(() => {
     const animation = animationRef.current;
@@ -181,7 +191,7 @@ export default function MascotAnimation({
       style={fill ? undefined : { width: size, height: size }}
     >
       <Image
-        src={STROKE_FALLBACK[emotion]}
+        src={STROKE_ART[emotion]}
         alt=""
         fill
         sizes={fill ? "200px" : `${size}px`}

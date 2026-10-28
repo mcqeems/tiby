@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import MascotAnimation from "@/components/mascot-animation";
+import Mascot from "@/components/mascot";
 import { ArrowLeft } from "lucide-react"; 
 import {
   signIn,
@@ -204,7 +204,7 @@ export default function LoginView() {
 
           <div className="relative z-20 flex items-center gap-3.5 border-l-4 border-white/30 pl-4">
             <div className="relative w-11 h-11 rounded-full bg-white flex items-center justify-center shrink-0 shadow-lg overflow-hidden">
-              <MascotAnimation
+              <Mascot
                 emotion="happy"
                 size={40}
                 altText="Pandu"

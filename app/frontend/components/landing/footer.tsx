@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
 import { ShieldCheck, Heart, ArrowUp, ArrowRight } from "lucide-react";
-import MascotAnimation from "@/components/mascot-animation";
+import Mascot from "@/components/mascot";
 import { EASE, Reveal } from "./shared";
 
 const PANDU_MESSAGES = [
@@ -33,7 +33,8 @@ function PanduBubble() {
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         className="relative h-28 w-28 shrink-0"
       >
-        <MascotAnimation
+        <Mascot
+          animated
           emotion="empathy"
           fill
           altText="Pandu"

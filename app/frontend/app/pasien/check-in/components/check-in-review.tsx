@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Edit3, CheckCircle2, Mic } from "lucide-react";
-import MascotAnimation from "@/components/mascot-animation";
+import Mascot from "@/components/mascot";
 
 interface CheckInReviewProps {
   transcript: string;
@@ -22,7 +22,7 @@ export default function CheckInReview({
     <div className="space-y-6">
       <div className="flex flex-col items-center space-y-2">
         <div className="w-24 h-24 relative">
-          <MascotAnimation
+          <Mascot
             emotion="thinking"
             fill
             altText="Pandu berpikir"

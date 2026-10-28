@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import MascotAnimation from "@/components/mascot-animation";
+import Mascot from "@/components/mascot";
 import { consentApi } from "@/lib/api/consent";
 import { usePopup } from "@/components/ui/popup-provider";
 import { ShieldCheck, FileText, Check, Loader2 } from "lucide-react";
@@ -145,7 +145,8 @@ export default function ConsentModal({
           <div className="space-y-6 lg:space-y-3">
             <div className="text-center space-y-3 lg:space-y-1.5">
               <div className="mx-auto h-28 w-28 relative lg:h-16 lg:w-16">
-                <MascotAnimation
+                <Mascot
+                  animated
                   emotion="empathy"
                   fill
                   altText="Privasi"

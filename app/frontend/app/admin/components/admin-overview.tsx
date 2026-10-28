@@ -9,7 +9,7 @@ import { facilitiesApi } from "@/lib/api/facilities";
 import type { AdminStats } from "@/lib/types/stats";
 import type { FacilityItem } from "@/lib/types/facilities";
 import PublicLoading from "@/components/ui/public-loading";
-import MascotAnimation from "@/components/mascot-animation";
+import Mascot from "@/components/mascot";
 import {
   ArrowRight,
   BookOpen,
@@ -144,7 +144,7 @@ export default function AdminOverview() {
               </div>
 
               <div className="shrink-0 flex items-center justify-center">
-                <MascotAnimation size={140} className="drop-shadow-2xl" />
+                <Mascot animated size={140} className="drop-shadow-2xl" />
               </div>
             </div>
           </motion.div>

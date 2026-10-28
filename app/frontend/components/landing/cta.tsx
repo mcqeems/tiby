@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
-import MascotAnimation from "@/components/mascot-animation";
+import Mascot from "@/components/mascot";
 import { Reveal } from "./shared";
 
 export default function CTA() {
@@ -42,7 +42,7 @@ export default function CTA() {
             transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
             className="absolute bottom-2 right-6 hidden h-36 w-36 md:block"
           >
-            <MascotAnimation
+            <Mascot
               emotion="happy"
               fill
               className="drop-shadow-xl"

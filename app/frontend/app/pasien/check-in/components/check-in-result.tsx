@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CheckCircle2, AlertTriangle, ShieldAlert, Flame } from "lucide-react";
-import MascotAnimation from "@/components/mascot-animation";
+import Mascot from "@/components/mascot";
 import type { CheckInVerdictResponse } from "@/lib/types/check-in";
 
 interface CheckInResultProps {
@@ -321,7 +321,8 @@ export default function CheckInResult({ result }: CheckInResultProps) {
           ))}
 
         <div className={`relative h-full w-full ${config.mascotAnim}`}>
-          <MascotAnimation
+          <Mascot
+            animated
             emotion={config.emotion}
             fill
             altText={config.title}

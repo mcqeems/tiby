@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import MascotAnimation, {
+import Mascot, {
   type MascotEmotion,
-} from "@/components/mascot-animation";
+} from "@/components/mascot";
 
 export type PopupVariant = "success" | "danger" | "warning" | "info";
 
@@ -29,6 +29,8 @@ const VARIANT_CONFIG: Record<
   PopupVariant,
   {
     emotion: MascotEmotion;
+    /** hanya emotion yang punya Lottie yang boleh beranimasi */
+    animated: boolean;
     badgeBg: string;
     badgeText: string;
     defaultBadge: string;
@@ -49,6 +51,7 @@ const VARIANT_CONFIG: Record<
   }
 > = {
   success: {
+    animated: false,
     emotion: "happy",
     badgeBg: "bg-tiby-teal-50 border-tiby-teal-100",
     badgeText: "text-tiby-teal-700",
@@ -64,6 +67,7 @@ const VARIANT_CONFIG: Record<
     confetti: true,
   },
   danger: {
+    animated: false,
     emotion: "alert",
     badgeBg: "bg-red-50 border-red-100",
     badgeText: "text-red-700",
@@ -79,6 +83,7 @@ const VARIANT_CONFIG: Record<
     confetti: false,
   },
   warning: {
+    animated: true,
     emotion: "idle",
     badgeBg: "bg-amber-50 border-amber-200",
     badgeText: "text-amber-800",
@@ -94,6 +99,7 @@ const VARIANT_CONFIG: Record<
     confetti: false,
   },
   info: {
+    animated: true,
     emotion: "empathy",
     badgeBg: "bg-tiby-teal-50 border-tiby-teal-100",
     badgeText: "text-tiby-teal-700",
@@ -392,7 +398,8 @@ export default function PublicPopup({
                   />
                 ))}
 
-              <MascotAnimation
+              <Mascot
+                animated={cfg.animated}
                 emotion={cfg.emotion}
                 size={96}
                 altText="Maskot Pandu Tiby"

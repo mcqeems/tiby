@@ -7,7 +7,7 @@ import { useSession, type TibyUser } from "@/lib/auth-client";
 import { statsApi } from "@/lib/api/stats";
 import type { PmoStats } from "@/lib/types/stats";
 import PublicLoading from "@/components/ui/public-loading";
-import MascotAnimation from "@/components/mascot-animation";
+import Mascot from "@/components/mascot";
 import {
   Users,
   Clock,
@@ -135,7 +135,7 @@ export default function PmoOverview() {
               </div>
 
               <div className="shrink-0 flex items-center justify-center">
-                <MascotAnimation size={140} className="drop-shadow-2xl" />
+                <Mascot animated size={140} className="drop-shadow-2xl" />
               </div>
             </div>
           </motion.div>
