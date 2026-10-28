@@ -119,12 +119,4 @@ export function staggerParent(stagger = 0.06, delayChildren = 0): Variants {
   };
 }
 
-/** Danger confirmation nudge; sits on a separate element from `popIn`. */
-export const shake: Variants = {
-  visible: {
-    x: [0, -8, 8, -6, 6, 0],
-    transition: { duration: 0.45, delay: 0.35, ease: EASE_IN_OUT },
-  },
-};
-
 export const VIEWPORT = { once: true, margin: "-80px" };

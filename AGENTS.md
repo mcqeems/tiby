@@ -45,7 +45,7 @@ bun --filter @tiby/backend test test/patients.service.spec.ts -t "createPmoFollo
 
 There is no `typecheck` script; `bun run build` is the typecheck (`tsc` / `nest build`).
 
-Test coverage is backend-only. The frontend has no test runner or test script, and root `bun run test` does not touch `shared/ts-shared` (it has its own `bun --filter @tiby/ts-shared test`).
+The frontend has its own vitest setup (`bun --filter @tiby/frontend test`, or `bun run test:frontend`): `app/frontend/test/*.spec.ts` covers pure helpers and the repo invariants that are cheap to check from source (zero-stigma copy, PMO transcript blindness, the consent gate, the motion variant contract). Root `bun run test` runs backend then frontend; neither touches `shared/ts-shared`, which has its own `bun --filter @tiby/ts-shared test`. Component behaviour is still verified in a browser, not by a rendered-DOM test runner.
 
 ## Database
 

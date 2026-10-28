@@ -3,7 +3,11 @@
   "private": true,
   "type": "module",
   "packageManager": "bun@1.4.2",
-  "workspaces": ["app/frontend", "app/backend", "shared/*"],
+  "workspaces": [
+    "app/frontend",
+    "app/backend",
+    "shared/*"
+  ],
   "scripts": {
     "dev": "bun --filter @tiby/ts-shared build && (bun --filter @tiby/backend start:dev & bun --filter @tiby/frontend dev & wait)",
     "dev:backend": "bun --filter @tiby/ts-shared build && PORT=3001 bun --filter @tiby/backend start:dev",
@@ -15,10 +19,11 @@
     "lint": "bun --filter @tiby/backend lint & bun --filter @tiby/frontend lint & wait",
     "lint:backend": "bun --filter @tiby/backend lint",
     "lint:frontend": "bun --filter @tiby/frontend lint",
-    "test": "bun --filter @tiby/backend test",
+    "test": "bun --filter @tiby/backend test && bun --filter @tiby/frontend test",
     "test:backend": "bun --filter @tiby/backend test",
     "test:e2e": "bun --filter @tiby/backend test:e2e",
-    "seed": "bun --filter @tiby/backend seed"
+    "seed": "bun --filter @tiby/backend seed",
+    "test:frontend": "bun --filter @tiby/frontend test"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3"
