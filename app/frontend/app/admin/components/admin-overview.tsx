@@ -206,7 +206,7 @@ export default function AdminOverview() {
           </div>
         </div>
 
-        <div className="lg:col-span-1">
+        <div className="h-full">
           <motion.section
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
