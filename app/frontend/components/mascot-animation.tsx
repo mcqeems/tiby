@@ -19,6 +19,8 @@ interface MascotAnimationProps {
   className?: string;
   altText?: string;
   priority?: boolean;
+  /** Loop forever (default) or play once and rest on the final frame. */
+  loop?: boolean;
 }
 
 const LOTTIE_LOADERS = {
@@ -52,6 +54,7 @@ type LottieInstance = {
   play: () => void;
   pause: () => void;
   destroy: () => void;
+  addEventListener: (name: "complete", callback: () => void) => void;
 };
 
 /** Start static (matches SSR), then follow the OS preference on the client. */
@@ -76,10 +79,12 @@ export default function MascotAnimation({
   className = "",
   altText = "",
   priority = false,
+  loop = true,
 }: MascotAnimationProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const lottieRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<LottieInstance | null>(null);
+  const finishedRef = useRef(false);
   const [inView, setInView] = useState(false);
   const [hasBeenInView, setHasBeenInView] = useState(false);
   const [loadedEmotion, setLoadedEmotion] = useState<LottieEmotion | null>(null);
@@ -127,13 +132,18 @@ export default function MascotAnimation({
 
         const lottie = lottieModule.default || lottieModule;
         lottieRef.current.innerHTML = "";
-        animationRef.current = lottie.loadAnimation({
+        finishedRef.current = false;
+        const instance = lottie.loadAnimation({
           container: lottieRef.current,
           renderer: "svg",
-          loop: true,
+          loop,
           autoplay: false,
           animationData: data.default,
         });
+        instance.addEventListener("complete", () => {
+          finishedRef.current = true;
+        });
+        animationRef.current = instance;
         setLoadedEmotion(lottieEmotion);
       } catch {
         // Keep the stroke image visible if the animation cannot load.
@@ -145,14 +155,19 @@ export default function MascotAnimation({
       animationRef.current?.destroy();
       animationRef.current = null;
     };
-  }, [lottieEmotion, reduceMotion, hasBeenInView]);
+  }, [lottieEmotion, reduceMotion, hasBeenInView, loop]);
 
   useEffect(() => {
     const animation = animationRef.current;
     if (!animation) return;
-    if (inView) animation.play();
-    else animation.pause();
-  }, [inView, isLoaded]);
+    if (!inView) {
+      animation.pause();
+      return;
+    }
+    // A one-shot that already reached its last frame stays there.
+    if (!loop && finishedRef.current) return;
+    animation.play();
+  }, [inView, isLoaded, loop]);
 
   return (
     <div
