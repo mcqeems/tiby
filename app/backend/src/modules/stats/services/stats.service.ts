@@ -120,6 +120,7 @@ export class StatsService {
     // The current plan is the most recently created one; older plans are history.
     const plan = await this.planRepo.findOne({
       where: { patientUserId },
+      relations: { facility: true },
       order: { createdAt: "DESC", id: "DESC" },
     });
 
@@ -132,6 +133,7 @@ export class StatsService {
         todayCheckInStatus: "BELUM_CHECK_IN",
         totalPillsTaken: 0,
         currentPhase: null,
+        careTeam: { facility: null, pmo: [], nakes: [] },
       };
     }
 
@@ -176,6 +178,31 @@ export class StatsService {
         (evaluation?.verdict as TodayCheckInStatus | undefined) ?? "BELUM_CHECK_IN";
     }
 
+    const [pmoAssignments, nakesRows] = await Promise.all([
+      this.pmoRepo.find({
+        where: { treatmentPlanId: plan.id, active: true },
+        relations: { pmoUser: true },
+        order: { isPrimary: "DESC", createdAt: "ASC" },
+      }),
+      this.userRepo.find({
+        where: { role: "NAKES", facilityId: plan.facilityId },
+        order: { name: "ASC" },
+      }),
+    ]);
+
+    const nakes = nakesRows
+      .map((nakesUser) => ({
+        id: nakesUser.id,
+        name: nakesUser.name,
+        username: nakesUser.username ?? null,
+        isPrimary: nakesUser.id === plan.registeredByNakesId,
+      }))
+      .sort(
+        (a, b) =>
+          Number(b.isPrimary) - Number(a.isPrimary) ||
+          a.name.localeCompare(b.name),
+      );
+
     return {
       role: "PASIEN",
       currentStreak: plan.currentStreak,
@@ -184,6 +211,23 @@ export class StatsService {
       todayCheckInStatus,
       totalPillsTaken,
       currentPhase: plan.phase as TreatmentPhase,
+      careTeam: {
+        facility: plan.facility
+          ? {
+              id: plan.facility.id,
+              name: plan.facility.name,
+              district: plan.facility.district ?? null,
+            }
+          : null,
+        pmo: pmoAssignments.map((assignment) => ({
+          id: assignment.pmoUser.id,
+          name: assignment.pmoUser.name,
+          username: assignment.pmoUser.username ?? null,
+          isPrimary: assignment.isPrimary,
+          relationship: assignment.relationship ?? null,
+        })),
+        nakes,
+      },
     };
   }
 

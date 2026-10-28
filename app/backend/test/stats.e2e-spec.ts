@@ -269,7 +269,7 @@ describe("Dashboard stats (e2e)", () => {
       .set("Cookie", pasienACookie);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({
+    expect(res.body).toMatchObject({
       role: "PASIEN",
       currentStreak: 3,
       adherenceRate: 0.273,
@@ -277,7 +277,13 @@ describe("Dashboard stats (e2e)", () => {
       todayCheckInStatus: "TERKENDALI",
       totalPillsTaken: 12,
       currentPhase: "INTENSIF",
+      careTeam: {
+        facility: { name: "Puskesmas Stats A", district: "Jakarta Pusat" },
+        pmo: [{ relationship: "KELUARGA", isPrimary: true }],
+        nakes: [{ isPrimary: true }],
+      },
     });
+    expect(res.body.careTeam.nakes).toHaveLength(1);
   });
 
   it("2. PASIEN without a plan gets a zeroed payload", async () => {
@@ -292,6 +298,9 @@ describe("Dashboard stats (e2e)", () => {
       totalPillsTaken: 0,
       currentPhase: "INTENSIF",
       todayCheckInStatus: "BELUM_CHECK_IN",
+      careTeam: {
+        facility: { name: "Puskesmas Stats B", district: "Jakarta Barat" },
+      },
     });
   });
 

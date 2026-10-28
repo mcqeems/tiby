@@ -56,6 +56,17 @@ export default function NakesOverview() {
     return <PublicLoading fullScreen message="Menyiapkan dashboard..." />;
 
   const adherencePercent = stats ? Math.round(stats.adherenceRate * 100) : 0;
+  const totalPatients = stats?.totalPatients ?? 0;
+  const highRiskPercent =
+    totalPatients > 0
+      ? Math.round(((stats?.highRiskPatients ?? 0) / totalPatients) * 100)
+      : 0;
+  const criticalPercent =
+    (stats?.openTickets ?? 0) > 0
+      ? Math.round(
+          ((stats?.criticalTickets ?? 0) / (stats?.openTickets ?? 1)) * 100,
+        )
+      : 0;
 
   return (
     <div className="space-y-6">
@@ -127,13 +138,22 @@ export default function NakesOverview() {
               <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
                 <Target className="w-6 h-6 text-emerald-600" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold text-tiby-muted uppercase tracking-wider">
                   Kepatuhan Faskes
                 </p>
                 <p className="font-heading text-xl font-bold text-tiby-ink">
                   {adherencePercent}%
                 </p>
+                <div
+                  className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-100"
+                  aria-hidden="true"
+                >
+                  <div
+                    className="h-full rounded-full bg-emerald-500 transition-[width] duration-500"
+                    style={{ width: `${adherencePercent}%` }}
+                  />
+                </div>
               </div>
             </motion.div>
 
@@ -152,6 +172,9 @@ export default function NakesOverview() {
                 </p>
                 <p className="font-heading text-xl font-bold text-tiby-ink">
                   {stats?.highRiskPatients || 0} Pasien
+                </p>
+                <p className="mt-1 text-[11px] text-red-500">
+                  {highRiskPercent}% dari total pasien
                 </p>
               </div>
             </motion.div>
@@ -203,6 +226,9 @@ export default function NakesOverview() {
               </p>
               <p className="font-heading text-lg font-bold text-red-700">
                 {stats?.criticalTickets || 0} Kritis
+              </p>
+              <p className="text-[10px] font-medium text-red-500">
+                {criticalPercent}% dari tiket aktif
               </p>
             </div>
           </div>

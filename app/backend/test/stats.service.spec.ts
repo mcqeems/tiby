@@ -23,7 +23,7 @@ function makeService() {
   const pmoRepo = { find: vi.fn() };
   const alertRepo = { count: vi.fn() };
   const ticketRepo = { count: vi.fn() };
-  const userRepo = { count: vi.fn() };
+  const userRepo = { count: vi.fn(), find: vi.fn().mockResolvedValue([]) };
   const facilityRepo = { count: vi.fn() };
 
   const service = new StatsService(
@@ -119,18 +119,42 @@ describe("StatsService role payloads", () => {
       todayCheckInStatus: "BELUM_CHECK_IN",
       totalPillsTaken: 0,
       currentPhase: null,
+      careTeam: { facility: null, pmo: [], nakes: [] },
     });
   });
 
   it("counts the latest attempt per day and reads today's verdict", async () => {
-    const { service, planRepo, checkInRepo, evalRepo } = makeService();
+    const { service, planRepo, checkInRepo, evalRepo, pmoRepo, userRepo } =
+      makeService();
     planRepo.findOne.mockResolvedValue({
       id: "plan-1",
       startDate: dayOffset(-10),
       targetEndDate: dayOffset(170),
       currentStreak: 3,
       phase: "INTENSIF",
+      facilityId: "facility-1",
+      registeredByNakesId: "nakes-1",
+      facility: {
+        id: "facility-1",
+        name: "Puskesmas Gambir",
+        district: "Jakarta Pusat",
+      },
     });
+    pmoRepo.find.mockResolvedValue([
+      {
+        isPrimary: true,
+        relationship: "ISTRI",
+        pmoUser: {
+          id: "pmo-1",
+          name: "Siti",
+          username: "pmo_siti",
+        },
+      },
+    ]);
+    userRepo.find.mockResolvedValue([
+      { id: "nakes-2", name: "dr. Ani", username: "nakes_ani" },
+      { id: "nakes-1", name: "dr. Budi", username: "nakes_budi" },
+    ]);
     checkInRepo.find.mockResolvedValue([
       { id: "ci-1", checkInDate: dayOffset(-2), attemptNumber: 1, pillsTakenCount: 4, isDoseFulfilled: true },
       { id: "ci-2", checkInDate: dayOffset(-1), attemptNumber: 1, pillsTakenCount: 2, isDoseFulfilled: false },
@@ -149,8 +173,43 @@ describe("StatsService role payloads", () => {
       totalPillsTaken: 12, // 4 + 4 (latest retry) + 4
       adherenceRate: 0.273, // 3 fulfilled days / 11 elapsed
       daysRemaining: 170,
+      careTeam: {
+        facility: {
+          id: "facility-1",
+          name: "Puskesmas Gambir",
+          district: "Jakarta Pusat",
+        },
+        pmo: [
+          {
+            id: "pmo-1",
+            name: "Siti",
+            username: "pmo_siti",
+            isPrimary: true,
+            relationship: "ISTRI",
+          },
+        ],
+        nakes: [
+          {
+            id: "nakes-1",
+            name: "dr. Budi",
+            username: "nakes_budi",
+            isPrimary: true,
+          },
+          {
+            id: "nakes-2",
+            name: "dr. Ani",
+            username: "nakes_ani",
+            isPrimary: false,
+          },
+        ],
+      },
     });
     expect(evalRepo.findOneBy).toHaveBeenCalledWith({ checkInId: "ci-4" });
+    expect(pmoRepo.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { treatmentPlanId: "plan-1", active: true },
+      }),
+    );
   });
 
   it("returns zeros for a PMO without active assignments", async () => {

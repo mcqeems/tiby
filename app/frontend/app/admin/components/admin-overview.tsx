@@ -82,6 +82,20 @@ export default function AdminOverview() {
   if (loading)
     return <PublicLoading fullScreen message="Menyiapkan dashboard..." />;
 
+  const totalFacilities = stats?.totalFacilities ?? 0;
+  const totalNakes = stats?.totalNakes ?? 0;
+  const totalPatients = stats?.totalPatients ?? 0;
+  const patientsPerFacility =
+    totalFacilities > 0 ? Math.round(totalPatients / totalFacilities) : 0;
+  const nakesPerFacility =
+    totalFacilities > 0 ? Math.round(totalNakes / totalFacilities) : 0;
+  const patientsPerNakes =
+    totalNakes > 0 ? Math.round(totalPatients / totalNakes) : 0;
+  const ticketsPer100Patients =
+    totalPatients > 0
+      ? Math.round(((stats?.totalActiveTickets ?? 0) / totalPatients) * 100)
+      : 0;
+
   return (
     <div className="space-y-6">
       <motion.div
@@ -151,6 +165,9 @@ export default function AdminOverview() {
               <p className="font-heading text-xl font-bold text-tiby-ink">
                 {stats?.totalFacilities || 0}
               </p>
+              <p className="mt-1 text-[10px] text-tiby-muted">
+                {patientsPerFacility} pasien/faskes
+              </p>
             </motion.div>
 
             <motion.div
@@ -167,6 +184,9 @@ export default function AdminOverview() {
               </p>
               <p className="font-heading text-xl font-bold text-tiby-ink">
                 {stats?.totalNakes || 0}
+              </p>
+              <p className="mt-1 text-[10px] text-tiby-muted">
+                {nakesPerFacility} nakes/faskes
               </p>
             </motion.div>
 
@@ -185,6 +205,9 @@ export default function AdminOverview() {
               <p className="font-heading text-xl font-bold text-tiby-ink">
                 {stats?.totalPatients || 0}
               </p>
+              <p className="mt-1 text-[10px] text-tiby-muted">
+                {patientsPerNakes} pasien/nakes
+              </p>
             </motion.div>
 
             <motion.div
@@ -201,6 +224,9 @@ export default function AdminOverview() {
               </p>
               <p className="font-heading text-xl font-bold text-tiby-ink">
                 {stats?.totalActiveTickets || 0}
+              </p>
+              <p className="mt-1 text-[10px] text-tiby-muted">
+                {ticketsPer100Patients} per 100 pasien
               </p>
             </motion.div>
           </div>

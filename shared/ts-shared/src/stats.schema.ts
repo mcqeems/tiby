@@ -6,6 +6,29 @@ export const TodayCheckInStatuses = ["BELUM_CHECK_IN", ...SafetyVerdicts] as con
 export const TodayCheckInStatusSchema = z.enum(TodayCheckInStatuses);
 export type TodayCheckInStatus = z.infer<typeof TodayCheckInStatusSchema>;
 
+export const CareTeamMemberSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  username: z.string().nullable(),
+  isPrimary: z.boolean(),
+  /** PMO only, e.g. ISTRI / ORANG_TUA. */
+  relationship: z.string().nullable().optional(),
+});
+export type CareTeamMember = z.infer<typeof CareTeamMemberSchema>;
+
+export const PatientCareTeamSchema = z.object({
+  facility: z
+    .object({
+      id: z.uuid(),
+      name: z.string(),
+      district: z.string().nullable(),
+    })
+    .nullable(),
+  pmo: z.array(CareTeamMemberSchema),
+  nakes: z.array(CareTeamMemberSchema),
+});
+export type PatientCareTeam = z.infer<typeof PatientCareTeamSchema>;
+
 export const PasienStatsSchema = z.object({
   role: z.literal("PASIEN"),
   currentStreak: z.number().int().nonnegative(),
@@ -15,6 +38,7 @@ export const PasienStatsSchema = z.object({
   todayCheckInStatus: TodayCheckInStatusSchema,
   totalPillsTaken: z.number().int().nonnegative(),
   currentPhase: TreatmentPhaseSchema.nullable(),
+  careTeam: PatientCareTeamSchema,
 });
 export type PasienStats = z.infer<typeof PasienStatsSchema>;
 

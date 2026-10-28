@@ -55,6 +55,15 @@ export default function PmoOverview() {
   if (loading)
     return <PublicLoading fullScreen message="Menyiapkan dashboard..." />;
 
+  const totalPatients = stats?.totalPatients ?? 0;
+  const checkedInToday = stats?.checkedInToday ?? 0;
+  const checkedInPercent =
+    totalPatients > 0 ? Math.round((checkedInToday / totalPatients) * 100) : 0;
+  const highRiskPercent =
+    totalPatients > 0
+      ? Math.round(((stats?.highRiskPatients ?? 0) / totalPatients) * 100)
+      : 0;
+
   return (
     <div className="space-y-6">
       <motion.div
@@ -70,10 +79,9 @@ export default function PmoOverview() {
             {user?.name || "Sobat Tiby"} 👋
           </h1>
         </div>
- 
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div className="grid grid-cols-1 gap-6 items-start">
         <div className="lg:col-span-2 space-y-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -81,8 +89,6 @@ export default function PmoOverview() {
             transition={{ duration: 0.4 }}
             className="bg-tiby-teal-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-tiby-teal-600/20 relative overflow-hidden"
           >
-            <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-
             <div className="relative z-10 flex flex-col-reverse sm:flex-row items-center justify-between gap-6">
               <div className="space-y-4 text-center sm:text-left">
                 <div>
@@ -101,6 +107,24 @@ export default function PmoOverview() {
                   Pantau kepatuhan dan berikan dukungan kepada pasien yang
                   membutuhkan pendampingan.
                 </p>
+
+                <div className="mx-auto w-full max-w-xs sm:mx-0">
+                  <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold text-tiby-teal-50/90">
+                    <span>Check-in hari ini</span>
+                    <span>
+                      {checkedInToday}/{totalPatients}
+                    </span>
+                  </div>
+                  <div
+                    className="h-1.5 w-full overflow-hidden rounded-full bg-white/20"
+                    aria-hidden="true"
+                  >
+                    <div
+                      className="h-full rounded-full bg-white transition-[width] duration-500"
+                      style={{ width: `${checkedInPercent}%` }}
+                    />
+                  </div>
+                </div>
 
                 <Link
                   href="/pmo/pasien"
@@ -152,54 +176,58 @@ export default function PmoOverview() {
                 <p className="font-heading text-xl font-bold text-tiby-ink">
                   {stats?.pendingCheckIn || 0} Pasien
                 </p>
+                <p className="mt-1 text-[11px] text-tiby-muted">
+                  Menunggu laporan hari ini
+                </p>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-white rounded-2xl border border-gray-200  p-5 shadow-2xs relative overflow-hidden"
+            >
+              <div className="absolute -right-4 -top-4 w-16 h-16 bg-red-50 rounded-full blur-xl" />
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+                  <ShieldAlert className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-red-500 uppercase tracking-wider">
+                    Risiko Tinggi
+                  </p>
+                  <p className="font-heading text-xl font-bold text-tiby-ink">
+                    {stats?.highRiskPatients || 0} Pasien
+                  </p>
+                  <p className="mt-1 text-[11px] text-red-500">
+                    {highRiskPercent}% dari pasien binaan
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.25 }}
+              className="bg-white rounded-2xl border border-gray-200  p-5 shadow-2xs"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
+                  <Bell className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider">
+                    Alert Belum Dibaca
+                  </p>
+                  <p className="font-heading text-xl font-bold text-tiby-ink">
+                    {stats?.unreadAlerts || 0} Pesan
+                  </p>
+                </div>
               </div>
             </motion.div>
           </div>
-        </div>
-
-        <div className="lg:col-span-1 space-y-6">
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white rounded-2xl border border-red-200 p-5 shadow-2xs relative overflow-hidden"
-          >
-            <div className="absolute -right-4 -top-4 w-16 h-16 bg-red-50 rounded-full blur-xl" />
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center shrink-0">
-                <ShieldAlert className="w-6 h-6 text-red-600" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-red-500 uppercase tracking-wider">
-                  Risiko Tinggi
-                </p>
-                <p className="font-heading text-xl font-bold text-tiby-ink">
-                  {stats?.highRiskPatients || 0} Pasien
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.25 }}
-            className="bg-white rounded-2xl border border-amber-200 p-5 shadow-2xs"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
-                <Bell className="w-6 h-6 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider">
-                  Alert Belum Dibaca
-                </p>
-                <p className="font-heading text-xl font-bold text-tiby-ink">
-                  {stats?.unreadAlerts || 0} Pesan
-                </p>
-              </div>
-            </div>
-          </motion.div>
         </div>
       </div>
     </div>

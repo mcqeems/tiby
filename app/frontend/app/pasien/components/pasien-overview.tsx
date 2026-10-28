@@ -7,11 +7,11 @@ import { useSession, type TibyUser } from "@/lib/auth-client";
 import { checkInsApi } from "@/lib/api/check-in";
 import { statsApi } from "@/lib/api/stats";
 import { educationApi, type EducationItem } from "@/lib/api/education";
-import { facilitiesApi } from "@/lib/api/facilities";
+import { usersApi } from "@/lib/api/users";
 import type { CheckInHistoryItem } from "@/lib/types/check-in";
-import type { FacilityItem } from "@/lib/types/facilities";
 import type { PatientStats } from "@/lib/types/stats";
 import PublicLoading from "@/components/ui/public-loading";
+import Dialog from "@/components/ui/dialog";
 import MascotAnimation from "@/components/mascot-animation";
 import {
   Pill,
@@ -26,6 +26,7 @@ import {
   HeartPulse,
   Target,
   CalendarClock,
+  Stethoscope,
 } from "lucide-react";
 
 const getLocalDateStr = (dateString: string) => {
@@ -162,6 +163,49 @@ const ComplianceCalendar = ({ history }: { history: CheckInHistoryItem[] }) => {
   );
 };
 
+function TeamMemberRow({
+  name,
+  username,
+  badge,
+  kind,
+}: {
+  name: string;
+  username: string | null;
+  badge?: string;
+  kind: "pmo" | "nakes";
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/60 p-3">
+      <div
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+          kind === "pmo"
+            ? "bg-purple-100 text-purple-700"
+            : "bg-tiby-teal-100 text-tiby-teal-700"
+        }`}
+      >
+        {name.charAt(0).toUpperCase()}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-tiby-ink">{name}</p>
+        <p className="truncate text-[11px] text-tiby-muted">
+          {username ? `@${username}` : "Tanpa username"}
+        </p>
+      </div>
+      {badge && (
+        <span
+          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${
+            kind === "pmo"
+              ? "bg-purple-50 text-purple-700 ring-purple-100"
+              : "bg-tiby-teal-50 text-tiby-teal-700 ring-tiby-teal-100"
+          }`}
+        >
+          {badge}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function PasienOverview() {
   const { data: session } = useSession();
   const user = session?.user as TibyUser | undefined;
@@ -169,17 +213,19 @@ export default function PasienOverview() {
   const [stats, setStats] = useState<PatientStats | null>(null);
   const [history, setHistory] = useState<CheckInHistoryItem[]>([]);
   const [education, setEducation] = useState<EducationItem | null>(null);
-  const [facility, setFacility] = useState<FacilityItem | null>(null);
+  const [facilityName, setFacilityName] = useState<string | null>(null);
+  const [careTeamOpen, setCareTeamOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
     async function fetchData() {
       try {
-        const [statsRes, historyRes, eduRes] = await Promise.all([
+        const [statsRes, historyRes, eduRes, meRes] = await Promise.all([
           statsApi.getStats(),
           checkInsApi.getHistory({ limit: 30 }),
           educationApi.getDaily(),
+          usersApi.getMe(),
         ]);
 
         if (active) {
@@ -190,18 +236,7 @@ export default function PasienOverview() {
           if (eduRes.cards && eduRes.cards.length > 0) {
             setEducation(eduRes.cards[0]);
           }
-        }
-
-        if (user?.facility_id) {
-          const facRes = await facilitiesApi.list({ limit: 100 });
-          const facilitiesList = Array.isArray(facRes)
-            ? facRes
-            : (facRes as { items?: FacilityItem[] }).items || [];
-
-          const currentFacility = facilitiesList.find(
-            (f) => f.id === user.facility_id,
-          );
-          if (active) setFacility(currentFacility || null);
+          setFacilityName(meRes.facility ?? null);
         }
       } catch (err) {
         console.error("Gagal memuat data dashboard:", err);
@@ -213,7 +248,7 @@ export default function PasienOverview() {
     return () => {
       active = false;
     };
-  }, [user?.facility_id]);
+  }, []);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -231,6 +266,12 @@ export default function PasienOverview() {
     stats?.todayCheckInStatus !== undefined;
   const currentStreak = stats?.currentStreak || 0;
   const adherencePercent = stats ? Math.round(stats.adherenceRate * 100) : 0;
+  const careTeam = stats?.careTeam;
+  const pmoMembers = careTeam?.pmo ?? [];
+  const nakesMembers = careTeam?.nakes ?? [];
+  const visibleNakes = nakesMembers.slice(0, 3);
+  const resolvedFacilityName =
+    facilityName || careTeam?.facility?.name || "Faskes Terdaftar";
 
   return (
     <div className="space-y-6">
@@ -279,6 +320,14 @@ export default function PasienOverview() {
                         : "Belum Check-in"}
                     </h2>
                   </div>
+                  {stats?.currentPhase && (
+                    <span className="mt-2 inline-flex items-center rounded-full border border-white/20 bg-white/15 px-3 py-1 text-[11px] font-semibold backdrop-blur-sm">
+                      Fase{" "}
+                      {stats.currentPhase === "INTENSIF"
+                        ? "Intensif"
+                        : "Lanjutan"}
+                    </span>
+                  )}
                 </div>
 
                 <p className="text-sm text-tiby-teal-50/80 max-w-xs mx-auto sm:mx-0">
@@ -317,13 +366,22 @@ export default function PasienOverview() {
               <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
                 <Target className="w-6 h-6 text-emerald-600" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold text-tiby-muted uppercase tracking-wider">
                   Kepatuhan
                 </p>
                 <p className="font-heading text-xl font-bold text-tiby-ink">
                   {adherencePercent}%
                 </p>
+                <div
+                  className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-100"
+                  aria-hidden="true"
+                >
+                  <div
+                    className="h-full rounded-full bg-emerald-500 transition-[width] duration-500"
+                    style={{ width: `${adherencePercent}%` }}
+                  />
+                </div>
               </div>
             </motion.div>
 
@@ -467,24 +525,103 @@ export default function PasienOverview() {
             <h3 className="font-heading font-bold text-sm text-tiby-ink mb-4 flex items-center gap-2">
               <User className="w-4 h-4 text-tiby-teal-600" /> Tim Pendamping
             </h3>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                <div className="w-8 h-8 rounded-full bg-tiby-teal-100 flex items-center justify-center text-tiby-teal-700 shrink-0">
-                  <HeartPulse className="w-4 h-4" />
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/60 p-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-tiby-teal-100 text-tiby-teal-700">
+                  <HeartPulse className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-wider font-bold text-tiby-muted mb-0.5">
+                  <p className="mb-0.5 text-[10px] font-bold uppercase tracking-wider text-tiby-muted">
                     Fasilitas Kesehatan
                   </p>
-                  <p className="text-sm font-semibold text-tiby-ink truncate">
-                    {facility?.name || "Faskes Terdaftar"}
+                  <p className="truncate text-sm font-semibold text-tiby-ink">
+                    {resolvedFacilityName}
                   </p>
+                  {careTeam?.facility?.district && (
+                    <p className="truncate text-[11px] text-tiby-muted">
+                      {careTeam.facility.district}
+                    </p>
+                  )}
                 </div>
+              </div>
+
+              {pmoMembers.length > 0 && (
+                <div>
+                  <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-tiby-muted">
+                    PMO
+                  </p>
+                  <div className="space-y-2">
+                    {pmoMembers.map((member) => (
+                      <TeamMemberRow
+                        key={member.id}
+                        name={member.name}
+                        username={member.username}
+                        badge={member.isPrimary ? "PMO Utama" : undefined}
+                        kind="pmo"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-tiby-muted">
+                  <Stethoscope className="h-3 w-3" /> Nakes Faskes
+                </p>
+                {nakesMembers.length > 0 ? (
+                  <div className="space-y-2">
+                    {visibleNakes.map((member) => (
+                      <TeamMemberRow
+                        key={member.id}
+                        name={member.name}
+                        username={member.username}
+                        badge={
+                          member.isPrimary ? "Nakes Pendaftar" : undefined
+                        }
+                        kind="nakes"
+                      />
+                    ))}
+                    {nakesMembers.length > 3 && (
+                      <button
+                        type="button"
+                        onClick={() => setCareTeamOpen(true)}
+                        className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-tiby-ink transition hover:border-tiby-teal-200 hover:bg-tiby-teal-50"
+                      >
+                        Lihat semua ({nakesMembers.length} nakes)
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-tiby-muted">
+                    Belum ada data Nakes untuk faskes ini.
+                  </p>
+                )}
               </div>
             </div>
           </motion.div>
         </div>
       </div>
+
+      <Dialog
+        open={careTeamOpen}
+        onClose={() => setCareTeamOpen(false)}
+        title="Tim Nakes Faskes"
+        description={`${nakesMembers.length} nakes terdaftar di ${resolvedFacilityName}.`}
+        size="md"
+      >
+        <div className="space-y-2.5">
+          {nakesMembers.map((member) => (
+            <TeamMemberRow
+              key={member.id}
+              name={member.name}
+              username={member.username}
+              badge={member.isPrimary ? "Nakes Pendaftar" : undefined}
+              kind="nakes"
+            />
+          ))}
+        </div>
+      </Dialog>
     </div>
   );
 }
