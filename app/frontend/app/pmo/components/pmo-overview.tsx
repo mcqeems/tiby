@@ -135,7 +135,13 @@ export default function PmoOverview() {
               </div>
 
               <div className="shrink-0 flex items-center justify-center">
-                <Mascot animated size={140} className="drop-shadow-2xl" />
+                <Mascot
+                  animated
+                  emotion="wave"
+                  loop={false}
+                  size={140}
+                  className="drop-shadow-2xl"
+                />
               </div>
             </div>
           </motion.div>

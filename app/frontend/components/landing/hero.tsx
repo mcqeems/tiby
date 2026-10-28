@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "motion/react";
-import MascotAnimation from "@/components/mascot-animation";
 import { EASE } from "./shared";
 import { ArrowBigRight } from "lucide-react";
 
@@ -75,16 +74,6 @@ export default function Hero() {
               WebkitMaskComposite: "source-in",
             }}
           />
-
-          <div className="absolute -left-2 bottom-6 hidden h-32 w-32 lg:block xl:h-40 xl:w-40">
-            <MascotAnimation
-              emotion="wave"
-              fill
-              altText="Pandu melambai"
-              priority
-              className="drop-shadow-xl"
-            />
-          </div>
         </motion.div>
       </div>
     </header>

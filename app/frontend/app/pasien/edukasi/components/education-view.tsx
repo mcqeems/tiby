@@ -98,7 +98,13 @@ export default function EducationView({
             </p>
           </div>
           <div className="shrink-0 flex items-center justify-center">
-            <Mascot animated size={160} className="drop-shadow-2xl" />
+            <Mascot
+              animated
+              emotion="wave"
+              loop={false}
+              size={160}
+              className="drop-shadow-2xl"
+            />
           </div>
         </div>
       </motion.div>

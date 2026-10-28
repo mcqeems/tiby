@@ -34,8 +34,7 @@ function PanduBubble() {
         className="relative h-28 w-28 shrink-0"
       >
         <Mascot
-          animated
-          emotion="empathy"
+          emotion="happy"
           fill
           altText="Pandu"
           className="drop-shadow-lg"
@@ -233,22 +232,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-tiby-teal-100/70 py-6 text-xs text-gray-500 sm:flex-row">
-          <p>&copy; {currentYear ?? "…"} Tim Argon - UNIDA Gontor.</p>
-          <p className="flex items-center gap-1.5">
-            Dibuat dengan
-            <motion.span
-              animate={{ scale: [1, 1.25, 1] }}
-              transition={{
-                duration: 1.6,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-              className="inline-flex"
-            >
-              <Heart className="h-3.5 w-3.5 fill-rose-400 text-rose-400" />
-            </motion.span>
-            untuk para pejuang sehat
-          </p>
+          <p>&copy; {currentYear ?? "…"} Tim Argon</p>
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             className="group inline-flex items-center gap-1.5 rounded-full border border-tiby-teal-100 bg-white px-3.5 py-1.5 font-semibold text-tiby-teal-700 transition-all hover:-translate-y-0.5 hover:shadow-md"

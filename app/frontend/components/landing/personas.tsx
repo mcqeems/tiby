@@ -7,9 +7,7 @@ import {
   Stethoscope,
   type LucideIcon,
 } from "lucide-react";
-import Mascot, {
-  type MascotEmotion,
-} from "@/components/mascot";
+import Mascot, { type MascotEmotion } from "@/components/mascot";
 import { EASE, SectionHeading } from "./shared";
 
 const PERSONAS: {
@@ -79,6 +77,7 @@ export default function Personas() {
               <Mascot
                 animated
                 emotion={p.emotion}
+                loop={false}
                 fill
                 altText="Pandu"
                 className="drop-shadow-xl"

@@ -147,6 +147,7 @@ export default function ConsentModal({
               <div className="mx-auto h-28 w-28 relative lg:h-16 lg:w-16">
                 <Mascot
                   animated
+                  loop={false}
                   emotion="empathy"
                   fill
                   altText="Privasi"
