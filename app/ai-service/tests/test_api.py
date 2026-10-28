@@ -10,7 +10,6 @@ from contracts import CheckInRequest, GuidanceResponse
 from guidance.retrieval import Citation, Evidence
 from guidance.service import GroundedAnswerer
 from main import app
-from providers.agnes import AgnesExtractor
 from providers.base import (
     ProviderConfigurationError,
     ProviderError,
@@ -24,7 +23,11 @@ from providers.factory import (
 )
 from providers.fish import FishAudioTranscriber
 from providers.groq import GroqTranscriber
-from providers.nararouter import NaraRouterClient, NaraRouterSettings
+from providers.nararouter import (
+    NaraRouterClient,
+    NaraRouterExtractor,
+    NaraRouterSettings,
+)
 
 client = TestClient(app)
 
@@ -149,11 +152,11 @@ def test_check_in_rejects_decision_fields(monkeypatch):
 
 
 def test_check_in_timeout_maps_to_provider_timeout(monkeypatch):
-    monkeypatch.setenv("TIBY_EXTRACTOR", "agnes")
+    monkeypatch.setenv("TIBY_EXTRACTOR", "nararouter")
     monkeypatch.setenv("NARAROUTER_API_TOKEN", "test-router-token")
     monkeypatch.setenv("NARAROUTER_BASE_URL", "https://router.test/v1")
     with patch.object(
-        AgnesExtractor,
+        NaraRouterExtractor,
         "extract",
         new=AsyncMock(side_effect=ProviderTimeoutError("timed out")),
     ):
@@ -401,7 +404,7 @@ def test_onboarding_ocr_accepts_jpg_mime_type(monkeypatch):
     assert response.json() == draft
 
 
-def test_agnes_provider_builds_configured_request_and_validates_response():
+def test_nararouter_provider_builds_configured_request_and_validates_response():
     seen = {}
 
     def handler(request):
@@ -423,7 +426,7 @@ def test_agnes_provider_builds_configured_request_and_validates_response():
             "providers.nararouter.httpx.AsyncClient",
             side_effect=lambda **kwargs: real_client(transport=transport, **kwargs),
         ):
-            extractor = AgnesExtractor(router_client(model="agnes-2.5-flash"))
+            extractor = NaraRouterExtractor(router_client(model="laguna-s-2.1"))
             result = await extractor.extract(
                 CheckInRequest(transcript="Sudah minum obat empat biji.")
             )
@@ -432,12 +435,12 @@ def test_agnes_provider_builds_configured_request_and_validates_response():
     asyncio.run(run_test())
     assert seen["url"] == "https://router.test/v1/chat/completions"
     assert seen["authorization"] == "Bearer test-token"
-    assert seen["body"]["model"] == "agnes-2.5-flash"
+    assert seen["body"]["model"] == "laguna-s-2.1"
     assert seen["body"]["response_format"] == {"type": "json_object"}
     assert "Do not diagnose" in seen["body"]["messages"][0]["content"]
 
 
-def test_agnes_provider_rejects_unexpected_risk_decision():
+def test_nararouter_provider_rejects_unexpected_risk_decision():
     invalid = response_payload()
     invalid["extraction"]["risk_status"] = "controlled"
     transport = httpx.MockTransport(
@@ -453,7 +456,7 @@ def test_agnes_provider_rejects_unexpected_risk_decision():
             "providers.nararouter.httpx.AsyncClient",
             side_effect=lambda **kwargs: real_client(transport=transport, **kwargs),
         ):
-            extractor = AgnesExtractor(router_client())
+            extractor = NaraRouterExtractor(router_client())
             with pytest.raises(ProviderError):
                 await extractor.extract(CheckInRequest(transcript="Sudah minum obat."))
 
