@@ -229,6 +229,92 @@ describe("CheckInService Unit Tests", () => {
       expect(mockAiClient.extractFromText).not.toHaveBeenCalled();
     });
 
+    it("starts a new streak at 1 when the previous dose is older than yesterday", async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const threeDaysAgo = new Date(Date.now() - 3 * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+      const plan = {
+        id: "plan-1",
+        patientUserId: "user-1",
+        facilityId: "faskes-1",
+        dailyPillQuota: 4,
+        currentStreak: 4,
+        consecutiveSilenceDays: 0,
+        patientState: "AKTIF",
+      };
+      mockPlanRepo.findOne.mockResolvedValue(plan);
+      mockCheckInRepo.findOne
+        .mockResolvedValueOnce(null) // not locked yet
+        .mockResolvedValueOnce({ id: "old-checkin", checkInDate: threeDaysAgo });
+      mockRuleEngine.evaluate.mockReturnValue({
+        verdict: "TERKENDALI",
+        isDoseFulfilled: true,
+        redoRequiredToday: false,
+        matchedRuleCodes: ["RULE_DOSE_FULFILLED_NO_SYMPTOMS"],
+        failSafeTriggered: false,
+        failSafeReason: null,
+        responseMessage: "Luar biasa! Obat lengkap.",
+      });
+
+      await service.submitCheckIn("user-1", "PASIEN", {
+        inputMode: "VOICE_STT",
+        confirmedFacts: {
+          transcript: "Sudah minum 4 pil.",
+          medicationStatus: "SUDAH_MINUM",
+          pillsTakenCount: 4,
+          symptoms: [],
+          intentToStop: false,
+          confidence: 0.95,
+        },
+      });
+
+      expect(today).toBeDefined();
+      expect(plan.currentStreak).toBe(1); // gap -> new streak
+    });
+
+    it("increments normally when yesterday's dose was reported", async () => {
+      const yesterday = new Date(Date.now() - 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+      const plan = {
+        id: "plan-1",
+        patientUserId: "user-1",
+        facilityId: "faskes-1",
+        dailyPillQuota: 4,
+        currentStreak: 4,
+        consecutiveSilenceDays: 0,
+        patientState: "AKTIF",
+      };
+      mockPlanRepo.findOne.mockResolvedValue(plan);
+      mockCheckInRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ id: "yesterday-checkin", checkInDate: yesterday });
+      mockRuleEngine.evaluate.mockReturnValue({
+        verdict: "TERKENDALI",
+        isDoseFulfilled: true,
+        redoRequiredToday: false,
+        matchedRuleCodes: ["RULE_DOSE_FULFILLED_NO_SYMPTOMS"],
+        failSafeTriggered: false,
+        failSafeReason: null,
+        responseMessage: "Luar biasa! Obat lengkap.",
+      });
+
+      await service.submitCheckIn("user-1", "PASIEN", {
+        inputMode: "VOICE_STT",
+        confirmedFacts: {
+          transcript: "Sudah minum 4 pil.",
+          medicationStatus: "SUDAH_MINUM",
+          pillsTakenCount: 4,
+          symptoms: [],
+          intentToStop: false,
+          confidence: 0.95,
+        },
+      });
+
+      expect(plan.currentStreak).toBe(5); // 4 + 1
+    });
+
     it("extracts facts from the confirmed transcript when the client sends none", async () => {
       const plan = {
         id: "plan-1",

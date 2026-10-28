@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import {
   Between,
   In,
+  LessThan,
   LessThanOrEqual,
   MoreThanOrEqual,
   Repository,
@@ -411,6 +412,23 @@ export class CheckInService {
         plan.consecutiveSilenceDays > 0 ||
         ['BERISIKO', 'PUTUS_FOLLOW_UP'].includes(plan.patientState);
 
+      // The midnight cron is the only thing that normally notices a missed
+      // day. If the server was down, the plan can still look "healthy", so
+      // check the actual last dose date here and start a new streak at 1.
+      const yesterday = new Date(Date.parse(today) - 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+      const lastFulfilled = await this.checkInRepo.findOne({
+        where: {
+          treatmentPlanId: plan.id,
+          isDoseFulfilled: true,
+          checkInDate: LessThan(today),
+        },
+        order: { checkInDate: 'DESC' },
+      });
+      const missedDay =
+        Boolean(lastFulfilled) && lastFulfilled!.checkInDate < yesterday;
+
       if (wasSilentOrAtRisk && !isRedFlag) {
         const previousState = plan.patientState;
         plan.patientState = 'AKTIF';
@@ -476,7 +494,7 @@ export class CheckInService {
           }),
         );
       } else {
-        plan.currentStreak += 1;
+        plan.currentStreak = missedDay ? 1 : plan.currentStreak + 1;
         plan.consecutiveSilenceDays = 0;
       }
 

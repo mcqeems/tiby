@@ -178,7 +178,7 @@ describe("SilenceDetectorService Unit Tests", () => {
     ];
     mockPlanRepo.find.mockResolvedValue(plans);
     // plan-1 already checked in, plan-2 did not
-    mockCheckInRepo.find.mockResolvedValue([{ treatmentPlanId: "plan-1" }]);
+    mockCheckInRepo.find.mockResolvedValue([{ treatmentPlanId: "plan-1", checkInDate: "2026-10-15" }]);
 
     const res = await service.runMidnightSilenceCheck("2026-10-15");
 
@@ -186,8 +186,14 @@ describe("SilenceDetectorService Unit Tests", () => {
     expect(mockCheckInRepo.find).toHaveBeenCalledTimes(1);
     expect(mockCheckInRepo.find).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ checkInDate: "2026-10-15", isDoseFulfilled: true }),
-        select: { treatmentPlanId: true },
+        where: expect.objectContaining({
+          checkInDate: expect.objectContaining({
+            type: "between",
+            value: ["2026-10-15", "2026-10-15"],
+          }),
+          isDoseFulfilled: true,
+        }),
+        select: { treatmentPlanId: true, checkInDate: true },
       }),
     );
     expect(res.silenced).toBe(1);
@@ -205,11 +211,9 @@ describe("SilenceDetectorService Unit Tests", () => {
 
       await service.runMidnightSilenceCheck();
 
-      expect(mockCheckInRepo.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ checkInDate: "2026-10-27" }),
-        }),
-      );
+      const range = mockCheckInRepo.find.mock.calls[0][0].where.checkInDate;
+      expect(range.type).toBe("between");
+      expect(range.value).toContain("2026-10-27");
     } finally {
       vi.useRealTimers();
     }
@@ -227,7 +231,6 @@ describe("SilenceDetectorService Unit Tests", () => {
       "PUTUS_FOLLOW_UP",
     ]);
     expect(where.startDate).toBeDefined();
-    expect(where.targetEndDate).toBeDefined();
   });
 
   it("does not reopen an H+3 ticket after day 3", async () => {
@@ -299,5 +302,106 @@ describe("SilenceDetectorService Unit Tests", () => {
     expect(mockTicketRepo.save).not.toHaveBeenCalled();
     expect(mockAlertRepo.save).not.toHaveBeenCalled();
     expect(mockEventEmitter.emit).not.toHaveBeenCalled();
+  });
+  it("catches up every missed day after a restart and notifies only the last", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date(2026, 9, 28, 0, 0, 0));
+      const plan = {
+        id: "plan-1",
+        patientUserId: "user-1",
+        facilityId: "f1",
+        patientState: "AKTIF",
+        currentStreak: 5,
+        consecutiveSilenceDays: 0,
+        riskScore: 0,
+        startDate: "2026-10-01",
+        targetEndDate: "2026-11-01",
+        lastSilenceCheckDate: "2026-10-24",
+      };
+      mockPlanRepo.find.mockResolvedValue([plan]);
+      mockCheckInRepo.find.mockResolvedValue([]);
+
+      const res = await service.runMidnightSilenceCheck();
+
+      expect(res.silenced).toBe(3); // 25, 26, 27
+      expect(plan.consecutiveSilenceDays).toBe(3);
+      expect(plan.currentStreak).toBe(0);
+      expect(plan.lastSilenceCheckDate).toBe("2026-10-27");
+      expect(plan.patientState).toBe("BERISIKO");
+      expect(plan.riskScore).toBe(40); // +15 H2, +25 H3
+      expect(mockTicketRepo.save).toHaveBeenCalledTimes(1);
+
+      const emitted = mockEventEmitter.emit.mock.calls.map((call) => call[1].circumstance);
+      expect(emitted).toContain("SILENCE_H3_ESCALATION");
+      expect(emitted).not.toContain("SILENCE_H1_ESCALATION");
+      expect(emitted).not.toContain("SILENCE_H2_ESCALATION");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does nothing when the watermark is already yesterday", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date(2026, 9, 28, 0, 0, 0));
+      const plan = {
+        id: "plan-1",
+        patientUserId: "user-1",
+        facilityId: "f1",
+        patientState: "AKTIF",
+        currentStreak: 1,
+        consecutiveSilenceDays: 0,
+        riskScore: 0,
+        startDate: "2026-10-01",
+        targetEndDate: "2026-11-01",
+        lastSilenceCheckDate: "2026-10-27",
+      };
+      mockPlanRepo.find.mockResolvedValue([plan]);
+
+      const res = await service.runMidnightSilenceCheck();
+
+      expect(res.silenced).toBe(0);
+      expect(plan.consecutiveSilenceDays).toBe(0);
+      expect(mockEventEmitter.emit).not.toHaveBeenCalled();
+      expect(mockPlanRepo.save).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("advances the watermark through fulfilled days", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date(2026, 9, 28, 0, 0, 0));
+      const plan = {
+        id: "plan-1",
+        patientUserId: "user-1",
+        facilityId: "f1",
+        patientState: "AKTIF",
+        currentStreak: 2,
+        consecutiveSilenceDays: 0,
+        riskScore: 0,
+        startDate: "2026-10-01",
+        targetEndDate: "2026-11-01",
+        lastSilenceCheckDate: "2026-10-24",
+      };
+      mockPlanRepo.find.mockResolvedValue([plan]);
+      mockCheckInRepo.find.mockResolvedValue([
+        { treatmentPlanId: "plan-1", checkInDate: "2026-10-25" },
+      ]);
+
+      const res = await service.runMidnightSilenceCheck();
+
+      expect(res.silenced).toBe(2); // 26 and 27 only
+      expect(plan.consecutiveSilenceDays).toBe(2);
+      expect(plan.lastSilenceCheckDate).toBe("2026-10-27");
+      const emitted = mockEventEmitter.emit.mock.calls.map((call) => call[1].circumstance);
+      expect(emitted).toContain("SILENCE_H2_ESCALATION");
+      expect(emitted).not.toContain("SILENCE_H1_ESCALATION");
+      expect(emitted).not.toContain("SILENCE_H3_ESCALATION");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

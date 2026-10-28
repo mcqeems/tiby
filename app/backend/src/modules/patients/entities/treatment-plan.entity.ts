@@ -69,6 +69,10 @@ export class TreatmentPlan {
   @Column({ name: "consecutive_silence_days", type: "int", default: 0 })
   consecutiveSilenceDays: number;
 
+  /** Last completed day the silence detector processed for this plan. */
+  @Column({ name: "last_silence_check_date", type: "date", nullable: true })
+  lastSilenceCheckDate: string | null;
+
   @Column({ name: "risk_score", type: "int", default: 0 })
   riskScore: number;
 
