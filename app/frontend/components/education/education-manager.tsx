@@ -295,7 +295,11 @@ export default function EducationManager({
       {/* MODAL FORM */}
       <AnimatePresence>
         {isModalOpen && (
-          <ModalOverlay label="Form Materi Edukasi">
+          <ModalOverlay
+            label="Form Materi Edukasi"
+            onClose={() => setIsModalOpen(false)}
+            dismissOnBackdrop={false}
+          >
             <ModalCard className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-xl overflow-hidden">
               <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 bg-gray-50/50 shrink-0">
                 <h3 className="font-heading font-bold text-tiby-ink">

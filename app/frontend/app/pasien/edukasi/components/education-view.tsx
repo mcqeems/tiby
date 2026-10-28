@@ -181,7 +181,11 @@ export default function EducationView({
 
       <AnimatePresence>
         {selectedCard && (
-          <ModalOverlay label="Baca Materi Edukasi">
+          <ModalOverlay
+            label="Baca Materi Edukasi"
+            onClose={() => setSelectedCard(null)}
+            dismissOnBackdrop={false}
+          >
             <ModalCard className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-3xl bg-white shadow-2xl overflow-hidden">
               <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5 bg-gray-50/80 shrink-0">
                 <div className="flex items-center gap-3">

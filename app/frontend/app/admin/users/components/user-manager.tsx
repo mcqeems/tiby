@@ -269,7 +269,11 @@ export default function UserManager() {
 
       <AnimatePresence>
         {resetUser && (
-          <ModalOverlay label="Reset Password">
+          <ModalOverlay
+            label="Reset Password"
+            onClose={() => setResetUser(null)}
+            dismissOnBackdrop={false}
+          >
             <ModalCard className="w-full max-w-md rounded-2xl bg-white shadow-xl">
               <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 px-5 py-4">
                 <h3 className="font-heading font-bold text-tiby-ink">
