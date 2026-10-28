@@ -18,6 +18,7 @@ export default function FamilyContactsCard({
 
   const [contacts, setContacts] = useState<FamilyContact[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -30,11 +31,16 @@ export default function FamilyContactsCard({
 
   const fetchContacts = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const res = await familyContactsApi.getAll(patientId);
       setContacts(res || []);
-    } catch {
-      // Abaikan error jika belum ada data
+    } catch (err: unknown) {
+      setLoadError(
+        err instanceof Error
+          ? err.message
+          : "Tidak dapat memuat kontak darurat.",
+      );
     } finally {
       setLoading(false);
     }
@@ -72,11 +78,12 @@ export default function FamilyContactsCard({
         confirmLabel: "Tutup",
       });
       fetchContacts();
-    } catch {
+    } catch (err: unknown) {
       await notify({
         variant: "danger",
         title: "Gagal",
-        description: "Tidak dapat menghapus kontak.",
+        description:
+          err instanceof Error ? err.message : "Tidak dapat menghapus kontak.",
         confirmLabel: "Tutup",
       });
     }
@@ -84,7 +91,9 @@ export default function FamilyContactsCard({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (fullName.length < 3 || whatsappNumber.length < 8) {
+    const name = fullName.trim();
+    const digits = whatsappNumber.replace(/\D/g, "");
+    if (name.length < 3 || digits.length < 8) {
       return notify({
         variant: "warning",
         title: "Validasi Gagal",
@@ -96,8 +105,8 @@ export default function FamilyContactsCard({
     try {
       setSubmitting(true);
       const created = await familyContactsApi.create(patientId, {
-        fullName,
-        whatsappNumber,
+        fullName: name,
+        whatsappNumber: digits,
         notifyOnEscalation: true, // Selalu true agar sistem bisa menghubungi mereka
       });
       setIsModalOpen(false);
@@ -106,11 +115,14 @@ export default function FamilyContactsCard({
       fetchContacts();
       // A contact is useless until the number proves it can receive messages.
       setConnectingContact(created);
-    } catch {
+    } catch (err: unknown) {
       await notify({
         variant: "danger",
-        title: "Gagal",
-        description: "Terjadi kesalahan pada server.",
+        title: "Gagal Menambah Kontak",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Terjadi kesalahan pada server.",
         confirmLabel: "Tutup",
       });
     } finally {
@@ -138,9 +150,11 @@ export default function FamilyContactsCard({
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-tiby-teal-50 px-3 py-1.5 text-xs font-semibold text-tiby-teal-700 hover:bg-tiby-teal-100 transition"
+          aria-label="Tambah kontak darurat"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-tiby-teal-50 p-2 text-xs font-semibold text-tiby-teal-700 hover:bg-tiby-teal-100 transition sm:px-3 sm:py-1.5"
         >
-          <Plus className="w-4 h-4" /> Tambah
+          <Plus className="w-4 h-4" />
+          <span className="hidden sm:inline">Tambah</span>
         </button>
       </header>
 
@@ -148,6 +162,21 @@ export default function FamilyContactsCard({
         {loading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="w-5 h-5 animate-spin text-tiby-teal-600" />
+          </div>
+        ) : loadError ? (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+            <p className="text-xs font-semibold text-red-700">
+              Gagal memuat kontak darurat
+            </p>
+            <p className="mt-1 text-[11px] leading-relaxed text-red-700">
+              {loadError}
+            </p>
+            <button
+              onClick={fetchContacts}
+              className="mt-2 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-red-700 hover:bg-red-100"
+            >
+              Coba lagi
+            </button>
           </div>
         ) : contacts.length === 0 ? (
           <div className="text-center py-6">
@@ -275,7 +304,7 @@ export default function FamilyContactsCard({
 
       {connectingContact && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto">
             <div className="mb-2 flex justify-end">
               <button
                 onClick={() => setConnectingContact(null)}
@@ -286,7 +315,9 @@ export default function FamilyContactsCard({
               </button>
             </div>
             <WhatsappConnectCard
+              key={connectingContact.id}
               familyContactId={connectingContact.id}
+              defaultPhoneNumber={connectingContact.whatsappNumber}
               title={`WhatsApp ${connectingContact.fullName}`}
               description="Kirim kode dari nomor kontak ini untuk mengaktifkan pemberitahuan."
               onVerified={() => {

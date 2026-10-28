@@ -196,4 +196,25 @@ describe("Dedicated Family Contacts API (e2e)", () => {
       .set("Cookie", nakesCookie);
     expect(checkRes.body).toHaveLength(0);
   });
+
+  it("5. PASIEN adds and removes their own family contact", async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/api/patients/${patientId}/family-contacts`)
+      .set("Cookie", patientCookie)
+      .send({
+        fullName: "Bapak Pasien",
+        whatsappNumber: "081255554444",
+        notifyOnEscalation: true,
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.fullName).toBe("Bapak Pasien");
+    expect(res.body.whatsappNumber).toBe("081255554444");
+    expect(res.body.whatsappVerified).toBe(false);
+
+    const del = await request(app.getHttpServer())
+      .delete(`/api/patients/${patientId}/family-contacts/${res.body.id}`)
+      .set("Cookie", patientCookie);
+    expect(del.status).toBe(200);
+  });
 });

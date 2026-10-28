@@ -17,6 +17,8 @@ import {
 
 interface WhatsappConnectCardProps {
   familyContactId?: string;
+  /** Number stored on the family contact; prefilled and locked. */
+  defaultPhoneNumber?: string;
   title?: string;
   description?: string;
   onVerified?: () => void;
@@ -30,13 +32,15 @@ function formatRemaining(seconds: number): string {
 
 export default function WhatsappConnectCard({
   familyContactId,
+  defaultPhoneNumber,
   title = "WhatsApp",
   description = "Hubungkan nomor untuk menerima pengingat dan pemberitahuan dari Pandu.",
   onVerified,
 }: WhatsappConnectCardProps) {
+  const isFamilyContact = Boolean(familyContactId);
   const [status, setStatus] = useState<WhatsappConnectionStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(defaultPhoneNumber ?? "");
   const [challenge, setChallenge] = useState<WhatsappConnectChallenge | null>(null);
   const [remaining, setRemaining] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -53,6 +57,29 @@ export default function WhatsappConnectCard({
     try {
       const res = await whatsappApi.getStatus(familyContactId);
       setStatus(res);
+      if (res.phoneNumber) {
+        setPhone((prev) => prev || res.phoneNumber!);
+      }
+      if (res.verified) {
+        setChallenge(null);
+      } else if (res.pendingCode && res.expiresAt) {
+        // The status endpoint already knows about a code created before this
+        // mount (modal reopened, page reloaded). Show it instead of losing it.
+        setChallenge((prev) =>
+          prev ?? {
+            verificationCode: res.pendingCode!,
+            botPhoneNumber: "",
+            wahaDeepLink: "",
+            expiresAt: res.expiresAt!,
+          },
+        );
+        setRemaining(
+          Math.max(
+            0,
+            Math.floor((Date.parse(res.expiresAt) - Date.now()) / 1000),
+          ),
+        );
+      }
       return res;
     } catch (err: unknown) {
       setError(
@@ -67,6 +94,11 @@ export default function WhatsappConnectCard({
   useEffect(() => {
     let active = true;
     const timer = setTimeout(() => {
+      if (!active) return;
+      setLoading(true);
+      setError(null);
+      setStatus(null);
+      setChallenge(null);
       loadStatus().then((res) => {
         if (!active) return;
         if (res?.verified) setChanging(false);
@@ -85,7 +117,12 @@ export default function WhatsappConnectCard({
     const timer = setInterval(() => {
       const left = Math.max(0, Math.floor((expires - Date.now()) / 1000));
       setRemaining(left);
-      if (left === 0) setChallenge(null);
+      if (left === 0) {
+        setChallenge(null);
+        setStatus((prev) =>
+          prev ? { ...prev, pendingCode: null, expiresAt: null } : prev,
+        );
+      }
     }, 1000);
     return () => clearInterval(timer);
   }, [challenge]);
@@ -114,8 +151,7 @@ export default function WhatsappConnectCard({
     };
   }, [challenge, familyContactId]);
 
-  const handleConnect = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const requestCode = async () => {
     setError(null);
 
     const digits = phone.replace(/\D/g, "");
@@ -127,7 +163,7 @@ export default function WhatsappConnectCard({
     setSubmitting(true);
     try {
       const res = await whatsappApi.connect({
-        phoneNumber: phone,
+        phoneNumber: digits,
         ...(familyContactId ? { familyContactId } : {}),
       });
       setChallenge(res);
@@ -142,6 +178,11 @@ export default function WhatsappConnectCard({
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleConnect = (e: React.FormEvent) => {
+    e.preventDefault();
+    void requestCode();
   };
 
   const copyCode = async () => {
@@ -193,13 +234,15 @@ export default function WhatsappConnectCard({
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setChanging(true)}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-white px-4 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
-            >
-              Ganti nomor
-            </button>
+            {!isFamilyContact && (
+              <button
+                type="button"
+                onClick={() => setChanging(true)}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-white px-4 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
+              >
+                Ganti nomor
+              </button>
+            )}
           </div>
         ) : challenge ? (
           <div className="space-y-4">
@@ -225,15 +268,27 @@ export default function WhatsappConnectCard({
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <a
-                href={challenge.wahaDeepLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl bg-tiby-teal-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-tiby-teal-700"
-              >
-                <ExternalLink className="h-4 w-4" />
-                Buka WhatsApp
-              </a>
+              {challenge.wahaDeepLink ? (
+                <a
+                  href={challenge.wahaDeepLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-xl bg-tiby-teal-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-tiby-teal-700"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Buka WhatsApp
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void requestCode()}
+                  disabled={submitting}
+                  className="inline-flex items-center gap-2 rounded-xl border border-tiby-teal-200 bg-white px-4 py-2.5 text-xs font-semibold text-tiby-teal-700 hover:bg-tiby-teal-50 disabled:opacity-60"
+                >
+                  {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {submitting ? "Membuat kode…" : "Buat kode baru"}
+                </button>
+              )}
               <span className="text-xs text-tiby-muted">
                 Kedaluwarsa dalam{" "}
                 <span className="font-mono font-semibold text-tiby-ink">
@@ -243,8 +298,11 @@ export default function WhatsappConnectCard({
             </div>
 
             <p className="text-[11px] text-tiby-muted">
-              Bot: {challenge.botPhoneNumber || "-"} · Menunggu verifikasi…
-              halaman ini akan diperbarui otomatis.
+              {challenge.botPhoneNumber
+                ? `Bot: ${challenge.botPhoneNumber} · `
+                : ""}
+              Nomor: {phone} · Menunggu verifikasi… halaman ini akan
+              diperbarui otomatis.
             </p>
           </div>
         ) : (
@@ -266,12 +324,14 @@ export default function WhatsappConnectCard({
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                readOnly={isFamilyContact}
                 placeholder="08xxxxxxxxxx"
-                className="h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-tiby-ink placeholder:text-gray-400 focus:border-tiby-teal-600 focus:outline-none focus:ring-4 focus:ring-tiby-teal-600/10"
+                className="h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-tiby-ink placeholder:text-gray-400 focus:border-tiby-teal-600 focus:outline-none focus:ring-4 focus:ring-tiby-teal-600/10 read-only:bg-gray-50 read-only:text-tiby-muted"
               />
               <p className="mt-1 text-[11px] text-tiby-muted">
-                Gunakan nomor yang bisa membuka WhatsApp. Format 08…, 8…, atau
-                +62….
+                {isFamilyContact
+                  ? "Nomor ini terikat pada kontak darurat. Ubah lewat kontak jika perlu."
+                  : "Gunakan nomor yang bisa membuka WhatsApp. Format 08…, 8…, atau +62…."}
               </p>
             </div>
             <div className="flex gap-2">
