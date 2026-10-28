@@ -54,6 +54,12 @@ async def request_validation_handler(
 
 # Health
 @app.get("/ai/health", tags=["health"])
+@app.get("/health", include_in_schema=False)
 def health() -> dict[str, str]:
-    """Liveness probe for orchestrators and dev scripts."""
+    """Liveness probe for orchestrators and dev scripts.
+
+    ``/health`` is a private alias for infrastructure probes (containers, dev
+    harnesses) that assume the conventional path; it stays out of the OpenAPI
+    contract, so the public route is still ``/ai/health``.
+    """
     return {"status": "ok"}
