@@ -67,6 +67,34 @@
   --background: #0a1214;
   --foreground: #eaf2f2;
 
+  /* Tailwind v4 utilities compile to `var(--color-*)`, so redefining a
+     palette variable here re-themes every use of that utility in one place.
+     That is why `bg-gray-50`, `border-gray-200`, `bg-tiby-teal-50` and the
+     rest need no `.dark .*` rule at all: the surfaces are data, not CSS.
+
+     Two groups cannot work that way and keep explicit rules further down:
+
+     1. Colours that must stay light on a dark surface but are the *same*
+        variable the light theme uses for a surface. `--color-white` has to
+        stay white because it colours `text-white` on the brand buttons, so
+        `bg-white` is overridden instead of redefined; the same applies to
+        the `red/amber/emerald/blue/purple/sky` text colours, whose palette
+        variables are tuned for tinted backgrounds here.
+     2. `text-tiby-teal-700` and `text-tiby-teal-100/200`, which appear both
+        on light backgrounds (need the dark teal) and on brand surfaces
+        (need the pale teal).
+
+     Removing those 26 rules does not simplify the file, it breaks dark mode.
+     The way to delete them is a semantic token layer (`--color-surface`,
+     `--color-ink`, `--color-muted`, `--color-hairline`, plus one surface/ink
+     pair per status) with components migrated to it. That touches ~1100
+     class occurrences across the app (`text-tiby-ink` 246, `text-tiby-muted`
+     222, `bg-white` 194, `border-gray-200` 159, `bg-gray-50` 92,
+     `text-tiby-teal-700` 112, ...), so it wants a visual pass of its own -
+     see the note in AGENTS.md.
+
+     Anything added here should only be a case that cannot be a variable. */
+
   --color-tiby-white: #0a1214;
   --color-tiby-ink: #eaf2f2;
   --color-tiby-muted: #9aabae;
