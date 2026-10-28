@@ -41,13 +41,6 @@ export const overlay: Variants = {
   exit: { opacity: 0, transition: TRANS.fast },
 };
 
-/** Plain crossfade, for content swaps. */
-export const fade: Variants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: TRANS.fast },
-  exit: { opacity: 0, transition: TRANS.fast },
-};
-
 /** Content entering from below; the default for step and page changes. */
 export const fadeUp: Variants = {
   hidden: { opacity: 0, y: 24 },
@@ -100,13 +93,6 @@ export const popIn: Variants = {
   hidden: { opacity: 0, y: 16, scale: 0.96 },
   visible: { opacity: 1, y: 0, scale: 1, transition: TRANS.pop },
   exit: { opacity: 0, y: 8, scale: 0.97, transition: TRANS.fast },
-};
-
-/** Bottom sheet on small screens. */
-export const sheetUp: Variants = {
-  hidden: { opacity: 0, y: 32 },
-  visible: { opacity: 1, y: 0, transition: TRANS.out },
-  exit: { opacity: 0, y: 24, transition: TRANS.fast },
 };
 
 /** Staggered child. Pair with `staggerParent()`. */

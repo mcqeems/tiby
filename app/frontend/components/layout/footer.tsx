@@ -1,7 +1,6 @@
 "use client";
 
 import { startTransition, useEffect, useState } from "react";
-import { Heart } from "lucide-react";
 
 export default function Footer() {
   const [currentYear, setCurrentYear] = useState<number | null>(null);

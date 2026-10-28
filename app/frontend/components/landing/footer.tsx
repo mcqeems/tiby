@@ -4,7 +4,7 @@ import { startTransition, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
-import { ShieldCheck, Heart, ArrowUp, ArrowRight } from "lucide-react";
+import { ShieldCheck, ArrowUp, ArrowRight } from "lucide-react";
 import Mascot from "@/components/mascot";
 import { EASE, Reveal } from "./shared";
 
