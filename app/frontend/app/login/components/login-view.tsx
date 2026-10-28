@@ -93,13 +93,15 @@ function EyeOffIcon({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function LoginView() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const prefillUsername = searchParams.get("prefill") || "";
+  const prefillIdentifier = searchParams.get("prefill") || "";
   const { data: session, isPending } = useSession();
 
-  const [username, setUsername] = useState(prefillUsername);
+  const [identifier, setIdentifier] = useState(prefillIdentifier);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -115,25 +117,42 @@ export default function LoginView() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
 
+    const value = identifier.trim();
+    if (!value) {
+      setError("Masukkan username atau email.");
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      const result = await signIn.username({
-        username,
-        password,
-        rememberMe: true,
-      });
+      const isEmail = EMAIL_PATTERN.test(value);
+      const result = isEmail
+        ? await signIn.email({
+            email: value.toLowerCase(),
+            password,
+            rememberMe: true,
+          })
+        : await signIn.username({
+            username: value,
+            password,
+            rememberMe: true,
+          });
 
       if (result.error) {
-        throw new Error(result.error.message || "Username atau password salah");
+        throw new Error("Username/email atau password salah");
       }
 
       const user = result.data?.user as TibyUser | undefined;
       const role = (user?.role || "PASIEN").toUpperCase();
       router.push(ROLE_PATHS[role] ?? "/pasien");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Gagal login";
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Username/email atau password salah";
       setError(message);
     } finally {
       setLoading(false);
@@ -228,22 +247,22 @@ export default function LoginView() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label
-                  htmlFor="username"
+                  htmlFor="identifier"
                   className="block text-xs font-semibold text-tiby-ink mb-2"
                 >
-                  Username
+                  Username atau Email
                 </label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-tiby-muted">
                     <AtIcon />
                   </div>
                   <input
-                    id="username"
+                    id="identifier"
                     type="text"
                     className="w-full rounded-xl border border-gray-200 bg-gray-50 pl-11 pr-4 py-3.5 text-sm text-tiby-ink placeholder:text-gray-400 transition-all focus:border-tiby-teal-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-tiby-teal-600/10"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Masukkan username"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="Masukkan username atau email"
                     autoComplete="username"
                     required
                   />
