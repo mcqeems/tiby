@@ -11,6 +11,7 @@ import Dialog from "@/components/ui/dialog";
 import PasswordForm from "@/components/profile/password-form";
 import WhatsappConnectCard from "@/components/whatsapp/whatsapp-connect-card";
 import PushToggleCard from "@/components/push/push-toggle-card";
+import ThemeToggle from "@/components/theme/theme-toggle";
 import FamilyContactsCard from "@/app/pasien/profile/components/family-contacts-card";
 import {
   AtSign,
@@ -25,6 +26,7 @@ import {
   MessageCircle,
   ShieldAlert,
   ShieldCheck,
+  SunMoon,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -39,7 +41,13 @@ const ROLE_LABEL: Record<string, string> = {
 const roleLabel = (role?: string | null) =>
   (role && ROLE_LABEL[role.toUpperCase()]) || role || "-";
 
-type ActionKey = "password" | "whatsapp" | "push" | "family" | "privacy";
+type ActionKey =
+  | "theme"
+  | "password"
+  | "whatsapp"
+  | "push"
+  | "family"
+  | "privacy";
 
 interface ProfileAction {
   key: ActionKey;
@@ -168,6 +176,12 @@ export default function ProfileView() {
   };
 
   const actions: ProfileAction[] = [
+    {
+      key: "theme",
+      icon: SunMoon,
+      title: "Tampilan",
+      description: "Terang, gelap, atau ikuti pengaturan perangkat.",
+    },
     {
       key: "password",
       icon: KeyRound,
@@ -318,6 +332,16 @@ export default function ProfileView() {
           })}
         </div>
       </section>
+
+      <Dialog
+        open={activeDialog === "theme"}
+        onClose={() => setActiveDialog(null)}
+        title="Tampilan"
+        description="Pilih tema aplikasi. Pengaturan tersimpan di perangkat ini."
+        size="md"
+      >
+        <ThemeToggle />
+      </Dialog>
 
       <Dialog
         open={activeDialog === "password"}

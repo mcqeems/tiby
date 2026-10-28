@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono, Fredoka } from "next/font/google";
 import { PopupProvider } from "@/components/ui/popup-provider";
 import ServiceWorkerRegister from "@/components/pwa/service-worker-register";
+import ThemeSync from "@/components/theme/theme-sync";
+import { THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -63,10 +66,15 @@ export default function RootLayout({
   return (
     <html
       lang="id"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${fredoka.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <PopupProvider>
+          <Suspense fallback={null}>
+            <ThemeSync />
+          </Suspense>
           <ServiceWorkerRegister />
           {children}
         </PopupProvider>

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { handleSignOut } from "@/app/role-guard";
 import type { TibyUser } from "@/lib/auth-client";
+import ThemeToggle from "@/components/theme/theme-toggle";
 
 export interface SidebarItem {
   label: string;
@@ -237,6 +238,8 @@ export default function UniversalSidebar({
               </p>
             </div>
           </div>
+
+          <ThemeToggle variant="sidebar" collapsed={collapsed} />
 
           <div className="group relative">
             <button

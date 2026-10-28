@@ -1,39 +1,238 @@
 @import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;500&display=swap");
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
+  color-scheme: light;
   --background: #fcfcfa;
   --foreground: #2c2c2c;
 }
 
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  --color-tiby-teal-50: #F1FAF9;
-  --color-tiby-teal-100: #DDF0EE;
-  --color-tiby-teal-200: #BFE3DF;
-  --color-tiby-teal-500: #2AA7A4;
-  --color-tiby-teal-600: #1B9E9B;
-  --color-tiby-teal-700: #127A78;
-  --color-tiby-white: #FCFCFA;
-  --color-tiby-cream: #FAF5EA;
-  --color-tiby-ink: #2C2C2C;
-  --color-tiby-muted: #6F6F6A;
-  --color-tiby-danger: #FDF3F3;
-  --color-tiby-danger-text: #9B1C1C;
+  --color-tiby-teal-50: #f1faf9;
+  --color-tiby-teal-100: #ddf0ee;
+  --color-tiby-teal-200: #bfe3df;
+  --color-tiby-teal-500: #2aa7a4;
+  --color-tiby-teal-600: #1b9e9b;
+  --color-tiby-teal-700: #127a78;
+  --color-tiby-white: #fcfcfa;
+  --color-tiby-cream: #faf5ea;
+  --color-tiby-ink: #2c2c2c;
+  --color-tiby-muted: #6f6f6a;
+  --color-tiby-danger: #fdf3f3;
+  --color-tiby-danger-text: #9b1c1c;
 
   --font-heading: "Fredoka", ui-sans-serif, system-ui, sans-serif;
   --font-body: "Nunito", ui-sans-serif, system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ─── Dark theme ───────────────────────────────────────────────────────────
+   Teal-tinted charcoal that keeps the warm Tiby identity. Brand teals at
+   500/600/700 stay untouched so buttons and hero gradients keep their colour;
+   only the soft tint surfaces move to dark. */
+
+.dark {
+  color-scheme: dark;
+  --background: #0a1214;
+  --foreground: #eaf2f2;
+
+  --color-tiby-white: #0a1214;
+  --color-tiby-ink: #eaf2f2;
+  --color-tiby-muted: #9aabae;
+  --color-tiby-cream: #26231a;
+  --color-tiby-danger: #2a1618;
+  --color-tiby-danger-text: #fca5a5;
+
+  --color-tiby-teal-50: #0f2a28;
+  --color-tiby-teal-100: #1a3d3a;
+  --color-tiby-teal-200: #245552;
+
+  --color-gray-50: #172326;
+  --color-gray-100: #1e2c2f;
+  --color-gray-200: #29393c;
+  --color-gray-300: #3b4d50;
+  --color-gray-400: #7c8e91;
+  --color-gray-500: #9aabae;
+  --color-gray-600: #b7c4c6;
+  --color-gray-700: #cfd9da;
+  --color-gray-800: #e1e8e9;
+  --color-gray-900: #f0f5f5;
+
+  --color-red-50: #2a1517;
+  --color-red-100: #3a1b1e;
+  --color-red-200: #55262a;
+  --color-red-300: #6e3237;
+  --color-amber-50: #2a2214;
+  --color-amber-100: #3a2e18;
+  --color-amber-200: #52401f;
+  --color-amber-300: #6b5326;
+  --color-emerald-50: #0f241c;
+  --color-emerald-100: #143025;
+  --color-emerald-200: #1d4534;
+  --color-emerald-300: #2a6047;
+  --color-blue-50: #101e2e;
+  --color-purple-50: #1c1730;
+  --color-purple-100: #2a2142;
+  --color-purple-200: #3a2e5c;
+  --color-green-50: #0f2418;
+  --color-green-200: #1d4534;
+}
+
+/* Card surfaces. --color-white itself stays white on purpose: white text,
+   white borders and white CTAs on teal heroes must not invert. */
+.dark .bg-white {
+  background-color: #111c1e;
+}
+
+.dark .bg-white\/70 {
+  background-color: rgb(17 28 30 / 0.7);
+}
+
+.dark .bg-white\/80 {
+  background-color: rgb(17 28 30 / 0.8);
+}
+
+.dark .bg-white\/90 {
+  background-color: rgb(17 28 30 / 0.9);
+}
+
+.dark .hover\:bg-white:hover,
+.dark .focus\:bg-white:focus {
+  background-color: #111c1e;
+}
+
+/* White CTAs and progress fills that sit on strong teal heroes stay white. */
+.dark
+  :is(
+    .bg-tiby-teal-500,
+    .bg-tiby-teal-600,
+    .bg-tiby-teal-700,
+    [class*="from-tiby-teal-500"],
+    [class*="from-tiby-teal-600"],
+    [class*="from-tiby-teal-700"]
+  )
+  .bg-white {
+  background-color: #ffffff;
+}
+
+.dark .from-white {
+  --tw-gradient-from: #111c1e;
+}
+
+.dark .to-white {
+  --tw-gradient-to: #111c1e;
+}
+
+.dark .via-white {
+  --tw-gradient-via: #111c1e;
+}
+
+/* Accent text stops need more light on charcoal. */
+.dark .text-tiby-teal-700 {
+  color: #6fd6d1;
+}
+
+.dark .hover\:text-tiby-teal-700:hover,
+.dark .group:hover .group-hover\:text-tiby-teal-700 {
+  color: #6fd6d1;
+}
+
+/* White CTAs on strong teal heroes keep their original dark-teal label. */
+.dark
+  :is(
+    .bg-tiby-teal-500,
+    .bg-tiby-teal-600,
+    .bg-tiby-teal-700,
+    [class*="from-tiby-teal-500"],
+    [class*="from-tiby-teal-600"],
+    [class*="from-tiby-teal-700"]
+  )
+  .text-tiby-teal-700 {
+  color: #127a78;
+}
+
+/* Soft teal labels on hero gradients must stay light even though the tint
+   variables themselves are dark surfaces now. */
+.dark .text-tiby-teal-100 {
+  color: #ddf0ee;
+}
+
+.dark .text-tiby-teal-200 {
+  color: #bfe3df;
+}
+
+.dark .text-tiby-teal-50,
+.dark .text-tiby-teal-50\/80 {
+  color: rgb(238 250 248 / 0.8);
+}
+
+.dark .text-tiby-teal-50\/90 {
+  color: rgb(238 250 248 / 0.9);
+}
+
+.dark .text-red-600,
+.dark .text-red-700 {
+  color: #fca5a5;
+}
+
+.dark .text-red-800,
+.dark .text-red-900 {
+  color: #fecaca;
+}
+
+.dark .hover\:text-red-600:hover {
+  color: #fca5a5;
+}
+
+.dark .text-amber-600,
+.dark .text-amber-700,
+.dark .text-amber-800,
+.dark .text-amber-900 {
+  color: #fcd34d;
+}
+
+.dark .hover\:text-amber-600:hover {
+  color: #fcd34d;
+}
+
+.dark .text-emerald-600,
+.dark .text-emerald-700,
+.dark .text-emerald-900 {
+  color: #6ee7b7;
+}
+
+.dark .text-green-700 {
+  color: #86efac;
+}
+
+.dark .text-blue-600,
+.dark .text-blue-700 {
+  color: #93c5fd;
+}
+
+.dark .text-purple-600,
+.dark .text-purple-700 {
+  color: #c4b5fd;
+}
+
+.dark .text-sky-700 {
+  color: #7dd3fc;
+}
+
+/* The sidebar tooltip uses ink as its surface; keep its label readable. */
+.dark .bg-tiby-ink.text-white {
+  color: #0a1214;
+}
+
+.dark ::selection {
+  background-color: #1a3d3a;
+  color: #eaf2f2;
 }
 
 body {
