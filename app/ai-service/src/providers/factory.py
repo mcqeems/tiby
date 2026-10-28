@@ -8,10 +8,10 @@ from starlette.concurrency import run_in_threadpool
 
 from contracts import CheckInRequest, CheckInResponse
 from extraction.extractor import extract_check_in
-from providers.agnes import AgnesExtractor
 from providers.base import CheckInExtractor, Transcriber
 from providers.fish import FishAudioTranscriber
 from providers.groq import GroqTranscriber
+from providers.nararouter import NaraRouterExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class RuleBasedExtractor:
 
 # registry
 EXTRACTORS: dict[str, Callable[[], CheckInExtractor]] = {
-    "agnes": AgnesExtractor,
+    "nararouter": NaraRouterExtractor,
     "rules": RuleBasedExtractor,
 }
 TRANSCRIBERS: dict[str, Callable[[], Transcriber]] = {
@@ -47,7 +47,7 @@ def _pick(env_name: str, default: str, choices: Mapping[str, object]) -> str:
 
 def extraction_service() -> CheckInExtractor:
     """Build the configured check-in extractor."""
-    name = _pick("TIBY_EXTRACTOR", "agnes", EXTRACTORS)
+    name = _pick("TIBY_EXTRACTOR", "nararouter", EXTRACTORS)
     if name == "rules":
         logger.warning(
             "TIBY_EXTRACTOR=rules — extraction is running the offline keyword "
