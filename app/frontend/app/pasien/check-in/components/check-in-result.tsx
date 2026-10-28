@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { CheckCircle2, AlertTriangle, ShieldAlert, Flame } from "lucide-react";
+import MascotAnimation from "@/components/mascot-animation";
 import type { CheckInVerdictResponse } from "@/lib/types/check-in";
 
 interface CheckInResultProps {
@@ -244,7 +244,7 @@ export default function CheckInResult({ result }: CheckInResultProps) {
   const config = isGood
     ? {
         color: "text-emerald-600",
-        mascot: "/mascot/happy/happy-stroke.png",
+        emotion: "happy" as const,
         icon: CheckCircle2,
         title: "Luar Biasa!",
         mascotAnim: "ci-mascot-good",
@@ -257,7 +257,7 @@ export default function CheckInResult({ result }: CheckInResultProps) {
     : isWarn
       ? {
           color: "text-amber-600",
-          mascot: "/mascot/empathy/empathy.png",
+          emotion: "empathy" as const,
           icon: AlertTriangle,
           title: "Perlu Perhatian",
           mascotAnim: "ci-mascot-warn",
@@ -269,7 +269,7 @@ export default function CheckInResult({ result }: CheckInResultProps) {
         }
       : {
           color: "text-red-600",
-          mascot: "/mascot/alert/alert.png",
+          emotion: "alert" as const,
           icon: ShieldAlert,
           title: "Segera ke Faskes",
           mascotAnim: "ci-mascot-bad",
@@ -321,11 +321,11 @@ export default function CheckInResult({ result }: CheckInResultProps) {
           ))}
 
         <div className={`relative h-full w-full ${config.mascotAnim}`}>
-          <Image
-            src={config.mascot}
-            alt={config.title}
+          <MascotAnimation
+            emotion={config.emotion}
             fill
-            className="object-contain drop-shadow-xl"
+            altText={config.title}
+            className="drop-shadow-xl"
             priority
           />
         </div>

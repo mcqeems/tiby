@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { Edit3, CheckCircle2, Mic } from "lucide-react";
+import MascotAnimation from "@/components/mascot-animation";
 
 interface CheckInReviewProps {
   transcript: string;
@@ -22,11 +22,10 @@ export default function CheckInReview({
     <div className="space-y-6">
       <div className="flex flex-col items-center space-y-2">
         <div className="w-24 h-24 relative">
-          <Image
-            src="/mascot/thinking/thinking-stroke.png"
-            alt="Pandu berpikir"
+          <MascotAnimation
+            emotion="thinking"
             fill
-            className="object-contain"
+            altText="Pandu berpikir"
             priority
           />
         </div>

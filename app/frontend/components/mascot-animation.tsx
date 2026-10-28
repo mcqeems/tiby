@@ -1,54 +1,191 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import waveAnimationData from "@/public/mascot/motion-graph(lottie,mp4,gif)/wave.json";
+
+export type MascotEmotion =
+  | "wave"
+  | "idle"
+  | "listening"
+  | "happy"
+  | "empathy"
+  | "thinking"
+  | "alert";
 
 interface MascotAnimationProps {
-  className?: string;
+  emotion?: MascotEmotion;
   size?: number;
+  fill?: boolean;
+  className?: string;
+  altText?: string;
+  priority?: boolean;
+}
+
+const LOTTIE_LOADERS = {
+  wave: () =>
+    import("@/public/mascot/motion-graph(lottie,mp4,gif)/wave.json"),
+  idle: () =>
+    import("@/public/mascot/motion-graph(lottie,mp4,gif)/idle.json"),
+  listening: () =>
+    import("@/public/mascot/motion-graph(lottie,mp4,gif)/listening.json"),
+  empathy: () =>
+    import("@/public/mascot/motion-graph(lottie,mp4,gif)/empathy.json"),
+};
+
+type LottieEmotion = keyof typeof LOTTIE_LOADERS;
+
+const isLottieEmotion = (emotion: MascotEmotion): emotion is LottieEmotion =>
+  emotion in LOTTIE_LOADERS;
+
+/** Every static mascot uses the outlined `-stroke` artwork. */
+const STROKE_FALLBACK: Record<MascotEmotion, string> = {
+  wave: "/mascot/happy/happy-stroke.png",
+  idle: "/mascot/idle/idle-stroke.png",
+  listening: "/mascot/listening/listening-stroke.png",
+  happy: "/mascot/happy/happy-stroke.png",
+  empathy: "/mascot/empathy/empathy-stroke.png",
+  thinking: "/mascot/thinking/thinking-stroke.png",
+  alert: "/mascot/alert/alert-stroke.png",
+};
+
+type LottieInstance = {
+  play: () => void;
+  pause: () => void;
+  destroy: () => void;
+};
+
+/** Start static (matches SSR), then follow the OS preference on the client. */
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(true);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReduced(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  return reduced;
 }
 
 export default function MascotAnimation({
-  className = "",
+  emotion = "wave",
   size = 100,
+  fill = false,
+  className = "",
+  altText = "",
+  priority = false,
 }: MascotAnimationProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const lottieRef = useRef<HTMLDivElement>(null);
+  const animationRef = useRef<LottieInstance | null>(null);
+  const [inView, setInView] = useState(false);
+  const [hasBeenInView, setHasBeenInView] = useState(false);
+  const [loadedEmotion, setLoadedEmotion] = useState<LottieEmotion | null>(null);
+  const reduceMotion = usePrefersReducedMotion();
 
+  const lottieEmotion = isLottieEmotion(emotion) ? emotion : null;
+  const canAnimate = !reduceMotion && lottieEmotion !== null;
+  const isLoaded = lottieEmotion !== null && loadedEmotion === lottieEmotion;
+
+  // Load the JSON only once the mascot approaches the viewport, then pause it
+  // again whenever it scrolls away.
   useEffect(() => {
-    let animItem: { destroy: () => void } | null = null;
+    const element = wrapperRef.current;
+    if (!element || typeof IntersectionObserver === "undefined") {
+      setInView(true);
+      setHasBeenInView(true);
+      return;
+    }
 
-    import("lottie-web").then((lottieModule) => {
-      const lottie = lottieModule.default || lottieModule;
-      if (containerRef.current) {
-        containerRef.current.innerHTML = "";
-        animItem = lottie.loadAnimation({
-          container: containerRef.current,
-          renderer: "svg",
-          loop: true,
-          autoplay: true,
-          animationData: waveAnimationData,
-        });
-        setIsLoaded(true);
-      }
-    });
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setInView(entry.isIntersecting);
+        if (entry.isIntersecting) setHasBeenInView(true);
+      },
+      { rootMargin: "240px" },
+    );
 
-    return () => {
-      if (animItem) {
-        animItem.destroy();
-      }
-    };
+    observer.observe(element);
+    return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (!lottieEmotion || reduceMotion || !hasBeenInView) return;
+
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const [data, lottieModule] = await Promise.all([
+          LOTTIE_LOADERS[lottieEmotion](),
+          import("lottie-web"),
+        ]);
+
+        if (cancelled || !lottieRef.current) return;
+
+        const lottie = lottieModule.default || lottieModule;
+        lottieRef.current.innerHTML = "";
+        animationRef.current = lottie.loadAnimation({
+          container: lottieRef.current,
+          renderer: "svg",
+          loop: true,
+          autoplay: false,
+          animationData: data.default,
+        });
+        setLoadedEmotion(lottieEmotion);
+      } catch {
+        // Keep the stroke image visible if the animation cannot load.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      animationRef.current?.destroy();
+      animationRef.current = null;
+    };
+  }, [lottieEmotion, reduceMotion, hasBeenInView]);
+
+  useEffect(() => {
+    const animation = animationRef.current;
+    if (!animation) return;
+    if (inView) animation.play();
+    else animation.pause();
+  }, [inView, isLoaded]);
+
   return (
-    <div className={`relative flex items-center justify-center ${className}`}>
-      {/* Lottie Animation */}
-      <div
-        ref={containerRef}
-        className="pointer-events-none relative transition-opacity duration-300"
-        style={{ width: size, height: size, opacity: isLoaded ? 1 : 0.7 }}
-        aria-label="Maskot Pandu menyapa"
+    <div
+      ref={wrapperRef}
+      role={altText ? "img" : undefined}
+      aria-label={altText || undefined}
+      aria-hidden={altText ? undefined : true}
+      className={`relative flex items-center justify-center ${
+        fill ? "h-full w-full" : ""
+      } ${className}`}
+      style={fill ? undefined : { width: size, height: size }}
+    >
+      <Image
+        src={STROKE_FALLBACK[emotion]}
+        alt=""
+        fill
+        sizes={fill ? "200px" : `${size}px`}
+        priority={priority}
+        draggable={false}
+        className={`object-contain transition-opacity duration-300 ${
+          isLoaded && canAnimate ? "opacity-0" : "opacity-100"
+        }`}
       />
+
+      {canAnimate && (
+        <div
+          ref={lottieRef}
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-0 transition-opacity duration-300 ${
+            isLoaded ? "opacity-100" : "opacity-0"
+          }`}
+        />
+      )}
     </div>
   );
 }

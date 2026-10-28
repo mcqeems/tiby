@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import MascotAnimation from "@/components/mascot-animation";
 import { Reveal } from "./shared";
 
 export default function CTA() {
@@ -42,11 +42,10 @@ export default function CTA() {
             transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
             className="absolute bottom-2 right-6 hidden h-36 w-36 md:block"
           >
-            <Image
-              src="/mascot/happy/happy-stroke.png"
-              alt=""
+            <MascotAnimation
+              emotion="happy"
               fill
-              className="object-contain drop-shadow-xl"
+              className="drop-shadow-xl"
             />
           </motion.div>
         </div>

@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   UserCheck,
@@ -8,6 +7,9 @@ import {
   Stethoscope,
   type LucideIcon,
 } from "lucide-react";
+import MascotAnimation, {
+  type MascotEmotion,
+} from "@/components/mascot-animation";
 import { EASE, SectionHeading } from "./shared";
 
 const PERSONAS: {
@@ -15,28 +17,28 @@ const PERSONAS: {
   title: string;
   desc: string;
   gradient: string;
-  mascot: string;
+  emotion: MascotEmotion;
 }[] = [
   {
     icon: UserCheck,
     title: "Pasien",
     desc: "Lapor tanpa takut stigma sosial.",
     gradient: "from-teal-500 to-teal-700",
-    mascot: "/mascot/happy/happy-stroke.png",
+    emotion: "happy",
   },
   {
     icon: ShieldCheck,
     title: "PMO",
     desc: "Pantau status tanpa membaca obrolan.",
     gradient: "from-sky-500 to-sky-700",
-    mascot: "/mascot/empathy/empathy-stroke.png",
+    emotion: "empathy",
   },
   {
     icon: Stethoscope,
     title: "Tenaga Kesehatan",
     desc: "Triase risiko dan tiket tindak lanjut.",
     gradient: "from-indigo-400 to-indigo-600",
-    mascot: "/mascot/thinking/thinking-stroke.png",
+    emotion: "thinking",
   },
 ];
 
@@ -74,11 +76,11 @@ export default function Personas() {
               </p>
             </div>
             <div className="absolute -bottom-4 -right-4 h-40 w-40 transition-transform duration-500 group-hover:-translate-y-2 group-hover:rotate-3">
-              <Image
-                src={p.mascot}
-                alt="Pandu"
+              <MascotAnimation
+                emotion={p.emotion}
                 fill
-                className="object-contain drop-shadow-xl"
+                altText="Pandu"
+                className="drop-shadow-xl"
               />
             </div>
           </motion.div>

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { Mic, Square } from "lucide-react";
+import MascotAnimation from "@/components/mascot-animation";
 import {
   motion,
   AnimatePresence,
@@ -127,18 +127,14 @@ export default function CheckInVoice({
               }}
               className="w-full h-full"
             >
-              <Image
-                src={
-                  isRecording
-                    ? "/mascot/listening/listening-stroke.png"
-                    : "/mascot/idle/idle.png"
-                }
-                alt={isRecording ? "Pandu mendengarkan" : "Pandu menunggu"}
-                width={140}
-                height={140}
-                className="object-contain w-full h-full p-2"
-                priority
-              />
+              <div className="h-full w-full p-2">
+                <MascotAnimation
+                  emotion={isRecording ? "listening" : "idle"}
+                  fill
+                  altText={isRecording ? "Pandu mendengarkan" : "Pandu menunggu"}
+                  priority
+                />
+              </div>
             </motion.div>
           </AnimatePresence>
         </motion.div>

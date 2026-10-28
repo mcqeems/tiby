@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import Image from "next/image";
+import MascotAnimation, {
+  type MascotEmotion,
+} from "@/components/mascot-animation";
 
 export type PopupVariant = "success" | "danger" | "warning" | "info";
 
@@ -26,7 +28,7 @@ const EXIT_MS = 200;
 const VARIANT_CONFIG: Record<
   PopupVariant,
   {
-    mascotPath: string;
+    emotion: MascotEmotion;
     badgeBg: string;
     badgeText: string;
     defaultBadge: string;
@@ -47,7 +49,7 @@ const VARIANT_CONFIG: Record<
   }
 > = {
   success: {
-    mascotPath: "/mascot/happy/happy-stroke.png",
+    emotion: "happy",
     badgeBg: "bg-tiby-teal-50 border-tiby-teal-100",
     badgeText: "text-tiby-teal-700",
     defaultBadge: "Berhasil",
@@ -62,7 +64,7 @@ const VARIANT_CONFIG: Record<
     confetti: true,
   },
   danger: {
-    mascotPath: "/mascot/alert/alert.png",
+    emotion: "alert",
     badgeBg: "bg-red-50 border-red-100",
     badgeText: "text-red-700",
     defaultBadge: "Konfirmasi Tindakan",
@@ -77,7 +79,7 @@ const VARIANT_CONFIG: Record<
     confetti: false,
   },
   warning: {
-    mascotPath: "/mascot/idle/idle.png",
+    emotion: "idle",
     badgeBg: "bg-amber-50 border-amber-200",
     badgeText: "text-amber-800",
     defaultBadge: "Perhatian",
@@ -92,7 +94,7 @@ const VARIANT_CONFIG: Record<
     confetti: false,
   },
   info: {
-    mascotPath: "/mascot/empathy/empathy.png",
+    emotion: "empathy",
     badgeBg: "bg-tiby-teal-50 border-tiby-teal-100",
     badgeText: "text-tiby-teal-700",
     defaultBadge: "Informasi Tiby",
@@ -297,13 +299,6 @@ export default function PublicPopup({
 }: PublicPopupProps) {
   const cfg = VARIANT_CONFIG[variant] || VARIANT_CONFIG.info;
 
-  const [prevVariant, setPrevVariant] = useState(variant);
-  const [useFallback, setUseFallback] = useState(false);
-  if (variant !== prevVariant) {
-    setPrevVariant(variant);
-    setUseFallback(false);
-  }
-
   // `mounted` menahan komponen tetap ada selama animasi keluar berjalan
   const [mounted, setMounted] = useState(open);
   if (open && !mounted) setMounted(true);
@@ -327,7 +322,6 @@ export default function PublicPopup({
   if (!mounted) return null;
 
   const closing = !open;
-  const currentMascotPath = useFallback ? "/mascot/pandu.png" : cfg.mascotPath;
 
   return (
     <div
@@ -398,16 +392,11 @@ export default function PublicPopup({
                   />
                 ))}
 
-              <Image
-                width={96}
-                height={96}
-                
-                src={currentMascotPath}
-                alt="Maskot Pandu Tiby"
-                onError={() => {
-                  if (!useFallback) setUseFallback(true);
-                }}
-                className={`relative h-24 w-24 object-contain drop-shadow-md ${cfg.mascotAnim}`}
+              <MascotAnimation
+                emotion={cfg.emotion}
+                size={96}
+                altText="Maskot Pandu Tiby"
+                className={`drop-shadow-md ${cfg.mascotAnim}`}
               />
             </div>
 

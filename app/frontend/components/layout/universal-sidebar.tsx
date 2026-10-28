@@ -173,10 +173,10 @@ export default function UniversalSidebar({
               }`}
             >
               <Image
-                src="/logo/logo.png"
+                src={collapsed ? "/logo/logo-only.png" : "/logo/logo.png"}
                 alt={`${brandName} ${brandSubtitle}`}
-                width={200}
-                height={48}
+                width={collapsed ? 40 : 200}
+                height={collapsed ? 40 : 48}
                 priority
                 className="h-10 w-auto max-w-none object-contain object-left"
               />
