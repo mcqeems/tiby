@@ -10,7 +10,7 @@ Refuses to run in ``TIBY_EXTRACTOR=rules`` mode. Passing checks in that mode
 mean nothing: the keyword baseline would happily agree with the fixtures while
 the model was broken. That is the exact confusion this script exists to remove.
 
-Usage, with provider credentials exported::
+Usage (provider credentials come from `.env`, copied from `.env.example`)::
 
     PYTHONPATH=src uv run python tests/test_live_providers.py                # everything
     PYTHONPATH=src uv run python tests/test_live_providers.py --only extraction --repeat 3

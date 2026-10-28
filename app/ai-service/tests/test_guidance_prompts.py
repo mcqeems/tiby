@@ -2,7 +2,7 @@
 
 Every case in ``dataset/guidance/guidance.jsonl`` goes through real retrieval
 and the real provider, then prints one JSON line per case (guard hit, retrieved
-count, answer, citations). Requires provider credentials and costs API calls;
+count, answer, citations). Requires provider credentials (from `.env`) and costs API calls;
 review the output by hand — these cases are QA fixtures, not clinical
 validation (see ``dataset/guidance/README.md``).
 
@@ -18,6 +18,7 @@ import asyncio
 import json
 from pathlib import Path
 
+from env import load_env
 from guidance.retrieval import SQLiteRetriever
 from guidance.safety import detect_action_request
 from guidance.service import GroundedAnswerer, pack_evidence
@@ -28,6 +29,7 @@ CASES = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "guidance" 
 
 def main() -> None:
     """Load the cases, run each through retrieval + answerer, print results."""
+    load_env()
     retriever = SQLiteRetriever()
     answerer = GroundedAnswerer()
     cases = [json.loads(line) for line in CASES.read_text(encoding="utf-8").splitlines() if line.strip()]

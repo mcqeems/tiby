@@ -22,7 +22,9 @@ def normalize_text(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def chunk_page(text: str, *, chunk_words: int = 180, overlap_words: int = 35) -> list[str]:
+def chunk_page(
+    text: str, *, chunk_words: int = 180, overlap_words: int = 35
+) -> list[str]:
     """Split one page into overlapping word chunks.
 
     A trailing scrap shorter than 25 words is merged into the previous chunk
@@ -52,13 +54,23 @@ def ingest_pdf(pdf_path: str | Path, metadata: dict, store: SQLiteRetriever) -> 
     pdf_path = Path(pdf_path)
     chunks: list[dict] = []
     with fitz.open(pdf_path) as doc:
-        for page_index, page in enumerate(doc):
-            text = normalize_text(page.get_text("text"))
+        for page_index in range(doc.page_count):
+            page = doc.load_page(page_index)
+            text = normalize_text(str(page.get_text("text")))
             if len(text) < 80:
                 continue
             for part_index, content in enumerate(chunk_page(text)):
-                chunk_id = f"{metadata['document_id']}-p{page_index + 1}-c{part_index + 1}"
-                chunks.append({"chunk_id": chunk_id, "page": page_index + 1, "section": None, "text": content})
+                chunk_id = (
+                    f"{metadata['document_id']}-p{page_index + 1}-c{part_index + 1}"
+                )
+                chunks.append(
+                    {
+                        "chunk_id": chunk_id,
+                        "page": page_index + 1,
+                        "section": None,
+                        "text": content,
+                    }
+                )
     if not chunks:
         raise ValueError(f"No extractable text found in {pdf_path.name}")
     store.add_document(metadata, chunks)

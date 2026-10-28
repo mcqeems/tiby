@@ -8,21 +8,11 @@ From `app/ai-service`:
 
 ```bash
 uv sync --group dev                        # .venv + deps + this package (editable); uv.lock is committed
-export NARAROUTER_API_TOKEN="..."          # or NARAROUTER_API_KEY
-export NARAROUTER_BASE_URL="https://your-router-base/v1"
-export GROQ_API_KEY="..."                  # audio endpoint (default transcriber)
-PYTHONPATH=src uv run uvicorn main:app --reload   # http://localhost:8000, docs at /docs
+cp .env.example .env                       # then fill in the secrets — loaded automatically
+uv run uvicorn main:app --reload           # http://localhost:8000, docs at /docs
 ```
 
-`src/` is the import root — there is no `tiby_ai` package, so the app is
-`main:app`, not `tiby_ai.main:app`. `uv sync` installs this project editable
-with `src/` on the path, so `uv run uvicorn main:app` works as-is; the
-`PYTHONPATH=src` prefix above is what keeps the same commands working from a
-bare checkout with no install.
-
 ## Layout
-
-Layered like the backend's NestJS modules, so both services read the same way: `controllers/` is HTTP wiring only, `services/` holds the use cases.
 
 ```
 src/
@@ -39,23 +29,22 @@ tests read. Each `dataset/*` folder carries its own README.
 
 ### OCR weights
 
-`/ocr/extract` runs PP-OCRv6 locally, and those weights are **hash-locked and never downloaded at runtime**. RapidOCR will happily fetch ~30 MB from ModelScope the moment it cannot find a file; the service checks first and returns 503 instead.
+`/ocr/extract` runs PP-OCRv6 locally, and those weights are **hash-locked and never downloaded at runtime**.
+RapidOCR will happily fetch ~30 MB from ModelScope the moment it cannot find a file# Pre-stage here at build time (Docker: COPY the weights in), or set in `.env`:
 
-```bash
-export TIBY_OCR_MODEL_DIR=/opt/tiby/ocr-models   # pre-stage here at build time
-```
+# TIBY_OCR_MODEL_DIR=/opt/tiby/ocr-models
 
-Without the variable it falls back to the cache inside the installed `rapidocr` package, which is what local development uses. `models.lock.json` records the SHA-256 of each weight; changing a hash means OCR output may change, so re-run `uv run pytest tests/test_ocr.py` before committing one.
+Without the variable it falls back to the cache inside the installed `rapidocr` package, which is what local development uses. `models.lock.json` records the SHA-256 of each weight; changing a hash means OCR output may change, so re-run `uv run pytest tests/test_ocr.py` before committing one. Set it in `.env` (copy `.env.example` first) or pre-stage at build time for Docker — see `TIBY_OCR_MODEL_DIR` in `.env.example`.
 
 ## Tokens
 
-Set in the shell that launches the app; read per request, never logged.
+Set in `.env`; also read per request, never logged. Anything already in the real environment (Docker `env_file:` / `environment:`, CI secrets) wins over `.env`, so the same image runs in Docker with the variables injected and no `.env` file.
 
-| Env var | Needed for | Notes |
-| --- | --- | --- |
-| `NARAROUTER_API_TOKEN` (or `NARAROUTER_API_KEY`) | check-in extraction + guidance | requires `NARAROUTER_BASE_URL` including `/v1`; model via `TIBY_LLM_MODEL`, default `agnes-2.5-flash` |
-| `GROQ_API_KEY` | `/ai/extractions/check-in/audio` | default transcriber (`TIBY_TRANSCRIBER=groq`) |
-| `FISH_AUDIO_API_TOKEN` (or `FISH_API_KEY`) | audio when `TIBY_TRANSCRIBER=fish` | optional alternative transcriber |
+| Env var                                          | Needed for                         | Notes                                                                                                 |
+| ------------------------------------------------ | ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `NARAROUTER_API_TOKEN` (or `NARAROUTER_API_KEY`) | check-in extraction + guidance     | requires `NARAROUTER_BASE_URL` including `/v1`; model via `TIBY_LLM_MODEL`, default `agnes-2.5-flash` |
+| `GROQ_API_KEY`                                   | `/ai/extractions/check-in/audio`   | default transcriber (`TIBY_TRANSCRIBER=groq`)                                                         |
+| `FISH_AUDIO_API_TOKEN` (or `FISH_API_KEY`)       | audio when `TIBY_TRANSCRIBER=fish` | optional alternative transcriber                                                                      |
 
 Missing token → 503, provider failure → 502, timeout → 504. Real providers are the default on `TIBY_EXTRACTOR` and `TIBY_TRANSCRIBER`; `TIBY_EXTRACTOR=rules` is the offline keyword baseline for deterministic tests only, and any unrecognised value is rejected at startup rather than falling through to a paid provider.
 
@@ -71,22 +60,21 @@ Backend aliases, kept private from the contract collection: `POST /text/extract`
 ## Test
 
 ```bash
+source .venv/bin/activate  # venv
 uv run pytest                                     # offline; no tokens, no network
-PYTHONPATH=src uv run python tests/test_live_providers.py    # real providers; pass/fail + accuracy per field
-PYTHONPATH=src uv run python tests/test_guidance_prompts.py # real providers; one JSON line per case, human review
+uv run python tests/test_live_providers.py    # real providers (creds from .env); pass/fail + accuracy per field
+uv run python tests/test_guidance_prompts.py # real providers (creds from .env); one JSON line per case, human review
 ```
 
-Each answers a different question, and `dataset/README.md` picks the right one: `pytest` for *did I break the code?* (it also runs the real OCR engine over the card images in `dataset/`), `test_live_providers.py` for *is the AI working and how accurate is it?* (exits non-zero, so it can gate a deploy), `test_guidance_prompts.py` for *does this answer need a human eye?*
+Each answers a different question, and `dataset/README.md` picks the right one: `pytest` for _did I break the code?_ (it also runs the real OCR engine over the card images in `dataset/`), `test_live_providers.py` for _is the AI working and how accurate is it?_ (exits non-zero, so it can gate a deploy), `test_guidance_prompts.py` for _does this answer need a human eye?_
 
 ```bash
-PYTHONPATH=src uv run python tests/test_live_providers.py --only extraction --repeat 3
-PYTHONPATH=src uv run python tests/test_live_providers.py --list   # health ocr extraction audio guidance
+uv run python tests/test_live_providers.py --only extraction --repeat 3
+uv run python tests/test_live_providers.py --list   # health ocr extraction audio guidance
 TIBY_EXTRACTOR=rules uv run pytest -q     # the offline baseline, not a live check
 ```
 
 Extraction is not deterministic, so `--repeat` separates a case that is sometimes right (`UNSTABLE`) from one that never is (`FAIL`). The live runner refuses to run under `TIBY_EXTRACTOR=rules`, where a green run would be indistinguishable from a green run against the model.
-
-One thing is **not** measured: audio transcription accuracy — the samples in `dataset/audio/` carry no expected transcript, so the live runner only proves the provider is reachable and the contract holds. OCR is likewise measured only on synthetic scans. See `dataset/audio/README.md`.
 
 Run `ruff`, `mypy`, and `pytest` from `app/ai-service`, not the repo root: `pyproject.toml` sets no `[tool.ruff]`, so first-party detection follows the working directory and you get a wall of spurious `I001` errors otherwise.
 
@@ -95,7 +83,7 @@ Run `ruff`, `mypy`, and `pytest` from `app/ai-service`, not the repo root: `pypr
 `/ai/guidance` reads `dataset/knowledge/tiby.db`, built from the PDFs in `dataset/knowledge/manifest.json`:
 
 ```bash
-PYTHONPATH=src uv run python src/ingest_knowledge.py
+uv run python src/ingest_knowledge.py
 ```
 
 Fresh clone without the index → guidance returns `answer: null`. TB-specific; verify issuer and edition before relying on any document. See `dataset/knowledge/README.md`.

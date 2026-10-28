@@ -1,4 +1,3 @@
-import os
 from typing import ClassVar
 
 import httpx
@@ -8,20 +7,15 @@ from providers.base import (
     ProviderTimeoutError,
     Transcription,
     TranscriptionError,
+    env_float,
+    env_int,
+    env_str,
 )
 
 
 class GroqTranscriber:
-    """Groq Whisper speech-to-text adapter (default transcriber).
+    """Groq Whisper speech-to-text adapter (default transcriber)."""
 
-    Upload limits and accepted content types are part of the ``Transcriber``
-    protocol so the HTTP layer can enforce them before calling the provider.
-    """
-
-    endpoint = "https://api.groq.com/openai/v1/audio/transcriptions"
-    model = "whisper-large-v3-turbo"
-    # Keep the service upload boundary compatible with the backend.
-    max_upload_bytes = 10 * 1024 * 1024
     supported_content_types: ClassVar[set[str]] = {
         "audio/wav",
         "video/wav",
@@ -35,16 +29,24 @@ class GroqTranscriber:
         "audio/webm",
     }
 
-    def __init__(self, *, api_key: str | None = None, timeout_seconds: float = 60.0):
-        self.api_key = api_key or os.getenv("GROQ_API_KEY")
-        self.timeout_seconds = timeout_seconds
+    def __init__(
+        self, *, api_key: str | None = None, timeout_seconds: float | None = None
+    ):
+        self.api_key = api_key or env_str("GROQ_API_KEY")
+        self.endpoint = env_str("GROQ_ENDPOINT")
+        self.model = env_str("GROQ_MODEL", "whisper-large-v3-turbo")
+        self.timeout_seconds = timeout_seconds or env_float(
+            "GROQ_TIMEOUT_SECONDS", 60.0
+        )
+        self.max_upload_bytes = env_int("MAX_AUDIO_UPLOAD_BYTES", 10 * 1024 * 1024)
 
     async def transcribe(
         self, audio: bytes, filename: str = "check-in.wav"
     ) -> Transcription:
-        """Transcribe raw audio bytes; raises ProviderConfigurationError without a key."""
         if not self.api_key:
             raise ProviderConfigurationError("GROQ_API_KEY is not configured.")
+        if not self.endpoint:
+            raise ProviderConfigurationError("GROQ_ENDPOINT is not configured.")
         try:
             async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
                 response = await client.post(
