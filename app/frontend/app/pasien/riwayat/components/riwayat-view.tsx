@@ -117,7 +117,7 @@ export default function RiwayatView() {
     <div className="space-y-6">
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight text-tiby-ink">
-          Riwayat Terapi
+          Riwayat Check-In
         </h1>
         <p className="mt-1 text-sm text-tiby-muted">
           Catatan perjalanan pengobatan dan laporan harian Anda.

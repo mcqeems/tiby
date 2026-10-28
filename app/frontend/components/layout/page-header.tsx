@@ -29,7 +29,7 @@ export default function PageHeader() {
       users: "Manajemen Akun",
       onboarding: "Onboarding Pasien",
       "check-in": "Check-in Harian",
-      riwayat: "Riwayat Terapi",
+      riwayat: "Riwayat Check-In",
     };
     return (
       map[segment] ||
