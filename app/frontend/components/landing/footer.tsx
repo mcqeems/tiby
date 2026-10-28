@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
@@ -134,6 +134,14 @@ const PRIVACY_BADGES = [
 ];
 
 export default function Footer() {
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
+
+  useEffect(() => {
+    startTransition(() => {
+      setCurrentYear(new Date().getFullYear());
+    });
+  }, []);
+
   return (
     <footer className="relative mt-10 overflow-hidden bg-gradient-to-b from-white via-tiby-teal-50/60 to-tiby-teal-50">
       <div className="mx-auto max-w-6xl px-6 pt-20">
@@ -223,7 +231,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-tiby-teal-100/70 py-6 text-xs text-gray-500 sm:flex-row">
-          <p>&copy; {new Date().getFullYear()} Tim Argon - UNIDA Gontor.</p>
+          <p>&copy; {currentYear ?? "…"} Tim Argon - UNIDA Gontor.</p>
           <p className="flex items-center gap-1.5">
             Dibuat dengan
             <motion.span
