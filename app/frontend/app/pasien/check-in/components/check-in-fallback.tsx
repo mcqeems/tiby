@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { slideIn } from "@/lib/motion";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Pill,
@@ -116,9 +117,10 @@ export default function CheckInFallback({
         {step === 1 && (
           <motion.div
             key="step1"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
+            variants={slideIn}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             className="space-y-4"
           >
             <p className="mb-6 text-center text-sm text-tiby-muted">
@@ -176,9 +178,10 @@ export default function CheckInFallback({
         {step === 2 && (
           <motion.div
             key="step2"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
+            variants={slideIn}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             className="space-y-5"
           >
             <div className="text-center">
@@ -241,9 +244,10 @@ export default function CheckInFallback({
         {step === 3 && (
           <motion.div
             key="step3"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
+            variants={slideIn}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             className="space-y-4"
           >
             <p className="mb-6 text-center text-sm text-tiby-muted">
@@ -295,9 +299,10 @@ export default function CheckInFallback({
         {step === 4 && (
           <motion.div
             key="step4"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
+            variants={slideIn}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             className="space-y-5"
           >
             <p className="text-center text-sm text-tiby-muted">
@@ -404,9 +409,10 @@ export default function CheckInFallback({
         {step === 5 && (
           <motion.div
             key="step5"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
+            variants={slideIn}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             className="space-y-5"
           >
             <p className="text-center text-sm text-tiby-muted">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { listItem, staggerParent } from "@/lib/motion";
+import { fadeDown, listItem, staggerParent } from "@/lib/motion";
 import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import { AnimatePresence, motion } from "motion/react";
 import { educationApi, type EducationItem } from "@/lib/api/education";
@@ -80,10 +80,14 @@ export default function EducationView({
   };
 
   return (
-    <div className="w-full space-y-8">
+    <motion.div
+      variants={staggerParent(0.06, 0.05)}
+      initial="hidden"
+      animate="visible"
+      className="w-full space-y-8"
+    >
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+        variants={fadeDown}
         className="relative w-full overflow-hidden rounded-3xl bg-tiby-teal-600 p-8 sm:p-12 text-white shadow-xl shadow-tiby-teal-600/20"
       >
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
@@ -257,6 +261,6 @@ export default function EducationView({
           </ModalOverlay>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }
