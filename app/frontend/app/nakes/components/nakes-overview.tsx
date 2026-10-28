@@ -74,8 +74,8 @@ export default function NakesOverview() {
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 gap-6 items-start">
+        <div className="space-y-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -117,7 +117,7 @@ export default function NakesOverview() {
             </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -155,22 +155,41 @@ export default function NakesOverview() {
                 </p>
               </div>
             </motion.div>
-          </div>
-        </div>
 
-        <div className="lg:col-span-1 space-y-6">
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white rounded-2xl border border-tiby-teal-100 p-5 shadow-2xs"
-          >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-full bg-tiby-teal-50 flex items-center justify-center shrink-0">
-                <Ticket className="w-6 h-6 text-tiby-teal-600" />
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.25 }}
+              className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex items-center gap-4"
+            >
+              <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                <Bell className="w-6 h-6 text-blue-600" />
               </div>
               <div>
                 <p className="text-xs font-semibold text-tiby-muted uppercase tracking-wider">
+                  Notifikasi Baru
+                </p>
+                <p className="font-heading text-xl font-bold text-tiby-ink">
+                  {stats?.unreadAlerts || 0} Pesan
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+          className="w-full rounded-2xl border border-tiby-teal-100 bg-white p-5 shadow-2xs"
+        >
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-tiby-teal-50">
+                <Ticket className="h-6 w-6 text-tiby-teal-600" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-tiby-muted">
                   Total Tiket Aktif
                 </p>
                 <p className="font-heading text-xl font-bold text-tiby-ink">
@@ -178,35 +197,16 @@ export default function NakesOverview() {
                 </p>
               </div>
             </div>
-            <div className="bg-red-50 rounded-xl p-3 border border-red-100">
-              <p className="text-[11px] font-bold text-red-600 uppercase tracking-wider mb-1">
+            <div className="rounded-xl border border-red-100 bg-red-50 p-3 sm:min-w-56">
+              <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-red-600">
                 Butuh Penanganan Segera
               </p>
               <p className="font-heading text-lg font-bold text-red-700">
                 {stats?.criticalTickets || 0} Kritis
               </p>
             </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.25 }}
-            className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex items-center gap-4"
-          >
-            <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-              <Bell className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-tiby-muted uppercase tracking-wider">
-                Notifikasi Baru
-              </p>
-              <p className="font-heading text-xl font-bold text-tiby-ink">
-                {stats?.unreadAlerts || 0} Pesan
-              </p>
-            </div>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
