@@ -75,7 +75,7 @@ def preflight() -> str | None:
     """Return a reason to stop, or ``None`` when a live run is legitimate."""
     import os
 
-    if os.getenv("TIBY_EXTRACTOR", "agnes").lower() == "rules":
+    if os.getenv("TIBY_EXTRACTOR", "nararouter").lower() == "rules":
         return (
             "TIBY_EXTRACTOR=rules is the offline keyword baseline. Unset it — "
             "a green run against rules mode says nothing about the model."
