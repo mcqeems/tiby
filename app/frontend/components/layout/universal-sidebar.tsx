@@ -173,7 +173,7 @@ export default function UniversalSidebar({
               }`}
             >
               <Image
-                src="/mascot/logo.png"
+                src="/logo/logo.png"
                 alt={`${brandName} ${brandSubtitle}`}
                 width={200}
                 height={48}

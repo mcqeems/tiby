@@ -197,7 +197,7 @@ export default function Footer() {
         <div className="mt-20 grid grid-cols-2 gap-10 border-t border-tiby-teal-100/70 pt-12 md:grid-cols-4">
           <div className="col-span-2 md:col-span-1">
             <Image
-              src="/mascot/logo.png"
+              src="/logo/logo.png"
               alt="Tiby Logo"
               width={100}
               height={28}

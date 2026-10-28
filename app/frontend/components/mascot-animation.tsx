@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import waveAnimationData from "@/public/mascot/wave.json";
+import waveAnimationData from "@/public/mascot/motion-graph(lottie,mp4,gif)/wave.json";
 
 interface MascotAnimationProps {
   className?: string;

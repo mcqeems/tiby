@@ -83,7 +83,7 @@ export default function PageHeader() {
         {/* Logo Kiri */}
         <Link href={roleRoot}>
           <Image
-            src="/mascot/logo.png"
+            src="/logo/logo.png"
             alt="Tiby Logo"
             width={100}
             height={28}

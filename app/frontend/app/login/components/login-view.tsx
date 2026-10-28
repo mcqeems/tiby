@@ -224,7 +224,7 @@ export default function LoginView() {
         <div className="flex w-full md:w-1/2 flex-col p-8 sm:p-12 relative bg-white">
           <div className="absolute top-8 right-8 hidden sm:block sm:top-10 sm:right-10">
             <Image
-              src="/mascot/logo.png"
+              src="/logo/logo.png"
               alt="Tiby Logo"
               width={120}
               height={32}

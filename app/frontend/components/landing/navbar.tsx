@@ -30,7 +30,7 @@ export default function Navbar() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <Image
-            src="/mascot/logo.png"
+            src="/logo/logo.png"
             alt="Tiby Logo"
             width={120}
             height={32}
