@@ -127,7 +127,7 @@ export function useCheckIn(treatmentPlanId?: string) {
         confirmedFacts: {
           transcript: extractRes.transcript,
           medicationStatus: extractRes.medicationTaken as MedicationStatus,
-          pillsTakenCount: extractRes.pillsTakenCount ?? 0,
+          pillsTakenCount: extractRes.pillsTakenCount ?? null,
           symptoms: extractRes.symptoms,
           intentToStop: extractRes.intentToStopOrRefuse,
           confidence: extractRes.extractionConfidence,

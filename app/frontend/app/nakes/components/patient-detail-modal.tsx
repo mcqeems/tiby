@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { api } from "@/lib/api";
 import { usersApi } from "@/lib/api/users";
 import { usePopup } from "@/components/ui/popup-provider";
 import {

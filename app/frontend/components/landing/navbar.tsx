@@ -56,7 +56,7 @@ export default function Navbar() {
           </Link>
 
           <Link
-            href="/register"
+            href="/login"
             className="group flex items-center gap-2 rounded-full bg-[#0F172A] px-7 py-3 text-[15px] font-semibold text-white transition-all hover:bg-black hover:shadow-lg"
           >
             Buka App

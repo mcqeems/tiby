@@ -13,6 +13,11 @@ import {
   ShieldCheck,
   ChevronLeft,
   ChevronRight,
+  Pencil,
+  KeyRound,
+  Search,
+  Loader2,
+  X,
 } from "lucide-react";
 
 const LIMIT = 20;
@@ -26,12 +31,22 @@ export default function UserManager() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [editingUser, setEditingUser] = useState<UserItem | null>(null);
+  const [resetUser, setResetUser] = useState<UserItem | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetSubmitting, setResetSubmitting] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [usersRes, facilitiesRes] = await Promise.all([
-        usersApi.list({ page, limit: LIMIT, role: "NAKES,ADMIN" }),
+        usersApi.list({
+          page,
+          limit: LIMIT,
+          role: "NAKES,ADMIN",
+          search: search.trim() || undefined,
+        }),
         facilitiesApi.list({ limit: 100 }),
       ]);
       setUsers(usersRes.items || []);
@@ -47,7 +62,7 @@ export default function UserManager() {
     } finally {
       setLoading(false);
     }
-  }, [notify, page]);
+  }, [notify, page, search]);
 
   useEffect(() => {
     let active = true;
@@ -84,6 +99,19 @@ export default function UserManager() {
         </button>
       </div>
 
+      <div className="relative max-w-xs">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <input
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          placeholder="Cari nama, username, atau email…"
+          className="h-10 w-full rounded-xl border border-gray-200 bg-white pl-9 pr-3 text-xs text-tiby-ink outline-none focus:ring-2 focus:ring-tiby-teal-600"
+        />
+      </div>
+
       <div className="bg-white rounded-2xl border border-gray-200 shadow-2xs overflow-hidden">
         <table className="w-full text-left text-sm border-collapse">
           <thead className="bg-gray-50 border-b border-gray-100 text-xs text-gray-600 uppercase font-semibold">
@@ -91,6 +119,7 @@ export default function UserManager() {
               <th className="px-5 py-4">Nama / Username</th>
               <th className="px-5 py-4">Peran</th>
               <th className="px-5 py-4">Faskes Penempatan</th>
+              <th className="px-5 py-4 text-right">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -118,6 +147,29 @@ export default function UserManager() {
                   <div className="flex items-center gap-2 text-xs font-medium text-tiby-ink">
                     <Building2 className="w-4 h-4 text-gray-400" />
                     {u.facility || "-"}
+                  </div>
+                </td>
+                <td className="px-5 py-4">
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      type="button"
+                      title="Edit akun"
+                      onClick={() => setEditingUser(u)}
+                      className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-tiby-teal-700"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Reset password"
+                      onClick={() => {
+                        setResetUser(u);
+                        setResetPassword("");
+                      }}
+                      className="rounded-lg p-2 text-gray-400 transition hover:bg-amber-50 hover:text-amber-600"
+                    >
+                      <KeyRound className="h-4 w-4" />
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -166,6 +218,117 @@ export default function UserManager() {
             fetchData();
           }}
         />
+      )}
+
+      {editingUser && (
+        <UserFormModal
+          facilities={facilities}
+          editingUser={editingUser}
+          onClose={() => setEditingUser(null)}
+          onSuccess={() => {
+            setEditingUser(null);
+            fetchData();
+          }}
+        />
+      )}
+
+      {resetUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 px-5 py-4">
+              <h3 className="font-heading font-bold text-tiby-ink">
+                Reset Password
+              </h3>
+              <button
+                onClick={() => setResetUser(null)}
+                className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-200"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (resetPassword.length < 8) {
+                  return notify({
+                    variant: "warning",
+                    title: "Validasi Gagal",
+                    description: "Password minimal 8 karakter.",
+                    confirmLabel: "Mengerti",
+                  });
+                }
+                setResetSubmitting(true);
+                try {
+                  await usersApi.resetPassword(resetUser.id, resetPassword);
+                  await notify({
+                    variant: "success",
+                    title: "Berhasil",
+                    description: `Password ${resetUser.username} telah direset.`,
+                    confirmLabel: "Tutup",
+                  });
+                  setResetUser(null);
+                  setResetPassword("");
+                } catch (err: unknown) {
+                  await notify({
+                    variant: "danger",
+                    title: "Gagal",
+                    description:
+                      err instanceof Error
+                        ? err.message
+                        : "Tidak dapat mereset password.",
+                    confirmLabel: "Tutup",
+                  });
+                } finally {
+                  setResetSubmitting(false);
+                }
+              }}
+              className="space-y-4 p-5"
+            >
+              <p className="text-xs text-tiby-muted">
+                Password baru untuk{" "}
+                <span className="font-semibold text-tiby-ink">
+                  @{resetUser.username}
+                </span>
+                . Sampaikan ke pengguna setelah disimpan.
+              </p>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-tiby-ink">
+                  Password Baru
+                </label>
+                <input
+                  type="text"
+                  value={resetPassword}
+                  onChange={(e) => setResetPassword(e.target.value)}
+                  minLength={8}
+                  required
+                  placeholder="Minimal 8 karakter"
+                  className="h-10 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none focus:ring-2 focus:ring-tiby-teal-600"
+                />
+              </div>
+              <div className="flex gap-3 border-t border-gray-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setResetUser(null)}
+                  className="h-11 flex-1 rounded-xl border border-gray-200 text-xs font-semibold hover:bg-gray-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={resetSubmitting}
+                  className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-tiby-teal-600 text-xs font-semibold text-white hover:bg-tiby-teal-700 disabled:opacity-50"
+                >
+                  {resetSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <KeyRound className="h-4 w-4" />
+                  )}
+                  Simpan Password
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

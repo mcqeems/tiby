@@ -252,6 +252,15 @@ export default function OnboardingSuccessCard({
         </div>
       </div>
 
+      <div className="mx-5 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 sm:mx-7">
+        <p className="font-semibold">WhatsApp belum terhubung</p>
+        <p className="mt-0.5 leading-relaxed">
+          Nomor yang dimasukkan belum diverifikasi. Minta pasien/PMO membuka
+          Profil &rarr; WhatsApp untuk mengirim kode verifikasi. Kontak darurat
+          dapat diverifikasi dari halaman detail pasien.
+        </p>
+      </div>
+
       <footer className="flex flex-col gap-3 border-t border-tiby-teal-100/70 bg-gray-50/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
         <p className="text-xs text-tiby-muted">
           Sudah selesai? Lanjutkan dengan pasien berikutnya.

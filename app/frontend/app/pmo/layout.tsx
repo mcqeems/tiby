@@ -19,7 +19,9 @@ export default function PmoLayout({ children }: { children: React.ReactNode }) {
   const [consentGranted, setConsentGranted] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (isPending) return;
+    // Only the owning role may call /api/consent; prefetches of another role's
+    // layout must not produce 403 noise.
+    if (isPending || !user || user.role !== "PMO") return;
 
     async function checkConsent() {
       try {
@@ -32,7 +34,7 @@ export default function PmoLayout({ children }: { children: React.ReactNode }) {
     }
 
     checkConsent();
-  }, [isPending]);
+  }, [isPending, user]);
 
   return (
     <RoleGuard allowed={["PMO"]}>

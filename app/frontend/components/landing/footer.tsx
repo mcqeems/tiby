@@ -158,10 +158,10 @@ export default function Footer() {
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
-                href="/register"
+                href="/login"
                 className="group inline-flex items-center gap-2 rounded-full bg-tiby-teal-600 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-tiby-teal-900/10 transition-all hover:-translate-y-0.5 hover:bg-tiby-teal-700"
               >
-                Mulai Perjalananmu
+                Masuk ke Tiby
                 <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
               <Link

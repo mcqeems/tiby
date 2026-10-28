@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Fredoka } from "next/font/google";
 import { PopupProvider } from "@/components/ui/popup-provider";
+import ServiceWorkerRegister from "@/components/pwa/service-worker-register";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -35,12 +36,20 @@ export const metadata: Metadata = {
     "pengobatan TBC",
   ],
   authors: [{ name: "Team Argon" }],
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/apple-touch-icon.png",
+  },
   openGraph: {
     title: "Tiby - Pendamping Cerdas Pengobatan TBC",
     description: "Aplikasi pendamping harian pasien TBC berbasis suara.",
     type: "website",
   },
 };
+export const viewport: Viewport = {
+  themeColor: "#0f766e",
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -52,7 +61,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${fredoka.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <PopupProvider>{children}</PopupProvider>
+        <PopupProvider>
+          <ServiceWorkerRegister />
+          {children}
+        </PopupProvider>
       </body>
     </html>
   );

@@ -4,12 +4,15 @@ import { useState, useEffect, useCallback } from "react";
 import { familyContactsApi } from "@/lib/api/family-contacts";
 import type { FamilyContact } from "@/lib/types/family-contact";
 import { usePopup } from "@/components/ui/popup-provider";
-import { Users, Plus, Trash2, X, Phone, Loader2, Save } from "lucide-react";
+import { Users, Plus, Trash2, X, Phone, Loader2, Save, BadgeCheck } from "lucide-react";
+import WhatsappConnectCard from "@/components/whatsapp/whatsapp-connect-card";
 
 export default function FamilyContactsCard({
   patientId,
+  viewer = "patient",
 }: {
   patientId: string;
+  viewer?: "patient" | "nakes";
 }) {
   const { notify, confirm } = usePopup();
 
@@ -21,6 +24,9 @@ export default function FamilyContactsCard({
   const [fullName, setFullName] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [connectingContact, setConnectingContact] = useState<FamilyContact | null>(
+    null,
+  );
 
   const fetchContacts = useCallback(async () => {
     setLoading(true);
@@ -89,22 +95,18 @@ export default function FamilyContactsCard({
 
     try {
       setSubmitting(true);
-      await familyContactsApi.create(patientId, {
+      const created = await familyContactsApi.create(patientId, {
         fullName,
         whatsappNumber,
         notifyOnEscalation: true, // Selalu true agar sistem bisa menghubungi mereka
-      });
-      await notify({
-        variant: "success",
-        title: "Berhasil",
-        description: "Kontak darurat ditambahkan.",
-        confirmLabel: "Tutup",
       });
       setIsModalOpen(false);
       setFullName("");
       setWhatsappNumber("");
       fetchContacts();
-    } catch (err: unknown) {
+      // A contact is useless until the number proves it can receive messages.
+      setConnectingContact(created);
+    } catch {
       await notify({
         variant: "danger",
         title: "Gagal",
@@ -128,7 +130,9 @@ export default function FamilyContactsCard({
               Kontak Darurat
             </h3>
             <p className="mt-0.5 text-xs text-tiby-muted">
-              Keluarga yang akan dihubungi sistem jika Anda lupa melapor.
+              {viewer === "nakes"
+                ? "Kontak keluarga yang dihubungi jika pasien tidak melapor."
+                : "Keluarga yang akan dihubungi sistem jika Anda lupa melapor."}
             </p>
           </div>
         </div>
@@ -178,12 +182,26 @@ export default function FamilyContactsCard({
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleDelete(contact.id)}
-                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition shrink-0"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {contact.whatsappVerified ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-100">
+                      <BadgeCheck className="w-3 h-3" /> Terhubung
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => setConnectingContact(contact)}
+                      className="rounded-lg bg-tiby-teal-50 px-2.5 py-1.5 text-[10px] font-semibold text-tiby-teal-700 ring-1 ring-tiby-teal-100 hover:bg-tiby-teal-100"
+                    >
+                      Hubungkan
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDelete(contact.id)}
+                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -251,6 +269,31 @@ export default function FamilyContactsCard({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {connectingContact && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md">
+            <div className="mb-2 flex justify-end">
+              <button
+                onClick={() => setConnectingContact(null)}
+                className="rounded-lg bg-white/90 p-1.5 text-gray-500 hover:bg-white"
+                aria-label="Tutup"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <WhatsappConnectCard
+              familyContactId={connectingContact.id}
+              title={`WhatsApp ${connectingContact.fullName}`}
+              description="Kirim kode dari nomor kontak ini untuk mengaktifkan pemberitahuan."
+              onVerified={() => {
+                setConnectingContact(null);
+                fetchContacts();
+              }}
+            />
           </div>
         </div>
       )}

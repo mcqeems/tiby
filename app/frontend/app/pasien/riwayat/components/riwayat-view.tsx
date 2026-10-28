@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { checkInsApi } from "@/lib/api/check-in";
+import { statsApi } from "@/lib/api/stats";
+import type { PatientStats } from "@/lib/types/stats";
 import type { CheckInHistoryItem } from "@/lib/types/check-in";
 import TreatmentCalendar from "./treatment-calendar";
 import {
@@ -21,47 +23,6 @@ const getLocalDateStr = (dateString: string) => {
   const d = new Date(dateString);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
-
-function calculateStreak(history: CheckInHistoryItem[]) {
-  if (history.length === 0) return 0;
-
-  const sorted = [...history].sort(
-    (a, b) =>
-      new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
-  );
-
-  if (!sorted[0].isDoseFulfilled) return 0;
-
-  let streak = 0;
-  const expectedDate = new Date(sorted[0].submittedAt);
-  expectedDate.setHours(0, 0, 0, 0);
-
-  for (let i = 0; i < sorted.length; i++) {
-    const item = sorted[i];
-    const itemDate = new Date(item.submittedAt);
-    itemDate.setHours(0, 0, 0, 0);
-
-    if (itemDate.getTime() === expectedDate.getTime() && item.isDoseFulfilled) {
-      streak++;
-      expectedDate.setDate(expectedDate.getDate() - 1);
-    } else {
-      break;
-    }
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const latestCheckIn = new Date(sorted[0].submittedAt);
-  latestCheckIn.setHours(0, 0, 0, 0);
-
-  const diffInDays = Math.floor(
-    (today.getTime() - latestCheckIn.getTime()) / (1000 * 60 * 60 * 24),
-  );
-
-  if (diffInDays > 1) return 0;
-
-  return streak;
-}
 
 const getVerdictStyle = (verdict: string) => {
   switch (verdict) {
@@ -102,6 +63,7 @@ const getVerdictStyle = (verdict: string) => {
 
 export default function RiwayatView() {
   const [history, setHistory] = useState<CheckInHistoryItem[]>([]);
+  const [stats, setStats] = useState<PatientStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -112,9 +74,16 @@ export default function RiwayatView() {
         if (active) setHistory(res.items || []);
       } catch (err) {
         console.error("Gagal memuat riwayat:", err);
-      } finally {
-        if (active) setLoading(false);
       }
+
+      try {
+        const res = await statsApi.getStats();
+        if (active && res.role === "PASIEN") setStats(res as PatientStats);
+      } catch (err) {
+        console.error("Gagal memuat statistik:", err);
+      }
+
+      if (active) setLoading(false);
     }
     fetchHistory();
     return () => {
@@ -130,7 +99,8 @@ export default function RiwayatView() {
     );
   }
 
-  const currentStreak = calculateStreak(history);
+  // Use the persisted streak, the same value the dashboard shows.
+  const currentStreak = stats?.currentStreak ?? 0;
 
   const startDate =
     history.length > 0

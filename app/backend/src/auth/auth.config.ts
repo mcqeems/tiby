@@ -17,6 +17,12 @@ export const auth = betterAuth({
   }),
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3001",
   basePath: "/api/auth",
+  // Accounts are created by Nakes/Admin (onboarding or /api/users), never by
+  // public self-registration.
+  emailAndPassword: {
+    enabled: true,
+    disableSignUp: true,
+  },
   secret:
     process.env.BETTER_AUTH_SECRET ||
     "rahasia_super_aman_tiby_development_secret_32_bytes_min",

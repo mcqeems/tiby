@@ -72,7 +72,6 @@ export default function NakesOverview() {
             {user?.name || "Tenaga Kesehatan"} 👋
           </h1>
         </div>
-
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -212,4 +211,3 @@ export default function NakesOverview() {
     </div>
   );
 }
-

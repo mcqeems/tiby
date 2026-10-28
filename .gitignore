@@ -16,3 +16,6 @@ app/ai-service/knowledge/*.sqlite
 # WAHA runtime state (QR session) and local credentials
 infra/waha/sessions/
 infra/waha/.env
+
+# Playwright MCP snapshots
+.playwright-mcp/

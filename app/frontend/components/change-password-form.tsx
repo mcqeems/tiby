@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { api } from "@/lib/api";
+import { usersApi } from "@/lib/api/users";
 
 export default function ChangePasswordForm() {
   const [form, setForm] = useState({
@@ -32,7 +32,7 @@ export default function ChangePasswordForm() {
 
     setLoading(true);
     try {
-      const res = await api.users.changePassword(form.currentPassword, form.newPassword);
+      const res = await usersApi.changePassword(form.currentPassword, form.newPassword);
       setSuccessMsg(res.message || "Password berhasil diubah.");
       setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
     } catch (err: unknown) {

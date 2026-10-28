@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import FamilyContactsCard from "@/app/pasien/profile/components/family-contacts-card";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -620,6 +621,8 @@ export default function PatientDetailPage() {
                 : `Muat lebih banyak (${history.length} dari ${historyTotal})`}
             </button>
           )}
+
+          <FamilyContactsCard patientId={patientId} viewer="nakes" />
         </div>
 
         {/* ─── KANAN: SIDEBAR INFO & RESET PW ─── */}

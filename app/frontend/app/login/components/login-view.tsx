@@ -323,14 +323,9 @@ export default function LoginView() {
                 </button>
               </div>
 
-              <div className="pt-4 text-center text-sm text-tiby-muted font-body">
-                Belum punya akun?{" "}
-                <Link
-                  href="/register"
-                  className="font-semibold text-tiby-teal-700 hover:text-tiby-teal-600 transition-colors"
-                >
-                  Daftar sekarang
-                </Link>
+              <div className="pt-4 text-center text-xs text-tiby-muted font-body leading-relaxed">
+                Akun Tiby dibuat oleh Tenaga Kesehatan (Nakes) di Faskes Anda.
+                Hubungi Faskes untuk mendapatkan akses.
               </div>
             </form>
           </div>

@@ -30,10 +30,10 @@ export default function CTA() {
             Saatnya <span className="text-emerald-200">Sembuh Bersama.</span>
           </h2>
           <Link
-            href="/register"
+            href="/login"
             className="group relative mt-9 inline-flex items-center gap-2 rounded-full bg-white px-8 py-3.5 text-sm font-bold text-tiby-teal-700 shadow-lg shadow-black/10 transition-all hover:-translate-y-1 hover:shadow-2xl"
           >
-            Klaim Akunmu Sekarang
+            Masuk ke Tiby
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
           </Link>
 

@@ -1,42 +1,53 @@
 "use client";
 
 import { useState } from "react";
-import { usersApi } from "@/lib/api/users";
+import { usersApi, type UserItem } from "@/lib/api/users";
 import type { FacilityItem } from "@/lib/types/facilities";
 import { usePopup } from "@/components/ui/popup-provider";
 import { X, Loader2, Save } from "lucide-react";
 
 interface UserFormModalProps {
   facilities: FacilityItem[];
+  editingUser?: UserItem;
   onClose: () => void;
   onSuccess: () => void;
 }
 
 export default function UserFormModal({
   facilities,
+  editingUser,
   onClose,
   onSuccess,
 }: UserFormModalProps) {
   const { notify } = usePopup();
+  const isEdit = Boolean(editingUser);
   const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
-    fullName: "",
-    username: "",
-    email: "",
+    fullName: editingUser?.name ?? "",
+    username: editingUser?.username ?? "",
+    email: editingUser?.email ?? "",
     password: "",
-    facilityId: "",
+    role: editingUser?.role ?? "NAKES",
+    facilityId: editingUser?.facilityId ?? "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // ✅ VALIDASI FRONTEND
-    if (!formData.facilityId) {
+    if (!isEdit && !formData.facilityId) {
       return notify({
         variant: "warning",
         title: "Validasi Gagal",
         description: "Pilih Faskes penempatan.",
+        confirmLabel: "Mengerti",
+      });
+    }
+    if (formData.role === "NAKES" && !formData.facilityId) {
+      return notify({
+        variant: "warning",
+        title: "Validasi Gagal",
+        description: "Akun NAKES harus memiliki Faskes penempatan.",
         confirmLabel: "Mengerti",
       });
     }
@@ -48,7 +59,7 @@ export default function UserFormModal({
         confirmLabel: "Mengerti",
       });
     }
-    if (formData.username.length < 3) {
+    if (!isEdit && formData.username.length < 3) {
       return notify({
         variant: "warning",
         title: "Validasi Gagal",
@@ -56,7 +67,7 @@ export default function UserFormModal({
         confirmLabel: "Mengerti",
       });
     }
-    if (formData.password.length < 8) {
+    if (!isEdit && formData.password.length < 8) {
       return notify({
         variant: "warning",
         title: "Validasi Gagal",
@@ -67,20 +78,35 @@ export default function UserFormModal({
 
     try {
       setSubmitting(true);
-      await usersApi.createUser({
-        fullName: formData.fullName,
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-        role: "NAKES",
-        facilityId: formData.facilityId,
-      });
-      await notify({
-        variant: "success",
-        title: "Berhasil",
-        description: "Akun Nakes berhasil dibuat.",
-        confirmLabel: "Tutup",
-      });
+      if (editingUser) {
+        await usersApi.update(editingUser.id, {
+          fullName: formData.fullName,
+          email: formData.email,
+          role: formData.role,
+          facilityId: formData.facilityId || null,
+        });
+        await notify({
+          variant: "success",
+          title: "Berhasil",
+          description: "Data akun berhasil diperbarui.",
+          confirmLabel: "Tutup",
+        });
+      } else {
+        await usersApi.createUser({
+          fullName: formData.fullName,
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          role: "NAKES",
+          facilityId: formData.facilityId,
+        });
+        await notify({
+          variant: "success",
+          title: "Berhasil",
+          description: "Akun Nakes berhasil dibuat.",
+          confirmLabel: "Tutup",
+        });
+      }
       onSuccess();
     } catch (err: unknown) {
       const message =
@@ -89,7 +115,7 @@ export default function UserFormModal({
           : "Pastikan format email benar dan username belum dipakai.";
       await notify({
         variant: "danger",
-        title: "Gagal Membuat Akun",
+        title: isEdit ? "Gagal Memperbarui Akun" : "Gagal Membuat Akun",
         description: message,
         confirmLabel: "Tutup",
       });
@@ -103,7 +129,7 @@ export default function UserFormModal({
       <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl overflow-hidden animate-in zoom-in-95">
         <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 bg-gray-50/50">
           <h3 className="font-heading font-bold text-tiby-ink">
-            Buat Akun Nakes Baru
+            {isEdit ? "Edit Akun" : "Buat Akun Nakes Baru"}
           </h3>
           <button
             onClick={onClose}
@@ -152,20 +178,21 @@ export default function UserFormModal({
             </div>
             <div>
               <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
-                Username *
+                Username {isEdit ? "" : "*"}
               </label>
               <input
-                required
+                required={!isEdit}
+                disabled={isEdit}
                 minLength={3}
                 value={formData.username}
                 onChange={(e) =>
                   setFormData({ ...formData, username: e.target.value })
                 }
-                className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm outline-none focus:ring-2 focus:ring-tiby-teal-600"
+                className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm outline-none focus:ring-2 focus:ring-tiby-teal-600 disabled:bg-gray-50 disabled:text-gray-500"
                 placeholder="dokter_budi"
               />
               <span className="text-[10px] text-gray-500 mt-1 block">
-                Minimal 3 karakter, tanpa spasi.
+                {isEdit ? "Username tidak dapat diubah." : "Minimal 3 karakter, tanpa spasi."}
               </span>
             </div>
           </div>
@@ -186,22 +213,40 @@ export default function UserFormModal({
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
-              Password Awal *
-            </label>
-            <input
-              required
-              type="text"
-              minLength={8}
-              value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
-              className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm outline-none focus:ring-2 focus:ring-tiby-teal-600"
-              placeholder="Minimal 8 karakter"
-            />
-          </div>
+          {isEdit ? (
+            <div>
+              <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
+                Peran
+              </label>
+              <select
+                value={formData.role}
+                onChange={(e) =>
+                  setFormData({ ...formData, role: e.target.value as "NAKES" | "ADMIN" })
+                }
+                className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none"
+              >
+                <option value="NAKES">NAKES</option>
+                <option value="ADMIN">ADMIN</option>
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
+                Password Awal *
+              </label>
+              <input
+                required
+                type="text"
+                minLength={8}
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm outline-none focus:ring-2 focus:ring-tiby-teal-600"
+                placeholder="Minimal 8 karakter"
+              />
+            </div>
+          )}
 
           <div className="flex gap-3 pt-4 border-t border-gray-100">
             <button
@@ -221,7 +266,7 @@ export default function UserFormModal({
               ) : (
                 <Save className="w-4 h-4" />
               )}{" "}
-              Buat Akun
+              {isEdit ? "Simpan Perubahan" : "Buat Akun"}
             </button>
           </div>
         </form>

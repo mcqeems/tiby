@@ -23,7 +23,9 @@ export default function PasienLayout({
   const [consentGranted, setConsentGranted] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (isPending) return;
+    // Only the owning role may call /api/consent; prefetches of another role's
+    // layout must not produce 403 noise.
+    if (isPending || !user || user.role !== "PASIEN") return;
 
     async function checkConsent() {
       try {
@@ -36,7 +38,7 @@ export default function PasienLayout({
     }
 
     checkConsent();
-  }, [isPending]);
+  }, [isPending, user]);
 
   return (
     <RoleGuard allowed={["PATIENT", "PASIEN"]}>

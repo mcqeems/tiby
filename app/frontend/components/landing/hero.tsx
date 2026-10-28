@@ -42,10 +42,10 @@ export default function Hero() {
           >
             <div className="flex flex-col gap-3 sm:flex-row">
               <Link
-                href="/register"
+                href="/login"
                 className="inline-flex items-center justify-center whitespace-nowrap rounded-3xl bg-tiby-teal-700 px-6 py-4 text-sm font-bold text-tiby-teal-100 transition-all hover:-translate-y-0.5 hover:bg-tiby-teal-300"
               >
-                Mulai Sekarang
+                Masuk ke Tiby
                 <ArrowBigRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
             </div>

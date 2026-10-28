@@ -47,12 +47,13 @@ export const usersApi = {
   },
 
   async list(
-    params: { page?: number; limit?: number; role?: string } = {},
+    params: { page?: number; limit?: number; role?: string; search?: string } = {},
   ): Promise<UserListResponse> {
     const searchParams = new URLSearchParams();
     if (params.page) searchParams.set("page", String(params.page));
     if (params.limit) searchParams.set("limit", String(params.limit));
     if (params.role) searchParams.set("role", params.role);
+    if (params.search) searchParams.set("search", params.search);
 
     const qs = searchParams.toString();
     return apiFetch<UserListResponse>(`/api/users${qs ? `?${qs}` : ""}`, {

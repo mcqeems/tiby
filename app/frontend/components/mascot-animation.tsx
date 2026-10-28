@@ -8,7 +8,10 @@ interface MascotAnimationProps {
   size?: number;
 }
 
-export default function MascotAnimation({ className = "", size = 100 }: MascotAnimationProps) {
+export default function MascotAnimation({
+  className = "",
+  size = 100,
+}: MascotAnimationProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 

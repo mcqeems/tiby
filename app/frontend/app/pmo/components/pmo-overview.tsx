@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   ChevronRight,
   ShieldAlert,
+  Bell,
 } from "lucide-react";
 
 export default function PmoOverview() {
@@ -174,6 +175,27 @@ export default function PmoOverview() {
                 </p>
                 <p className="font-heading text-xl font-bold text-tiby-ink">
                   {stats?.highRiskPatients || 0} Pasien
+                </p>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.25 }}
+            className="bg-white rounded-2xl border border-amber-200 p-5 shadow-2xs"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
+                <Bell className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider">
+                  Alert Belum Dibaca
+                </p>
+                <p className="font-heading text-xl font-bold text-tiby-ink">
+                  {stats?.unreadAlerts || 0} Pesan
                 </p>
               </div>
             </div>

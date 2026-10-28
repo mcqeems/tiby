@@ -8,6 +8,8 @@ import { consentApi } from "@/lib/api/consent";
 import { usePopup } from "@/components/ui/popup-provider";
 import PublicLoading from "@/components/ui/public-loading";
 import FamilyContactsCard from "@/app/pasien/profile/components/family-contacts-card";
+import WhatsappConnectCard from "@/components/whatsapp/whatsapp-connect-card";
+import PushToggleCard from "@/components/push/push-toggle-card";
 
 import {
   AtSign,
@@ -287,6 +289,7 @@ export default function ProfileView() {
   const lengthOk = newPassword.length >= 8;
   const matchOk = confirmPassword !== "" && confirmPassword === newPassword;
   const isPasien = user.role === "PASIEN";
+  const showWhatsapp = ["PASIEN", "PMO", "NAKES"].includes(user.role);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 pb-8 md:pb-10">
@@ -455,6 +458,18 @@ export default function ProfileView() {
               </div>
             </form>
           </section>
+
+          {showWhatsapp && (
+            <WhatsappConnectCard
+              description={
+                isPasien
+                  ? "Hubungkan nomor agar Pandu bisa mengingatkan jadwal minum obat dan mengirim pemberitahuan penting."
+                  : "Hubungkan nomor agar Anda menerima pengingat dan pemberitahuan pendampingan dari Pandu."
+              }
+            />
+          )}
+
+          {showWhatsapp && <PushToggleCard />}
 
           {isPasien && (
             <section className="overflow-hidden rounded-2xl border border-red-200 bg-white shadow-xs">

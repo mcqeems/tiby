@@ -1,7 +1,7 @@
 "use client";
 
 import type { SidebarItem } from "@/components/layout/universal-sidebar";
-import { BookOpen, Home, UserCircle, Users } from "lucide-react";
+import { BookOpen, Home, UserCircle, Users , MessageCircle } from "lucide-react";
 
 export const pmoMenuItems: SidebarItem[] = [
   {
@@ -19,6 +19,11 @@ export const pmoMenuItems: SidebarItem[] = [
     label: "Pusat Edukasi",
     href: "/pmo/edukasi",
     icon: <BookOpen className="w-5 md:w-4 h-5 md:h-4" />,
+  },
+  {
+    label: "Tanya Pandu",
+    href: "/pmo/tanya-pandu",
+    icon: <MessageCircle className="w-5 md:w-4 h-5 md:h-4" />,
   },
   {
     label: "Profil Saya",

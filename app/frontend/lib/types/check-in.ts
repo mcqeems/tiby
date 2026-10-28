@@ -20,7 +20,7 @@ export interface SubmitCheckInDto {
   confirmedFacts?: {
     transcript: string;
     medicationStatus: MedicationStatus;
-    pillsTakenCount: number;
+    pillsTakenCount: number | null;
     symptoms: string[];
     intentToStop: boolean;
     confidence: number;
@@ -29,18 +29,20 @@ export interface SubmitCheckInDto {
 }
 
 
+/** Audio step: transcript only. Facts come from the text-extract step. */
 export interface AiAudioTranscriptResponse {
   transcript: string;
-  medicationTaken: string; // Atau gunakan MedicationStatus jika sesuai
-  pillsTakenCount: number;
+}
+
+export interface AiAudioExtractionResponse {
+  transcript: string;
+  medicationTaken: string;
+  pillsTakenCount: number | null;
   symptoms: string[];
   intentToStopOrRefuse: boolean;
   extractionConfidence: number;
-  emotionalSentiment: string;
+  emotionalSentiment?: string;
 }
-
-// Struktur AiAudioExtractionResponse sama dengan Transcript di atas
-export type AiAudioExtractionResponse = AiAudioTranscriptResponse;
 
 export interface CheckInVerdictResponse {
   checkInId: string;
