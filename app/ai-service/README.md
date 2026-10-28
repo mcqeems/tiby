@@ -41,7 +41,7 @@ Set in `.env`; also read per request, never logged. Anything already in the real
 
 | Env var                                          | Needed for                         | Notes                                                                                                 |
 | ------------------------------------------------ | ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `NARAROUTER_API_TOKEN` (or `NARAROUTER_API_KEY`) | check-in extraction + guidance     | requires `NARAROUTER_BASE_URL` including `/v1`; model via `TIBY_LLM_MODEL`, default `agnes-2.5-flash` |
+| `NARAROUTER_API_TOKEN` (or `NARAROUTER_API_KEY`) | check-in extraction + guidance     | requires `NARAROUTER_BASE_URL` including `/v1`; model via `TIBY_LLM_MODEL`, default `laguna-s-2.1` |
 | `GROQ_API_KEY`                                   | `/ai/extractions/check-in/audio`   | default transcriber (`TIBY_TRANSCRIBER=groq`)                                                         |
 | `FISH_AUDIO_API_TOKEN` (or `FISH_API_KEY`)       | audio when `TIBY_TRANSCRIBER=fish` | also requires `FISH_ENDPOINT`; optional alternative transcriber                                      |
 
