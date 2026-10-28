@@ -2,7 +2,7 @@
 
 Transparent keyword baseline used for offline smoke tests and deterministic
 tests. It is not an LLM and not clinically validated; production extraction
-uses :class:`providers.agnes.AgnesExtractor`.
+uses :class:`providers.nararouter.NaraRouterExtractor`.
 
 Also houses the mapper from internal facts to the public audio DTO, because
 both share the same keyword tables in :mod:`.constants`.
