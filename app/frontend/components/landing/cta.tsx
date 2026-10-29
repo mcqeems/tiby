@@ -34,13 +34,13 @@ function MarqueeRow({
     <div className="relative overflow-hidden py-2 [-webkit-mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)] [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
       <motion.div
         animate={{ x: reverse ? ["-50%", "0%"] : ["0%", "-50%"] }}
-        transition={{ repeat: Infinity, ease: "linear", duration: 36 }}
+        transition={{ repeat: Infinity, ease: "linear", duration: 60 }}
         className="flex w-max gap-3"
       >
         {[...items, ...items, ...items, ...items].map((item, i) => (
           <span
             key={i}
-            className="whitespace-nowrap rounded-full border border-gray-100 bg-white px-4 py-2 text-xs font-medium text-gray-500 shadow-sm"
+            className="whitespace-nowrap rounded-full bg-gray-200/70 px-5 py-2 text-xs font-medium tracking-wider text-gray-700"
           >
             {item}
           </span>
