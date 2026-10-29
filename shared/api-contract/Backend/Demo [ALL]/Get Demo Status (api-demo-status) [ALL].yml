@@ -1,0 +1,198 @@
+info:
+  name: Get Demo Status (api/demo/status) [ALL]
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/demo/status"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Get Demo Status - idle (200)
+    request:
+      url: "{{baseUrl}}/api/demo/status"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "78"
+        - name: etag
+          value: W/"4e-79KUsH4uarQf802GfIeqLoW0/FY"
+        - name: date
+          value: Thu, 29 Oct 2026 08:52:18 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            // false when the caller has no valid tiby_demo cookie
+            "active": false,
+            "expiresAt": null,
+            "activeCount": 0,
+            "maxActive": 10,
+            "sessions": []
+          }
+  - name: Get Demo Status - own session active (200)
+    request:
+      url: "{{baseUrl}}/api/demo/status"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "207"
+        - name: etag
+          value: W/"cf-JpvtPwNr9Y0ECkLptvlSQyao34M"
+        - name: date
+          value: Thu, 29 Oct 2026 08:52:31 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            "active": true,
+            "expiresAt": "2026-10-29T10:52:18.241Z",
+            // live sessions only; expired rows are excluded before cleanup
+            "activeCount": 1,
+            "maxActive": 10,
+            "sessions": [
+              {
+                // last 4 hex chars of the session id, never the raw id
+                "label": "35A7",
+                "startedAt": "2026-10-29T08:52:18.247Z",
+                "expiresAt": "2026-10-29T10:52:18.241Z",
+                // true only for the session owned by the caller's cookie
+                "isMine": true
+              }
+            ]
+          }
+  - name: Get Demo Status - all slots in use (200)
+    request:
+      url: "{{baseUrl}}/api/demo/status"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "1198"
+        - name: etag
+          value: W/"4ae-+nd8ni85vWpt+qrdiF3OufSn8Gc"
+        - name: date
+          value: Thu, 29 Oct 2026 08:52:36 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            "active": true,
+            "expiresAt": "2026-10-29T10:52:18.241Z",
+            "activeCount": 10,
+            "maxActive": 10,
+            "sessions": [
+              {
+                "label": "35A7",
+                "startedAt": "2026-10-29T08:52:18.247Z",
+                "expiresAt": "2026-10-29T10:52:18.241Z",
+                "isMine": true
+              },
+              {
+                "label": "5DB4",
+                "startedAt": "2026-10-29T08:52:36.884Z",
+                "expiresAt": "2026-10-29T08:59:36.884Z",
+                "isMine": false
+              },
+              {
+                "label": "E6FB",
+                "startedAt": "2026-10-29T08:52:36.884Z",
+                "expiresAt": "2026-10-29T09:06:36.884Z",
+                "isMine": false
+              },
+              {
+                "label": "EB12",
+                "startedAt": "2026-10-29T08:52:36.884Z",
+                "expiresAt": "2026-10-29T09:13:36.884Z",
+                "isMine": false
+              },
+              {
+                "label": "FD1E",
+                "startedAt": "2026-10-29T08:52:36.884Z",
+                "expiresAt": "2026-10-29T09:20:36.884Z",
+                "isMine": false
+              },
+              {
+                "label": "14E8",
+                "startedAt": "2026-10-29T08:52:36.884Z",
+                "expiresAt": "2026-10-29T09:27:36.884Z",
+                "isMine": false
+              },
+              {
+                "label": "3D8A",
+                "startedAt": "2026-10-29T08:52:36.884Z",
+                "expiresAt": "2026-10-29T09:34:36.884Z",
+                "isMine": false
+              },
+              {
+                "label": "5F29",
+                "startedAt": "2026-10-29T08:52:36.884Z",
+                "expiresAt": "2026-10-29T09:41:36.884Z",
+                "isMine": false
+              },
+              {
+                "label": "2E0D",
+                "startedAt": "2026-10-29T08:52:36.884Z",
+                "expiresAt": "2026-10-29T09:48:36.884Z",
+                "isMine": false
+              },
+              {
+                "label": "296D",
+                "startedAt": "2026-10-29T08:52:36.884Z",
+                "expiresAt": "2026-10-29T09:55:36.884Z",
+                "isMine": false
+              }
+            ]
+          }

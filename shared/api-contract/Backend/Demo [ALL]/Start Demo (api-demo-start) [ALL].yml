@@ -1,0 +1,89 @@
+info:
+  name: Start Demo (api/demo/start) [ALL]
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/demo/start"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Start Demo (200)
+    request:
+      url: "{{baseUrl}}/api/demo/start"
+      method: POST
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: set-cookie
+          value: tiby_demo=ff7aef034b0d57c1068b8e6f8db1b6aa8d82a4b2e9429e3b3a60358050b03c5a; Max-Age=7200; Path=/api/demo; Expires=Thu, 29 Oct 2026 10:52:19 GMT; HttpOnly; SameSite=Lax
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "40"
+        - name: etag
+          value: W/"28-edD8TqRtWIVTDkKpGRvQ8sMLhhs"
+        - name: date
+          value: Thu, 29 Oct 2026 08:52:19 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            // 2h TTL; an existing valid tiby_demo cookie returns its expiry
+            // instead of creating a second session
+            "expiresAt": "2026-10-29T10:52:18.241Z"
+          }
+  - name: Start Demo - all slots in use (429)
+    request:
+      url: "{{baseUrl}}/api/demo/start"
+      method: POST
+    response:
+      status: 429
+      statusText: Too Many Requests
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: content-length
+          value: "100"
+        - name: etag
+          value: W/"64-MAXmZFxIOny/hhQrx0w/plpPZ2A"
+        - name: date
+          value: Thu, 29 Oct 2026 08:52:36 GMT
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            // raised when 10 sessions are live or this IP started 5 in the
+            // last hour; nothing is created
+            "code": "DEMO_LIMIT",
+            "message": "Semua sesi demo sedang dipakai. Coba lagi saat sesi lain berakhir."
+          }
