@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { errorMessage } from "@/lib/errors";
+import { notify } from "@/lib/toast";
 import { pushApi } from "@/lib/api/push";
 import { urlBase64ToUint8Array } from "@/lib/push-utils";
 import { Bell, BellOff, Loader2, ShieldCheck } from "lucide-react";
@@ -80,12 +81,16 @@ export default function PushToggleCard({ bare = false }: { bare?: boolean }) {
         expirationTime: json.expirationTime ?? null,
         keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
       });
+      notify.success("Notifikasi Aktif", "Pengingat akan muncul di perangkat ini.");
       setState("on");
     } catch (err: unknown) {
       setState("error");
-      setError(
-        errorMessage(err, "Gagal mengaktifkan notifikasi di perangkat ini."),
+      const message = errorMessage(
+        err,
+        "Gagal mengaktifkan notifikasi di perangkat ini.",
       );
+      setError(message);
+      notify.error("Gagal Mengaktifkan", message);
     }
   };
 
@@ -99,12 +104,13 @@ export default function PushToggleCard({ bare = false }: { bare?: boolean }) {
         await pushApi.unsubscribe(subscription.endpoint);
         await subscription.unsubscribe();
       }
+      notify.success("Notifikasi Mati", "Pengingat di perangkat ini dinonaktifkan.");
       setState("off");
     } catch (err: unknown) {
       setState("error");
-      setError(
-        errorMessage(err, "Gagal menonaktifkan notifikasi."),
-      );
+      const message = errorMessage(err, "Gagal menonaktifkan notifikasi.");
+      setError(message);
+      notify.error("Gagal Menonaktifkan", message);
     }
   };
 

@@ -11,6 +11,7 @@ import CheckInResult from "./check-in-result";
 import PublicLoading from "@/components/ui/public-loading";
 import { fadeUp } from "@/lib/motion";
 import { pmoApi } from "@/lib/api/pmo";
+import { notify } from "@/lib/toast";
 import { CheckCircle2 } from "lucide-react";
 import type { FallbackButtonsPayload } from "@/lib/types/check-in";
 
@@ -59,7 +60,9 @@ export default function CheckInView({
             : (res as { items?: PmoPatient[] }).items || [];
           setPatients(list as PmoPatient[]);
         })
-        .catch((err) => console.error(err))
+        .catch(() =>
+          notify.error("Gagal Memuat", "Daftar pasien dampingan tidak dapat dimuat."),
+        )
         .finally(() => {
           if (isMounted) setLoadingPatients(false);
         });

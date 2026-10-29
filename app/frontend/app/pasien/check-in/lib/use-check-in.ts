@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { checkInsApi } from "@/lib/api/check-in";
 import { usePopup } from "@/components/ui/popup-provider";
+import { notify } from "@/lib/toast";
 import type {
   CheckInState,
   MedicationStatus,
@@ -9,7 +10,7 @@ import type {
 } from "@/lib/types/check-in";
 
 export function useCheckIn(treatmentPlanId?: string) {
-  const { confirm, notify } = usePopup();
+  const { confirm } = usePopup();
 
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
 
@@ -71,14 +72,10 @@ export function useCheckIn(treatmentPlanId?: string) {
       mediaRecorder.start();
       return true;
     } catch {
-      await notify({
-        variant: "warning",
-        badgeText: "Akses Mikrofon",
-        title: "Izin Mikrofon Ditolak",
-        description:
-          "Kami tidak dapat mengakses mikrofon. Silakan gunakan tombol manual di bawah.",
-        confirmLabel: "Mengerti",
-      });
+      notify.warning(
+        "Izin Mikrofon Ditolak",
+        "Kami tidak dapat mengakses mikrofon. Silakan gunakan tombol manual di bawah.",
+      );
       return false;
     }
   };
@@ -102,13 +99,7 @@ export function useCheckIn(treatmentPlanId?: string) {
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Gagal memproses suara.";
-      await notify({
-        variant: "danger",
-        badgeText: "Pemrosesan Gagal",
-        title: "Suara Tidak Terbaca",
-        description: message,
-        confirmLabel: "Coba Lagi",
-      });
+      notify.error("Suara Tidak Terbaca", message);
       updateStep("record");
     }
   };
@@ -145,14 +136,10 @@ export function useCheckIn(treatmentPlanId?: string) {
       if (error.code === "CHECK_IN_ALREADY_LOCKED") {
         updateStep("locked");
       } else {
-        await notify({
-          variant: "danger",
-          badgeText: "Gagal Mengirim",
-          title: "Laporan Tidak Terkirim",
-          description:
-            error.message || "Terjadi kesalahan pada server atau AI timeout.",
-          confirmLabel: "Tutup",
-        });
+        notify.error(
+          "Laporan Tidak Terkirim",
+          error.message || "Terjadi kesalahan pada server atau AI timeout.",
+        );
         updateStep("review");
       }
     }
@@ -189,14 +176,10 @@ export function useCheckIn(treatmentPlanId?: string) {
       if (error.code === "CHECK_IN_ALREADY_LOCKED") {
         updateStep("locked");
       } else {
-        await notify({
-          variant: "danger",
-          badgeText: "Gagal Mengirim",
-          title: "Laporan Tidak Terkirim",
-          description:
-            error.message || "Terjadi kesalahan jaringan. Silakan coba lagi.",
-          confirmLabel: "Tutup",
-        });
+        notify.error(
+          "Laporan Tidak Terkirim",
+          error.message || "Terjadi kesalahan jaringan. Silakan coba lagi.",
+        );
         updateStep("fallback");
       }
     }

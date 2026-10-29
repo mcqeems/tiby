@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { errorMessage } from "@/lib/errors";
+import { notify } from "@/lib/toast";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -153,6 +154,7 @@ export default function LoginView() {
     } catch (err: unknown) {
       const message = errorMessage(err, "Username/email atau password salah");
       setError(message);
+      notify.error("Login Gagal", message);
     } finally {
       setLoading(false);
     }

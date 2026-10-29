@@ -5,6 +5,7 @@ import { AnimatePresence } from "motion/react";
 import ErrorNotice from "@/components/ui/error-notice";
 import Pagination from "@/components/ui/pagination";
 import { errorMessage } from "@/lib/errors";
+import { notify } from "@/lib/toast";
 import { SkeletonRegion, SkeletonTable } from "@/components/ui/skeleton";
 import Link from "next/link"; // ✅ Pastikan import Link
 import { faskesApi } from "@/lib/api/faskes";
@@ -56,9 +57,9 @@ export default function PatientsTable() {
       setPatients(res.items || []);
       setTotal(res.total || 0);
     } catch (err: unknown) {
-      setErrorMsg(
-        errorMessage(err, "Gagal memuat daftar pasien."),
-      );
+      const message = errorMessage(err, "Gagal memuat daftar pasien.");
+      setErrorMsg(message);
+      notify.error("Gagal Memuat", message);
     } finally {
       setLoading(false);
     }

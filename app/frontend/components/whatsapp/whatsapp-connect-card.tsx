@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Skeleton, SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
+import { notify } from "@/lib/toast";
 import { formatDate } from "@/lib/format";
 import { whatsappApi } from "@/lib/api/whatsapp";
 import type {
@@ -163,6 +164,7 @@ export default function WhatsappConnectCard({
     const digits = phone.replace(/\D/g, "");
     if (digits.length < 8) {
       setError("Nomor WhatsApp minimal 8 digit.");
+      notify.warning("Nomor Terlalu Pendek", "Nomor WhatsApp minimal 8 digit.");
       return;
     }
 
@@ -176,11 +178,12 @@ export default function WhatsappConnectCard({
       setRemaining(
         Math.max(0, Math.floor((Date.parse(res.expiresAt) - Date.now()) / 1000)),
       );
+      notify.success("Kode Terkirim", `Kode verifikasi dikirim ke WhatsApp ${digits}.`);
       setCopied(false);
     } catch (err: unknown) {
-      setError(
-        errorMessage(err, "Gagal membuat kode verifikasi."),
-      );
+      const message = errorMessage(err, "Gagal membuat kode verifikasi.");
+      setError(message);
+      notify.error("Gagal Membuat Kode", message);
     } finally {
       setSubmitting(false);
     }
