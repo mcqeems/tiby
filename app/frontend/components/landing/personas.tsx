@@ -78,7 +78,7 @@ export default function Personas() {
       >
         <div
           ref={trackRef}
-          className="flex snap-x snap-mandatory gap-5 overflow-x-auto px-6 pb-4 md:justify-center [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex flex-col md:flex-row justify-center items-center gap-5  md:justify-center"
         >
           {PERSONAS.map((p) => (
             <PersonaCard key={p.title} {...p} />

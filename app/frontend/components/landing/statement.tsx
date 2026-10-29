@@ -1,7 +1,12 @@
 "use client";
 
 import { useRef } from "react";
-import { motion, useScroll, useTransform, type MotionValue } from "motion/react";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  type MotionValue,
+} from "motion/react";
 import { Mic, ShieldCheck, BadgeCheck, type LucideIcon } from "lucide-react";
 
 const SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -43,7 +48,7 @@ function BlurPill({
   return (
     <motion.span
       style={{ opacity, scale, filter }}
-      className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-2xl font-bold md:text-5xl ${bg}`}
+      className={`inline-flex items-center gap-2 rounded-full px-2 py-2 text-xl font-bold md:text-5xl ${bg}`}
     >
       <Icon aria-hidden className="h-[1em] w-[1em]" />
       {label}
@@ -70,7 +75,7 @@ function ShinePill({
   return (
     <motion.span
       style={{ opacity, y }}
-      className={`relative inline-flex items-center gap-2 overflow-hidden rounded-full px-5 py-2.5 text-2xl font-bold md:text-5xl ${bg}`}
+      className={`relative inline-flex items-center gap-2 overflow-hidden rounded-full px-2 py-2 text-xl font-bold md:text-5xl ${bg}`}
     >
       <Icon aria-hidden className="h-[1em] w-[1em]" />
       {label}
@@ -101,7 +106,7 @@ function ScramblePill({
   return (
     <motion.span
       style={{ opacity }}
-      className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-2xl font-bold md:text-5xl ${bg}`}
+      className={`inline-flex items-center gap-2 rounded-full px-2 py-2 text-xl font-bold md:text-5xl ${bg}`}
     >
       <Icon aria-hidden className="h-[1em] w-[1em]" />
       <span>
@@ -151,7 +156,7 @@ function Closer({ progress }: { progress: MotionValue<number> }) {
   return (
     <motion.p
       style={{ opacity, y }}
-      className="mt-8 font-heading text-3xl font-medium leading-snug text-gray-500 md:text-5xl"
+      className="mt-8 font-heading text-2xl font-medium leading-snug text-gray-500 md:text-5xl"
     >
       Begini cara penanganan yang ideal.
     </motion.p>
@@ -171,7 +176,7 @@ export default function Statement() {
       <div className="sticky top-0 flex h-screen flex-col items-center justify-center overflow-hidden px-6">
         <div className="flex flex-col items-start">
           <Opener progress={scrollYProgress} />
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <div className="mt-8 flex flex-wrap items-center justify-start gap-3">
             <BlurPill
               progress={scrollYProgress}
               icon={Mic}
