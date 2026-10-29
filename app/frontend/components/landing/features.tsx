@@ -121,7 +121,7 @@ function FeatureCard({
             rest: { scale: 0, opacity: 1 },
             hover: { scale: 28, opacity: 1 },
           }}
-          transition={{ duration: 0.85, ease: [0.4, 0, 0.2, 1] }}
+          transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
           className={`pointer-events-none absolute top-[22px] left-0 h-11 w-11 origin-center rounded-full ${fill}`}
         />
         <motion.div
@@ -129,19 +129,19 @@ function FeatureCard({
             rest: { opacity: 1, scale: 1, height: 44, marginBottom: 20 },
             hover: { opacity: 0, scale: 0.5, height: 0, marginBottom: 0 },
           }}
-          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+          transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
           className={`flex h-11 w-11 items-center justify-center overflow-hidden rounded-full ${chip}`}
         >
           <Icon className="h-5 w-5" />
         </motion.div>
         <motion.div
           variants={{ rest: { y: 0 }, hover: { y: -6 } }}
-          transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
+          transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
           className="relative"
         >
           <motion.h3
             variants={{ rest: { color: "#111827" }, hover: { color: onFill } }}
-            transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
+            transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
             className="font-heading text-[15px] font-bold"
           >
             {title}
@@ -151,7 +151,7 @@ function FeatureCard({
               rest: { color: "#6b7280", opacity: 1 },
               hover: { color: onFill, opacity: 0.85 },
             }}
-            transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
+            transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
             className="mt-1.5 text-sm leading-relaxed"
           >
             {desc}
