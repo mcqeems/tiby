@@ -76,6 +76,7 @@ Backend:
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Ya | Generate pasangan sendiri, jangan pakai contoh dari `.env.example` |
 | `PII_ENCRYPTION_KEY` | Ya | Hex 64 karakter |
 | `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_BUCKET`, `S3_REGION` | Ya, untuk upload | Dari provider S3 (mis. Supabase Storage) |
+| `S3_PUBLIC_BASE_URL` | Disarankan | URL dasar publik untuk membaca file: `https://<project-ref>.supabase.co/storage/v1/object/public/<bucket>`. Bila kosong, URL dibentuk dari endpoint S3 dan file tidak bisa dibuka publik (403) |
 | `WAHA_BOT_PHONE_NUMBER` | Ya, untuk WhatsApp | Nomor bot, format internasional tanpa `+` |
 | `WEB_URL` | Ya | Origin publik frontend |
 
@@ -161,6 +162,7 @@ docker compose logs -f backend # log per service
 | AI service crash: `No module named 'httpx'` | Dependency group `dev` tidak terinstal | Rebuild ai-service; Dockerfile harus memakai `uv sync --frozen` tanpa `--no-dev` |
 | Webhook WAHA ditolak backend | Secret webhook tidak sama | Samakan `WAHA_WEBHOOK_SECRET` (backend) dengan `X-Waha-Secret` (service waha), lalu recreate kedua service |
 | WAHA API membalas 401 | Header `X-Api-Key` tidak sesuai `WAHA_API_KEY` | Samakan API key pemanggil dengan konfigurasi service waha |
+| File ter-upload tapi URL-nya membalas 403 saat dibuka | `S3_PUBLIC_BASE_URL` belum diset, sehingga URL dibentuk dari endpoint S3 | Set `S3_PUBLIC_BASE_URL` ke URL publik bucket (lihat Konfigurasi Environment), lalu recreate backend |
 
 ### Deployment Tanpa Docker
 

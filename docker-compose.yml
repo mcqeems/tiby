@@ -153,6 +153,8 @@ services:
       # https://<project-ref>.supabase.co/storage/v1/s3). Uploads fail until
       # real values are set; the rest of the backend does not need storage.
       S3_ENDPOINT: https://dummy.supabase.co/storage/v1/s3
+      # URL publik untuk membaca file (bentuk /object/public/), BUKAN endpoint S3
+      S3_PUBLIC_BASE_URL: https://dummy.supabase.co/storage/v1/object/public/tiby-uploads
       S3_REGION: ap-southeast-1
       S3_BUCKET: tiby-uploads
       S3_ACCESS_KEY_ID: dummy-s3-access-key
