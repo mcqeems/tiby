@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import Mascot from "@/components/mascot";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Play } from "lucide-react";
 import { roleHome } from "@/lib/roles";
 import { signIn, type TibyUser, useSession } from "@/lib/auth-client";
 
@@ -177,7 +177,7 @@ export default function LoginView() {
       </Link>
 
       <div className="flex w-full max-w-5xl flex-col md:flex-row overflow-hidden rounded-3xl bg-white shadow-2xl shadow-gray-200/50 border border-gray-100 min-h-150">
-        <div className="relative hidden w-full md:flex md:w-1/2 flex-col justify-between p-10 sm:p-12 text-white overflow-hidden bg-tiby-teal-900">
+        <div className="relative hidden w-full md:flex md:w-1/2 flex-col justify-between p-10 sm:p-10 lg:p-12 text-white overflow-hidden bg-tiby-teal-900">
           <Image
             src="/login/bg-login.png"
             alt="Tiby Login Background"
@@ -198,20 +198,33 @@ export default function LoginView() {
               Silakan masuk untuk melanjutkan pendampingan dan pemantauan
               rutinitas sehatmu.
             </p>
+            <p className="mt-4 text-sm font-semibold text-white/90">
+              Juri UINIC 8.0 bisa menggunakan Demo ya 🙂
+            </p>
           </div>
 
-          <div className="relative z-20 flex items-center gap-3.5 border-l-4 border-white/30 pl-4">
-            <div className="relative w-11 h-11 rounded-full bg-white flex items-center justify-center shrink-0 shadow-lg overflow-hidden">
-              <Mascot emotion="happy" size={40} altText="Pandu" />
+          <div className="relative z-20 flex items-center justify-between gap-4 border-l-4 border-white/30 pl-4">
+            <div className="flex items-center gap-3.5">
+              <div className="relative w-11 h-11 rounded-full bg-white flex items-center justify-center shrink-0 shadow-lg overflow-hidden">
+                <Mascot emotion="happy" size={40} altText="Pandu" />
+              </div>
+              <div>
+                <p className="font-heading font-bold text-lg leading-tight tracking-wide text-white whitespace-nowrap">
+                  Tiby Health
+                </p>
+                <p className="text-[10px] text-white/80 uppercase tracking-widest font-semibold mt-0.5 whitespace-nowrap">
+                  Pendamping Cerdas
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="font-heading font-bold text-lg leading-tight tracking-wide text-white">
-                Tiby Health
-              </p>
-              <p className="text-[10px] text-white/80 uppercase tracking-widest font-semibold mt-0.5">
-                Pendamping Cerdas
-              </p>
-            </div>
+            <Link
+              href="/demo"
+              aria-label="Mode Demo"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white/15 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/25 lg:px-4"
+            >
+              <Play className="h-4 w-4" />
+              <span className="hidden lg:inline">Demo</span>
+            </Link>
           </div>
         </div>
 
@@ -336,6 +349,19 @@ export default function LoginView() {
                 >
                   {loading ? "Memproses..." : "Login"}
                 </button>
+
+                <div className="space-y-2 md:hidden">
+                  <Link
+                    href="/demo"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-tiby-teal-200 bg-tiby-teal-50 py-3.5 text-sm font-bold text-tiby-teal-700 transition-colors hover:bg-tiby-teal-100"
+                  >
+                    <Play className="h-4 w-4" />
+                    Coba Mode Demo
+                  </Link>
+                  <p className="text-center text-xs font-medium text-tiby-muted">
+                    Juri UINIC 8.0 bisa menggunakan Demo ya 🙂
+                  </p>
+                </div>
               </div>
 
               <div className="pt-4 text-center text-xs text-tiby-muted font-body leading-relaxed">
