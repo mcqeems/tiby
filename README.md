@@ -85,7 +85,7 @@ AI Service:
 | --- | --- | --- |
 | `NARAROUTER_API_TOKEN`, `NARAROUTER_API_KEY` | Ya, untuk AI | Dari akun NaraRouter |
 | `GROQ_API_KEY` | Ya, untuk AI | Dari akun Groq |
-| `FISH_AUDIO_API_TOKEN`, `FISH_API_KEY` | Ya, untuk transkripsi | Dari akun Fish Audio |
+| `FISH_AUDIO_API_TOKEN`, `FISH_API_KEY` | Tidak | Opsional — hanya dipakai bila transkripsi memakai provider Fish Audio (`TIBY_TRANSCRIBER=fish`); ai-service tetap jalan tanpa ini |
 
 ### Deploy dengan Docker
 
