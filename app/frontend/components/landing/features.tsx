@@ -16,7 +16,7 @@ import {
 const PHONES: { emotion: MascotEmotion; caption: string }[] = [
   { emotion: "listening", caption: "Lapor Suara, Tetap Tenang." },
   { emotion: "idle", caption: "Jadwal Obat Terjaga" },
-  { emotion: "empathy", caption: "Ditemani Setiap Hari" },
+  { emotion: "wave", caption: "Ditemani Setiap Hari" },
 ];
 
 const FEATURES: {
@@ -106,7 +106,9 @@ function FeatureCard({
       >
         <Icon className="h-5 w-5" />
       </div>
-      <h3 className="font-heading text-[15px] font-bold text-gray-900">{title}</h3>
+      <h3 className="font-heading text-[15px] font-bold text-gray-900">
+        {title}
+      </h3>
       <p className="mt-1.5 text-sm leading-relaxed text-gray-500">{desc}</p>
     </motion.div>
   );

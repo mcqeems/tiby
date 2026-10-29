@@ -34,14 +34,6 @@ export default function Hero() {
           </motion.p>
 
           <motion.div variants={revealItem} className="mt-8 w-full max-w-md">
-            <div className="flex items-center rounded-2xl bg-gray-100 px-5 py-4">
-              <span className="shrink-0 text-sm font-semibold text-gray-900">
-                tiby.id/
-              </span>
-              <span className="truncate text-sm text-gray-400">
-                username-kamu
-              </span>
-            </div>
             <Link
               href="/login"
               className="mt-4 inline-flex items-center justify-center rounded-2xl bg-tiby-teal-100 px-6 py-3.5 text-sm font-bold text-tiby-teal-700 transition-all hover:-translate-y-0.5 hover:bg-tiby-teal-200 hover:shadow-lg"
@@ -52,8 +44,8 @@ export default function Hero() {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, x: 40, scale: 0.96 }}
-          animate={{ opacity: 1, x: 0, scale: 1 }}
+          initial={{ opacity: 0, x: 100, scale: 1.2, rotate: -15 }}
+          animate={{ opacity: 1, x: 0, scale: 1, rotate: 0 }}
           transition={{ duration: 1, delay: 0.25, ease: EASE }}
           aria-hidden
           className="pointer-events-none absolute -bottom-8 right-0 hidden w-[44rem] select-none lg:block"

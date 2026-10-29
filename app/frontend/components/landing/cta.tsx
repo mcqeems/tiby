@@ -2,25 +2,24 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import Mascot from "@/components/mascot";
 import { Reveal } from "./shared";
 
 const ROW_A = [
   "SUDAH_MINUM • Rani",
-  "tiby.id/rani • 12 hari patuh",
+  "Rani • 12 hari patuh",
   "TERKENDALI • Bagas",
-  "tiby.id/bagas • PMO aktif",
+  "Bagas • PMO aktif",
   "SEMBUH • dr. Maya",
-  "tiby.id/maya • Faskes Menteng",
+  "Maya • Faskes Menteng",
 ];
 
 const ROW_B = [
   "+12 hari streak • Dewi",
-  "tiby.id/dewi • fase lanjutan",
+  "Dewi • fase lanjutan",
   "PATUH • Andi",
-  "tiby.id/andi • 30 hari patuh",
+  "Andi • 30 hari patuh",
   "SEHAT • Sinta",
-  "tiby.id/sinta • tanpa gejala",
+  "Sinta • tanpa gejala",
 ];
 
 function MarqueeRow({
@@ -70,19 +69,6 @@ export default function CTA() {
           <div className="relative mt-12">
             <MarqueeRow items={ROW_A} />
             <MarqueeRow items={ROW_B} reverse />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -bottom-6 right-10 hidden md:block"
-            >
-              <Mascot
-                emotion="wave"
-                animated
-                loop
-                size={110}
-                altText=""
-                className="opacity-90"
-              />
-            </div>
           </div>
         </div>
       </Reveal>

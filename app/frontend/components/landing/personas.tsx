@@ -2,7 +2,6 @@
 
 import { useRef } from "react";
 import { motion } from "motion/react";
-import { ArrowRight } from "lucide-react";
 import Mascot from "@/components/mascot";
 import { SectionHeading } from "./shared";
 import { VIEWPORT, staggerParent, revealItem } from "@/lib/motion";
@@ -85,14 +84,6 @@ export default function Personas() {
             <PersonaCard key={p.title} {...p} />
           ))}
         </div>
-        <button
-          type="button"
-          onClick={scrollNext}
-          aria-label="Lihat peran berikutnya"
-          className="absolute right-6 top-1/2 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white text-gray-900 shadow-lg transition hover:scale-110 md:flex"
-        >
-          <ArrowRight className="h-5 w-5" />
-        </button>
       </motion.div>
     </section>
   );
