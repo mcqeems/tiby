@@ -200,9 +200,13 @@ export default function Footer() {
             <Image
               src="/logo/logo.png"
               alt="Tiby Logo"
-              width={100}
-              height={28}
-              className="mb-4 object-contain"
+              width={1024}
+              height={448}
+              sizes="100px"
+              // Same file the navbar already preloads, so eager costs no request
+              // and keeps Next's LCP check quiet about the shared src.
+              loading="eager"
+              className="mb-4 h-auto w-[100px] object-contain"
             />
             <p className="max-w-[16rem] text-xs leading-relaxed text-gray-500">
               Teman pengobatan yang selalu ada, tanpa membuatmu merasa dihakimi.

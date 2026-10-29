@@ -23,7 +23,8 @@ interface MascotProps<E extends MascotEmotion = MascotEmotion> {
   fill?: boolean;
   className?: string;
   altText?: string;
-  priority?: boolean;
+  /** Preload the static art, for mascots above the fold. */
+  preload?: boolean;
 }
 
 const LOTTIE_LOADERS: Record<
@@ -86,7 +87,7 @@ export default function Mascot<E extends MascotEmotion = MascotEmotion>(
     fill = false,
     className = "",
     altText = "",
-    priority = false,
+    preload = false,
     loop = true,
   } = props;
 
@@ -195,7 +196,10 @@ export default function Mascot<E extends MascotEmotion = MascotEmotion>(
         alt=""
         fill
         sizes={fill ? "200px" : `${size}px`}
-        priority={priority}
+        preload={preload}
+        // The mascot is usually the first paint of the screen that shows it, so
+        // the stroke art loads eagerly; the Lottie is what waits for the viewport.
+        loading="eager"
         draggable={false}
         className={`object-contain transition-opacity duration-300 ${
           isLoaded && canAnimate ? "opacity-0" : "opacity-100"

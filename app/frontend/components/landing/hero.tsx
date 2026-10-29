@@ -61,9 +61,11 @@ export default function Hero() {
           <Image
             src="/holding.jpg"
             alt="Ilustrasi Aplikasi Tiby"
-            width={800}
-            height={800}
-            priority
+            width={896}
+            height={1200}
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            preload
+            loading="eager"
             className="h-auto w-full object-contain"
             style={{
               maskImage:

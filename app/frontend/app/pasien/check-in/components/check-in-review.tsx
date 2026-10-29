@@ -26,7 +26,7 @@ export default function CheckInReview({
             emotion="thinking"
             fill
             altText="Pandu berpikir"
-            priority
+            preload
           />
         </div>
         <div className="text-center space-y-1">

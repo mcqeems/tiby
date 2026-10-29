@@ -59,7 +59,7 @@ export default function GuidanceEmpty({
             animated
             loop={false}
             size={140}
-            priority
+            preload
             altText="Pandu melambai"
             className="drop-shadow-lg"
           />

@@ -27,7 +27,7 @@ export default function PublicLoading({
             emotion="happy"
             size={80}
             altText="Maskot Pandu Memuat"
-            priority
+            preload
             className="relative drop-shadow-md motion-safe:animate-blink"
           />
         </div>

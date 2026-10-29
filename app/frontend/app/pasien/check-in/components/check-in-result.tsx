@@ -322,7 +322,7 @@ export default function CheckInResult({ result }: CheckInResultProps) {
             fill
             altText={config.title}
             className="drop-shadow-xl"
-            priority
+            preload
           />
         </div>
       </div>

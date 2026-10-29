@@ -175,9 +175,11 @@ export default function UniversalSidebar({
               <Image
                 src={collapsed ? "/logo/logo-only.png" : "/logo/logo.png"}
                 alt={`${brandName} ${brandSubtitle}`}
-                width={collapsed ? 40 : 200}
-                height={collapsed ? 40 : 48}
-                priority
+                width={collapsed ? 500 : 1024}
+                height={collapsed ? 500 : 448}
+                sizes={collapsed ? "40px" : "91px"}
+                preload
+                loading="eager"
                 className="h-10 w-auto max-w-none object-contain object-left"
               />
             </div>

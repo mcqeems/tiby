@@ -32,9 +32,12 @@ export default function Navbar() {
           <Image
             src="/logo/logo.png"
             alt="Tiby Logo"
-            width={120}
-            height={32}
-            className="object-contain"
+            width={1024}
+            height={448}
+            sizes="120px"
+            preload
+            loading="eager"
+            className="h-auto w-[120px] object-contain"
           />
         </Link>
 

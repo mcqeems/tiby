@@ -185,7 +185,8 @@ export default function LoginView() {
             alt="Tiby Login Background"
             fill
             className="object-cover z-0"
-            priority
+            preload
+            loading="eager"
           />
 
           <div className="absolute inset-0 bg-linear-to-t from-tiby-teal-900/90 via-tiby-teal-900/40 to-transparent z-10" />
@@ -224,10 +225,12 @@ export default function LoginView() {
             <Image
               src="/logo/logo.png"
               alt="Tiby Logo"
-              width={120}
-              height={32}
-              className="object-contain"
-              priority
+              width={1024}
+              height={448}
+              sizes="120px"
+              className="h-auto w-[120px] object-contain"
+              preload
+              loading="eager"
             />
           </div>
 

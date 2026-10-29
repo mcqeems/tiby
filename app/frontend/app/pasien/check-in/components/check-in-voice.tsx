@@ -134,7 +134,7 @@ export default function CheckInVoice({
                   emotion={isRecording ? "listening" : "idle"}
                   fill
                   altText={isRecording ? "Pandu mendengarkan" : "Pandu menunggu"}
-                  priority
+                  preload
                 />
               </div>
             </motion.div>

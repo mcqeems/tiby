@@ -1,5 +1,4 @@
-"use client";
-
+import type { Metadata } from "next";
 import Navbar from "../components/landing/navbar";
 import Hero from "../components/landing/hero";
 import Features from "../components/landing/features";
@@ -8,6 +7,20 @@ import Testimonials from "../components/landing/testimonials";
 import CTA from "../components/landing/cta";
 import FAQ from "../components/landing/faq";
 import Footer from "../components/landing/footer";
+
+export const metadata: Metadata = {
+  title: {
+    absolute: "Tiby - Pendamping Cerdas Pengobatan",
+  },
+  description:
+    "Catat keluhan dan obat harian dengan bicara. Pandu mendengarkan tanpa menghakimi, dengan pengingat obat, check-in harian, dan edukasi dari panduan resmi.",
+  openGraph: {
+    title: "Tiby - Pendamping Cerdas Pengobatan",
+    description:
+      "Catat keluhan dan obat harian dengan bicara. Pandu mendengarkan tanpa menghakimi.",
+    type: "website",
+  },
+};
 
 export default function LandingPage() {
   return (

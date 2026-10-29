@@ -85,10 +85,12 @@ export default function PageHeader() {
           <Image
             src="/logo/logo.png"
             alt="Tiby Logo"
-            width={100}
-            height={28}
-            className="object-contain"
-            priority
+            width={1024}
+            height={448}
+            sizes="100px"
+            preload
+            loading="eager"
+            className="h-auto w-[100px] object-contain"
           />
         </Link>
 

@@ -156,7 +156,7 @@ export default function ConsentModal({
                   emotion="empathy"
                   fill
                   altText="Privasi"
-                  priority
+                  preload
                 />
               </div>
               <h1 className="text-xl font-heading font-bold text-tiby-ink lg:text-lg">
