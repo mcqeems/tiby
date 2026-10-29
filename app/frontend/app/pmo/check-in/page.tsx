@@ -1,4 +1,6 @@
 import CheckInView from "@/app/pasien/check-in/components/check-in-view";
+import PublicLoading from "@/components/ui/public-loading";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -11,7 +13,11 @@ export const metadata: Metadata = {
 export default function PmoCheckInPage() {
   return (
     <div className="h-full bg-tiby-white">
-      <CheckInView role="PMO" />
+      {/* useSearchParams() in CheckInView needs a Suspense boundary so the
+          segment can pre-render for instant navigation. */}
+      <Suspense fallback={<PublicLoading message="Memuat check-in..." />}>
+        <CheckInView role="PMO" />
+      </Suspense>
     </div>
   );
 }
