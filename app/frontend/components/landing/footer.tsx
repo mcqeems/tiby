@@ -45,7 +45,7 @@ export default function Footer() {
               alt="logo tiby"
             />
             <p className="mt-4 max-w-[16rem] text-xs leading-relaxed text-gray-500">
-              Teman pengobatan yang selalu ada, tanpa membuatmu merasa dihakimi.
+              Pendamping Cerdas Pengobatan TBC
             </p>
           </div>
           <div>
