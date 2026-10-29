@@ -1,0 +1,176 @@
+# Tiby — full local stack with DUMMY environment values.
+#
+#   docker compose up --build
+#
+#   Frontend   http://localhost:3000
+#   Backend    http://localhost:3001/api
+#   AI service http://localhost:8000/health
+#   WAHA       http://localhost:3008  (dashboard: admin / dummy-admin-password)
+#   Postgres   localhost:5432         (tiby / tiby_dummy_password / db: tiby)
+#
+# All secrets below are throwaway dummies for local runs only — replace them
+# before any real deployment.
+#
+# Object storage is NOT bundled: the backend expects an external
+# S3-compatible endpoint (e.g. Supabase Storage). The values below are
+# placeholders; uploads will fail until a real bucket is configured, but
+# everything else runs. WAHA starts with a dummy API key — scan the QR from
+# its dashboard to pair a WhatsApp session.
+#
+# First boot runs a one-shot `auth-migrate` service: TypeORM creates the app
+# tables, but the Better Auth tables (users/session/account/verification)
+# come from the Better Auth CLI — the backend reports "Database schema
+# mismatch" until they exist. It runs automatically; watch it with
+# `docker compose logs auth-migrate`.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tiby
+      POSTGRES_PASSWORD: tiby_dummy_password
+      POSTGRES_DB: tiby
+    ports:
+      - "5432:5432"
+    volumes:
+      - tiby-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tiby -d tiby"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  ai-service:
+    build:
+      context: ./app/ai-service
+      dockerfile: Dockerfile
+    environment:
+      # Dummy provider tokens: the service starts and /health works; AI calls
+      # that need a real provider will return 503 until real tokens are set.
+      NARAROUTER_API_TOKEN: dummy-token
+      NARAROUTER_API_KEY: dummy-token
+      GROQ_API_KEY: dummy-key
+      FISH_AUDIO_API_TOKEN: dummy-token
+      FISH_API_KEY: dummy-key
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  waha:
+    image: devlikeapro/waha
+    restart: unless-stopped
+    environment:
+      WAHA_DASHBOARD_USERNAME: admin
+      WAHA_DASHBOARD_PASSWORD: dummy-admin-password
+      WAHA_API_KEY: dummy-waha-api-key
+      # WAHA lives in the same compose network; the backend is reachable by
+      # service name (infra/waha's standalone compose uses host.docker.internal
+      # instead, because there the backend runs on the host).
+      WHATSAPP_HOOK_URL: http://backend:3001/api/webhooks/waha
+      WHATSAPP_HOOK_EVENTS: message
+      # Must match WAHA_WEBHOOK_SECRET in the backend environment below.
+      WHATSAPP_HOOK_CUSTOM_HEADERS: "X-Waha-Secret:dummy-waha-webhook-secret"
+      WHATSAPP_RESTART_ALL_SESSIONS: "True"
+      WHATSAPP_START_SESSION: "default"
+    ports:
+      - "3008:3000"
+    volumes:
+      - tiby-waha-sessions:/app/.sessions
+
+  # One-shot: creates the Better Auth tables, then exits. The backend waits
+  # for it (service_completed_successfully) so its first boot already finds
+  # a complete schema. Uses bunx to fetch @better-auth/cli once.
+  auth-migrate:
+    build:
+      context: .
+      dockerfile: app/backend/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://tiby:tiby_dummy_password@db:5432/tiby
+      BETTER_AUTH_URL: http://localhost:3001
+    command: ["bunx", "@better-auth/cli", "migrate", "--config", "src/auth/auth.config.ts", "--yes"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  backend:
+    build:
+      context: .
+      dockerfile: app/backend/Dockerfile
+    environment:
+      # development => TypeORM synchronize auto-creates the schema (this repo
+      # has no migrations). Switch to production only with real secrets.
+      NODE_ENV: development
+      PORT: "3001"
+      DATABASE_URL: postgresql://tiby:tiby_dummy_password@db:5432/tiby
+      BETTER_AUTH_SECRET: dummy-secret-for-local-docker-only-change-me-1234567890
+      BETTER_AUTH_URL: http://localhost:3001
+      # VAPID pair copied from app/backend/.env.example (committed example keys).
+      VAPID_PUBLIC_KEY: BAK8cLaycb4Sk0Ea8y_kjTed9Temj7WY-XxLfdhnzly2-6wcZrUaMGDPwEnFqsLTyQ7u-elWzCCzH5uc8Uwtubc
+      VAPID_PRIVATE_KEY: RsA3wvsJZIq0Hpr2koqYFr754pZ7qSm9QRTs6y0O_os
+      VAPID_SUBJECT: mailto:admin@tiby.health
+      PII_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      AI_SERVICE_URL: http://ai-service:8000
+      AI_SERVICE_TIMEOUT_MS: "90000"
+      WAHA_ENABLED: "true"
+      WAHA_BASE_URL: http://waha:3000
+      WAHA_SESSION: default
+      WAHA_API_KEY: dummy-waha-api-key
+      WAHA_BOT_PHONE_NUMBER: "6281200000000"
+      WAHA_WEBHOOK_SECRET: dummy-waha-webhook-secret
+      WEB_URL: http://localhost:3000
+      # External S3-compatible storage (placeholder — e.g. Supabase Storage:
+      # https://<project-ref>.supabase.co/storage/v1/s3). Uploads fail until
+      # real values are set; the rest of the backend does not need storage.
+      S3_ENDPOINT: https://dummy.supabase.co/storage/v1/s3
+      S3_REGION: ap-southeast-1
+      S3_BUCKET: tiby-uploads
+      S3_ACCESS_KEY_ID: dummy-s3-access-key
+      S3_SECRET_ACCESS_KEY: dummy-s3-secret-key
+      S3_FORCE_PATH_STYLE: "true"
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+      auth-migrate:
+        condition: service_completed_successfully
+      ai-service:
+        condition: service_started
+      waha:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: app/frontend/Dockerfile
+      args:
+        # Baked into the browser bundle at build time; the browser reaches
+        # the backend through the host port, not the compose service name.
+        NEXT_PUBLIC_API_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  tiby-pgdata:
+  tiby-waha-sessions:

@@ -1,0 +1,14 @@
+.git
+node_modules
+**/node_modules
+**/.next
+**/dist
+coverage
+*.tsbuildinfo
+.env
+.env*.local
+# The JS builds don't need the Python service (44 MB of datasets).
+app/ai-service
+infra/waha/sessions
+infra/waha/.env
+.playwright-mcp
