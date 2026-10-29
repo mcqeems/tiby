@@ -13,6 +13,7 @@
   "dependencies": {
     "@tiby/ts-shared": "workspace:*",
     "better-auth": "^1.7.11",
+    "lenis": "^1.3.27",
     "lottie-web": "^5.13.0",
     "lucide-react": "^0.548.0",
     "motion": "^14.6.0",

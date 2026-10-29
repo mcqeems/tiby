@@ -8,6 +8,7 @@ import Testimonials from "../components/landing/testimonials";
 import CTA from "../components/landing/cta";
 import FAQ from "../components/landing/faq";
 import Footer from "../components/landing/footer";
+import SmoothScroll from "../components/landing/smooth-scroll";
 
 
 export const metadata: Metadata = {
@@ -27,8 +28,9 @@ export const metadata: Metadata = {
 export default function LandingPage() {
   return (
     <div className="min-h-screen overflow-x-clip bg-white font-body text-tiby-ink selection:bg-tiby-teal-100 selection:text-tiby-teal-700">
-      <Navbar />
-      <main>
+      <SmoothScroll>
+        <Navbar />
+        <main>
         <Hero />
         <Statement />
         <Features />
@@ -36,8 +38,9 @@ export default function LandingPage() {
         <Testimonials />
         <CTA />
         <FAQ />
-      </main>
-      <Footer />
+        </main>
+        <Footer />
+      </SmoothScroll>
     </div>
   );
 }
