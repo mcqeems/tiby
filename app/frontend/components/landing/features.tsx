@@ -25,15 +25,15 @@ const FEATURES: {
     icon: Mic,
     title: "Lapor Suara",
     desc: "Cukup bicara. AI kami mengekstrak keluhan dan jumlah obatmu secara otomatis.",
-    chip: "bg-tiby-teal-100 text-tiby-teal-700",
+    chip: "text-tiby-teal-100 bg-tiby-teal-600",
     fill: "bg-tiby-teal-600",
     onFill: "#f1faf9",
   },
   {
     icon: BellRing,
     title: "Pengingat Pintar",
-    desc: "Bot WhatsApp mengingatkan jadwalmu, lalu menghubungi PMO dan Faskes bila kamu hening.",
-    chip: "bg-amber-100 text-amber-600",
+    desc: "Bot WhatsApp mengingatkan jadwalmu, lalu menghubungi PMO dan Faskes.",
+    chip: "text-amber-100 bg-amber-500",
     fill: "bg-amber-500",
     onFill: "#fffbeb",
   },
@@ -41,7 +41,7 @@ const FEATURES: {
     icon: ShieldCheck,
     title: "Privasi Terjaga",
     desc: "Nama pasien disamarkan. Notifikasi tidak menyebut 'TBC' agar aman di tempat umum.",
-    chip: "bg-violet-100 text-violet-600",
+    chip: "text-violet-100 bg-violet-500",
     fill: "bg-violet-500",
     onFill: "#f5f3ff",
   },
@@ -49,7 +49,7 @@ const FEATURES: {
     icon: CalendarCheck2,
     title: "Streak Harian",
     desc: "Bangun streak kepatuhan hari demi hari. Hari yang penuh terkunci otomatis.",
-    chip: "bg-rose-100 text-rose-600",
+    chip: "text-rose-100 bg-rose-500",
     fill: "bg-rose-500",
     onFill: "#fff1f2",
   },
@@ -57,7 +57,7 @@ const FEATURES: {
     icon: Map,
     title: "Peta Jalan Sembuh",
     desc: "180 hari terapi dipetakan jadi fase yang jelas. Kamu selalu tahu sudah sejauh mana.",
-    chip: "bg-pink-100 text-pink-600",
+    chip: "text-pink-100 bg-pink-500",
     fill: "bg-pink-500",
     onFill: "#fdf2f8",
   },
@@ -65,7 +65,7 @@ const FEATURES: {
     icon: BookOpen,
     title: "Edukasi Valid",
     desc: "Materi bacaan harian bersumber langsung dari Kemenkes dan WHO.",
-    chip: "bg-sky-100 text-sky-600",
+    chip: "text-sky-100 bg-sky-500",
     fill: "bg-sky-500",
     onFill: "#f0f9ff",
   },
@@ -122,12 +122,12 @@ function FeatureCard({
             hover: { scale: 28, opacity: 1 },
           }}
           transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
-          className={`pointer-events-none absolute top-[22px] left-0 h-11 w-11 origin-center rounded-full ${fill}`}
+          className={`pointer-events-none absolute top-[0px] left-0 h-11 w-11 origin-center rounded-full ${fill}`}
         />
         <motion.div
           variants={{
             rest: { opacity: 1, scale: 1, height: 44, marginBottom: 20 },
-            hover: { opacity: 0, scale: 0.5, height: 0, marginBottom: 0 },
+            hover: { opacity: 0, marginBottom: 0 },
           }}
           transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
           className={`flex h-11 w-11 items-center justify-center overflow-hidden rounded-full ${chip}`}
