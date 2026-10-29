@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Plus } from "lucide-react";
 import { EASE, Reveal } from "./shared";
+import Mascot from "@/components/mascot";
 
 const FAQS = [
   {
@@ -33,12 +34,15 @@ export default function FAQ() {
       className="mx-auto grid max-w-6xl scroll-mt-24 grid-cols-1 gap-10 px-6 py-20 md:grid-cols-5"
     >
       <div className="md:col-span-2">
-        <Reveal className="md:sticky md:top-28">
+        <Reveal>
           <h2 className="font-heading text-3xl font-bold leading-tight tracking-tight text-gray-900 md:text-4xl">
             Pertanyaan yang
             <br />
             Sering Muncul
           </h2>
+          <div className="mt-8 hidden justify-start md:flex">
+            <Mascot emotion="idle" animated loop size={200} altText="Pandu" />
+          </div>
         </Reveal>
       </div>
 
