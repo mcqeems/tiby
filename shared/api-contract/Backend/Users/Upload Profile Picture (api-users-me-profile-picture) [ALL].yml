@@ -12,7 +12,7 @@ http:
       - name: file
         type: file
         value:
-          - /home/mcqeems/Documents/Project/UINIC 8.0/tiby/shared/assets/images/ocr-test.jpeg
+          - /home/mcqeems/Documents/Project/UINIC 8.0/tiby/shared/assets/images/profile.jpg
         contentType: image/jpeg
   auth: inherit
 
