@@ -23,6 +23,7 @@ import { EscalationModule } from "./modules/internal/escalation/escalation.modul
 import { ReminderModule } from "./modules/internal/reminder/reminder.module.js";
 import { EducationModule } from "./modules/education/education.module.js";
 import { AuditModule } from "./modules/internal/audit/audit.module.js";
+import { StorageModule } from "./modules/internal/storage/storage.module.js";
 import { UsersModule } from "./modules/users/users.module.js";
 import { GuidanceModule } from "./modules/guidance/guidance.module.js";
 import { StatsModule } from "./modules/stats/stats.module.js";
@@ -49,6 +50,7 @@ import { NotificationsModule } from "./modules/notifications/notifications.modul
     }),
     AuthModule.forRoot({ auth }),
     AuditModule,
+    StorageModule,
     OnboardingModule,
     ConsentModule,
     CheckInModule,

@@ -12,6 +12,8 @@ describe("UsersService Unit Tests", () => {
   let mockUserRepo: any;
   let mockFacilityRepo: any;
   let mockAuditRepo: any;
+  let mockStorageService: any;
+  let mockConfigService: any;
 
   beforeEach(() => {
     mockUserRepo = {
@@ -27,8 +29,22 @@ describe("UsersService Unit Tests", () => {
       create: vi.fn().mockImplementation((val) => val),
       save: vi.fn().mockResolvedValue({}),
     };
+    mockStorageService = {
+      putObject: vi.fn(),
+      deleteObject: vi.fn(),
+      buildPublicUrl: vi.fn(),
+    };
+    mockConfigService = {
+      get: vi.fn().mockReturnValue("profile-pictures/"),
+    };
 
-    service = new UsersService(mockUserRepo, mockFacilityRepo, mockAuditRepo);
+    service = new UsersService(
+      mockUserRepo,
+      mockFacilityRepo,
+      mockAuditRepo,
+      mockStorageService,
+      mockConfigService,
+    );
   });
 
   describe("createUser", () => {

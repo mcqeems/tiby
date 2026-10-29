@@ -8,8 +8,16 @@ import {
   Query,
   Req,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
+  BadRequestException,
   UnauthorizedException,
+  SerializeOptions,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from '../services/users.service.js';
 import { RolesGuard } from '../../../common/guards/roles.guard.js';
 import { Roles } from '../../../common/decorators/roles.decorator.js';
@@ -20,11 +28,13 @@ import {
   ResetUserPasswordSchema,
   UpdateUserSchema,
   ListUsersQuerySchema,
+  UploadProfilePictureResponseSchema,
   type CreateUserDto,
   type ChangeOwnPasswordDto,
   type ResetUserPasswordDto,
   type UpdateUserDto,
   type ListUsersQuery,
+  type UploadProfilePictureResponse,
   type UserListResponse,
   type UserSummary,
   type UserRole,
@@ -79,6 +89,35 @@ export class UsersController {
   async getMe(@Req() req: AuthenticatedRequest): Promise<UserSummary> {
     const caller = this.extractCaller(req);
     return this.usersService.getMe(caller.id);
+  }
+
+  @Post('me/profile-picture')
+  @Roles(['ADMIN', 'NAKES', 'PMO', 'PASIEN'])
+  @SerializeOptions({ schema: UploadProfilePictureResponseSchema })
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  async uploadProfilePicture(
+    @Req() req: AuthenticatedRequest,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new FileTypeValidator({
+            fileType: /^image\/(jpeg|png|webp)$/,
+            fallbackToMimetype: true,
+          }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ): Promise<UploadProfilePictureResponse> {
+    if (!file) {
+      throw new BadRequestException({
+        code: 'BAD_REQUEST',
+        message: "Image file is required in 'file' form-data field",
+      });
+    }
+    const caller = this.extractCaller(req);
+    return this.usersService.uploadProfilePicture(caller.id, file);
   }
 
   @Get()

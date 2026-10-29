@@ -6,10 +6,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, In, Repository, type FindOptionsWhere } from 'typeorm';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+import { ConfigService } from '@nestjs/config';
 import { AuthUser } from '../../../auth/entities/auth-user.entity.js';
 import { Facility } from '../../facilities/entities/facilities.entity.js';
 import { AuditLog } from '../../internal/audit/entities/audit-log.entity.js';
+import { StorageService } from '../../internal/storage/storage.service.js';
 import { auth } from '../../../auth/auth.config.js';
 import type {
   CreateUserDto,
@@ -27,6 +29,14 @@ function hashPhone(phone: string): string {
 }
 
 const MANAGEABLE_ROLES = ['PASIEN', 'PMO'] as const;
+
+// 5MB jpeg/png/webp; mimetype allowlist is enforced by ParseFilePipe, this
+// maps the extension so the S3 key keeps a correct suffix.
+const PROFILE_PICTURE_EXTENSIONS: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
 
 /**
  * Shared authorization rule for editing / resetting another user's account.
@@ -74,6 +84,8 @@ export class UsersService {
     private readonly facilityRepo: Repository<Facility>,
     @InjectRepository(AuditLog)
     private readonly auditRepo: Repository<AuditLog>,
+    private readonly storageService: StorageService,
+    private readonly config: ConfigService,
   ) {}
 
   async createUser(
@@ -179,6 +191,7 @@ export class UsersService {
       username: dto.username,
       name: dto.fullName,
       role: dto.role,
+      image: null,
       whatsappNumber: dto.whatsappNumber,
       facilityId: targetFacilityId,
       facility: targetFacilityName,
@@ -430,6 +443,7 @@ export class UsersService {
         email: user.email,
         name: user.name,
         role: user.role,
+        image: user.image,
         facilityId: user.facilityId,
         facility: user.facility?.name ?? null,
       })),
@@ -456,9 +470,70 @@ export class UsersService {
       email: user.email,
       name: user.name,
       role: user.role,
+      image: user.image,
       whatsappNumber: user.whatsappEncrypted!,
       facilityId: user.facilityId,
       facility: user.facility?.name ?? null,
     };
+  }
+
+  async uploadProfilePicture(
+    callerUserId: string,
+    file: Express.Multer.File,
+  ): Promise<{ imageUrl: string }> {
+    const user = await this.userRepo.findOneBy({ id: callerUserId });
+    if (!user) {
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'User not found',
+      });
+    }
+
+    const ext = PROFILE_PICTURE_EXTENSIONS[file.mimetype];
+    if (!ext) {
+      throw new BadRequestException({
+        code: 'BAD_REQUEST',
+        message: 'Only jpeg, png, and webp images are allowed',
+      });
+    }
+
+    const prefix = this.config.get<string>('S3_PROFILE_PREFIX')!;
+    // ponytail: key is server-generated (no user input), one object per
+    // upload — old picture deleted below. Reuse StorageService for new domains.
+    const key = `${prefix}${callerUserId}/${randomUUID()}.${ext}`;
+    const imageUrl = await this.storageService.putObject({
+      key,
+      body: file.buffer,
+      contentType: file.mimetype,
+    });
+
+    if (user.image) {
+      const oldKey = this.extractStorageKey(user.image, prefix);
+      if (oldKey) await this.storageService.deleteObject(oldKey);
+    }
+
+    // Write through Better Auth like updateUser: the TypeORM transformer would
+    // otherwise re-encrypt every PII column on save.
+    const ctx = await auth.$context;
+    await ctx.internalAdapter.updateUser(callerUserId, { image: imageUrl });
+
+    await this.auditRepo.save(
+      this.auditRepo.create({
+        actorUserId: callerUserId,
+        actorRole: user.role,
+        action: 'USER_PROFILE_PICTURE_UPDATE',
+        targetEntity: 'users',
+        targetId: callerUserId,
+        metadataJson: { key },
+      }),
+    );
+
+    return { imageUrl };
+  }
+
+  private extractStorageKey(url: string, prefix: string): string | null {
+    const idx = url.indexOf(prefix);
+    if (idx === -1) return null;
+    return url.slice(idx);
   }
 }
