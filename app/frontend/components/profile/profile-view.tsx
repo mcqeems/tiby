@@ -40,7 +40,6 @@ import {
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import LogoAnimate from "../logo-animate";
 
 import { notify } from "@/lib/toast";
 type ActionKey =
@@ -284,9 +283,7 @@ export default function ProfileView() {
       </div>
 
       <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
-        <div className="relative h-28 overflow-hidden flex justify-end items-center px-4 bg-linear-to-r from-tiby-teal-600 to-tiby-teal-200">
-          <LogoAnimate loop={false} version="stop-middle" size={86} />
-        </div>
+        <div className="relative h-28 overflow-hidden flex justify-end items-center px-4 bg-tiby-teal-600"></div>
 
         <div className="px-6 pb-6">
           <div className="-mt-12 flex flex-col gap-4 sm:flex-row sm:items-end">
