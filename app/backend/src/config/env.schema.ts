@@ -35,6 +35,19 @@ export const EnvSchema = z.object({
   WAHA_API_KEY: z.string().optional().default(""),
   WAHA_BOT_PHONE_NUMBER: z.string().optional().default(""),
   WAHA_WEBHOOK_SECRET: z.string().optional().default(""),
+
+  S3_ENDPOINT: z.string().default("http://localhost:9000"),
+  S3_REGION: z.string().default("ap-southeast-1"),
+  S3_BUCKET: z.string().default("tiby-uploads"),
+  S3_ACCESS_KEY_ID: z.string().optional().default(""),
+  S3_SECRET_ACCESS_KEY: z.string().optional().default(""),
+  S3_PUBLIC_BASE_URL: z.string().optional().default(""),
+  S3_FORCE_PATH_STYLE: z
+    .string()
+    .optional()
+    .default("true")
+    .transform((val) => val === "true"),
+  S3_PROFILE_PREFIX: z.string().default("profile-pictures/"),
 }).superRefine((env, ctx) => {
   if (env.NODE_ENV !== "production" || !env.WAHA_ENABLED) return;
   if (!env.WAHA_WEBHOOK_SECRET) {
@@ -49,6 +62,20 @@ export const EnvSchema = z.object({
       code: "custom",
       path: ["WAHA_BOT_PHONE_NUMBER"],
       message: "WAHA_BOT_PHONE_NUMBER is required in production when WAHA is enabled",
+    });
+  }
+  if (!env.S3_ACCESS_KEY_ID) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["S3_ACCESS_KEY_ID"],
+      message: "S3_ACCESS_KEY_ID is required in production",
+    });
+  }
+  if (!env.S3_SECRET_ACCESS_KEY) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["S3_SECRET_ACCESS_KEY"],
+      message: "S3_SECRET_ACCESS_KEY is required in production",
     });
   }
 });
