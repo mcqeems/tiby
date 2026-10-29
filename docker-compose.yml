@@ -98,6 +98,31 @@ services:
         condition: service_healthy
     restart: "no"
 
+  # One-shot: creates the single production ADMIN account at deployment
+  # start (after auth-migrate). Upsert-safe: an existing admin is left
+  # untouched. Set a real SEED_ADMIN_PASSWORD (min 12 chars) before
+  # deploying; with the placeholder below the seed skips itself with a
+  # warning in its logs.
+  seed-admin:
+    build:
+      context: .
+      dockerfile: app/backend/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://tiby:tiby_dummy_password@db:5432/tiby
+      BETTER_AUTH_SECRET: dummy-secret-for-local-docker-only-change-me-1234567890
+      BETTER_AUTH_URL: http://localhost:3001
+      SEED_ADMIN_EMAIL: admin@tiby.internal
+      SEED_ADMIN_USERNAME: admin
+      SEED_ADMIN_NAME: Administrator Tiby
+      SEED_ADMIN_PASSWORD: CHANGE_ME_MIN_12_CHARS
+    command: ["bun", "run", "src/database/seeds/prod-seed.ts"]
+    depends_on:
+      db:
+        condition: service_healthy
+      auth-migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
   backend:
     build:
       context: .

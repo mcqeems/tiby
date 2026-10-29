@@ -108,6 +108,7 @@ Catatan first boot:
 
 - Service one-shot `auth-migrate` membuat tabel Better Auth (`users`, `session`, `account`, `verification`) dan backend menunggu service ini selesai sebelum start. Cek dengan `docker compose logs auth-migrate`.
 - Tabel aplikasi dibuat oleh TypeORM `synchronize` karena repo belum memiliki migration. Ini alasan `NODE_ENV` diset `development` pada compose; lihat Aturan.
+- Service one-shot `seed-admin` membuat satu akun ADMIN produksi (`SEED_ADMIN_EMAIL` / `SEED_ADMIN_USERNAME`, default `admin@tiby.internal` / `admin`) setelah `auth-migrate` selesai. Script-nya upsert: akun yang sudah ada tidak diubah, dan password yang sudah ter-set tidak pernah ditimpa. Wajib mengisi `SEED_ADMIN_PASSWORD` asli (minimal 12 karakter) pada service `seed-admin`; selama masih placeholder, seed melewati dirinya sendiri dengan peringatan di log (`docker compose logs seed-admin`).
 - Pairing WhatsApp: buka dashboard WAHA di port 3008, login dengan `WAHA_DASHBOARD_USERNAME` / `WAHA_DASHBOARD_PASSWORD`, lalu scan QR pada sesi `default`.
 - Data demo (opsional): `docker compose exec backend bun run seed`.
 
