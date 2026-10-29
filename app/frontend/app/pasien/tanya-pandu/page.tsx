@@ -1,7 +1,10 @@
 import GuidanceView from "@/components/guidance/guidance-view";
-import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
-import { Suspense } from "react";
 import type { Metadata } from "next";
+
+/** Auth-gated tree (RoleGuard returns null without a session), so the
+    segment cannot be validated for instant navigation. Documented opt-out:
+    https://nextjs.org/docs/messages/instant-unrendered-segment */
+export const instant = false;
 
 export const metadata: Metadata = {
   title: "Tanya Pandu",
@@ -13,11 +16,7 @@ export const metadata: Metadata = {
 export default function PasienGuidancePage() {
   return (
     <div className="mx-auto max-w-4xl">
-      {/* useSession() in the tree suspends pre-render without data; the
-          boundary keeps the segment eligible for instant navigation. */}
-      <Suspense fallback={<SkeletonRegion label="Memuat..."><SkeletonRows rows={3} /></SkeletonRegion>}>,
-        <GuidanceView />
-      </Suspense>
+      <GuidanceView />
     </div>
   );
 }

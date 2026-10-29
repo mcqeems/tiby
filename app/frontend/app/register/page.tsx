@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 
+
 export const metadata: Metadata = {
   title: "Pendaftaran Akun",
   description:

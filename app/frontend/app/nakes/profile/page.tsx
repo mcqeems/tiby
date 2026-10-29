@@ -1,7 +1,10 @@
-import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import ProfileView from "@/components/profile/profile-view";
+
+/** Auth-gated tree (RoleGuard returns null without a session), so the
+    segment cannot be validated for instant navigation. Documented opt-out:
+    https://nextjs.org/docs/messages/instant-unrendered-segment */
+export const instant = false;
 
 export const metadata: Metadata = {
   title: "Profil Nakes",
@@ -11,7 +14,5 @@ export const metadata: Metadata = {
 };
 
 export default function NakesProfilePage() {
-  return <Suspense fallback={<SkeletonRegion label="Memuat..."><SkeletonRows rows={3} /></SkeletonRegion>}>,
-        <ProfileView />
-      </Suspense>;
+  return <ProfileView />;
 }

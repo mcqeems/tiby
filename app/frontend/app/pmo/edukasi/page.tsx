@@ -1,7 +1,10 @@
 import EducationView from "@/app/pasien/edukasi/components/education-view";
-import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
-import { Suspense } from "react";
 import type { Metadata } from "next";
+
+/** Auth-gated tree (RoleGuard returns null without a session), so the
+    segment cannot be validated for instant navigation. Documented opt-out:
+    https://nextjs.org/docs/messages/instant-unrendered-segment */
+export const instant = false;
 
 export const metadata: Metadata = {
   title: "Edukasi Harian",
@@ -9,7 +12,5 @@ export const metadata: Metadata = {
     "Baca materi edukasi kesehatan dan tips pengobatan dari Kemenkes dan WHO.",
 };
 export default function PmoEdukasiPage() {
-  return <Suspense fallback={<SkeletonRegion label="Memuat..."><SkeletonRows rows={3} /></SkeletonRegion>}>,
-        <EducationView role="PMO" />
-      </Suspense>;
+  return <EducationView role="PMO" />;
 }

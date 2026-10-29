@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import LoginView from "./components/login-view";
 
 
+
 export const metadata: Metadata = {
   title: "Masuk ke Akun",
   description:

@@ -1,7 +1,10 @@
 import FacilityManager from "./components/facility-manager";
-import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
-import { Suspense } from "react";
 import type { Metadata } from "next";
+
+/** Auth-gated tree (RoleGuard returns null without a session), so the
+    segment cannot be validated for instant navigation. Documented opt-out:
+    https://nextjs.org/docs/messages/instant-unrendered-segment */
+export const instant = false;
 
 export const metadata: Metadata = {
   title: "Master Fasilitas Kesehatan",
@@ -12,9 +15,7 @@ export const metadata: Metadata = {
 export default function AdminFacilitiesPage() {
   return (
     <div className="">
-      <Suspense fallback={<SkeletonRegion label="Memuat..."><SkeletonRows rows={3} /></SkeletonRegion>}>,
-        <FacilityManager />
-      </Suspense>
+      <FacilityManager />
     </div>
   );
 }

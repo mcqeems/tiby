@@ -5,6 +5,7 @@ import { roleHome } from "@/lib/roles";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+
 export default function DashboardRedirect() {
   const { data, isPending } = useSession();
   const router = useRouter();

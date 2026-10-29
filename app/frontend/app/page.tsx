@@ -9,6 +9,7 @@ import CTA from "../components/landing/cta";
 import FAQ from "../components/landing/faq";
 import Footer from "../components/landing/footer";
 
+
 export const metadata: Metadata = {
   title: {
     absolute: "Tiby - Pendamping Cerdas Pengobatan",

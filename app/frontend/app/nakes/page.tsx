@@ -1,7 +1,11 @@
+
 import NakesOverview from "./components/nakes-overview";
-import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
-import { Suspense } from "react";
 import type { Metadata } from "next";
+
+/** Auth-gated tree (RoleGuard returns null without a session), so the
+    segment cannot be validated for instant navigation. Documented opt-out:
+    https://nextjs.org/docs/messages/instant-unrendered-segment */
+export const instant = false;
 
 export const metadata: Metadata = {
   title: "Dashboard Nakes",
@@ -11,15 +15,9 @@ export const metadata: Metadata = {
 export default function NakesPage() {
   return (
     <div>
-      <Suspense
-        fallback={
-          <SkeletonRegion label="Memuat...">
-            <SkeletonRows rows={3} />
-          </SkeletonRegion>
-        }
-      >
-        <NakesOverview />
-      </Suspense>
+    
+
+      <NakesOverview />
     </div>
   );
 }
