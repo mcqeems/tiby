@@ -1,16 +1,46 @@
 "use client";
 
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight, Home, LogOut } from "lucide-react";
 import { useSession, type TibyUser } from "@/lib/auth-client";
+import { usersApi } from "@/lib/api/users";
+import { readAvatar, subscribeAvatar } from "@/lib/avatar";
 import { handleSignOut } from "@/app/role-guard";
 
 export default function PageHeader() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const user = session?.user as TibyUser | undefined;
+
+  // Same avatar source as the sidebar: published by the profile page after
+  // upload, seeded below from /api/users/me (the session carries no `image`).
+  const publishedAvatar = useSyncExternalStore(
+    subscribeAvatar,
+    readAvatar,
+    () => undefined,
+  );
+  const [sessionAvatar, setSessionAvatar] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user?.id || publishedAvatar !== undefined) return;
+    let active = true;
+    usersApi
+      .getMe()
+      .then((me) => {
+        if (active) setSessionAvatar(me.image ?? null);
+      })
+      .catch(() => {
+        // Keep the initial-letter fallback; header must never break the page.
+      });
+    return () => {
+      active = false;
+    };
+  }, [user?.id, publishedAvatar]);
+
+  const image =
+    publishedAvatar !== undefined ? publishedAvatar : sessionAvatar;
 
   const segments = pathname.split("/").filter(Boolean);
   const roleRoot = segments[0] ? `/${segments[0]}` : "/";
@@ -100,8 +130,19 @@ export default function PageHeader() {
             href={profileUrl}
             className="flex items-center gap-2 bg-tiby-teal-50 px-2.5 py-1.5 rounded-xl border border-tiby-teal-100 hover:bg-tiby-teal-100 transition"
           >
-            <div className="w-6 h-6 rounded-full bg-tiby-teal-600 flex items-center justify-center text-white text-[10px] font-bold">
-              {avatarText.toUpperCase()}
+            <div className="w-6 h-6 rounded-full bg-tiby-teal-600 flex items-center justify-center overflow-hidden text-white text-[10px] font-bold">
+              {image ? (
+                // One-off plain img: S3 avatar host is dynamic
+                // (S3_PUBLIC_BASE_URL), so next/image remotePatterns cannot cover it.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={image}
+                  alt={`Foto profil ${user?.name || user?.username || ""}`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                avatarText.toUpperCase()
+              )}
             </div>
             <span className="text-[11px] font-bold text-tiby-teal-800 max-w-17.5 truncate">
               {user?.name?.split(" ")[0] || "Profil"}
