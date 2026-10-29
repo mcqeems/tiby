@@ -59,14 +59,14 @@ export default function Hero() {
           className="pointer-events-none absolute -bottom-8 right-0 hidden w-[44rem] select-none lg:block"
         >
           <Image
-            src="/holding.jpg"
-            alt=""
+            src="/holding.png"
+            alt="tiby holding phone"
             width={896}
             height={1200}
             sizes="44rem"
             preload
             loading="eager"
-            className="h-auto w-full object-contain [mask-image:linear-gradient(to_bottom,black_75%,transparent_100%)]"
+            className="h-auto w-full object-contain"
           />
         </motion.div>
       </div>
