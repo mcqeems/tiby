@@ -23,37 +23,37 @@ const FEATURES: {
     icon: Mic,
     title: "Lapor Suara",
     desc: "Cukup bicara. AI kami mengekstrak keluhan dan jumlah obatmu secara otomatis.",
-    tint: "bg-tiby-teal-50 text-tiby-teal-600",
+    tint: "text-tiby-teal-50 bg-tiby-teal-600",
   },
   {
     icon: BellRing,
     title: "Pengingat Pintar",
     desc: "Bot WhatsApp mengingatkan jadwalmu, lalu menghubungi PMO dan Faskes bila kamu hening.",
-    tint: "bg-amber-50 text-amber-500",
+    tint: "text-amber-50 bg-amber-500",
   },
   {
     icon: ShieldCheck,
     title: "Privasi Terjaga",
     desc: "Nama pasien disamarkan. Notifikasi tidak menyebut 'TBC' agar aman di tempat umum.",
-    tint: "bg-violet-50 text-violet-500",
+    tint: "text-violet-50 bg-violet-500",
   },
   {
     icon: CalendarCheck2,
     title: "Streak Harian",
     desc: "Bangun streak kepatuhan hari demi hari. Hari yang penuh terkunci otomatis.",
-    tint: "bg-rose-50 text-rose-500",
+    tint: "text-rose-50 bg-rose-500",
   },
   {
     icon: Map,
     title: "Peta Jalan Sembuh",
     desc: "180 hari terapi dipetakan jadi fase yang jelas. Kamu selalu tahu sudah sejauh mana.",
-    tint: "bg-pink-50 text-pink-500",
+    tint: "text-pink-50 bg-pink-500",
   },
   {
     icon: BookOpen,
     title: "Edukasi Valid",
     desc: "Materi bacaan harian bersumber langsung dari Kemenkes dan WHO.",
-    tint: "bg-sky-50 text-sky-500",
+    tint: "text-sky-50 bg-sky-500",
   },
 ];
 
