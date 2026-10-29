@@ -73,13 +73,19 @@ export default function CTA() {
           </div>
 
           <div className="relative w-full">
-            <Image
-              src="/landing/panda-cloud.png"
-              alt="panda cloud"
-              width={300}
-              height={100}
+            <motion.div
+              aria-hidden
+              animate={{ y: [0, -12, 0], x: [0, 8, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
               className="absolute inset-x-0 -bottom-2 mx-auto w-max"
-            ></Image>
+            >
+              <Image
+                src="/landing/panda-cloud.png"
+                alt=""
+                width={300}
+                height={100}
+              />
+            </motion.div>
           </div>
         </div>
       </Reveal>
