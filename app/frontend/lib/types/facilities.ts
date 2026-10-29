@@ -1,15 +1,2 @@
-export interface FacilityItem {
-  id: string;
-  code: string;
-  name: string;
-  district: string;
-  emergencyPhone: string;
-  createdAt: string;
-}
-
-export interface CreateFacilityDto {
-  code: string;
-  name: string;
-  district: string;
-  emergencyPhone: string;
-}
+/** Facility contract types, re-exported from `@tiby/ts-shared`. */
+export type { CreateFacilityDto, FacilityItem } from "@tiby/ts-shared";

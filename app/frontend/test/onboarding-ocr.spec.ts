@@ -6,7 +6,7 @@ import {
   missingMandatoryFields,
   ocrSummary,
 } from "@/lib/onboarding-ocr";
-import type { OnboardingPayload } from "@/lib/types/onboarding";
+import type { OnboardingFormState } from "@/lib/types/onboarding";
 
 const draft = (overrides: Partial<OcrOnboardingDraft> = {}): OcrOnboardingDraft => ({
   patientName: "BUDI SANTOSO",
@@ -21,7 +21,7 @@ const draft = (overrides: Partial<OcrOnboardingDraft> = {}): OcrOnboardingDraft 
   ...overrides,
 });
 
-const form = (overrides: Partial<OnboardingPayload> = {}): OnboardingPayload => ({
+const form = (overrides: Partial<OnboardingFormState> = {}): OnboardingFormState => ({
   patient: { fullName: "", username: "", whatsappNumber: "" },
   pmo: {
     fullName: "",

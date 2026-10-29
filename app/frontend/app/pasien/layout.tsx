@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ROLE_TITLES } from "@/lib/roles";
 import { useSession } from "@/lib/auth-client";
 import type { TibyUser } from "@/lib/auth-client";
 import { RoleGuard } from "@/app/role-guard";
@@ -49,7 +50,7 @@ export default function PasienLayout({
           brandName="Tiby Pasien"
           brandSubtitle="Kesehatan Mandiri"
           brandInitial="P"
-          roleTitle="Pasien Terdaftar"
+          roleTitle={ROLE_TITLES.PASIEN}
           items={pasienMenuItems}
         />
 

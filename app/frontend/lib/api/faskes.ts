@@ -8,12 +8,6 @@ import type {
   FaskesAlert,
 } from "../types/faskes";
 
-import type {
-  CreateOnboardingDto,
-  OcrOnboardingDraft,
-  OnboardingCredentials,
-} from "../types/onboarding";
-
 export const faskesApi = {
   async getPatients(
     query: Partial<ListPatientsQuery> = {},
@@ -43,22 +37,6 @@ export const faskesApi = {
       `/api/faskes/patients/${treatmentPlanId}/history?page=${page}&limit=${limit}`,
       { method: "GET" },
     );
-  },
-
-  async onboard(dto: CreateOnboardingDto): Promise<OnboardingCredentials> {
-    return apiFetch<OnboardingCredentials>("/api/faskes/onboarding", {
-      method: "POST",
-      body: JSON.stringify(dto),
-    });
-  },
-
-  async ocrExtract(file: File | Blob): Promise<OcrOnboardingDraft> {
-    const formData = new FormData();
-    formData.append("cardImage", file);
-    return apiFetch<OcrOnboardingDraft>("/api/faskes/onboarding/ocr", {
-      method: "POST",
-      body: formData,
-    });
   },
 
   async getTickets(

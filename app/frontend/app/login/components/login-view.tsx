@@ -6,11 +6,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import Mascot from "@/components/mascot";
-import { ArrowLeft } from "lucide-react"; 
+import { ArrowLeft } from "lucide-react";
+import { roleHome } from "@/lib/roles";
 import {
   signIn,
   type TibyUser,
-  ROLE_PATHS,
   useSession,
 } from "@/lib/auth-client";
 
@@ -113,7 +113,7 @@ export default function LoginView() {
     if (!isPending && session?.user) {
       const user = session.user as TibyUser;
       const role = (user.role || "PASIEN").toUpperCase();
-      router.replace(ROLE_PATHS[role] ?? "/pasien");
+      router.replace(roleHome(role));
     }
   }, [session, isPending, router]);
 
@@ -149,7 +149,7 @@ export default function LoginView() {
 
       const user = result.data?.user as TibyUser | undefined;
       const role = (user?.role || "PASIEN").toUpperCase();
-      router.push(ROLE_PATHS[role] ?? "/pasien");
+      router.push(roleHome(role));
     } catch (err: unknown) {
       const message = errorMessage(err, "Username/email atau password salah");
       setError(message);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { roleLabel } from "@/lib/roles";
 import { Skeleton, SkeletonCards, SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import { formatMonthYear } from "@/lib/format";
@@ -32,16 +33,6 @@ import {
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-
-const ROLE_LABEL: Record<string, string> = {
-  ADMIN: "Admin",
-  NAKES: "Tenaga Kesehatan",
-  PMO: "PMO",
-  PASIEN: "Pasien",
-};
-
-const roleLabel = (role?: string | null) =>
-  (role && ROLE_LABEL[role.toUpperCase()]) || role || "-";
 
 type ActionKey =
   | "theme"

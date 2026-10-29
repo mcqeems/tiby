@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { roleLabel } from "@/lib/roles";
 import { Skeleton, SkeletonRegion, SkeletonRows, SkeletonStats } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import Link from "next/link";
@@ -23,11 +24,6 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 const LIMIT = 8;
-const ROLE_LABEL: Record<string, string> = {
-  ADMIN: "Admin",
-  NAKES: "Tenaga Kesehatan",
-};
-
 export default function FacilityDetail() {
   const params = useParams<{ id: string }>();
   const facilityId = params.id;
@@ -211,7 +207,7 @@ export default function FacilityDetail() {
                     </td>
                     <td className="px-5 py-3.5">
                       <span className="rounded-full bg-tiby-teal-50 px-2.5 py-0.5 text-[11px] font-semibold text-tiby-teal-700 ring-1 ring-tiby-teal-100">
-                        {ROLE_LABEL[user.role] || user.role}
+                        {roleLabel(user.role)}
                       </span>
                     </td>
                     <td className="px-5 py-3.5 text-xs text-tiby-muted">

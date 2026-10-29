@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ROLE_TITLES } from "@/lib/roles";
 import { useSession } from "@/lib/auth-client";
 import { RoleGuard } from "@/app/role-guard";
 import type { TibyUser } from "@/lib/auth-client";
@@ -45,7 +46,7 @@ export default function PmoLayout({ children }: { children: React.ReactNode }) {
           brandName="Tiby PMO"
           brandSubtitle="Pengawasan Terapi"
           brandInitial="T"
-          roleTitle="Pengawas Menelan Obat"
+          roleTitle={ROLE_TITLES.PMO}
           items={pmoMenuItems}
         />
         <main className="flex flex-1 flex-col overflow-y-auto p-6 md:p-8">

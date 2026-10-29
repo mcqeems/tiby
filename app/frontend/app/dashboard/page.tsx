@@ -1,15 +1,9 @@
 "use client";
 
 import { useSession, type TibyUser } from "@/lib/auth-client";
+import { roleHome } from "@/lib/roles";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-
-const ROLE_PATH: Record<string, string> = {
-  ADMIN: "/admin",
-  NAKES: "/nakes",
-  PMO: "/pmo",
-  PASIEN: "/pasien",
-};
 
 export default function DashboardRedirect() {
   const { data, isPending } = useSession();
@@ -21,8 +15,7 @@ export default function DashboardRedirect() {
       router.push("/login");
       return;
     }
-    const role = ((data.user as TibyUser).role || "PASIEN").toUpperCase();
-    router.replace(ROLE_PATH[role] ?? "/pasien");
+    router.replace(roleHome((data.user as TibyUser).role));
   }, [data, isPending, router]);
 
   return <div className="flex min-h-screen items-center justify-center text-tiby-muted">Mengarahkan...</div>;

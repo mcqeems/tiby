@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
+import { ROLE_TITLES } from "@/lib/roles";
 import { useSession } from "@/lib/auth-client";
 import { RoleGuard } from "@/app/role-guard";
 import type { TibyUser } from "@/lib/auth-client";
@@ -34,7 +35,7 @@ export default function NakesLayout({
             brandName="Tiby Nakes"
             brandSubtitle="Dashboard Klinis"
             brandInitial="T"
-            roleTitle="Tenaga Kesehatan"
+            roleTitle={ROLE_TITLES.NAKES}
             items={nakesMenuItems}
           />
         </Suspense>

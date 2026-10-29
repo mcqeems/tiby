@@ -20,7 +20,7 @@ import {
   FileText,
 } from "lucide-react";
 
-const getVerdictStyle = (verdict: string) => {
+const getVerdictStyle = (verdict: string | null) => {
   switch (verdict) {
     case "TERKENDALI":
       return {

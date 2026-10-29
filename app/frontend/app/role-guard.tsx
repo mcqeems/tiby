@@ -1,6 +1,7 @@
 "use client";
 
-import { useSession, signOut, ROLE_PATHS, type TibyUser } from "@/lib/auth-client";
+import { useSession, signOut, type TibyUser } from "@/lib/auth-client";
+import { roleHome } from "@/lib/roles";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -31,7 +32,7 @@ export function RoleGuard({
     const role = (user.role || "PASIEN").toUpperCase();
 
     if (!allowed.includes(role)) {
-      router.push(ROLE_PATHS[role] ?? "/login");
+      router.push(roleHome(role, "/login"));
     }
   }, [data, isPending, router, allowed]);
 

@@ -18,7 +18,8 @@ import PublicLoading from "@/components/ui/public-loading";
 import OnboardingSuccessCard from "./onboarding-success-card";
 import type { OcrOnboardingDraft } from "@tiby/ts-shared";
 import type {
-  OnboardingPayload,
+  OnboardingFormState,
+  CreateOnboardingDto,
   OnboardingCredentials,
   PmoRelationship,
 } from "@/lib/types/onboarding";
@@ -70,12 +71,7 @@ const STEPS = [
   { id: "langkah-3", label: "Rencana Terapi" },
 ];
 
-function formatDateId(iso: string) {
-  if (!iso) return "-";
-  const d = new Date(`${iso}T00:00:00Z`);
-  if (Number.isNaN(d.getTime())) return "-";
-  return formatLongDateUtc(d);
-}
+
 
 function Stepper() {
   return (
@@ -250,7 +246,7 @@ function Avatar({ name, size = "md" }: { name: string; size?: "md" | "lg" }) {
 export default function OnboardingForm() {
   const { confirm, notify } = usePopup();
 
-  const [form, setForm] = useState<OnboardingPayload>({
+  const [form, setForm] = useState<OnboardingFormState>({
     patient: { fullName: "", username: "", whatsappNumber: "" },
     pmo: {
       fullName: "",
@@ -464,7 +460,8 @@ export default function OnboardingForm() {
     setSubmitting(true);
 
     try {
-      const payload: OnboardingPayload = {
+      // Collapse the loose form state into the contract union at the boundary.
+      const payload: CreateOnboardingDto = {
         patient: form.patient,
         regimenCode: form.regimenCode,
         dailyPillQuota: form.dailyPillQuota,
@@ -475,15 +472,16 @@ export default function OnboardingForm() {
           includeFamily && form.familyContact?.fullName
             ? form.familyContact
             : undefined,
-        pmo: form.pmo,
+        pmo:
+          pmoMode === "existing" && selectedExistingPmo
+            ? { id: selectedExistingPmo.id, relationship: form.pmo.relationship }
+            : {
+                fullName: form.pmo.fullName,
+                username: form.pmo.username,
+                whatsappNumber: form.pmo.whatsappNumber,
+                relationship: form.pmo.relationship,
+              },
       };
-
-      if (pmoMode === "existing" && selectedExistingPmo) {
-        payload.pmo = {
-          id: selectedExistingPmo.id,
-          relationship: form.pmo.relationship,
-        };
-      }
 
       const creds = await onboardingApi.onboard(payload);
 
@@ -1147,7 +1145,7 @@ export default function OnboardingForm() {
                 </span>
                 , {form.dailyPillQuota} butir per hari, pengingat pukul{" "}
                 {form.reminderTimeLocal || "-"} ({form.timezone}), mulai{" "}
-                {formatDateId(form.startDate)}.
+                {form.startDate ? formatLongDateUtc(form.startDate) : "-"}.
               </p>
             </div>
           </SectionCard>

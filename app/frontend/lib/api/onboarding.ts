@@ -1,12 +1,12 @@
 import { apiFetch } from "./client";
 import type {
-  OnboardingPayload,
+  CreateOnboardingDto,
   OnboardingCredentials,
   OcrOnboardingDraft,
 } from "../types/onboarding";
 
 export const onboardingApi = {
-  async onboard(dto: OnboardingPayload): Promise<OnboardingCredentials> {
+  async onboard(dto: CreateOnboardingDto): Promise<OnboardingCredentials> {
     return apiFetch<OnboardingCredentials>("/api/faskes/onboarding", {
       method: "POST",
       body: JSON.stringify(dto),

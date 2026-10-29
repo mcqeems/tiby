@@ -1,28 +1,28 @@
-// lib/types/onboarding.ts
+export type {
+  CreateOnboardingDto,
+  OcrOnboardingDraft,
+  OnboardingCredentials,
+  PmoRelationship,
+} from "@tiby/ts-shared";
 
-export type PmoRelationship = "KELUARGA" | "KADER" | "NAKES";
+import type { PmoRelationship } from "@tiby/ts-shared";
 
-export interface OcrOnboardingDraft {
-  patientName: string | null;
-  regimenCode: string;
-  dailyPillQuota: number;
-  startDate: string;
-  targetEndDate: string;
-  confidence: number;
-  rawText: string;
-}
-
-export interface CreateOnboardingDto {
+/**
+ * What the onboarding form edits before it collapses into
+ * `CreateOnboardingDto`. The contract narrows `pmo` to a union (an existing
+ * user id, or a new account); a live form edits both shapes at once and picks
+ * one at submit, so it needs its own type instead of a loosened contract.
+ */
+export interface OnboardingFormState {
   patient: {
     fullName: string;
     username: string;
     whatsappNumber: string;
   };
   pmo: {
-    fullName?: string;
-    username?: string;
-    whatsappNumber?: string;
-    id?: string;
+    fullName: string;
+    username: string;
+    whatsappNumber: string;
     relationship: PmoRelationship;
   };
   familyContact?: {
@@ -33,19 +33,6 @@ export interface CreateOnboardingDto {
   regimenCode: string;
   dailyPillQuota: number;
   reminderTimeLocal: string;
-  timezone?: string;
+  timezone: string;
   startDate: string;
 }
-
-export interface OnboardingCredentials {
-  treatmentPlanId: string;
-  patientUsername: string;
-  patientPassword: string;
-  pmoUsername: string;
-  pmoPassword: string | null; 
-  patientUserId: string;
-  pmoUserId: string | null;
-  pmoCreated?: boolean; 
-}
-
-export type OnboardingPayload = CreateOnboardingDto;

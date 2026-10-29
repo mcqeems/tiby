@@ -1,3 +1,15 @@
+export type {
+  CreatePmoFollowUpDto,
+  PmoFollowUpResponse,
+  PmoPatientStatusList,
+} from "@tiby/ts-shared";
+export type { PmoFollowUpAction as PmoAction } from "@tiby/ts-shared";
+
+/**
+ * Frontend-only row for the PMO patient picker. The backend returns this shape
+ * from `/api/pmo/patients` without publishing a contract schema for it, so it
+ * stays here rather than pretending to be part of `@tiby/ts-shared`.
+ */
 export interface PmoPatient {
   treatmentPlanId: string;
   patientName: string;
@@ -6,26 +18,4 @@ export interface PmoPatient {
   currentStreak: number;
   phase: string;
   consecutiveSilenceDays: number;
-}
-
-export type PmoPatientStatusList = PmoPatient[];
-
-export type PmoAction =
-  | "MENGHUBUNGI_PASIEN"
-  | "KUNJUNGAN_RUMAH"
-  | "MENGHUBUNGI_KELUARGA"
-  | "MENGANTAR_OBAT"
-  | "EDUKASI_KONSULTASI"
-  | "MENGINGATKAN_JADWAL_KONTROL"
-  | "LAINNYA";
-
-export interface CreatePmoFollowUpDto {
-  actionTaken: PmoAction;
-  notes: string;
-}
-
-export interface PmoFollowUpResponse {
-  success: boolean;
-  followUpId: string;
-  notes: string;
 }

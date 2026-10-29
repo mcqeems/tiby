@@ -30,10 +30,4 @@ export type TibyUser = {
   updatedAt: Date;
 };
 
-export const ROLE_PATHS: Record<string, string> = {
-  ADMIN: "/admin",
-  NAKES: "/nakes",
-  PMO: "/pmo",
-  PASIEN: "/pasien",
-  FASKES: "/faskes",
-};
+export { ROLE_PATHS } from "./roles";

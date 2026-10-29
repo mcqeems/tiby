@@ -1,5 +1,5 @@
 import type { OcrOnboardingDraft } from "@tiby/ts-shared";
-import type { OnboardingPayload } from "@/lib/types/onboarding";
+import type { OnboardingFormState } from "@/lib/types/onboarding";
 
 /**
  * What OCR may fill, and what still blocks the submit.
@@ -24,7 +24,7 @@ export interface MissingField {
 }
 
 export interface MergeResult {
-  form: OnboardingPayload;
+  form: OnboardingFormState;
   /** Fields the draft filled because the Nakes had not touched them. */
   filled: OcrFieldKey[];
   /** Fields the draft had a value for, but the Nakes had already typed over. */
@@ -40,11 +40,11 @@ export interface MergeResult {
  * fills the untouched ones and leaves everything they typed alone.
  */
 export function mergeOcrDraft(
-  form: OnboardingPayload,
+  form: OnboardingFormState,
   draft: OcrOnboardingDraft,
   touched: ReadonlySet<OcrFieldKey>,
 ): MergeResult {
-  const next: OnboardingPayload = {
+  const next: OnboardingFormState = {
     ...form,
     patient: { ...form.patient },
   };
@@ -91,7 +91,7 @@ const filled = (value: string | undefined | null) => Boolean(value && value.trim
  * which case its two fields have to arrive as a complete pair.
  */
 export function missingMandatoryFields(
-  form: OnboardingPayload,
+  form: OnboardingFormState,
   {
     pmoMode,
     hasExistingPmo,
