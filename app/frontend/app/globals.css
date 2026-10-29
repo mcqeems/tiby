@@ -435,9 +435,10 @@ body {
   background: transparent !important;
   border: none !important;
   color: var(--color-tiby-muted) !important;
-  top: 0.5rem !important;
+  top: 50% !important;
   right: 0.5rem !important;
   left: auto !important;
+  transform: translateY(-50%) !important;
 }
 .tiby-toast-close:hover {
   color: var(--color-tiby-ink) !important;
