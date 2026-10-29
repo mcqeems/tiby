@@ -355,8 +355,8 @@ body {
 
 .tiby-toast {
   border-radius: 1rem !important;
-  border: 1px solid var(--color-gray-200) !important;
-  background: var(--color-white) !important;
+  border: 1px solid var(--toast-border, var(--color-gray-200)) !important;
+  background: var(--toast-bg, var(--color-white)) !important;
   box-shadow:
     0 8px 30px rgb(15 60 60 / 0.12),
     0 1px 2px rgb(15 60 60 / 0.06) !important;
@@ -364,27 +364,55 @@ body {
   overflow: hidden;
 }
 
-/* Variant accent strip on the left edge. */
-.tiby-toast::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: var(--toast-accent, var(--color-tiby-teal-500));
-}
+/* Status-tinted surfaces; palette vars re-theme dark mode for free. */
 .tiby-toast-success {
   --toast-accent: var(--color-tiby-teal-500);
+  --toast-bg: var(--color-tiby-teal-50);
+  --toast-border: var(--color-tiby-teal-100);
 }
 .tiby-toast-danger {
   --toast-accent: #dc2626;
+  --toast-bg: var(--color-red-50);
+  --toast-border: var(--color-red-200);
 }
 .tiby-toast-warning {
   --toast-accent: #f59e0b;
+  --toast-bg: var(--color-amber-50);
+  --toast-border: var(--color-amber-200);
 }
 .tiby-toast-info {
   --toast-accent: var(--color-tiby-teal-500);
+  --toast-bg: var(--color-tiby-teal-50);
+  --toast-border: var(--color-tiby-teal-100);
+}
+
+/* Mascot entrance: one jiggly bounce running right-to-left
+   (translateX, settle, overshoot, settle) on mount only. */
+@keyframes tiby-toast-jiggle {
+  0% {
+    opacity: 0;
+    transform: translateX(18px) rotate(10deg) scale(0.6);
+  }
+  45% {
+    opacity: 1;
+    transform: translateX(-5px) rotate(-7deg) scale(1.08);
+  }
+  70% {
+    transform: translateX(3px) rotate(4deg) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) rotate(0) scale(1);
+  }
+}
+.tiby-toast-mascot {
+  display: inline-flex;
+  animation: tiby-toast-jiggle 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tiby-toast-mascot {
+    animation: none;
+  }
 }
 
 .tiby-toast-title {
