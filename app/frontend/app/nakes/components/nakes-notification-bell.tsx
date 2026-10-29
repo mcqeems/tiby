@@ -4,13 +4,12 @@ import { useEffect, useState } from "react";
 import { errorMessage } from "@/lib/errors";
 import { faskesApi } from "@/lib/api/faskes";
 import type { FaskesAlert } from "@/lib/types/faskes";
-import { usePopup } from "@/components/ui/popup-provider";
+import { notify } from "@/lib/toast";
 import NotificationBellView, {
   type BellItem,
 } from "@/components/notifications/notification-bell-view";
 
 export default function NakesNotificationBell() {
-  const { notify } = usePopup();
   const [alerts, setAlerts] = useState<FaskesAlert[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -43,13 +42,7 @@ export default function NakesNotificationBell() {
         ),
       );
     } catch (err: unknown) {
-      await notify({
-        variant: "danger",
-        title: "Gagal",
-        description:
-          errorMessage(err, "Tidak dapat menandai notifikasi."),
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal", errorMessage(err, "Tidak dapat menandai notifikasi."));
     }
   };
 

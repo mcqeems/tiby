@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+import { notify } from "@/lib/toast";
 interface OnboardingSuccessCardProps {
   credentials: OnboardingCredentials;
   onReset: () => void;
@@ -118,7 +119,7 @@ export default function OnboardingSuccessCard({
   credentials,
   onReset,
 }: OnboardingSuccessCardProps) {
-  const { confirm, notify } = usePopup();
+  const { confirm } = usePopup();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const copyToClipboard = async (text: string, key: "patient" | "pmo") => {
@@ -126,17 +127,7 @@ export default function OnboardingSuccessCard({
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 2000);
 
-    await notify({
-      variant: "success",
-      badgeText: "Kredensial Tersalin",
-      title:
-        key === "patient"
-          ? "Akun Pasien Berhasil Disalin"
-          : "Akun PMO Berhasil Disalin",
-      description:
-        "Silakan tempel (paste) dan kirimkan informasi login sementara ini melalui WhatsApp kepada yang bersangkutan.",
-      confirmLabel: "Siap",
-    });
+    notify.success(key === "patient" ? "Akun Pasien Berhasil Disalin" : "Akun PMO Berhasil Disalin", "Silakan tempel (paste) dan kirimkan informasi login sementara ini melalui WhatsApp kepada yang bersangkutan.");
   };
 
   const handleConfirmReset = async () => {

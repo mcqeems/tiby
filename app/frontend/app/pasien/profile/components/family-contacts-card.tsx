@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import WhatsappConnectCard from "@/components/whatsapp/whatsapp-connect-card";
 
+import { notify } from "@/lib/toast";
 export default function FamilyContactsCard({
   patientId,
   viewer = "patient",
@@ -27,7 +28,7 @@ export default function FamilyContactsCard({
   patientId: string;
   viewer?: "patient" | "nakes";
 }) {
-  const { notify, confirm } = usePopup();
+  const { confirm } = usePopup();
 
   const [contacts, setContacts] = useState<FamilyContact[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,21 +82,10 @@ export default function FamilyContactsCard({
 
     try {
       await familyContactsApi.remove(patientId, contactId);
-      await notify({
-        variant: "success",
-        title: "Terhapus",
-        description: "Kontak berhasil dihapus.",
-        confirmLabel: "Tutup",
-      });
+      notify.success("Terhapus", "Kontak berhasil dihapus.");
       fetchContacts();
     } catch (err: unknown) {
-      await notify({
-        variant: "danger",
-        title: "Gagal",
-        description:
-          errorMessage(err, "Tidak dapat menghapus kontak."),
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal", errorMessage(err, "Tidak dapat menghapus kontak."));
     }
   };
 
@@ -104,12 +94,7 @@ export default function FamilyContactsCard({
     const name = fullName.trim();
     const digits = whatsappNumber.replace(/\D/g, "");
     if (name.length < 3 || digits.length < 8) {
-      return notify({
-        variant: "warning",
-        title: "Validasi Gagal",
-        description: "Nama minimal 3 karakter dan No. WA minimal 8 digit.",
-        confirmLabel: "Mengerti",
-      });
+      return notify.warning("Validasi Gagal", "Nama minimal 3 karakter dan No. WA minimal 8 digit.");
     }
 
     try {
@@ -126,13 +111,7 @@ export default function FamilyContactsCard({
       // A contact is useless until the number proves it can receive messages.
       setConnectingContact(created);
     } catch (err: unknown) {
-      await notify({
-        variant: "danger",
-        title: "Gagal Menambah Kontak",
-        description:
-          errorMessage(err, "Terjadi kesalahan pada server."),
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal Menambah Kontak", errorMessage(err, "Terjadi kesalahan pada server."));
     } finally {
       setSubmitting(false);
     }

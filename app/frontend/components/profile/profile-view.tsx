@@ -2,7 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { roleLabel } from "@/lib/roles";
-import { Skeleton, SkeletonCards, SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
+import {
+  Skeleton,
+  SkeletonCards,
+  SkeletonRegion,
+  SkeletonRows,
+} from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import { formatMonthYear } from "@/lib/format";
 import Link from "next/link";
@@ -36,13 +41,9 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+import { notify } from "@/lib/toast";
 type ActionKey =
-  | "theme"
-  | "password"
-  | "whatsapp"
-  | "push"
-  | "family"
-  | "privacy";
+  "theme" | "password" | "whatsapp" | "push" | "family" | "privacy";
 
 interface ProfileAction {
   key: ActionKey;
@@ -83,7 +84,7 @@ function InfoItem({
 
 export default function ProfileView() {
   const { data: session, isPending } = useSession();
-  const { notify, confirm } = usePopup();
+  const { confirm } = usePopup();
 
   const [me, setMe] = useState<UserItem | null>(null);
   const [activeDialog, setActiveDialog] = useState<ActionKey | null>(null);
@@ -95,12 +96,7 @@ export default function ProfileView() {
     if (!file || uploading) return;
     // Client-side guard mirrors the server 5MB cap, avoiding a doomed upload.
     if (file.size > 5 * 1024 * 1024) {
-      await notify({
-        variant: "danger",
-        title: "File Terlalu Besar",
-        description: "Ukuran file maksimal 5 MB.",
-        confirmLabel: "Tutup",
-      });
+      notify.error("File Terlalu Besar", "Ukuran file maksimal 5 MB.");
       return;
     }
     setUploading(true);
@@ -108,19 +104,9 @@ export default function ProfileView() {
       const res = await usersApi.uploadProfilePicture(file);
       setMe((prev) => (prev ? { ...prev, image: res.imageUrl } : prev));
       setAvatar(res.imageUrl);
-      await notify({
-        variant: "success",
-        title: "Foto Profil Diperbarui",
-        description: "Foto profil Anda berhasil diunggah.",
-        confirmLabel: "Tutup",
-      });
+      notify.success("Foto Profil Diperbarui", "Foto profil Anda berhasil diunggah.");
     } catch (err: unknown) {
-      await notify({
-        variant: "danger",
-        title: "Gagal Mengunggah",
-        description: errorMessage(err, "Terjadi kesalahan pada server."),
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal Mengunggah", errorMessage(err, "Terjadi kesalahan pada server."));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -160,7 +146,10 @@ export default function ProfileView() {
             <Skeleton className="h-3.5 w-56" />
           </div>
         </div>
-        <SkeletonRows rows={4} rowClassName="rounded-xl border border-gray-100 p-3" />
+        <SkeletonRows
+          rows={4}
+          rowClassName="rounded-xl border border-gray-100 p-3"
+        />
         <SkeletonCards
           count={2}
           lines={2}
@@ -209,21 +198,10 @@ export default function ProfileView() {
       await consentApi.revoke(
         "Dicabut mandiri oleh pengguna melalui halaman profil",
       );
-      await notify({
-        variant: "success",
-        title: "Persetujuan Dicabut",
-        description: "Anda telah mencabut izin berbagi data. Mengalihkan...",
-        confirmLabel: "Tutup",
-      });
+      notify.success("Persetujuan Dicabut", "Anda telah mencabut izin berbagi data. Mengalihkan...");
       window.location.reload();
     } catch (err: unknown) {
-      await notify({
-        variant: "danger",
-        title: "Gagal Mencabut",
-        description:
-          errorMessage(err, "Terjadi kesalahan pada server."),
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal Mencabut", errorMessage(err, "Terjadi kesalahan pada server."));
       setRevoking(false);
     }
   };
@@ -279,9 +257,7 @@ export default function ProfileView() {
     );
   }
 
-  const joined = user.createdAt
-    ? formatMonthYear(user.createdAt)
-    : "-";
+  const joined = user.createdAt ? formatMonthYear(user.createdAt) : "-";
 
   return (
     <div className="space-y-6">
@@ -295,16 +271,7 @@ export default function ProfileView() {
       </div>
 
       <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
-        <div className="relative h-28 overflow-hidden bg-linear-to-r from-tiby-teal-600 to-tiby-teal-700">
-          <span
-            aria-hidden="true"
-            className="absolute -right-8 -top-12 h-44 w-44 rounded-full bg-white/10"
-          />
-          <span
-            aria-hidden="true"
-            className="absolute -bottom-16 left-1/3 h-36 w-36 rounded-full bg-white/5"
-          />
-        </div>
+        <div className="relative h-28 overflow-hidden bg-linear-to-r from-tiby-teal-600 to-tiby-teal-200"></div>
 
         <div className="px-6 pb-6">
           <div className="-mt-12 flex flex-col gap-4 sm:flex-row sm:items-end">

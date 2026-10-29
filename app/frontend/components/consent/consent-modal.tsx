@@ -5,10 +5,10 @@ import { errorMessage } from "@/lib/errors";
 import { ModalCard, ModalFrame } from "@/components/ui/modal-frame";
 import Mascot from "@/components/mascot";
 import { consentApi } from "@/lib/api/consent";
-import { usePopup } from "@/components/ui/popup-provider";
 import { ShieldCheck, FileText, Check, Loader2 } from "lucide-react";
 import type { ConsentStatus, ConsentScope } from "@/lib/types/consent";
 
+import { notify } from "@/lib/toast";
 interface ConsentModalProps {
   role?: "PASIEN" | "PMO";
   onGranted?: () => void;
@@ -18,7 +18,6 @@ export default function ConsentModal({
   role = "PASIEN",
   onGranted,
 }: ConsentModalProps) {
-  const { notify } = usePopup();
 
   const [checking, setChecking] = useState(true);
   const [needsConsent, setNeedsConsent] = useState(false);
@@ -44,12 +43,7 @@ export default function ConsentModal({
         }
       } catch {
         if (active) {
-          await notify({
-            variant: "danger",
-            title: "Gagal Memuat Data",
-            description: "Tidak dapat mengambil status persetujuan.",
-            confirmLabel: "Tutup",
-          });
+          notify.error("Gagal Memuat Data", "Tidak dapat mengambil status persetujuan.");
         }
       } finally {
         if (active) setChecking(false);
@@ -59,7 +53,7 @@ export default function ConsentModal({
     return () => {
       active = false;
     };
-  }, [notify]);
+  }, []);
 
   const scopesList = [
     {
@@ -93,46 +87,22 @@ export default function ConsentModal({
 
   const handleGrant = async () => {
     if (selectedScopes.length < 3) {
-      return notify({
-        variant: "warning",
-        badgeText: "Validasi",
-        title: "Persetujuan Belum Lengkap",
-        description: "Anda harus mencentang ketiga izin di atas.",
-        confirmLabel: "Mengerti",
-      });
+      return notify.warning("Persetujuan Belum Lengkap", "Anda harus mencentang ketiga izin di atas.");
     }
     if (!scheduleConfirmed) {
-      return notify({
-        variant: "warning",
-        badgeText: "Validasi",
-        title: "Konfirmasi Jadwal",
-        description: "Anda harus mengonfirmasi jadwal minum obat.",
-        confirmLabel: "Mengerti",
-      });
+      return notify.warning("Konfirmasi Jadwal", "Anda harus mengonfirmasi jadwal minum obat.");
     }
 
     try {
       setSubmitting(true);
       await consentApi.grant(selectedScopes as string[], scheduleConfirmed);
 
-      await notify({
-        variant: "success",
-        badgeText: "Persetujuan Aktif",
-        title: "Terima Kasih!",
-        description: "Data Anda kini aman dan sistem siap digunakan.",
-        confirmLabel: "Mulai Gunakan Aplikasi",
-      });
+      notify.success("Terima Kasih!", "Data Anda kini aman dan sistem siap digunakan.");
 
       setNeedsConsent(false);
       onGranted?.();
     } catch (err: unknown) {
-      await notify({
-        variant: "danger",
-        title: "Gagal Menyimpan",
-        description:
-          errorMessage(err, "Terjadi kesalahan pada server."),
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal Menyimpan", errorMessage(err, "Terjadi kesalahan pada server."));
     } finally {
       setSubmitting(false);
     }

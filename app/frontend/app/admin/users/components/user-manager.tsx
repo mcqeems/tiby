@@ -9,8 +9,8 @@ import { AnimatePresence } from "motion/react";
 import { usersApi, type UserItem } from "@/lib/api/users";
 import { facilitiesApi } from "@/lib/api/facilities";
 import type { FacilityItem } from "@/lib/types/facilities";
-import { usePopup } from "@/components/ui/popup-provider";
 import UserFormModal from "./user-form-modal";
+import { notify } from "@/lib/toast";
 import {
   UserPlus,
   Building2,
@@ -25,7 +25,6 @@ import {
 const LIMIT = 20;
 
 export default function UserManager() {
-  const { notify } = usePopup();
 
   const [users, setUsers] = useState<UserItem[]>([]);
   const [facilities, setFacilities] = useState<FacilityItem[]>([]);
@@ -58,16 +57,11 @@ export default function UserManager() {
       setTotal(usersRes.total || 0);
       setFacilities(facilitiesRes.items || []);
     } catch {
-      await notify({
-        variant: "danger",
-        title: "Gagal",
-        description: "Tidak dapat memuat data.",
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal", "Tidak dapat memuat data.");
     } finally {
       setLoading(false);
     }
-  }, [notify, page, search, roleFilter, facilityFilter]);
+  }, [page, search, roleFilter, facilityFilter]);
 
   useEffect(() => {
     // Deep link from the facility detail page; avoids useSearchParams during
@@ -293,32 +287,16 @@ export default function UserManager() {
                 onSubmit={async (e) => {
                   e.preventDefault();
                   if (resetPassword.length < 8) {
-                    return notify({
-                      variant: "warning",
-                      title: "Validasi Gagal",
-                      description: "Password minimal 8 karakter.",
-                      confirmLabel: "Mengerti",
-                    });
+                    return notify.warning("Validasi Gagal", "Password minimal 8 karakter.");
                   }
                   setResetSubmitting(true);
                   try {
                     await usersApi.resetPassword(resetUser.id, resetPassword);
-                    await notify({
-                      variant: "success",
-                      title: "Berhasil",
-                      description: `Password ${resetUser.username} telah direset.`,
-                      confirmLabel: "Tutup",
-                    });
+                    notify.success("Berhasil", `Password ${resetUser.username} telah direset.`);
                     setResetUser(null);
                     setResetPassword("");
                   } catch (err: unknown) {
-                    await notify({
-                      variant: "danger",
-                      title: "Gagal",
-                      description:
-                        errorMessage(err, "Tidak dapat mereset password."),
-                      confirmLabel: "Tutup",
-                    });
+                    notify.error("Gagal", errorMessage(err, "Tidak dapat mereset password."));
                   } finally {
                     setResetSubmitting(false);
                   }

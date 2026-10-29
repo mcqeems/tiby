@@ -3,14 +3,13 @@
 import { useEffect, useState } from "react";
 import { errorMessage } from "@/lib/errors";
 import { notificationsApi } from "@/lib/api/notifications";
-import { usePopup } from "@/components/ui/popup-provider";
 import NotificationBellView, {
   type BellItem,
 } from "@/components/notifications/notification-bell-view";
 import type { UserNotification } from "@tiby/ts-shared";
 
+import { notify } from "@/lib/toast";
 export default function UserNotificationBell() {
-  const { notify } = usePopup();
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -41,13 +40,7 @@ export default function UserNotificationBell() {
         prev.map((item) => (item.id === id ? updated : item)),
       );
     } catch (err: unknown) {
-      await notify({
-        variant: "danger",
-        title: "Gagal",
-        description:
-          errorMessage(err, "Tidak dapat menandai notifikasi."),
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal", errorMessage(err, "Tidak dapat menandai notifikasi."));
     }
   };
 

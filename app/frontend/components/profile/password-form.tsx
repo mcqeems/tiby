@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { errorMessage } from "@/lib/errors";
 import { usersApi } from "@/lib/api/users";
-import { usePopup } from "@/components/ui/popup-provider";
 import { Check, Eye, EyeOff, KeyRound, Loader2, Lock, ShieldCheck } from "lucide-react";
 
+import { notify } from "@/lib/toast";
 const inputCls =
   "peer h-11 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-11 text-sm text-tiby-ink placeholder:text-gray-400 shadow-[0_1px_2px_rgba(16,24,40,0.03)] transition hover:border-tiby-teal-200 focus:border-tiby-teal-600 focus:outline-none focus:ring-4 focus:ring-tiby-teal-600/10";
 
@@ -102,7 +102,6 @@ function Requirement({
 }
 
 export default function PasswordForm({ onSuccess }: { onSuccess?: () => void }) {
-  const { notify } = usePopup();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -116,46 +115,22 @@ export default function PasswordForm({ onSuccess }: { onSuccess?: () => void }) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!lengthOk) {
-      return notify({
-        variant: "warning",
-        title: "Password Terlalu Pendek",
-        description: "Password baru minimal 8 karakter.",
-        confirmLabel: "Mengerti",
-      });
+      return notify.warning("Password Terlalu Pendek", "Password baru minimal 8 karakter.");
     }
     if (!matchOk) {
-      return notify({
-        variant: "warning",
-        title: "Konfirmasi Tidak Cocok",
-        description: "Pastikan konfirmasi password sama dengan password baru.",
-        confirmLabel: "Mengerti",
-      });
+      return notify.warning("Konfirmasi Tidak Cocok", "Pastikan konfirmasi password sama dengan password baru.");
     }
 
     try {
       setLoading(true);
       await usersApi.changePassword(currentPassword, newPassword);
-      await notify({
-        variant: "success",
-        badgeText: "Keamanan Akun",
-        title: "Password Berhasil Diubah",
-        description:
-          "Gunakan password baru Anda untuk login di sesi berikutnya.",
-        confirmLabel: "Tutup",
-      });
+      notify.success("Password Berhasil Diubah", "Gunakan password baru Anda untuk login di sesi berikutnya.");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
       onSuccess?.();
     } catch (err: unknown) {
-      await notify({
-        variant: "danger",
-        badgeText: "Gagal",
-        title: "Gagal Mengubah Password",
-        description:
-          errorMessage(err, "Pastikan password lama Anda benar."),
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal Mengubah Password", errorMessage(err, "Pastikan password lama Anda benar."));
     } finally {
       setLoading(false);
     }

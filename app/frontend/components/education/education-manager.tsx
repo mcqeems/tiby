@@ -13,6 +13,7 @@ import {
   type EducationPhase, // ✅ Import tipe
 } from "@/lib/api/education";
 import { usePopup } from "@/components/ui/popup-provider";
+import { notify } from "@/lib/toast";
 import {
   BookOpen,
   Plus,
@@ -43,7 +44,7 @@ export default function EducationManager({
 }: {
   scope?: "nakes" | "admin";
 }) {
-  const { notify, confirm } = usePopup();
+  const { confirm } = usePopup();
   const [cards, setCards] = useState<EducationItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -69,16 +70,11 @@ export default function EducationManager({
       setCards(res.items || []);
       setTotal(res.total || 0);
     } catch {
-      await notify({
-        variant: "danger",
-        title: "Gagal",
-        description: "Tidak dapat memuat data edukasi.",
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal", "Tidak dapat memuat data edukasi.");
     } finally {
       setLoading(false);
     }
-  }, [notify, page]);
+  }, [page]);
 
   useEffect(() => {
     let active = true;
@@ -130,12 +126,7 @@ export default function EducationManager({
 
     try {
       await educationApi.remove(id);
-      await notify({
-        variant: "success",
-        title: "Terhapus",
-        description: "Materi berhasil dihapus.",
-        confirmLabel: "Tutup",
-      });
+      notify.success("Terhapus", "Materi berhasil dihapus.");
       // Deleting the last card on a page would leave an empty page behind.
       if (cards.length === 1 && page > 1) {
         setPage((p) => p - 1);
@@ -143,54 +134,29 @@ export default function EducationManager({
         fetchCards();
       }
     } catch {
-      await notify({
-        variant: "danger",
-        title: "Gagal",
-        description: "Tidak dapat menghapus materi.",
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal", "Tidak dapat menghapus materi.");
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.title.length < 5 || formData.contentMarkdown.length < 10) {
-      return notify({
-        variant: "warning",
-        title: "Validasi Gagal",
-        description: "Judul minimal 5 karakter dan isi minimal 10 karakter.",
-        confirmLabel: "Mengerti",
-      });
+      return notify.warning("Validasi Gagal", "Judul minimal 5 karakter dan isi minimal 10 karakter.");
     }
 
     try {
       setSubmitting(true);
       if (editingId) {
         await educationApi.update(editingId, formData);
-        await notify({
-          variant: "success",
-          title: "Berhasil",
-          description: "Materi edukasi diperbarui.",
-          confirmLabel: "Tutup",
-        });
+        notify.success("Berhasil", "Materi edukasi diperbarui.");
       } else {
         await educationApi.create(formData);
-        await notify({
-          variant: "success",
-          title: "Berhasil",
-          description: "Materi edukasi baru ditambahkan.",
-          confirmLabel: "Tutup",
-        });
+        notify.success("Berhasil", "Materi edukasi baru ditambahkan.");
       }
       setIsModalOpen(false);
       fetchCards();
     } catch {
-      await notify({
-        variant: "danger",
-        title: "Gagal",
-        description: "Terjadi kesalahan pada server.",
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal", "Terjadi kesalahan pada server.");
     } finally {
       setSubmitting(false);
     }

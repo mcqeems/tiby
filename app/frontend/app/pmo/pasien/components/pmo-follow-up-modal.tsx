@@ -4,7 +4,7 @@ import { useState } from "react";
 import { errorMessage } from "@/lib/errors";
 import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import { pmoApi } from "@/lib/api/pmo";
-import { usePopup } from "@/components/ui/popup-provider";
+import { notify } from "@/lib/toast";
 // ✅ Import LucideIcon untuk typing
 import {
   X,
@@ -68,7 +68,6 @@ export default function PmoFollowUpModal({
   onClose,
   onSuccess,
 }: PmoFollowUpModalProps) {
-  const { notify } = usePopup();
 
   const [actionTaken, setActionTaken] =
     useState<PmoAction>("MENGHUBUNGI_PASIEN");
@@ -78,12 +77,7 @@ export default function PmoFollowUpModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (notes.trim().length < 5) {
-      return notify({
-        variant: "warning",
-        title: "Catatan Kurang",
-        description: "Mohon isi catatan minimal 5 karakter.",
-        confirmLabel: "Mengerti",
-      });
+      return notify.warning("Catatan Kurang", "Mohon isi catatan minimal 5 karakter.");
     }
 
     try {
@@ -93,23 +87,11 @@ export default function PmoFollowUpModal({
         notes,
       });
 
-      await notify({
-        variant: "success",
-        badgeText: "Tindak Lanjut",
-        title: "Berhasil Dicatat",
-        description: "Laporan pendampinganmu sudah tersimpan.",
-        confirmLabel: "Tutup",
-      });
+      notify.success("Berhasil Dicatat", "Laporan pendampinganmu sudah tersimpan.");
 
       onSuccess();
     } catch (err: unknown) {
-      await notify({
-        variant: "danger",
-        title: "Gagal Menyimpan",
-        description:
-          errorMessage(err, "Terjadi kesalahan pada server."),
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal Menyimpan", errorMessage(err, "Terjadi kesalahan pada server."));
     } finally {
       setLoading(false);
     }

@@ -4,10 +4,10 @@ import { useState } from "react";
 import { errorMessage } from "@/lib/errors";
 import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import { faskesApi } from "@/lib/api/faskes";
-import { usePopup } from "@/components/ui/popup-provider";
 import type { FaskesTicket } from "@/lib/types/faskes";
 import { X, CheckCircle2, Loader2, Save } from "lucide-react";
 
+import { notify } from "@/lib/toast";
 interface TicketResolveModalProps {
   ticket: FaskesTicket;
   onClose: () => void;
@@ -27,7 +27,6 @@ export default function TicketResolveModal({
   onClose,
   onSuccess,
 }: TicketResolveModalProps) {
-  const { notify } = usePopup();
 
   const [reason, setReason] = useState("KONSULTASI_KLINIK");
   const [notes, setNotes] = useState("");
@@ -37,12 +36,7 @@ export default function TicketResolveModal({
     e.preventDefault(); // ✅ WAJIB: Mencegah form reload halaman
 
     if (notes.trim().length < 5) {
-      return notify({
-        variant: "warning",
-        title: "Catatan Terlalu Pendek",
-        description: "Mohon isi catatan tindak lanjut minimal 5 karakter.",
-        confirmLabel: "Mengerti",
-      });
+      return notify.warning("Catatan Terlalu Pendek", "Mohon isi catatan tindak lanjut minimal 5 karakter.");
     }
 
     try {
@@ -52,23 +46,11 @@ export default function TicketResolveModal({
         resolutionNotes: notes,
       });
 
-      await notify({
-        variant: "success",
-        badgeText: "Tiket Selesai",
-        title: "Tindak Lanjut Berhasil",
-        description: "Tiket telah ditutup dan tindakan Anda telah tercatat.",
-        confirmLabel: "Tutup",
-      });
+      notify.success("Tindak Lanjut Berhasil", "Tiket telah ditutup dan tindakan Anda telah tercatat.");
 
       onSuccess();
     } catch (err: unknown) {
-      await notify({
-        variant: "danger",
-        title: "Gagal Menutup Tiket",
-        description:
-          errorMessage(err, "Terjadi kesalahan pada server."),
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal Menutup Tiket", errorMessage(err, "Terjadi kesalahan pada server."));
     } finally {
       setLoading(false);
     }

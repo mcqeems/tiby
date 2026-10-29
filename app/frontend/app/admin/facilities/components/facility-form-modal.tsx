@@ -4,10 +4,10 @@ import { useState } from "react";
 import { errorMessage } from "@/lib/errors";
 import { facilitiesApi } from "@/lib/api/facilities";
 import type { CreateFacilityDto, FacilityItem } from "@/lib/types/facilities";
-import { usePopup } from "@/components/ui/popup-provider";
 import Dialog from "@/components/ui/dialog";
 import { Loader2, Save } from "lucide-react";
 
+import { notify } from "@/lib/toast";
 const inputCls =
   "w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none";
 
@@ -20,7 +20,6 @@ export default function FacilityFormModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
-  const { notify } = usePopup();
   const isEdit = Boolean(facility);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState<CreateFacilityDto>({
@@ -33,12 +32,7 @@ export default function FacilityFormModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.name.trim().length < 3 || formData.code.trim().length < 2) {
-      return notify({
-        variant: "warning",
-        title: "Validasi Gagal",
-        description: "Nama minimal 3 karakter dan kode minimal 2 karakter.",
-        confirmLabel: "Mengerti",
-      });
+      return notify.warning("Validasi Gagal", "Nama minimal 3 karakter dan kode minimal 2 karakter.");
     }
 
     try {
@@ -48,23 +42,10 @@ export default function FacilityFormModal({
       } else {
         await facilitiesApi.create(formData);
       }
-      await notify({
-        variant: "success",
-        title: "Berhasil",
-        description: isEdit
-          ? "Data faskes diperbarui."
-          : "Faskes baru ditambahkan.",
-        confirmLabel: "Tutup",
-      });
+      notify.success("Berhasil", isEdit ? "Data faskes diperbarui." : "Faskes baru ditambahkan.");
       onSuccess();
     } catch (err: unknown) {
-      await notify({
-        variant: "danger",
-        title: "Gagal",
-        description:
-          errorMessage(err, "Terjadi kesalahan pada server."),
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal", errorMessage(err, "Terjadi kesalahan pada server."));
     } finally {
       setSubmitting(false);
     }

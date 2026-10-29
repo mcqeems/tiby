@@ -9,6 +9,7 @@ import { facilitiesApi } from "@/lib/api/facilities";
 import type { FacilityItem } from "@/lib/types/facilities";
 import FacilityFormModal from "./facility-form-modal";
 import { usePopup } from "@/components/ui/popup-provider";
+import { notify } from "@/lib/toast";
 import {
   Building2,
   Plus,
@@ -22,7 +23,7 @@ import {
 const LIMIT = 12;
 
 export default function FacilityManager() {
-  const { notify, confirm } = usePopup();
+  const { confirm } = usePopup();
   const [facilities, setFacilities] = useState<FacilityItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -45,16 +46,11 @@ export default function FacilityManager() {
       setFacilities(res.items || []);
       setTotal(res.total || 0);
     } catch {
-      await notify({
-        variant: "danger",
-        title: "Gagal",
-        description: "Tidak dapat memuat data faskes.",
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal", "Tidak dapat memuat data faskes.");
     } finally {
       setLoading(false);
     }
-  }, [notify, page, search]);
+  }, [page, search]);
 
   useEffect(() => {
     let active = true;
@@ -90,21 +86,10 @@ export default function FacilityManager() {
 
     try {
       await facilitiesApi.remove(id);
-      await notify({
-        variant: "success",
-        title: "Terhapus",
-        description: "Data faskes berhasil dihapus.",
-        confirmLabel: "Tutup",
-      });
+      notify.success("Terhapus", "Data faskes berhasil dihapus.");
       fetchFacilities();
     } catch (err: unknown) {
-      await notify({
-        variant: "danger",
-        title: "Gagal",
-        description:
-          errorMessage(err, "Tidak dapat menghapus faskes."),
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal", errorMessage(err, "Tidak dapat menghapus faskes."));
     }
   };
 

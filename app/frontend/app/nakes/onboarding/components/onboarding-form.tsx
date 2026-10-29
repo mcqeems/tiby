@@ -48,6 +48,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+import { notify } from "@/lib/toast";
 type PmoMode = "baru" | "existing";
 
 type ExistingUser = {
@@ -244,7 +245,7 @@ function Avatar({ name, size = "md" }: { name: string; size?: "md" | "lg" }) {
 }
 
 export default function OnboardingForm() {
-  const { confirm, notify } = usePopup();
+  const { confirm } = usePopup();
 
   const [form, setForm] = useState<OnboardingFormState>({
     patient: { fullName: "", username: "", whatsappNumber: "" },
@@ -388,36 +389,13 @@ export default function OnboardingForm() {
           .slice(0, 3)
           .map((field) => field.label)
           .join(", ");
-        await notify({
-          variant: "warning",
-          badgeText: "Pindai Kartu",
-          title: `${stillMissing.length} kolom wajib masih kosong`,
-          description: `Kartu terbaca, tetapi ${labels}${
-            stillMissing.length > 3 ? ", dan lainnya" : ""
-          } belum terisi. Lengkapi dulu sebelum menerbitkan akun.`,
-          confirmLabel: "Isi Sekarang",
-        });
+        notify.warning(`${stillMissing.length} kolom wajib masih kosong`, `Kartu terbaca, tetapi ${labels}${ stillMissing.length > 3 ? ", dan lainnya" : "" } belum terisi. Lengkapi dulu sebelum menerbitkan akun.`);
         focusField(stillMissing[0].key);
       } else {
-        await notify({
-          variant: "success",
-          badgeText: "Ekstraksi OCR",
-          title: "Semua kolom wajib sudah terisi",
-          description: `Dari kartu: ${ocrSummary(draft)}. Periksa lagi sebelum menerbitkan akun.`,
-          confirmLabel: "Periksa",
-        });
+        notify.success("Semua kolom wajib sudah terisi", `Dari kartu: ${ocrSummary(draft)}. Periksa lagi sebelum menerbitkan akun.`);
       }
     } catch (err: unknown) {
-      await notify({
-        variant: "warning",
-        badgeText: "Pindai Kartu",
-        title: "Foto Tidak Terbaca Otomatis",
-        description: errorMessage(
-          err,
-          "Pastikan foto kartu pengobatan cukup terang, atau isi kolom formulir secara manual.",
-        ),
-        confirmLabel: "Isi Manual",
-      });
+      notify.warning("Foto Tidak Terbaca Otomatis", errorMessage(err, "Pastikan foto kartu pengobatan cukup terang, atau isi kolom formulir secara manual.", ));
     } finally {
       setOcrLoading(false);
       e.target.value = "";
@@ -431,14 +409,7 @@ export default function OnboardingForm() {
       !form.patient.whatsappNumber ||
       form.patient.whatsappNumber.length < 8
     ) {
-      await notify({
-        variant: "warning",
-        badgeText: "Validasi Gagal",
-        title: "Nomor WhatsApp Terlalu Pendek",
-        description:
-          "Nomor WhatsApp pasien harus diisi minimal 8 digit angka yang valid.",
-        confirmLabel: "Periksa Kembali",
-      });
+      notify.warning("Nomor WhatsApp Terlalu Pendek", "Nomor WhatsApp pasien harus diisi minimal 8 digit angka yang valid.");
       return;
     }
 
@@ -490,23 +461,9 @@ export default function OnboardingForm() {
         pmoCreated: creds.pmoCreated ?? pmoMode === "baru",
       });
 
-      await notify({
-        variant: "success",
-        badgeText: "Selesai",
-        title: "Akun dan Terapi Berhasil Dibuat",
-        description:
-          "Silakan salin informasi login sementara Pasien pada kartu di layar sebelum meninggalkan halaman ini.",
-        confirmLabel: "Lihat Kredensial",
-      });
+      notify.success("Akun dan Terapi Berhasil Dibuat", "Silakan salin informasi login sementara Pasien pada kartu di layar sebelum meninggalkan halaman ini.");
     } catch (err: unknown) {
-      await notify({
-        variant: "danger",
-        badgeText: "Gagal",
-        title: "Pendaftaran Tidak Berhasil",
-        description:
-          errorMessage(err, "Terjadi kendala saat menerbitkan rencana terapi. Pastikan data terisi dengan benar."),
-        confirmLabel: "Tutup",
-      });
+      notify.error("Pendaftaran Tidak Berhasil", errorMessage(err, "Terjadi kendala saat menerbitkan rencana terapi. Pastikan data terisi dengan benar."));
     } finally {
       setSubmitting(false);
     }

@@ -4,10 +4,10 @@ import { useState } from "react";
 import { errorMessage } from "@/lib/errors";
 import { usersApi, type UserItem } from "@/lib/api/users";
 import type { FacilityItem } from "@/lib/types/facilities";
-import { usePopup } from "@/components/ui/popup-provider";
 import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import { X, Loader2, Save } from "lucide-react";
 
+import { notify } from "@/lib/toast";
 interface UserFormModalProps {
   facilities: FacilityItem[];
   editingUser?: UserItem;
@@ -23,7 +23,6 @@ export default function UserFormModal({
   onClose,
   onSuccess,
 }: UserFormModalProps) {
-  const { notify } = usePopup();
   const isEdit = Boolean(editingUser);
   const [submitting, setSubmitting] = useState(false);
 
@@ -40,44 +39,19 @@ export default function UserFormModal({
     e.preventDefault();
 
     if (!isEdit && !formData.facilityId) {
-      return notify({
-        variant: "warning",
-        title: "Validasi Gagal",
-        description: "Pilih Faskes penempatan.",
-        confirmLabel: "Mengerti",
-      });
+      return notify.warning("Validasi Gagal", "Pilih Faskes penempatan.");
     }
     if (formData.role === "NAKES" && !formData.facilityId) {
-      return notify({
-        variant: "warning",
-        title: "Validasi Gagal",
-        description: "Akun NAKES harus memiliki Faskes penempatan.",
-        confirmLabel: "Mengerti",
-      });
+      return notify.warning("Validasi Gagal", "Akun NAKES harus memiliki Faskes penempatan.");
     }
     if (formData.fullName.length < 3) {
-      return notify({
-        variant: "warning",
-        title: "Validasi Gagal",
-        description: "Nama lengkap minimal 3 karakter.",
-        confirmLabel: "Mengerti",
-      });
+      return notify.warning("Validasi Gagal", "Nama lengkap minimal 3 karakter.");
     }
     if (!isEdit && formData.username.length < 3) {
-      return notify({
-        variant: "warning",
-        title: "Validasi Gagal",
-        description: "Username minimal 3 karakter.",
-        confirmLabel: "Mengerti",
-      });
+      return notify.warning("Validasi Gagal", "Username minimal 3 karakter.");
     }
     if (!isEdit && formData.password.length < 8) {
-      return notify({
-        variant: "warning",
-        title: "Validasi Gagal",
-        description: "Password minimal 8 karakter.",
-        confirmLabel: "Mengerti",
-      });
+      return notify.warning("Validasi Gagal", "Password minimal 8 karakter.");
     }
 
     try {
@@ -89,12 +63,7 @@ export default function UserFormModal({
           role: formData.role,
           facilityId: formData.facilityId || null,
         });
-        await notify({
-          variant: "success",
-          title: "Berhasil",
-          description: "Data akun berhasil diperbarui.",
-          confirmLabel: "Tutup",
-        });
+        notify.success("Berhasil", "Data akun berhasil diperbarui.");
       } else {
         await usersApi.createUser({
           fullName: formData.fullName,
@@ -104,22 +73,12 @@ export default function UserFormModal({
           role: "NAKES",
           facilityId: formData.facilityId,
         });
-        await notify({
-          variant: "success",
-          title: "Berhasil",
-          description: "Akun Nakes berhasil dibuat.",
-          confirmLabel: "Tutup",
-        });
+        notify.success("Berhasil", "Akun Nakes berhasil dibuat.");
       }
       onSuccess();
     } catch (err: unknown) {
       const message = errorMessage(err, "Pastikan format email benar dan username belum dipakai.");
-      await notify({
-        variant: "danger",
-        title: isEdit ? "Gagal Memperbarui Akun" : "Gagal Membuat Akun",
-        description: message,
-        confirmLabel: "Tutup",
-      });
+      notify.error(isEdit ? "Gagal Memperbarui Akun" : "Gagal Membuat Akun", message);
     } finally {
       setSubmitting(false);
     }

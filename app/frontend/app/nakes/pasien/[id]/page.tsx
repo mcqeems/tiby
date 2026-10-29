@@ -36,6 +36,7 @@ import { faskesApi } from "@/lib/api/faskes";
 import { usersApi } from "@/lib/api/users";
 import { usePopup } from "@/components/ui/popup-provider";
 import Dialog from "@/components/ui/dialog";
+import { notify } from "@/lib/toast";
 import type {
   RiskSortedPatientItem,
   PatientHistoryItem,
@@ -293,7 +294,7 @@ function LoadMoreHistoryButton({
 export default function PatientDetailPage() {
   const params = useParams();
   const patientId = params.id as string;
-  const { notify, confirm } = usePopup();
+  const { confirm } = usePopup();
 
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -384,28 +385,13 @@ export default function PatientDetailPage() {
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword.length < 8)
-      return notify({
-        variant: "warning",
-        title: "Password Terlalu Pendek",
-        description: "Minimal 8 karakter.",
-        confirmLabel: "Mengerti",
-      });
+      return notify.warning("Password Terlalu Pendek", "Minimal 8 karakter.");
     if (newPassword !== confirmPassword)
-      return notify({
-        variant: "warning",
-        title: "Konfirmasi Salah",
-        description: "Konfirmasi tidak cocok.",
-        confirmLabel: "Mengerti",
-      });
+      return notify.warning("Konfirmasi Salah", "Konfirmasi tidak cocok.");
 
     const targetId = resetTarget === "PASIEN" ? patientUserId : pmoUserId;
     if (!targetId)
-      return notify({
-        variant: "danger",
-        title: "Gagal",
-        description: "User ID tidak ditemukan.",
-        confirmLabel: "Tutup",
-      });
+      return notify.error("Gagal", "User ID tidak ditemukan.");
 
     const isConfirmed = await confirm({
       variant: "warning",
@@ -420,19 +406,9 @@ export default function PatientDetailPage() {
       setResetLoading(true);
       await usersApi.resetPassword(targetId, newPassword);
       setResetOpen(false);
-      await notify({
-        variant: "success",
-        title: "Password Direset",
-        description: "Password berhasil diperbarui.",
-        confirmLabel: "Tutup",
-      });
+      notify.success("Password Direset", "Password berhasil diperbarui.");
     } catch (err: unknown) {
-      await notify({
-        variant: "danger",
-        title: "Gagal",
-        description: errorMessage(err, "Server error"),
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal", errorMessage(err, "Server error"));
     } finally {
       setResetLoading(false);
     }
@@ -441,12 +417,7 @@ export default function PatientDetailPage() {
   const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault();
     if (ticketReason.trim().length < 5) {
-      return notify({
-        variant: "warning",
-        title: "Alasan Kurang",
-        description: "Minimal 5 karakter.",
-        confirmLabel: "Mengerti",
-      });
+      return notify.warning("Alasan Kurang", "Minimal 5 karakter.");
     }
 
     try {
@@ -459,20 +430,9 @@ export default function PatientDetailPage() {
 
       setTicketOpen(false);
       setTicketReason("");
-      await notify({
-        variant: "success",
-        badgeText: "Tiket Dibuat",
-        title: "Berhasil",
-        description: "Tiket dikirim ke dashboard.",
-        confirmLabel: "Tutup",
-      });
+      notify.success("Berhasil", "Tiket dikirim ke dashboard.");
     } catch (err: unknown) {
-      await notify({
-        variant: "danger",
-        title: "Gagal",
-        description: errorMessage(err, "Server error"),
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal", errorMessage(err, "Server error"));
     } finally {
       setTicketLoading(false);
     }
@@ -487,13 +447,7 @@ export default function PatientDetailPage() {
       setHistory((prev) => [...prev, ...(res.items || [])]);
       setHistoryPage(nextPage);
     } catch (err: unknown) {
-      await notify({
-        variant: "danger",
-        title: "Gagal",
-        description:
-          errorMessage(err, "Tidak dapat memuat riwayat lebih lama."),
-        confirmLabel: "Tutup",
-      });
+      notify.error("Gagal", errorMessage(err, "Tidak dapat memuat riwayat lebih lama."));
     } finally {
       setLoadingMoreHistory(false);
     }
