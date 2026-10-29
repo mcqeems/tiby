@@ -163,13 +163,12 @@ docker compose logs -f backend # log per service
 
 ### Deployment Tanpa Docker
 
-Jalur non-Docker tidak didokumentasikan di sini; ikuti dokumentasi resmi masing-masing stack. Urutan dan environment mengikuti bagian Konfigurasi di atas, dan `@tiby/ts-shared` tetap harus di-build pertama.
+Jalur non-Docker tidak didokumentasikan di sini; ikuti README masing-masing service. Urutan dan environment mengikuti bagian Konfigurasi di atas, dan `@tiby/ts-shared` tetap harus di-build pertama.
 
-| Stack | Dokumentasi resmi |
+| Service | Referensi |
 | --- | --- |
-| Frontend (Next.js) | https://nextjs.org/docs/app/getting-started/deploying |
-| Backend (NestJS) | https://docs.nestjs.com/deployment |
-| Migrasi tabel auth (Better Auth CLI) | https://www.better-auth.com/docs/concepts/cli |
-| AI Service (FastAPI) | https://fastapi.tiangolo.com/deployment/ |
-| Package manager Python (uv) | https://docs.astral.sh/uv/ |
-| WAHA | https://waha.devlike.pro/docs/overview/quick-start/ (repo ini juga menyediakan `infra/waha/docker-compose.yml`) |
+| Frontend | [app/frontend/README.md](app/frontend/README.md) |
+| Backend | [app/backend/README.md](app/backend/README.md) |
+| AI Service | [app/ai-service/README.md](app/ai-service/README.md) |
+
+WAHA standalone (di luar compose utama) tersedia di `infra/waha/docker-compose.yml`.
