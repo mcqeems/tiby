@@ -131,23 +131,6 @@ export default function UniversalSidebar({
     readAvatar,
     () => undefined,
   );
-  const image =
-    publishedAvatar !== undefined ? publishedAvatar : sessionAvatar;
-
-  const toggleCollapsed = () => setCollapsedValue(!collapsed);
-
-  const isItemActive = (href: string) => {
-    if (pathname === href) return true;
-    const rootPaths = ["/pasien", "/nakes", "/pmo", "/admin", "/faskes"];
-    if (rootPaths.includes(href)) return false;
-    return pathname.startsWith(`${href}/`);
-  };
-
-  const labelCls = `overflow-hidden whitespace-nowrap transition-opacity duration-200 motion-reduce:transition-none ${
-    collapsed ? "w-0 opacity-0" : "opacity-100"
-  }`;
-
-  const avatarText = user?.name?.[0] || user?.username?.[0] || brandInitial;
 
   // The auth session carries no `image`; fetch the canonical URL once so a
   // page reload still shows the photo. Profile upload publishes to the store.
@@ -167,6 +150,24 @@ export default function UniversalSidebar({
       active = false;
     };
   }, [user?.id, publishedAvatar]);
+
+  const image =
+    publishedAvatar !== undefined ? publishedAvatar : sessionAvatar;
+
+  const toggleCollapsed = () => setCollapsedValue(!collapsed);
+
+  const isItemActive = (href: string) => {
+    if (pathname === href) return true;
+    const rootPaths = ["/pasien", "/nakes", "/pmo", "/admin", "/faskes"];
+    if (rootPaths.includes(href)) return false;
+    return pathname.startsWith(`${href}/`);
+  };
+
+  const labelCls = `overflow-hidden whitespace-nowrap transition-opacity duration-200 motion-reduce:transition-none ${
+    collapsed ? "w-0 opacity-0" : "opacity-100"
+  }`;
+
+  const avatarText = user?.name?.[0] || user?.username?.[0] || brandInitial;
 
   // Filter menu profil agar tidak muncul di mobile bottom bar
   const mobileItems = items.filter((item) => !item.href.endsWith("/profile"));
