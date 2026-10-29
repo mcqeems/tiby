@@ -55,14 +55,15 @@ export default function Hero() {
           initial={{ opacity: 0, x: 40, scale: 0.96 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
           transition={{ duration: 1, delay: 0.25, ease: EASE }}
-          className="relative flex h-full w-full items-center justify-center lg:justify-end"
+          aria-hidden
+          className="pointer-events-none absolute -bottom-8 right-0 hidden w-[44rem] select-none lg:block"
         >
           <Image
             src="/holding.jpg"
-            alt="Ilustrasi Aplikasi Tiby"
+            alt=""
             width={896}
             height={1200}
-            sizes="(min-width: 1024px) 50vw, 100vw"
+            sizes="44rem"
             preload
             loading="eager"
             className="h-auto w-full object-contain"
