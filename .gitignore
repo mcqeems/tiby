@@ -19,3 +19,4 @@ infra/waha/.env
 
 # Playwright MCP snapshots
 .playwright-mcp/
+AGENTS.md
