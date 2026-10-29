@@ -29,8 +29,7 @@ export default function Hero() {
             variants={revealItem}
             className="mt-6 max-w-md text-[15px] leading-relaxed text-gray-500"
           >
-            Catat keluhan dan obat harianmu hanya dengan bicara. Pandu siap
-            mendengarkan tanpa menghakimi.
+            Catat keluhan dan obat harianmu hanya dengan bicara.
           </motion.p>
 
           <motion.div variants={revealItem} className="mt-8 w-full max-w-md">
