@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import Mascot from "@/components/mascot";
 import { SectionHeading } from "./shared";
 import { VIEWPORT, staggerParent, revealItem } from "@/lib/motion";
+import Image from "next/image";
 
 const PERSONAS = [
   {
@@ -12,18 +13,21 @@ const PERSONAS = [
     desc: "Lapor tanpa takut stigma sosial.",
     header: "bg-orange-500",
     sub: "text-orange-100",
+    image: "/landing/pasien.png",
   },
   {
     title: "PMO",
     desc: "Pantau status tanpa membaca obrolan.",
     header: "bg-slate-500",
     sub: "text-slate-100",
+    image: "/landing/pmo.png",
   },
   {
     title: "Nakes",
     desc: "Triase risiko dan tindak lanjut.",
     header: "bg-blue-400",
     sub: "text-blue-50",
+    image: "/landing/nakes.png",
   },
 ];
 
@@ -32,22 +36,24 @@ function PersonaCard({
   desc,
   header,
   sub,
+  image,
 }: {
   title: string;
   desc: string;
   header: string;
   sub: string;
+  image: string;
 }) {
   return (
     <motion.article
       variants={revealItem}
-      className={`group w-[300px] shrink-0 snap-start overflow-hidden rounded-3xl ${header} p-6 text-white transition-transform duration-500 hover:-translate-y-2 md:w-[340px]`}
+      className={`group w-[300px] shrink-0 snap-start overflow-hidden rounded-3xl ${header} p-6 text-white transition-transform duration-500 hover:-translate-y-2 md:w-[340px] mt-4`}
     >
       <h3 className="font-heading text-2xl font-bold">{title}</h3>
       <p className={`mt-1 text-sm ${sub}`}>{desc}</p>
       <div className="mt-5 overflow-hidden rounded-2xl bg-white/20">
-        <div className="flex h-56 items-center justify-center transition-transform duration-500 group-hover:scale-105 group-hover:rotate-1">
-          <Mascot emotion="idle" animated loop size={160} altText="Pandu" />
+        <div className="flex h-56 items-center justify-center">
+          <Image src={image} alt={title} height={400} width={400} />
         </div>
       </div>
     </motion.article>
@@ -56,12 +62,6 @@ function PersonaCard({
 
 export default function Personas() {
   const trackRef = useRef<HTMLDivElement>(null);
-
-  const scrollNext = () => {
-    const el = trackRef.current;
-    if (!el) return;
-    el.scrollBy({ left: 360, behavior: "smooth" });
-  };
 
   return (
     <section id="peran" className="scroll-mt-24 overflow-hidden py-20">

@@ -52,7 +52,7 @@ export default function Footer() {
             <h4 className="mb-4 text-sm font-bold text-gray-900">Produk</h4>
             <ul className="space-y-2.5 text-xs">
               <FooterLink href="#fitur">Fitur</FooterLink>
-              <FooterLink href="#peran">Untuk Semua</FooterLink>
+              <FooterLink href="#peran">Peran</FooterLink>
               <FooterLink href="#faq">Keamanan</FooterLink>
             </ul>
           </div>
