@@ -12,8 +12,13 @@ export const metadata: Metadata = {
 export default function PasienPage() {
   return (
     <div className="space-y-6">
-    
-      <Suspense fallback={<SkeletonRegion label="Memuat..."><SkeletonRows rows={3} /></SkeletonRegion>}>,
+      <Suspense
+        fallback={
+          <SkeletonRegion label="Memuat...">
+            <SkeletonRows rows={3} />
+          </SkeletonRegion>
+        }
+      >
         <PasienOverview />
       </Suspense>
     </div>

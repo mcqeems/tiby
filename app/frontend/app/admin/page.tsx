@@ -13,8 +13,14 @@ export const metadata: Metadata = {
 export default function AdminOverviewPage() {
   return (
     <div>
-      <Suspense fallback={<SkeletonRegion label="Memuat..."><SkeletonRows rows={3} /></SkeletonRegion>}>,
-        <AdminOverview/>
+      <Suspense
+        fallback={
+          <SkeletonRegion label="Memuat...">
+            <SkeletonRows rows={3} />
+          </SkeletonRegion>
+        }
+      >
+        <AdminOverview />
       </Suspense>
     </div>
   );

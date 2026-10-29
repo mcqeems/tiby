@@ -9,11 +9,7 @@ import Image from "next/image";
 import Mascot from "@/components/mascot";
 import { ArrowLeft } from "lucide-react";
 import { roleHome } from "@/lib/roles";
-import {
-  signIn,
-  type TibyUser,
-  useSession,
-} from "@/lib/auth-client";
+import { signIn, type TibyUser, useSession } from "@/lib/auth-client";
 
 function AtIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
@@ -185,7 +181,8 @@ export default function LoginView() {
           <Image
             src="/bg-login.png"
             alt="Tiby Login Background"
-            fill
+            height={400}
+            width={700}
             className="object-cover z-0"
             preload
             loading="eager"
@@ -205,11 +202,7 @@ export default function LoginView() {
 
           <div className="relative z-20 flex items-center gap-3.5 border-l-4 border-white/30 pl-4">
             <div className="relative w-11 h-11 rounded-full bg-white flex items-center justify-center shrink-0 shadow-lg overflow-hidden">
-              <Mascot
-                emotion="happy"
-                size={40}
-                altText="Pandu"
-              />
+              <Mascot emotion="happy" size={40} altText="Pandu" />
             </div>
             <div>
               <p className="font-heading font-bold text-lg leading-tight tracking-wide text-white">
