@@ -49,7 +49,7 @@ export default function Testimonials() {
           <motion.figure
             key={t.name}
             variants={revealItem}
-            className="flex flex-col rounded-3xl bg-gray-50 p-7 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_24px_50px_-28px_rgba(0,0,0,0.20)]"
+            className="flex flex-col rounded-3xl bg-gray-100 p-7 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_24px_50px_-28px_rgba(0,0,0,0.20)]"
           >
             <blockquote className="flex-1 text-[15px] leading-relaxed text-gray-700">
               &ldquo;{t.text}&rdquo;

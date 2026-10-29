@@ -42,7 +42,7 @@ export default function Navbar() {
             href="/demo"
             aria-label={demoActive ? "Mode Demo, sesi aktif" : "Mode Demo"}
             title={demoActive ? "Sesi demo aktif" : undefined}
-            className="flex items-center gap-2 rounded-full bg-gray-50 px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 sm:px-5"
+            className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200 sm:px-5"
           >
             {demoActive ? (
               <span aria-hidden="true" className="relative flex h-2.5 w-2.5">
@@ -57,7 +57,7 @@ export default function Navbar() {
 
           <Link
             href="/login"
-            className="group flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-black hover:shadow-lg"
+            className="group flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-tiby-teal-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-tiby-teal-700"
           >
             Buka App
             <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />

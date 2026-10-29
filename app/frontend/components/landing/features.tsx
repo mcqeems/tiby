@@ -76,7 +76,7 @@ function ShowcaseCard() {
   return (
     <motion.figure
       variants={revealItem}
-      className="overflow-hidden rounded-3xl bg-gray-50"
+      className="overflow-hidden rounded-3xl bg-gray-100"
     >
       <Image
         src="/landing/laptop-phone-mockup.png"
@@ -112,7 +112,7 @@ function FeatureCard({
       variants={revealItem}
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
-      className="overflow-hidden rounded-3xl bg-gray-50 p-7"
+      className="overflow-hidden rounded-3xl bg-gray-100 p-7"
     >
       <motion.div
         initial="rest"

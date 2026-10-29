@@ -20,9 +20,7 @@ function FooterLink({
     <li>
       <Link
         href={href}
-        {...(external
-          ? { target: "_blank", rel: "noopener noreferrer" }
-          : {})}
+        {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
         className="text-gray-500 transition-colors hover:text-gray-900"
       >
         {children}
@@ -151,7 +149,7 @@ export default function Footer() {
 
   return (
     <footer className="mx-auto max-w-6xl px-6 pb-10">
-      <div className="overflow-hidden rounded-[2.5rem] bg-gray-50 px-8 py-14 md:px-14">
+      <div className="overflow-hidden rounded-[2.5rem] bg-gray-100 px-8 py-14 md:px-14">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
           <div className="md:col-span-1">
             <Image

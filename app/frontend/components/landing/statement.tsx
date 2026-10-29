@@ -71,7 +71,7 @@ function ShinePill({
   const opacity = useTransform(t, [0, 1], [0, 1]);
   const y = useTransform(t, [0, 1], [24, 0]);
   // Shine sweeps after the pill lands (second half of its window).
-  const shineX = useTransform(progress, [0.48, 0.58], ["-150%", "150%"]);
+  const shineX = useTransform(progress, [0.48, 0.7], ["-150%", "170%"]);
   return (
     <motion.span
       style={{ opacity, y }}

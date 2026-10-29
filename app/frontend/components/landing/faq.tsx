@@ -54,7 +54,7 @@ export default function FAQ() {
               <div
                 key={faq.q}
                 className={`overflow-hidden rounded-2xl transition-colors duration-300 ${
-                  open ? "bg-gray-50" : "bg-transparent"
+                  open ? "bg-gray-100" : "bg-transparent"
                 }`}
               >
                 <button

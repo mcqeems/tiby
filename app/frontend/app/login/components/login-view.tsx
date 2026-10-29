@@ -198,9 +198,11 @@ export default function LoginView() {
               Silakan masuk untuk melanjutkan pendampingan dan pemantauan
               rutinitas sehatmu.
             </p>
-            <p className="mt-4 text-sm font-semibold text-white/90">
-              Juri UINIC 8.0 bisa menggunakan Demo ya 🙂
-            </p>
+            <div className="mt-4 px-4 py-2 bg-black/25 rounded-2xl justify">
+              <p className="text-sm font-semibold text-white/90">
+                Juri UINIC 8.0 bisa menggunakan Demo ya 🙂
+              </p>
+            </div>
           </div>
 
           <div className="relative z-20 flex items-center justify-between gap-4 border-l-4 border-white/30 pl-4">

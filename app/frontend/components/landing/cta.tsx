@@ -54,7 +54,7 @@ export default function CTA() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-16">
       <Reveal>
-        <div className="relative overflow-hidden rounded-[2.5rem] bg-gray-50 px-8 py-16 text-center md:px-16">
+        <div className="relative overflow-hidden rounded-[2.5rem] bg-gray-100 px-8 py-16 text-center md:px-16">
           <h2 className="relative font-heading text-3xl font-bold leading-tight tracking-tight text-gray-900 md:text-5xl">
             Kalau kamu scroll sejauh ini,
             <br />
@@ -62,7 +62,7 @@ export default function CTA() {
           </h2>
           <Link
             href="/login"
-            className="group relative mt-9 inline-flex items-center gap-2 rounded-full bg-tiby-teal-500 px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-tiby-teal-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl"
+            className="group relative mt-9 inline-flex items-center gap-2 rounded-full bg-tiby-teal-600 hover:bg-tiby-teal-700 px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-tiby-teal-500/25 transition-colors"
           >
             Masuk ke Tiby
           </Link>
@@ -72,7 +72,7 @@ export default function CTA() {
             <MarqueeRow items={ROW_B} reverse />
           </div>
 
-          <div className="relative w-full">
+          <div className="hidden relative md:block w-full">
             <motion.div
               aria-hidden
               animate={{ y: [0, -12, 0], x: [0, 8, 0] }}
@@ -81,7 +81,7 @@ export default function CTA() {
             >
               <Image
                 src="/landing/panda-cloud.png"
-                alt=""
+                alt="panda cloud"
                 width={400}
                 height={200}
               />

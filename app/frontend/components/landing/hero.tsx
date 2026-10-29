@@ -35,7 +35,7 @@ export default function Hero() {
           <motion.div variants={revealItem} className="mt-8 w-full max-w-md">
             <Link
               href="/login"
-              className="mt-4 inline-flex items-center justify-center rounded-2xl bg-tiby-teal-100 px-6 py-3.5 text-sm font-bold text-tiby-teal-700 transition-all hover:-translate-y-0.5 hover:bg-tiby-teal-200 hover:shadow-lg"
+              className="mt-4 inline-flex items-center justify-center rounded-2xl bg-tiby-teal-100 px-6 py-3.5 text-sm font-bold text-tiby-teal-700 transition-colors hover:bg-tiby-teal-200"
             >
               Masuk ke Tiby
             </Link>
