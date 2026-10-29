@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Navbar from "../components/landing/navbar";
 import Hero from "../components/landing/hero";
+import Statement from "../components/landing/statement";
 import Features from "../components/landing/features";
 import Personas from "../components/landing/personas";
 import Testimonials from "../components/landing/testimonials";
@@ -28,6 +29,7 @@ export default function LandingPage() {
       <Navbar />
       <main>
         <Hero />
+        <Statement />
         <Features />
         <Personas />
         <Testimonials />

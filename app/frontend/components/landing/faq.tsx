@@ -30,56 +30,62 @@ export default function FAQ() {
   return (
     <section
       id="faq"
-      className="mx-auto grid max-w-5xl scroll-mt-24 grid-cols-1 gap-10 px-6 py-20 md:grid-cols-3"
+      className="mx-auto grid max-w-6xl scroll-mt-24 grid-cols-1 gap-10 px-6 py-20 md:grid-cols-5"
     >
-      <div className="md:col-span-1">
-        <Reveal className="sticky top-28">
-          <span className="inline-flex rounded-full border border-tiby-teal-100 bg-tiby-teal-50/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-tiby-teal-700">
-            FAQ
-          </span>
-          <h2 className="mt-4 font-heading text-3xl font-bold leading-tight tracking-tight">
-            Pertanyaan yang Sering Muncul
+      <div className="md:col-span-2">
+        <Reveal className="md:sticky md:top-28">
+          <h2 className="font-sans text-3xl font-bold leading-tight tracking-tight text-gray-900 md:text-4xl">
+            Pertanyaan yang
+            <br />
+            Sering Muncul
           </h2>
         </Reveal>
       </div>
 
-      <Reveal className="md:col-span-2" delay={0.1}>
-        {FAQS.map((faq, i) => {
-          const open = openFaq === i;
-          return (
-            <div key={faq.q} className="border-b border-gray-200/80">
-              <button
-                onClick={() => setOpenFaq(open ? null : i)}
-                aria-expanded={open}
-                className="flex w-full items-center justify-between gap-4 py-5 text-left font-semibold text-tiby-ink transition-colors hover:text-tiby-teal-700"
+      <Reveal className="md:col-span-3" delay={0.1}>
+        <div className="space-y-3">
+          {FAQS.map((faq, i) => {
+            const open = openFaq === i;
+            return (
+              <div
+                key={faq.q}
+                className={`overflow-hidden rounded-2xl transition-colors duration-300 ${
+                  open ? "bg-gray-50" : "bg-transparent"
+                }`}
               >
-                <span>{faq.q}</span>
-                <motion.span
-                  animate={{ rotate: open ? 45 : 0 }}
-                  transition={{ duration: 0.3, ease: EASE }}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-tiby-teal-50 text-tiby-teal-700"
+                <button
+                  onClick={() => setOpenFaq(open ? null : i)}
+                  aria-expanded={open}
+                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-[15px] font-semibold text-gray-900 transition-colors hover:text-tiby-teal-600"
                 >
-                  <Plus className="h-4 w-4" />
-                </motion.span>
-              </button>
-              <AnimatePresence initial={false}>
-                {open && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.4, ease: EASE }}
-                    className="overflow-hidden"
+                  <span>{faq.q}</span>
+                  <motion.span
+                    animate={{ rotate: open ? 45 : 0 }}
+                    transition={{ duration: 0.3, ease: EASE }}
+                    className="flex h-6 w-6 shrink-0 items-center justify-center text-gray-400"
                   >
-                    <p className="pb-5 pr-12 text-sm leading-relaxed text-gray-500">
-                      {faq.a}
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          );
-        })}
+                    <Plus className="h-5 w-5" />
+                  </motion.span>
+                </button>
+                <AnimatePresence initial={false}>
+                  {open && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.35, ease: EASE }}
+                      className="overflow-hidden"
+                    >
+                      <p className="px-5 pb-5 text-sm leading-relaxed text-gray-500">
+                        {faq.a}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
       </Reveal>
     </section>
   );

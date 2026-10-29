@@ -1,61 +1,60 @@
 "use client";
 
 import Link from "next/link";
-import { revealItem, staggerParent } from "@/lib/motion";
 import Image from "next/image";
 import { motion } from "motion/react";
+import { revealItem, staggerParent } from "@/lib/motion";
 import { EASE } from "./shared";
-import { ArrowBigRight } from "lucide-react";
 
 export default function Hero() {
   return (
-    <header className="relative flex min-h-screen items-center overflow-hidden bg-white">
-      <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-12 px-6 pb-16 pt-16 lg:grid-cols-2 lg:gap-8 lg:pt-20">
+    <header className="relative flex min-h-screen items-center overflow-hidden bg-white pt-24">
+      <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-12 px-6 pb-16 lg:grid-cols-2 lg:gap-4">
         <motion.div
-          variants={staggerParent(0.1, 0.1)}
+          variants={staggerParent(0.12, 0.1)}
           initial="hidden"
           animate="visible"
-          className="relative z-10 flex flex-col items-start pt-10 lg:pt-0"
+          className="relative z-10 flex flex-col items-start"
         >
           <motion.h1
             variants={revealItem}
-            className="font-heading text-5xl font-extrabold leading-[1.05] tracking-tight text-gray-900 sm:text-6xl lg:text-[5.5rem]"
+            className="font-sans text-6xl font-bold leading-[1.02] tracking-tight text-gray-900 lg:text-[5.5rem]"
           >
             Lapor Suara,
             <br />
-            <span className="text-tiby-teal-600 lg:text-[4.5rem]">
-              Tetap Tenang.
-            </span>
+            <span className="text-tiby-teal-500">Tetap Tenang.</span>
           </motion.h1>
 
           <motion.p
             variants={revealItem}
-            className="mt-6 max-w-md text-lg leading-relaxed text-gray-500"
+            className="mt-6 max-w-md text-[15px] leading-relaxed text-gray-500"
           >
             Catat keluhan dan obat harianmu hanya dengan bicara. Pandu siap
             mendengarkan tanpa menghakimi.
           </motion.p>
 
-          <motion.div
-            variants={revealItem}
-            className="mt-10 w-full max-w-md"
-          >
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-3xl bg-tiby-teal-700 px-6 py-4 text-sm font-bold text-tiby-teal-100 transition-all hover:-translate-y-0.5 hover:bg-tiby-teal-300"
-              >
-                Masuk ke Tiby
-                <ArrowBigRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-              </Link>
+          <motion.div variants={revealItem} className="mt-8 w-full max-w-md">
+            <div className="flex items-center rounded-2xl bg-gray-100 px-5 py-4">
+              <span className="shrink-0 text-sm font-semibold text-gray-900">
+                tiby.id/
+              </span>
+              <span className="truncate text-sm text-gray-400">
+                username-kamu
+              </span>
             </div>
+            <Link
+              href="/login"
+              className="mt-4 inline-flex items-center justify-center rounded-2xl bg-tiby-teal-100 px-6 py-3.5 text-sm font-bold text-tiby-teal-700 transition-all hover:-translate-y-0.5 hover:bg-tiby-teal-200 hover:shadow-lg"
+            >
+              Masuk ke Tiby
+            </Link>
           </motion.div>
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, x: 40, scale: 0.95 }}
+          initial={{ opacity: 0, x: 40, scale: 0.96 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
-          transition={{ duration: 1, delay: 0.3, ease: EASE }}
+          transition={{ duration: 1, delay: 0.25, ease: EASE }}
           className="relative flex h-full w-full items-center justify-center lg:justify-end"
         >
           <Image
@@ -67,14 +66,6 @@ export default function Hero() {
             preload
             loading="eager"
             className="h-auto w-full object-contain"
-            style={{
-              maskImage:
-                "linear-gradient(to right, black 85%, transparent 100%), linear-gradient(to bottom, black 85%, transparent 100%)",
-              WebkitMaskImage:
-                "linear-gradient(to right, black 85%, transparent 100%), linear-gradient(to bottom, black 85%, transparent 100%)",
-              maskComposite: "intersect",
-              WebkitMaskComposite: "source-in",
-            }}
           />
         </motion.div>
       </div>

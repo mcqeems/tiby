@@ -5,25 +5,28 @@ import RevealBase from "@/components/ui/reveal";
 export { EASE_OUT as EASE } from "@/lib/motion";
 export { default as Reveal } from "@/components/ui/reveal";
 
+/**
+ * Reference-style section heading: two-line title with the second line in
+ * Tiby teal, optional gray subcopy. No eyebrow pill — the reference uses
+ * plain bold titles.
+ */
 export function SectionHeading({
-  eyebrow,
-  children,
+  line1,
+  line2,
   desc,
 }: {
-  eyebrow: string;
-  children: React.ReactNode;
+  line1: string;
+  line2: string;
   desc?: string;
 }) {
   return (
-    <RevealBase className="mx-auto mb-14 max-w-2xl text-center">
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-tiby-teal-100 bg-tiby-teal-50/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-tiby-teal-700">
-        {eyebrow}
-      </span>
-      <h2 className="mt-4 font-heading text-3xl font-bold leading-tight tracking-tight md:text-5xl">
-        {children}
+    <RevealBase className="mx-auto mb-10 max-w-3xl text-center">
+      <h2 className="font-sans text-4xl font-bold leading-[1.15] tracking-tight text-gray-900 md:text-5xl">
+        {line1}{" "}
+        <span className="text-tiby-teal-500">{line2}</span>
       </h2>
       {desc && (
-        <p className="mx-auto mt-4 max-w-lg text-gray-500 leading-relaxed">
+        <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-gray-500">
           {desc}
         </p>
       )}

@@ -1,58 +1,35 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { motion, useScroll, useMotionValueEvent } from "motion/react";
-import { BookOpen, Play, ArrowUpRight } from "lucide-react";
-import { EASE } from "./shared";
+import { motion } from "motion/react";
+import { ArrowUpRight, FileText, Play } from "lucide-react";
+import LogoAnimate from "@/components/logo-animate";
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-  const { scrollY } = useScroll();
-
-  useMotionValueEvent(scrollY, "change", (v) => {
-    setScrolled(v > 20);
-  });
-
   return (
     <motion.nav
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.6, ease: EASE }}
-      className={`fixed inset-x-0 top-0 z-50 border-b transition-all duration-300 ${
-        scrolled
-          ? "border-gray-100/80 bg-white/80 py-4 backdrop-blur-xl shadow-sm" 
-          : "border-transparent bg-transparent py-6" 
-      }`}
+      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      className="fixed inset-x-0 top-0 z-50 bg-white/80 backdrop-blur-xl"
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 lg:px-8">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <Image
-            src="/logo/logo.png"
-            alt="Tiby Logo"
-            width={1024}
-            height={448}
-            sizes="120px"
-            preload
-            loading="eager"
-            className="h-auto w-[120px] object-contain"
-          />
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
+        <Link href="/" className="flex items-center" aria-label="Tiby home">
+          <LogoAnimate version="stop-middle" size={36} />
         </Link>
 
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Link
             href="#faq"
-            className="hidden items-center gap-2 rounded-full bg-gray-50/80 px-6 py-3 text-[15px] font-medium text-gray-600 transition-colors hover:bg-gray-100 sm:flex"
+            className="hidden items-center gap-2 rounded-full bg-gray-50 px-5 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 sm:flex"
           >
-            <BookOpen className="h-4 w-4" />
+            <FileText className="h-4 w-4" />
             FAQ
           </Link>
 
           <Link
             href="/demo"
-            className="hidden items-center gap-2 rounded-full bg-gray-50/80 px-6 py-3 text-[15px] font-medium text-gray-600 transition-colors hover:bg-gray-100 sm:flex"
+            className="hidden items-center gap-2 rounded-full bg-gray-50 px-5 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 sm:flex"
           >
             <Play className="h-4 w-4" />
             Mode Demo
@@ -60,7 +37,7 @@ export default function Navbar() {
 
           <Link
             href="/login"
-            className="group flex items-center gap-2 rounded-full bg-[#0F172A] px-7 py-3 text-[15px] font-semibold text-white transition-all hover:bg-black hover:shadow-lg"
+            className="group flex items-center gap-1.5 rounded-full bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-black hover:shadow-lg"
           >
             Buka App
             <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
