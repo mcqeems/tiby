@@ -181,9 +181,9 @@ export default function LoginView() {
           <Image
             src="/bg-login.png"
             alt="Tiby Login Background"
-            height={400}
-            width={700}
-            className="object-cover z-0"
+            fill
+            sizes="(min-width: 768px) 50vw, 100vw"
+            className="object-cover"
             preload
             loading="eager"
           />
