@@ -66,7 +66,7 @@ export default function Hero() {
             sizes="44rem"
             preload
             loading="eager"
-            className="h-auto w-full object-contain"
+            className="h-auto w-full object-contain [mask-image:linear-gradient(to_bottom,black_75%,transparent_100%)]"
           />
         </motion.div>
       </div>
