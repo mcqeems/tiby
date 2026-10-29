@@ -1,11 +1,13 @@
 "use client";
 
 import { useSession, signOut, type TibyUser } from "@/lib/auth-client";
+import { setAvatar } from "@/lib/avatar";
 import { roleHome } from "@/lib/roles";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export async function handleSignOut(redirectTo = "/login") {
+  setAvatar(undefined);
   await signOut();
   window.location.href = redirectTo;
 }

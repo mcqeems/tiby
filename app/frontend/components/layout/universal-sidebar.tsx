@@ -1,11 +1,13 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { handleSignOut } from "@/app/role-guard";
 import type { TibyUser } from "@/lib/auth-client";
+import { usersApi } from "@/lib/api/users";
+import { readAvatar, subscribeAvatar } from "@/lib/avatar";
 import ThemeToggle from "@/components/theme/theme-toggle";
 
 export interface SidebarItem {
@@ -123,6 +125,14 @@ export default function UniversalSidebar({
     getCollapsedSnapshot,
     getCollapsedServerSnapshot,
   );
+  // Published by the profile page after upload, or seeded below from /api/users/me.
+  const publishedAvatar = useSyncExternalStore(
+    subscribeAvatar,
+    readAvatar,
+    () => undefined,
+  );
+  const image =
+    publishedAvatar !== undefined ? publishedAvatar : sessionAvatar;
 
   const toggleCollapsed = () => setCollapsedValue(!collapsed);
 
@@ -138,6 +148,25 @@ export default function UniversalSidebar({
   }`;
 
   const avatarText = user?.name?.[0] || user?.username?.[0] || brandInitial;
+
+  // The auth session carries no `image`; fetch the canonical URL once so a
+  // page reload still shows the photo. Profile upload publishes to the store.
+  const [sessionAvatar, setSessionAvatar] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user?.id || publishedAvatar !== undefined) return;
+    let active = true;
+    usersApi
+      .getMe()
+      .then((me) => {
+        if (active) setSessionAvatar(me.image ?? null);
+      })
+      .catch(() => {
+        // Keep the initial-letter fallback; sidebar must never break the page.
+      });
+    return () => {
+      active = false;
+    };
+  }, [user?.id, publishedAvatar]);
 
   // Filter menu profil agar tidak muncul di mobile bottom bar
   const mobileItems = items.filter((item) => !item.href.endsWith("/profile"));
@@ -225,8 +254,19 @@ export default function UniversalSidebar({
               collapsed ? "justify-center" : "gap-3 bg-tiby-teal-50/60 p-2.5"
             }`}
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-tiby-teal-600 text-xs font-bold uppercase text-white">
-              {avatarText}
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-tiby-teal-600 text-xs font-bold uppercase text-white">
+              {image ? (
+                // One-off plain img: S3 avatar host is dynamic
+                // (S3_PUBLIC_BASE_URL), so next/image remotePatterns cannot cover it.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={image}
+                  alt={`Foto profil ${user?.name || user?.username || ""}`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                avatarText
+              )}
             </div>
             <div
               className={`min-w-0 transition-opacity duration-200 motion-reduce:transition-none ${

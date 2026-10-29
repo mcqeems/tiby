@@ -8,6 +8,7 @@ import { formatMonthYear } from "@/lib/format";
 import Link from "next/link";
 import { useSession, type TibyUser } from "@/lib/auth-client";
 import { usersApi, type UserItem } from "@/lib/api/users";
+import { setAvatar } from "@/lib/avatar";
 import { consentApi } from "@/lib/api/consent";
 import { usePopup } from "@/components/ui/popup-provider";
 import Dialog from "@/components/ui/dialog";
@@ -106,6 +107,7 @@ export default function ProfileView() {
     try {
       const res = await usersApi.uploadProfilePicture(file);
       setMe((prev) => (prev ? { ...prev, image: res.imageUrl } : prev));
+      setAvatar(res.imageUrl);
       await notify({
         variant: "success",
         title: "Foto Profil Diperbarui",
@@ -134,7 +136,10 @@ export default function ProfileView() {
     const timer = setTimeout(async () => {
       try {
         const res = await usersApi.getMe();
-        if (active) setMe(res);
+        if (active) {
+          setMe(res);
+          setAvatar(res.image ?? null);
+        }
       } catch {
         // The session still has enough to render the page.
       }
