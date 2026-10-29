@@ -6,6 +6,9 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Tiby",
     description:
       "Pendamping harian minum obat: pengingat, check-in, dan dukungan keluarga.",
+    id: "/",
+    lang: "id",
+    categories: ["health", "medical"],
     start_url: "/dashboard",
     scope: "/",
     display: "standalone",

@@ -27,6 +27,7 @@ const fredoka = Fredoka({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://tiby.web.id"),
   title: {
     template: "%s | Tiby",
     default: "Tiby - Pendamping Cerdas Pengobatan TBC",
@@ -54,7 +55,21 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Tiby - Pendamping Cerdas Pengobatan TBC",
     description: "Aplikasi pendamping harian pasien TBC berbasis suara.",
+    url: "https://tiby.web.id",
+    siteName: "Tiby",
+    locale: "id_ID",
     type: "website",
+    // Gambar diisi oleh app/opengraph-image.tsx (konvensi file Next.js).
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Tiby - Pendamping Cerdas Pengobatan TBC",
+    description: "Aplikasi pendamping harian pasien TBC berbasis suara.",
+    // Gambar diisi oleh app/twitter-image.tsx (konvensi file Next.js).
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 export const viewport: Viewport = {
