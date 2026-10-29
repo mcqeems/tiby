@@ -31,6 +31,7 @@ type LottieInstance = {
   play: () => void;
   pause: () => void;
   destroy: () => void;
+  isPaused: boolean;
   addEventListener: (name: "complete", callback: () => void) => void;
 };
 
@@ -90,6 +91,27 @@ export default function LogoAnimate({
     return () => observer.disconnect();
   }, []);
 
+  // A bfcache/history restore does not re-run effects, so re-assert playback
+  // whenever the page becomes visible again.
+  useEffect(() => {
+    const resume = () => {
+      const animation = animationRef.current;
+      if (!animation || document.visibilityState !== "visible") return;
+      if (!loop && finishedRef.current) return;
+      if (animation.isPaused) animation.play();
+    };
+    const onPageShow = () => resume();
+    const onVisibility = () => {
+      if (!document.hidden) resume();
+    };
+    window.addEventListener("pageshow", onPageShow);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pageshow", onPageShow);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [loop]);
+
   useEffect(() => {
     if (!canAnimate || !hasBeenInView) return;
 
@@ -119,6 +141,9 @@ export default function LogoAnimate({
         });
         animationRef.current = instance;
         setLoaded(true);
+        // The play effect below may have already run against a missing
+        // instance during a restore race; re-assert here.
+        if (document.visibilityState === "visible") instance.play();
       } catch {
         // Keep the empty box if the animation cannot load.
       }
@@ -128,6 +153,9 @@ export default function LogoAnimate({
       cancelled = true;
       animationRef.current?.destroy();
       animationRef.current = null;
+      // A remount must go through the full load-then-play chain again.
+      finishedRef.current = false;
+      setLoaded(false);
     };
   }, [version, loop, canAnimate, hasBeenInView]);
 
