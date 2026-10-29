@@ -47,6 +47,12 @@ describe("Demo lifecycle (e2e)", () => {
 
     const status = await visitor.get("/api/demo/status").expect(200);
     expect(status.body.active).toBe(true);
+    expect(status.body.maxActive).toBe(10);
+    expect(status.body.activeCount).toBeGreaterThanOrEqual(1);
+    expect(status.body.sessions.length).toBeGreaterThanOrEqual(1);
+    expect(
+      status.body.sessions.some((s: { isMine: boolean }) => s.isMine),
+    ).toBe(true);
 
     // Re-start with a valid session returns the same expiry, not a new demo.
     const again = await visitor.post("/api/demo/start").expect(200);
@@ -117,7 +123,7 @@ describe("Demo lifecycle (e2e)", () => {
 
   it("rejects enter and cleanup for an expired demo", async () => {
     const visitor = agent();
-    const start = await visitor.post("/api/demo/start").expect(200);
+    await visitor.post("/api/demo/start").expect(200);
 
     // Expire only this test's demo (other rows may linger from crashed runs).
     const mine = await dataSource.getRepository(DemoSession).findOne({
@@ -138,5 +144,8 @@ describe("Demo lifecycle (e2e)", () => {
       .post("/api/demo/enter")
       .send({ role: "PMO" })
       .expect(403);
+
+    // The cron is disabled in tests, so clean this row up here.
+    await visitor.post("/api/demo/end").expect(200);
   });
 });

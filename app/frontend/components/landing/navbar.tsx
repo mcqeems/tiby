@@ -1,11 +1,30 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { ArrowUpRight, FileText, Play } from "lucide-react";
 import LogoAnimate from "@/components/logo-animate";
+import { demoApi } from "@/lib/api/demo";
 
 export default function Navbar() {
+  const [demoActive, setDemoActive] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void demoApi
+      .status()
+      .then((status) => {
+        if (!cancelled) setDemoActive(status.active);
+      })
+      .catch(() => {
+        // The landing page stays usable if the API is unreachable.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <motion.nav
       initial={{ y: -20, opacity: 0 }}
@@ -29,9 +48,17 @@ export default function Navbar() {
 
           <Link
             href="/demo"
+            title={demoActive ? "Sesi demo aktif" : undefined}
             className="hidden items-center gap-2 rounded-full bg-gray-50 px-5 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 sm:flex"
           >
-            <Play className="h-4 w-4" />
+            {demoActive ? (
+              <span aria-hidden="true" className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500" />
+              </span>
+            ) : (
+              <Play className="h-4 w-4" />
+            )}
             Mode Demo
           </Link>
 

@@ -7,17 +7,10 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import {
-  In,
-  IsNull,
-  LessThanOrEqual,
-  MoreThan,
-  Repository,
-} from "typeorm";
+import { In, LessThanOrEqual, MoreThan, Repository } from "typeorm";
 import { auth } from "../../../auth/auth.config.js";
 import { fromNodeHeaders } from "better-auth/node";
 import type {
-  DemoEnterResponse,
   DemoEndResponse,
   DemoRole,
   DemoStartResponse,
@@ -36,7 +29,7 @@ import { AuditLog } from "../../internal/audit/entities/audit-log.entity.js";
 export const DEMO_COOKIE = "tiby_demo";
 export const DEMO_TTL_MS = 2 * 60 * 60 * 1000;
 const MAX_STARTS_PER_HOUR = 5;
-const MAX_ACTIVE_DEMOS = 50;
+const MAX_ACTIVE_DEMOS = 10;
 
 /** Every demo account: persona users sign in; extras only populate dashboards. */
 const ACCOUNTS = [
@@ -129,9 +122,23 @@ export class DemoService {
 
   async status(token: string | null): Promise<DemoStatus> {
     const demo = await this.findActive(token);
+    // The live list doubles as the availability indicator: max 10 rows, and
+    // expired rows are excluded before the cleanup cron deletes them.
+    const live = await this.demoRepo.find({
+      where: { expiresAt: MoreThan(new Date()) },
+      order: { createdAt: "ASC" },
+    });
     return {
       active: !!demo,
       expiresAt: demo ? demo.expiresAt.toISOString() : null,
+      activeCount: live.length,
+      maxActive: MAX_ACTIVE_DEMOS,
+      sessions: live.map((session) => ({
+        label: session.id.slice(-4).toUpperCase(),
+        startedAt: session.createdAt.toISOString(),
+        expiresAt: session.expiresAt.toISOString(),
+        isMine: session.id === demo?.id,
+      })),
     };
   }
 
@@ -149,7 +156,7 @@ export class DemoService {
       throw new HttpException(
         {
           code: "DEMO_LIMIT",
-          message: "Batas demo tercapai. Coba lagi nanti.",
+          message: "Semua sesi demo sedang dipakai. Coba lagi saat sesi lain berakhir.",
         },
         HttpStatus.TOO_MANY_REQUESTS,
       );

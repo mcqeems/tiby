@@ -121,6 +121,43 @@ describe("DemoService Unit Tests", () => {
     expect(demoRepo.delete).not.toHaveBeenCalled();
   });
 
+  it("reports live sessions, the cap, and which session is mine", async () => {
+    const now = Date.now();
+    demoRepo.findOneBy.mockResolvedValue({
+      id: "session-aaaa",
+      expiresAt: new Date(now + 60_000),
+    });
+    demoRepo.find.mockResolvedValue([
+      {
+        id: "session-aaaa",
+        createdAt: new Date(now - 60_000),
+        expiresAt: new Date(now + 60_000),
+      },
+      {
+        id: "session-bbbb",
+        createdAt: new Date(now - 30_000),
+        expiresAt: new Date(now + 120_000),
+      },
+    ]);
+
+    const status = await service.status("token");
+
+    expect(status.active).toBe(true);
+    expect(status.activeCount).toBe(2);
+    expect(status.maxActive).toBe(10);
+    expect(status.sessions).toHaveLength(2);
+    expect(status.sessions[0]).toMatchObject({ label: "AAAA", isMine: true });
+    expect(status.sessions[1]).toMatchObject({ label: "BBBB", isMine: false });
+  });
+
+  it("refuses a new demo when all 10 slots are live", async () => {
+    demoRepo.count.mockResolvedValue(10);
+    const err = await service
+      .create("10.0.0.9")
+      .catch((e: any) => e.response);
+    expect(err.code).toBe("DEMO_LIMIT");
+  });
+
   it("rate-limits demo starts per IP", async () => {
     vi.spyOn(auth.api, "createUser").mockImplementation(
       (async () => ({ user: { id: "u-x" } })) as never,

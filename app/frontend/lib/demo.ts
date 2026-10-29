@@ -1,8 +1,6 @@
-/** Demo countdown text; `now` is injectable so tests stay deterministic. */
-export function formatRemaining(
-  expiresAt: string,
-  now: Date = new Date(),
-): string {
+/** Demo countdown text; `now` is required so the value is never read during
+ * prerender (Next.js treats `new Date()` in a client component as unstable). */
+export function formatRemaining(expiresAt: string, now: Date): string {
   const ms = new Date(expiresAt).getTime() - now.getTime();
   if (ms <= 0) return "0m";
   const totalMinutes = Math.floor(ms / 60_000);
