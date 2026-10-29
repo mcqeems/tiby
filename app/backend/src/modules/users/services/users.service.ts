@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, In, Repository, type FindOptionsWhere } from 'typeorm';
+import { ILike, In, IsNull, Repository, type FindOptionsWhere } from 'typeorm';
 import { createHash, randomUUID } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
 import { AuthUser } from '../../../auth/entities/auth-user.entity.js';
@@ -263,6 +263,15 @@ export class UsersService {
 
     assertCanManage(caller, targetUser);
 
+    // Demo accounts are deleted with their session; changing their password
+    // would break the /api/demo/enter handshake for the visitor.
+    if (targetUser.demoSessionId) {
+      throw new ForbiddenException({
+        code: 'FORBIDDEN',
+        message: 'Tidak tersedia dalam mode demo',
+      });
+    }
+
     const ctx = await auth.$context;
     const newHash = await ctx.password.hash(dto.newPassword);
     await ctx.internalAdapter.updatePassword(targetUserId, newHash);
@@ -304,6 +313,19 @@ export class UsersService {
     }
 
     assertCanManage(caller, targetUser);
+
+    // Demo accounts must keep their role and session; moving them out of the
+    // demo facility or changing the persona role would break the demo.
+    if (
+      targetUser.demoSessionId &&
+      ((dto.role !== undefined && dto.role !== targetUser.role) ||
+        (dto.facilityId !== undefined && dto.facilityId !== targetUser.facilityId))
+    ) {
+      throw new ForbiddenException({
+        code: 'FORBIDDEN',
+        message: 'Tidak tersedia dalam mode demo',
+      });
+    }
 
     // NAKES must not escalate roles or move users across facilities.
     if (caller.role === 'NAKES') {
@@ -417,6 +439,8 @@ export class UsersService {
       ...(caller.role === 'NAKES' ? { facilityId: caller.facilityId! } : {}),
       ...(query.facilityId ? { facilityId: query.facilityId } : {}),
       ...(query.role?.length ? { role: In(query.role) } : {}),
+      // Demo accounts are ephemeral; keep them out of the ADMIN global list.
+      ...(caller.role === 'ADMIN' ? { demoSessionId: IsNull() } : {}),
     };
     const term = query.search?.trim();
     const where: FindOptionsWhere<AuthUser>[] = term
@@ -486,6 +510,14 @@ export class UsersService {
       throw new NotFoundException({
         code: 'NOT_FOUND',
         message: 'User not found',
+      });
+    }
+
+    // Demo sessions are wiped after 2h; an S3 object would survive the wipe.
+    if (user.demoSessionId) {
+      throw new ForbiddenException({
+        code: 'FORBIDDEN',
+        message: 'Tidak tersedia dalam mode demo',
       });
     }
 

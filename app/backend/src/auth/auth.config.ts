@@ -44,6 +44,7 @@ export const auth = betterAuth({
       whatsapp_chat_id: { type: "string", required: false },
       whatsapp_verified_at: { type: "date", required: false },
       must_confirm_consent: { type: "boolean", defaultValue: true },
+      demo_session_id: { type: "string", required: false },
     },
   },
   advanced: {

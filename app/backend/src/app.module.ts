@@ -9,6 +9,7 @@ import { AppService } from "./app.service.js";
 import { validateEnv } from "./config/env.schema.js";
 import { entities } from "./database/entities.js";
 import { auth } from "./auth/auth.config.js";
+import { DemoModule } from "./modules/demo/demo.module.js";
 import { OnboardingModule } from "./modules/onboarding/onboarding.module.js";
 import { ConsentModule } from "./modules/consent/consent.module.js";
 import { CheckInModule } from "./modules/check-ins/check-ins.module.js";
@@ -66,6 +67,7 @@ import { NotificationsModule } from "./modules/notifications/notifications.modul
     EducationModule,
     UsersModule,
     GuidanceModule,
+    DemoModule,
     StatsModule,
     NotificationsModule,
   ],

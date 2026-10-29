@@ -1,6 +1,7 @@
 import { AuthUser } from "../auth/entities/auth-user.entity.js";
 import { AuthSession } from "../auth/entities/auth-session.entity.js";
 import { AuthAccount } from "../auth/entities/auth-account.entity.js";
+import { DemoSession } from "../modules/demo/entities/demo-session.entity.js";
 import { AuthVerification } from "../auth/entities/auth-verification.entity.js";
 import { PushSubscription } from "../modules/push/entities/push-subscription.entity.js";
 import { Facility } from "../modules/facilities/entities/facilities.entity.js";
@@ -23,6 +24,7 @@ export const entities = [
   AuthUser,
   AuthSession,
   AuthAccount,
+  DemoSession,
   AuthVerification,
   PushSubscription,
   Facility,
@@ -46,6 +48,7 @@ export {
   AuthUser,
   AuthSession,
   AuthAccount,
+  DemoSession,
   AuthVerification,
   PushSubscription,
   Facility,

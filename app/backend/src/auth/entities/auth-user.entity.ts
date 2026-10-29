@@ -87,6 +87,10 @@ export class AuthUser {
   @Column({ name: "must_confirm_consent", type: "boolean", default: true })
   mustConfirmConsent: boolean;
 
+  @Index("idx_users_demo_session_id")
+  @Column({ name: "demo_session_id", type: "varchar", length: 36, nullable: true })
+  demoSessionId: string | null;
+
   @CreateDateColumn({ name: "createdAt", type: "timestamptz", default: () => "CURRENT_TIMESTAMP" })
   createdAt: Date;
 

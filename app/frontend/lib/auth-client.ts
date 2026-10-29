@@ -25,6 +25,7 @@ export type TibyUser = {
   username?: string;
   role: "ADMIN" | "NAKES" | "PMO" | "PASIEN" | "FASKES";
   facility_id?: string | null;
+  demo_session_id?: string | null;
   emailVerified: boolean;
   createdAt: Date;
   updatedAt: Date;

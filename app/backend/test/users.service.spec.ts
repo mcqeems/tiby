@@ -520,7 +520,7 @@ describe("UsersService Unit Tests", () => {
       await service.listUsers({ id: "admin-1", role: "ADMIN" }, {} as any);
 
       expect(mockUserRepo.findAndCount).toHaveBeenCalledWith({
-        where: [{}],
+        where: [{ demoSessionId: expect.anything() }],
         relations: { facility: true },
         order: { createdAt: "DESC", id: "DESC" },
         skip: 0,
@@ -597,7 +597,10 @@ describe("UsersService Unit Tests", () => {
       );
 
       const where = mockUserRepo.findAndCount.mock.calls[0][0].where;
-      expect(where[0]).toEqual({ facilityId: "faskes-9" });
+      expect(where[0]).toEqual({
+        facilityId: "faskes-9",
+        demoSessionId: expect.anything(),
+      });
     });
 
     it("forbids a NAKES from filtering by another facility", async () => {

@@ -4,6 +4,7 @@ import { Geist, Geist_Mono, Fredoka } from "next/font/google";
 import { MotionConfig } from "motion/react";
 import { PopupProvider } from "@/components/ui/popup-provider";
 import AppToaster from "@/components/ui/app-toaster";
+import DemoSessionWatcher from "@/components/demo/demo-session-watcher";
 import ServiceWorkerRegister from "@/components/pwa/service-worker-register";
 import ThemeSync from "@/components/theme/theme-sync";
 import { THEME_SCRIPT } from "@/lib/theme";
@@ -81,6 +82,9 @@ export default function RootLayout({
             </Suspense>
             <ServiceWorkerRegister />
             {children}
+            <Suspense fallback={null}>
+              <DemoSessionWatcher />
+            </Suspense>
             <AppToaster />
           </PopupProvider>
         </MotionConfig>

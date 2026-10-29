@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { In, Not, Repository } from "typeorm";
+import { In, IsNull, Like, Not, Repository } from "typeorm";
 import { TreatmentPlan } from "../../patients/entities/treatment-plan.entity.js";
 import { DailyCheckIn } from "../../check-ins/entities/daily-check-in.entity.js";
 import { SafetyEvaluation } from "../../internal/rule-engine/entities/safety-evaluation.entity.js";
@@ -382,12 +382,23 @@ export class StatsService {
   }
 
   private async getAdminStats(): Promise<StatsResponse> {
+    // Demo rows are ephemeral (deleted at session expiry); keep the ADMIN
+    // global counts on real rows only.
     const [totalFacilities, totalNakes, totalPatients, totalActiveTickets] =
       await Promise.all([
-        this.facilityRepo.count(),
-        this.userRepo.count({ where: { role: "NAKES" } }),
-        this.userRepo.count({ where: { role: "PASIEN" } }),
-        this.ticketRepo.count({ where: { status: In(OPEN_TICKET_STATUSES) } }),
+        this.facilityRepo.count({ where: { code: Not(Like("DEMO-%")) } }),
+        this.userRepo.count({
+          where: { role: "NAKES", demoSessionId: IsNull() },
+        }),
+        this.userRepo.count({
+          where: { role: "PASIEN", demoSessionId: IsNull() },
+        }),
+        this.ticketRepo.count({
+          where: {
+            status: In(OPEN_TICKET_STATUSES),
+            facility: { code: Not(Like("DEMO-%")) },
+          },
+        }),
       ]);
 
     return {

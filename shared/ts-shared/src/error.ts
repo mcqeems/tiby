@@ -10,6 +10,8 @@ export const ErrorCodes = [
   "CHECK_IN_ALREADY_LOCKED",
   "CONSENT_REQUIRED",
   "INVALID_TOKEN",
+  "DEMO_EXPIRED",
+  "DEMO_LIMIT",
 ] as const;
 export const ErrorCodeSchema = z.enum(ErrorCodes);
 export type ErrorCode = z.infer<typeof ErrorCodeSchema>;
