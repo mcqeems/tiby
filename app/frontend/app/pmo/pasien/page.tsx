@@ -1,3 +1,5 @@
+import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import PmoPatientsList from "./components/pmo-patients-list";
 
@@ -9,5 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default function PmoPatientsPage() {
-  return <PmoPatientsList />;
+  return <Suspense fallback={<SkeletonRegion label="Memuat..."><SkeletonRows rows={3} /></SkeletonRegion>}>,
+        <PmoPatientsList />
+      </Suspense>;
 }

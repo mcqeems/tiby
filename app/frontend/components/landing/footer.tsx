@@ -3,7 +3,7 @@
 import { startTransition, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowUp } from "lucide-react";
-import LogoAnimate from "@/components/logo-animate";
+import Image from "next/image";
 
 function FooterLink({
   href,
@@ -38,7 +38,12 @@ export default function Footer() {
       <div className="overflow-hidden rounded-[2.5rem] bg-gray-50 px-8 py-14 md:px-14">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
           <div className="md:col-span-1">
-            <LogoAnimate version="stop-middle" size={32} />
+            <Image
+              src="/logo/logo.png"
+              height={100}
+              width={100}
+              alt="logo tiby"
+            />
             <p className="mt-4 max-w-[16rem] text-xs leading-relaxed text-gray-500">
               Teman pengobatan yang selalu ada, tanpa membuatmu merasa dihakimi.
             </p>
@@ -52,7 +57,9 @@ export default function Footer() {
             </ul>
           </div>
           <div>
-            <h4 className="mb-4 text-sm font-bold text-gray-900">Sumber Daya</h4>
+            <h4 className="mb-4 text-sm font-bold text-gray-900">
+              Sumber Daya
+            </h4>
             <ul className="space-y-2.5 text-xs">
               <FooterLink href="#">Edukasi Kemenkes</FooterLink>
               <FooterLink href="#">Blog Kesehatan</FooterLink>

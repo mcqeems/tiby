@@ -1,4 +1,6 @@
 import PatientsTable from "./components/patients-table";
+import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -13,7 +15,9 @@ export default function NakesPasienPage() {
     <div className="space-y-6">
       
 
-      <PatientsTable />
+      <Suspense fallback={<SkeletonRegion label="Memuat..."><SkeletonRows rows={3} /></SkeletonRegion>}>,
+        <PatientsTable />
+      </Suspense>
     </div>
   );
 }

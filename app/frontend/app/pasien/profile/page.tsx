@@ -1,4 +1,6 @@
 import ProfileView from "@/components/profile/profile-view";
+import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -8,5 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default function PasienProfilePage() {
-  return <ProfileView />;
+  return <Suspense fallback={<SkeletonRegion label="Memuat..."><SkeletonRows rows={3} /></SkeletonRegion>}>,
+        <ProfileView />
+      </Suspense>;
 }

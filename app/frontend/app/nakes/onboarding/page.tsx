@@ -1,4 +1,6 @@
 import { Metadata } from "next";
+import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
+import { Suspense } from "react";
 import OnboardingForm from "./components/onboarding-form";
 
 export const metadata: Metadata = {
@@ -22,7 +24,9 @@ export default function NakesOnboardingPage() {
           terpusat.
         </p>
       </div>
-      <OnboardingForm />
+      <Suspense fallback={<SkeletonRegion label="Memuat..."><SkeletonRows rows={3} /></SkeletonRegion>}>,
+        <OnboardingForm />
+      </Suspense>
     </div>
   );
 }

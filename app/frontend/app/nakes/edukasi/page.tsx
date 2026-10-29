@@ -1,4 +1,6 @@
 import EducationManager from "@/components/education/education-manager";
+import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -10,7 +12,9 @@ export const metadata: Metadata = {
 export default function NakesEdukasiPage() {
   return (
     <div className="">
-      <EducationManager />
+      <Suspense fallback={<SkeletonRegion label="Memuat..."><SkeletonRows rows={3} /></SkeletonRegion>}>,
+        <EducationManager />
+      </Suspense>
     </div>
   );
 }

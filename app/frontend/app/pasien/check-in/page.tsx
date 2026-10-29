@@ -1,5 +1,5 @@
 import CheckInView from "./components/check-in-view";
-import PublicLoading from "@/components/ui/public-loading";
+import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 
@@ -14,7 +14,7 @@ export default function PasienCheckInPage() {
     <div className="flex h-full w-full flex-col bg-tiby-white">
       {/* useSearchParams() in CheckInView needs a Suspense boundary so the
           segment can pre-render for instant navigation. */}
-      <Suspense fallback={<PublicLoading message="Memuat check-in..." />}>
+      <Suspense fallback={<SkeletonRegion label="Memuat..."><SkeletonRows rows={3} /></SkeletonRegion>}>,
         <CheckInView role="PASIEN" />
       </Suspense>
     </div>

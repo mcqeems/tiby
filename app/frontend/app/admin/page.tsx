@@ -1,3 +1,5 @@
+import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import AdminOverview from "./components/admin-overview";
 
@@ -11,7 +13,9 @@ export const metadata: Metadata = {
 export default function AdminOverviewPage() {
   return (
     <div>
-      <AdminOverview/>
+      <Suspense fallback={<SkeletonRegion label="Memuat..."><SkeletonRows rows={3} /></SkeletonRegion>}>,
+        <AdminOverview/>
+      </Suspense>
     </div>
   );
 }

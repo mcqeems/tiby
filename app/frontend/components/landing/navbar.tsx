@@ -15,7 +15,7 @@ export default function Navbar() {
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
         <Link href="/" className="flex items-center" aria-label="Tiby home">
-          <LogoAnimate version="stop-middle" size={36} />
+          <LogoAnimate loop={false} version="stop-middle" size={48} />
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3">

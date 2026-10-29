@@ -1,4 +1,6 @@
 import TicketList from "./components/ticket-list";
+import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -20,7 +22,9 @@ export default function NakesTiketPage() {
           medis.
         </p>
       </div>
-      <TicketList />
+      <Suspense fallback={<SkeletonRegion label="Memuat..."><SkeletonRows rows={3} /></SkeletonRegion>}>,
+        <TicketList />
+      </Suspense>
     </div>
   );
 }

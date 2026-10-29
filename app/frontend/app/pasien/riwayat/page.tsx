@@ -1,4 +1,6 @@
 import RiwayatView from "./components/riwayat-view";
+import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -9,5 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default function RiwayatTerapiPage() {
-  return <RiwayatView />;
+  return <Suspense fallback={<SkeletonRegion label="Memuat..."><SkeletonRows rows={3} /></SkeletonRegion>}>,
+        <RiwayatView />
+      </Suspense>;
 }

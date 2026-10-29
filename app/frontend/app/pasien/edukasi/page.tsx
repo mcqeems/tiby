@@ -1,4 +1,6 @@
 import EducationView from "./components/education-view";
+import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -8,5 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default function PasienEdukasiPage() {
-  return <EducationView />;
+  return <Suspense fallback={<SkeletonRegion label="Memuat..."><SkeletonRows rows={3} /></SkeletonRegion>}>,
+        <EducationView />
+      </Suspense>;
 }
