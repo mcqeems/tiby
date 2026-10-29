@@ -348,3 +348,83 @@ body {
     background: transparent;
   }
 }
+
+/* ─── Sonner toasts (Tiby template) ──────────────────────────────────────────
+   Surface/ink/muted come from the palette variables, so dark mode inverts
+   with no extra rules. The X close button is sonner's own; only restyled. */
+
+.tiby-toast {
+  border-radius: 1rem !important;
+  border: 1px solid var(--color-gray-200) !important;
+  background: var(--color-white) !important;
+  box-shadow:
+    0 8px 30px rgb(15 60 60 / 0.12),
+    0 1px 2px rgb(15 60 60 / 0.06) !important;
+  padding: 0.875rem 2.25rem 0.875rem 0.875rem !important;
+  overflow: hidden;
+}
+
+/* Variant accent strip on the left edge. */
+.tiby-toast::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--toast-accent, var(--color-tiby-teal-500));
+}
+.tiby-toast-success {
+  --toast-accent: var(--color-tiby-teal-500);
+}
+.tiby-toast-danger {
+  --toast-accent: #dc2626;
+}
+.tiby-toast-warning {
+  --toast-accent: #f59e0b;
+}
+.tiby-toast-info {
+  --toast-accent: var(--color-tiby-teal-500);
+}
+
+.tiby-toast-title {
+  font-family: var(--font-heading) !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  color: var(--color-tiby-ink) !important;
+  letter-spacing: -0.01em;
+}
+
+.tiby-toast-description {
+  margin-top: 0.125rem !important;
+  font-size: 0.75rem !important;
+  line-height: 1.4 !important;
+  color: var(--color-tiby-muted) !important;
+}
+
+/* sonner renders an svg close icon; hide it and show a lucide-style X. */
+.tiby-toast-close {
+  background: transparent !important;
+  border: none !important;
+  color: var(--color-tiby-muted) !important;
+  top: 0.5rem !important;
+  right: 0.5rem !important;
+  left: auto !important;
+}
+.tiby-toast-close:hover {
+  color: var(--color-tiby-ink) !important;
+  background: var(--color-gray-100) !important;
+}
+.tiby-toast-close svg {
+  display: none;
+}
+.tiby-toast-close::after {
+  content: "";
+  display: block;
+  width: 14px;
+  height: 14px;
+  background-color: currentColor;
+  /* lucide X path, stroked via mask. */
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='m6 6 12 12'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
