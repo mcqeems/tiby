@@ -18,7 +18,7 @@ export default function Hero() {
         >
           <motion.h1
             variants={revealItem}
-            className="font-sans text-6xl font-bold leading-[1.02] tracking-tight text-gray-900 lg:text-[5.5rem]"
+            className="font-heading text-6xl font-bold leading-[1.02] tracking-tight text-gray-900 lg:text-[5.5rem]"
           >
             Lapor Suara,
             <br />

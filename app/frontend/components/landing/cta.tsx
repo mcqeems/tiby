@@ -55,7 +55,7 @@ export default function CTA() {
     <section className="mx-auto max-w-6xl px-6 py-16">
       <Reveal>
         <div className="relative overflow-hidden rounded-[2.5rem] bg-gray-50 px-8 py-16 text-center md:px-16">
-          <h2 className="relative font-sans text-3xl font-bold leading-tight tracking-tight text-gray-900 md:text-5xl">
+          <h2 className="relative font-heading text-3xl font-bold leading-tight tracking-tight text-gray-900 md:text-5xl">
             Kalau kamu scroll sejauh ini,
             <br />
             Saatnya <span className="text-tiby-teal-500">Sembuh Bersama.</span>

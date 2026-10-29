@@ -34,7 +34,7 @@ export default function FAQ() {
     >
       <div className="md:col-span-2">
         <Reveal className="md:sticky md:top-28">
-          <h2 className="font-sans text-3xl font-bold leading-tight tracking-tight text-gray-900 md:text-4xl">
+          <h2 className="font-heading text-3xl font-bold leading-tight tracking-tight text-gray-900 md:text-4xl">
             Pertanyaan yang
             <br />
             Sering Muncul

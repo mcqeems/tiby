@@ -21,7 +21,7 @@ export function SectionHeading({
 }) {
   return (
     <RevealBase className="mx-auto mb-10 max-w-3xl text-center">
-      <h2 className="font-sans text-4xl font-bold leading-[1.15] tracking-tight text-gray-900 md:text-5xl">
+      <h2 className="font-heading text-4xl font-bold leading-[1.15] tracking-tight text-gray-900 md:text-5xl">
         {line1}{" "}
         <span className="text-tiby-teal-500">{line2}</span>
       </h2>

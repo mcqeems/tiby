@@ -78,7 +78,7 @@ function PhoneMock({
       <div className="flex aspect-[9/10] w-full items-center justify-center">
         <Mascot emotion={emotion} animated loop size={220} altText="Pandu" />
       </div>
-      <figcaption className="px-6 py-5 text-center font-sans text-lg font-bold text-gray-900">
+      <figcaption className="px-6 py-5 text-center font-heading text-lg font-bold text-gray-900">
         {caption}
       </figcaption>
     </motion.figure>
@@ -106,7 +106,7 @@ function FeatureCard({
       >
         <Icon className="h-5 w-5" />
       </div>
-      <h3 className="font-sans text-[15px] font-bold text-gray-900">{title}</h3>
+      <h3 className="font-heading text-[15px] font-bold text-gray-900">{title}</h3>
       <p className="mt-1.5 text-sm leading-relaxed text-gray-500">{desc}</p>
     </motion.div>
   );

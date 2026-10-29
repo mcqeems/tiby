@@ -15,7 +15,7 @@ export default function Statement() {
   return (
     <section className="mx-auto max-w-4xl px-6 py-16 text-center">
       <Reveal>
-        <p className="font-sans text-3xl font-medium leading-snug text-gray-500 md:text-4xl">
+        <p className="font-heading text-3xl font-medium leading-snug text-gray-500 md:text-4xl">
           Memperbaiki yang salah dari pendampingan obat.
         </p>
       </Reveal>
@@ -38,7 +38,7 @@ export default function Statement() {
         ))}
       </motion.div>
       <Reveal delay={0.15}>
-        <p className="mt-8 font-sans text-3xl font-medium leading-snug text-gray-500 md:text-4xl">
+        <p className="mt-8 font-heading text-3xl font-medium leading-snug text-gray-500 md:text-4xl">
           Begini cara minum obat yang benar.
         </p>
       </Reveal>

@@ -44,7 +44,7 @@ function PersonaCard({
       variants={revealItem}
       className={`group w-[300px] shrink-0 snap-start overflow-hidden rounded-3xl ${header} p-6 text-white transition-transform duration-500 hover:-translate-y-2 md:w-[340px]`}
     >
-      <h3 className="font-sans text-2xl font-bold">{title}</h3>
+      <h3 className="font-heading text-2xl font-bold">{title}</h3>
       <p className={`mt-1 text-sm ${sub}`}>{desc}</p>
       <div className="mt-5 overflow-hidden rounded-2xl bg-white/20">
         <div className="flex h-56 items-center justify-center transition-transform duration-500 group-hover:scale-105 group-hover:rotate-1">
