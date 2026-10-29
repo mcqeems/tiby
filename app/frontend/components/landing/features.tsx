@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { motion } from "motion/react";
 import { VIEWPORT, staggerParent, revealItem } from "@/lib/motion";
@@ -105,15 +106,19 @@ function FeatureCard({
   fill: string;
   onFill: string;
 }) {
+  const [hovered, setHovered] = useState(false);
   return (
     <motion.div
       variants={revealItem}
-      initial="rest"
-      whileHover="hover"
-      animate="rest"
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => setHovered(false)}
       className="overflow-hidden rounded-3xl bg-gray-50 p-7"
     >
-      <div className="relative h-full">
+      <motion.div
+        initial="rest"
+        animate={hovered ? "hover" : "rest"}
+        className="relative h-full"
+      >
         {/* Ink drop: expands from the icon chip until it floods the card. */}
         <motion.span
           aria-hidden
@@ -157,7 +162,7 @@ function FeatureCard({
             {desc}
           </motion.p>
         </motion.div>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
