@@ -104,9 +104,15 @@ export default function ProfileView() {
       const res = await usersApi.uploadProfilePicture(file);
       setMe((prev) => (prev ? { ...prev, image: res.imageUrl } : prev));
       setAvatar(res.imageUrl);
-      notify.success("Foto Profil Diperbarui", "Foto profil Anda berhasil diunggah.");
+      notify.success(
+        "Foto Profil Diperbarui",
+        "Foto profil Anda berhasil diunggah.",
+      );
     } catch (err: unknown) {
-      notify.error("Gagal Mengunggah", errorMessage(err, "Terjadi kesalahan pada server."));
+      notify.error(
+        "Gagal Mengunggah",
+        errorMessage(err, "Terjadi kesalahan pada server."),
+      );
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -198,10 +204,16 @@ export default function ProfileView() {
       await consentApi.revoke(
         "Dicabut mandiri oleh pengguna melalui halaman profil",
       );
-      notify.success("Persetujuan Dicabut", "Anda telah mencabut izin berbagi data. Mengalihkan...");
+      notify.success(
+        "Persetujuan Dicabut",
+        "Anda telah mencabut izin berbagi data. Mengalihkan...",
+      );
       window.location.reload();
     } catch (err: unknown) {
-      notify.error("Gagal Mencabut", errorMessage(err, "Terjadi kesalahan pada server."));
+      notify.error(
+        "Gagal Mencabut",
+        errorMessage(err, "Terjadi kesalahan pada server."),
+      );
       setRevoking(false);
     }
   };

@@ -424,6 +424,7 @@ body {
 }
 
 .tiby-toast-description {
+  font-family: var(--font-body) !important;
   margin-top: 0.125rem !important;
   font-size: 0.75rem !important;
   line-height: 1.4 !important;
