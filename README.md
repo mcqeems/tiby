@@ -1,9 +1,8 @@
-# Tiby (Read this first dev!!!)
+# Tiby
 
-> [!IMPORTANT]
-> First of all this is not an **AI Slop** documentation, i wrote this by my own hand so please **READ** it first!!!.
+Pendamping Cerdas Pengobatan TBC. Bun monorepo dengan tiga service yang dapat di-deploy secara independen; kode bersama di `shared/` hanya berisi contracts, bukan business logic.
 
-Bun monorepo — one repo, three independently deployable services. Shared code is contracts only (`shared/`), never business logic.
+## Struktur Repo
 
 ```
 tiby/
@@ -15,17 +14,19 @@ tiby/
     api-contract/      # source of truth, including AI
 ```
 
-## Setup (manual, per role)
+## Setup Development
 
 ```sh
-bun install          # once, at root
+bun install          # sekali, di root
 
-bun run dev:frontend # Next.js
+bun run dev:frontend # Next.js (port 3000)
 bun run dev:backend  # NestJS (PORT=3001)
-bun run dev          # both
+bun run dev          # keduanya sekaligus
 ```
 
-AI service: `cd app/ai-service`, follow its README (own venv + provider API tokens).
+AI service berjalan dengan environment Python terpisah: masuk ke `app/ai-service` dan ikuti README di folder tersebut (venv sendiri + provider API tokens).
+
+Untuk deployment (Docker, environment, domain publik), lihat bagian [Deployment](#deployment) di bawah.
 
 ---
 
