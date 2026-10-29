@@ -17,43 +17,57 @@ const FEATURES: {
   icon: LucideIcon;
   title: string;
   desc: string;
-  tint: string;
+  chip: string;
+  fill: string;
+  onFill: string;
 }[] = [
   {
     icon: Mic,
     title: "Lapor Suara",
     desc: "Cukup bicara. AI kami mengekstrak keluhan dan jumlah obatmu secara otomatis.",
-    tint: "text-tiby-teal-50 bg-tiby-teal-600",
+    chip: "bg-tiby-teal-100 text-tiby-teal-700",
+    fill: "bg-tiby-teal-600",
+    onFill: "#f1faf9",
   },
   {
     icon: BellRing,
     title: "Pengingat Pintar",
     desc: "Bot WhatsApp mengingatkan jadwalmu, lalu menghubungi PMO dan Faskes bila kamu hening.",
-    tint: "text-amber-50 bg-amber-500",
+    chip: "bg-amber-100 text-amber-600",
+    fill: "bg-amber-500",
+    onFill: "#fffbeb",
   },
   {
     icon: ShieldCheck,
     title: "Privasi Terjaga",
     desc: "Nama pasien disamarkan. Notifikasi tidak menyebut 'TBC' agar aman di tempat umum.",
-    tint: "text-violet-50 bg-violet-500",
+    chip: "bg-violet-100 text-violet-600",
+    fill: "bg-violet-500",
+    onFill: "#f5f3ff",
   },
   {
     icon: CalendarCheck2,
     title: "Streak Harian",
     desc: "Bangun streak kepatuhan hari demi hari. Hari yang penuh terkunci otomatis.",
-    tint: "text-rose-50 bg-rose-500",
+    chip: "bg-rose-100 text-rose-600",
+    fill: "bg-rose-500",
+    onFill: "#fff1f2",
   },
   {
     icon: Map,
     title: "Peta Jalan Sembuh",
     desc: "180 hari terapi dipetakan jadi fase yang jelas. Kamu selalu tahu sudah sejauh mana.",
-    tint: "text-pink-50 bg-pink-500",
+    chip: "bg-pink-100 text-pink-600",
+    fill: "bg-pink-500",
+    onFill: "#fdf2f8",
   },
   {
     icon: BookOpen,
     title: "Edukasi Valid",
     desc: "Materi bacaan harian bersumber langsung dari Kemenkes dan WHO.",
-    tint: "text-sky-50 bg-sky-500",
+    chip: "bg-sky-100 text-sky-600",
+    fill: "bg-sky-500",
+    onFill: "#f0f9ff",
   },
 ];
 
@@ -80,27 +94,72 @@ function FeatureCard({
   icon: Icon,
   title,
   desc,
-  tint,
+  chip,
+  fill,
+  onFill,
 }: {
   icon: LucideIcon;
   title: string;
   desc: string;
-  tint: string;
+  chip: string;
+  fill: string;
+  onFill: string;
 }) {
   return (
     <motion.div
       variants={revealItem}
-      className="group rounded-3xl bg-gray-50 p-7 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_-20px_rgba(0,0,0,0.15)]"
+      className="overflow-hidden rounded-3xl bg-gray-50 p-7"
     >
-      <div
-        className={`mb-5 flex h-11 w-11 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-110 ${tint}`}
+      <motion.div
+        initial="rest"
+        whileHover="hover"
+        animate="rest"
+        className="relative"
       >
-        <Icon className="h-5 w-5" />
-      </div>
-      <h3 className="font-heading text-[15px] font-bold text-gray-900">
-        {title}
-      </h3>
-      <p className="mt-1.5 text-sm leading-relaxed text-gray-500">{desc}</p>
+        {/* Ink drop: expands from the icon chip until it floods the card. */}
+        <motion.span
+          aria-hidden
+          variants={{
+            rest: { scale: 0, opacity: 1 },
+            hover: { scale: 28, opacity: 1 },
+          }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className={`pointer-events-none absolute top-[22px] left-0 h-11 w-11 origin-center rounded-full ${fill}`}
+        />
+        <motion.div
+          variants={{
+            rest: { opacity: 1, scale: 1, height: 44, marginBottom: 20 },
+            hover: { opacity: 0, scale: 0.5, height: 0, marginBottom: 0 },
+          }}
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className={`flex h-11 w-11 items-center justify-center overflow-hidden rounded-full ${chip}`}
+        >
+          <Icon className="h-5 w-5" />
+        </motion.div>
+        <motion.div
+          variants={{ rest: { y: 0 }, hover: { y: -6 } }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="relative"
+        >
+          <motion.h3
+            variants={{ rest: { color: "#111827" }, hover: { color: onFill } }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            className="font-heading text-[15px] font-bold"
+          >
+            {title}
+          </motion.h3>
+          <motion.p
+            variants={{
+              rest: { color: "#6b7280", opacity: 1 },
+              hover: { color: onFill, opacity: 0.85 },
+            }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-1.5 text-sm leading-relaxed"
+          >
+            {desc}
+          </motion.p>
+        </motion.div>
+      </motion.div>
     </motion.div>
   );
 }
