@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "motion/react";
 import { Reveal } from "./shared";
+import Image from "next/image";
 
 const ROW_A = [
   "SUDAH_MINUM • Rani",
@@ -69,6 +70,16 @@ export default function CTA() {
           <div className="relative mt-12">
             <MarqueeRow items={ROW_A} />
             <MarqueeRow items={ROW_B} reverse />
+          </div>
+
+          <div className="relative w-full">
+            <Image
+              src="/landing/panda-cloud.png"
+              alt="panda cloud"
+              width={300}
+              height={100}
+              className="absolute inset-x-0 -bottom-2 mx-auto w-max"
+            ></Image>
           </div>
         </div>
       </Reveal>

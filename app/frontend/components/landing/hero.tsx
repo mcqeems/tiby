@@ -51,7 +51,7 @@ export default function Hero() {
           className="pointer-events-none absolute -bottom-8 right-0 hidden w-[44rem] select-none lg:block"
         >
           <Image
-            src="/holding.png"
+            src="/landing/holding.png"
             alt="tiby holding phone"
             width={896}
             height={1200}

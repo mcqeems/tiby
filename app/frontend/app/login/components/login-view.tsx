@@ -179,7 +179,7 @@ export default function LoginView() {
       <div className="flex w-full max-w-5xl flex-col md:flex-row overflow-hidden rounded-3xl bg-white shadow-2xl shadow-gray-200/50 border border-gray-100 min-h-150">
         <div className="relative hidden w-full md:flex md:w-1/2 flex-col justify-between p-10 sm:p-12 text-white overflow-hidden bg-tiby-teal-900">
           <Image
-            src="/bg-login.png"
+            src="/login/bg-login.png"
             alt="Tiby Login Background"
             fill
             sizes="(min-width: 768px) 50vw, 100vw"
