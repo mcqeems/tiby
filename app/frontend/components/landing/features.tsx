@@ -1,8 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "motion/react";
 import { VIEWPORT, staggerParent, revealItem } from "@/lib/motion";
-import Mascot, { type MascotEmotion } from "@/components/mascot";
 import {
   Mic,
   BellRing,
@@ -12,12 +12,6 @@ import {
   BookOpen,
   type LucideIcon,
 } from "lucide-react";
-
-const PHONES: { emotion: MascotEmotion; caption: string }[] = [
-  { emotion: "listening", caption: "Lapor Suara, Tetap Tenang." },
-  { emotion: "idle", caption: "Jadwal Obat Terjaga" },
-  { emotion: "wave", caption: "Ditemani Setiap Hari" },
-];
 
 const FEATURES: {
   icon: LucideIcon;
@@ -63,24 +57,21 @@ const FEATURES: {
   },
 ];
 
-function PhoneMock({
-  emotion,
-  caption,
-}: {
-  emotion: MascotEmotion;
-  caption: string;
-}) {
+function ShowcaseCard() {
   return (
     <motion.figure
       variants={revealItem}
       className="overflow-hidden rounded-3xl bg-gray-50"
     >
-      <div className="flex aspect-[9/10] w-full items-center justify-center">
-        <Mascot emotion={emotion} animated loop size={220} altText="Pandu" />
-      </div>
-      <figcaption className="px-6 py-5 text-center font-heading text-lg font-bold text-gray-900">
-        {caption}
-      </figcaption>
+      <Image
+        src="/landing/laptop-phone-mockup.png"
+        alt="Tampilan aplikasi Tiby di laptop dan ponsel"
+        width={1792}
+        height={1024}
+        sizes="(min-width: 1024px) 72rem, 100vw"
+        className="h-auto w-full object-contain"
+        loading="lazy"
+      />
     </motion.figure>
   );
 }
@@ -123,11 +114,8 @@ export default function Features() {
           initial="hidden"
           whileInView="visible"
           viewport={VIEWPORT}
-          className="grid grid-cols-1 gap-5 md:grid-cols-3"
         >
-          {PHONES.map((p) => (
-            <PhoneMock key={p.caption} {...p} />
-          ))}
+          <ShowcaseCard />
         </motion.div>
 
         <motion.div
