@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { ArrowUpRight, FileText, Play } from "lucide-react";
+import { ArrowUpRight, Play } from "lucide-react";
 import LogoAnimate from "@/components/logo-animate";
 import { demoApi } from "@/lib/api/demo";
 
@@ -39,17 +39,10 @@ export default function Navbar() {
 
         <div className="flex items-center gap-2 sm:gap-3">
           <Link
-            href="#faq"
-            className="hidden items-center gap-2 rounded-full bg-gray-50 px-5 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 sm:flex"
-          >
-            <FileText className="h-4 w-4" />
-            FAQ
-          </Link>
-
-          <Link
             href="/demo"
+            aria-label={demoActive ? "Mode Demo, sesi aktif" : "Mode Demo"}
             title={demoActive ? "Sesi demo aktif" : undefined}
-            className="hidden items-center gap-2 rounded-full bg-gray-50 px-5 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 sm:flex"
+            className="flex items-center gap-2 rounded-full bg-gray-50 px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 sm:px-5"
           >
             {demoActive ? (
               <span aria-hidden="true" className="relative flex h-2.5 w-2.5">
@@ -59,12 +52,12 @@ export default function Navbar() {
             ) : (
               <Play className="h-4 w-4" />
             )}
-            Mode Demo
+            <span className="hidden sm:inline">Mode Demo</span>
           </Link>
 
           <Link
             href="/login"
-            className="group flex items-center gap-1.5 rounded-full bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-black hover:shadow-lg"
+            className="group flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-black hover:shadow-lg"
           >
             Buka App
             <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
