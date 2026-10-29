@@ -50,6 +50,8 @@ services:
       NARAROUTER_API_TOKEN: dummy-token
       NARAROUTER_API_KEY: dummy-token
       GROQ_API_KEY: dummy-key
+      FISH_AUDIO_API_TOKEN: dummy-token
+      FISH_API_KEY: dummy-key
     ports:
       - "8000:8000"
     healthcheck:
