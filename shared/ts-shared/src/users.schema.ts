@@ -50,6 +50,7 @@ export const UserSummarySchema = z.object({
   email: z.email().optional(),
   name: z.string(),
   role: z.string(),
+  image: z.string().nullable().optional(),
   whatsappNumber: z.string().optional(),
   facilityId: z.string().nullable().optional(),
   facility: z.string().nullable().optional(),
@@ -90,3 +91,10 @@ export const SignInSchema = z
     path: ["identifier"],
   });
 export type SignInDto = z.infer<typeof SignInSchema>;
+
+export const UploadProfilePictureResponseSchema = z.object({
+  imageUrl: z.string(),
+});
+export type UploadProfilePictureResponse = z.infer<
+  typeof UploadProfilePictureResponseSchema
+>;

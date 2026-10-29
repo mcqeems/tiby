@@ -1,0 +1,93 @@
+info:
+  name: Upload Profile Picture (api/users/me/profile-picture) [ALL]
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/users/me/profile-picture"
+  body:
+    type: multipart-form
+    data:
+      - name: file
+        type: file
+        value:
+          - /home/mcqeems/Documents/Project/UINIC 8.0/tiby/shared/assets/images/ocr-test.jpeg
+        contentType: image/jpeg
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: Upload Profile Picture (201)
+    request:
+      url: "{{baseUrl}}/api/users/me/profile-picture"
+      method: POST
+      body:
+        type: multipart-form
+        data:
+          - name: file
+            type: file
+            value:
+              - /home/mcqeems/Documents/Project/UINIC 8.0/tiby/shared/assets/images/ocr-test.jpeg
+            contentType: image/jpeg
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: x-powered-by
+          value: Express
+        - name: vary
+          value: Origin
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: content-type
+          value: application/json; charset=utf-8
+        - name: connection
+          value: keep-alive
+        - name: keep-alive
+          value: timeout=5
+      body:
+        type: json
+        data: |-
+          {
+            "imageUrl": "http://10.10.17.210:9999/tiby-uploads/profile-pictures/cMzI35l8GAaKphX3h1iMFe2zur8387S5/2aaa2bca-f88e-4c81-a391-aba329568b8e.png"
+          }
+  - name: Upload Profile Picture (400)
+    request:
+      url: "{{baseUrl}}/api/users/me/profile-picture"
+      method: POST
+    response:
+      status: 400
+      statusText: Bad Request
+      body:
+        type: json
+        data: |-
+          {
+            "code": "BAD_REQUEST",
+            "message": "Validation failed"
+          }
+
+docs: |-
+  Uploads the caller's own profile picture to S3-compatible storage
+  (AWS S3 / MinIO / Garage). Self-only: any authenticated role
+  (ADMIN, NAKES, PMO, PASIEN) may call it, the object key is namespaced
+  by caller id (`profile-pictures/{userId}/{uuid}.{ext}`).
+
+  The public `imageUrl` is stored on `users.image` and surfaced on
+  `GET /api/users/me` and `GET /api/users`. Re-upload replaces the
+  previous object (old key is deleted).
+
+  Send multipart form-data with field `file`: jpeg, png, or webp,
+  max 5MB. Bucket must exist with a public-read policy on
+  `profile-pictures/*` (publicity comes from bucket policy, no ACLs).
+
+  Responses:
+  - 201: `{ "imageUrl": string }`.
+  - 400: Missing file, oversize (>5MB), or unsupported content type.
+  - 401: No authenticated session.
