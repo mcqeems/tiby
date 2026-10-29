@@ -12,6 +12,7 @@ export interface UserItem {
   email?: string;
   name: string;
   role: "ADMIN" | "NAKES" | "PMO" | "PASIEN" | "FASKES";
+  image?: string | null;
   facilityId?: string | null;
   facility?: string | null;
   whatsappNumber?: string;
@@ -101,5 +102,14 @@ export const usersApi = {
       method: "PATCH",
       body: JSON.stringify(dto),
     });
+  },
+
+  async uploadProfilePicture(file: File) {
+    const form = new FormData();
+    form.append("file", file);
+    return apiFetch<{ imageUrl: string }>(
+      "/api/users/me/profile-picture",
+      { method: "POST", body: form },
+    );
   },
 };

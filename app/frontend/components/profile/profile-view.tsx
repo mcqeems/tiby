@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { roleLabel } from "@/lib/roles";
 import { Skeleton, SkeletonCards, SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
@@ -27,6 +27,7 @@ import {
   Lock,
   Mail,
   MessageCircle,
+  Pencil,
   ShieldAlert,
   ShieldCheck,
   SunMoon,
@@ -86,6 +87,43 @@ export default function ProfileView() {
   const [me, setMe] = useState<UserItem | null>(null);
   const [activeDialog, setActiveDialog] = useState<ActionKey | null>(null);
   const [revoking, setRevoking] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleAvatarFile = async (file: File | undefined) => {
+    if (!file || uploading) return;
+    // Client-side guard mirrors the server 5MB cap, avoiding a doomed upload.
+    if (file.size > 5 * 1024 * 1024) {
+      await notify({
+        variant: "danger",
+        title: "File Terlalu Besar",
+        description: "Ukuran file maksimal 5 MB.",
+        confirmLabel: "Tutup",
+      });
+      return;
+    }
+    setUploading(true);
+    try {
+      const res = await usersApi.uploadProfilePicture(file);
+      setMe((prev) => (prev ? { ...prev, image: res.imageUrl } : prev));
+      await notify({
+        variant: "success",
+        title: "Foto Profil Diperbarui",
+        description: "Foto profil Anda berhasil diunggah.",
+        confirmLabel: "Tutup",
+      });
+    } catch (err: unknown) {
+      await notify({
+        variant: "danger",
+        title: "Gagal Mengunggah",
+        description: errorMessage(err, "Terjadi kesalahan pada server."),
+        confirmLabel: "Tutup",
+      });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const user = session?.user as TibyUser | undefined;
   const userId = user?.id;
@@ -265,8 +303,48 @@ export default function ProfileView() {
 
         <div className="px-6 pb-6">
           <div className="-mt-12 flex flex-col gap-4 sm:flex-row sm:items-end">
-            <span className="relative z-10 flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-tiby-teal-50 font-heading text-3xl font-semibold uppercase text-tiby-teal-700 shadow-md ring-4 ring-white">
-              {user.name?.charAt(0) || user.username?.charAt(0) || "?"}
+            <span className="relative z-10 shrink-0">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                aria-label="Ubah foto profil"
+                className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-tiby-teal-50 font-heading text-3xl font-semibold uppercase text-tiby-teal-700 shadow-md ring-4 ring-white transition hover:brightness-95 disabled:cursor-wait"
+              >
+                {me?.image ? (
+                  // One-off plain img: S3 avatar host is dynamic (S3_PUBLIC_BASE_URL),
+                  // so next/image remotePatterns cannot cover it.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={me.image}
+                    alt={`Foto profil ${user.name || user.username}`}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  user.name?.charAt(0) || user.username?.charAt(0) || "?"
+                )}
+                {uploading && (
+                  <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
+                    <Loader2 className="h-6 w-6 animate-spin text-white" />
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                aria-label="Ubah foto profil"
+                className="absolute -right-1 -bottom-1 flex h-8 w-8 items-center justify-center rounded-full bg-tiby-teal-600 text-white shadow-md ring-2 ring-white transition hover:bg-tiby-teal-700 disabled:opacity-70"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => handleAvatarFile(e.target.files?.[0])}
+              />
             </span>
             <div className="min-w-0 flex-1">
               <h2 className="truncate font-heading text-xl font-semibold text-tiby-ink">
