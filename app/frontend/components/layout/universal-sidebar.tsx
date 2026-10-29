@@ -156,6 +156,9 @@ export default function UniversalSidebar({
 
   const toggleCollapsed = () => setCollapsedValue(!collapsed);
 
+  const role = user?.role?.toLowerCase();
+  const profileUrl = role ? `/${role}/profile` : undefined;
+
   const isItemActive = (href: string) => {
     if (pathname === href) return true;
     const rootPaths = ["/pasien", "/nakes", "/pmo", "/admin", "/faskes"];
@@ -171,6 +174,35 @@ export default function UniversalSidebar({
 
   // Filter menu profil agar tidak muncul di mobile bottom bar
   const mobileItems = items.filter((item) => !item.href.endsWith("/profile"));
+
+  const profileBlock = (
+    <>
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-tiby-teal-600 text-xs font-bold uppercase text-white">
+        {image ? (
+          // One-off plain img: S3 avatar host is dynamic
+          // (S3_PUBLIC_BASE_URL), so next/image remotePatterns cannot cover it.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={image}
+            alt={`Foto profil ${user?.name || user?.username || ""}`}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          avatarText
+        )}
+      </div>
+      <div
+        className={`min-w-0 transition-opacity duration-200 motion-reduce:transition-none ${
+          collapsed ? "hidden opacity-0" : "opacity-100"
+        }`}
+      >
+        <p className="truncate text-xs font-semibold text-tiby-ink">
+          {user?.name || user?.username}
+        </p>
+        <p className="truncate text-[11px] text-tiby-muted">{roleTitle}</p>
+      </div>
+    </>
+  );
 
   return (
     <>
@@ -196,7 +228,11 @@ export default function UniversalSidebar({
         </button>
 
         <div className="space-y-7">
-          <div className="flex h-10 items-center pl-0.5">
+          <Link
+            href="/"
+            aria-label="Beranda Tiby"
+            className="flex h-10 items-center rounded-lg transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tiby-teal-600"
+          >
             <div
               className={`relative h-10 overflow-hidden transition-[width] duration-300 motion-reduce:transition-none ${
                 collapsed ? "w-10" : "w-full"
@@ -213,7 +249,7 @@ export default function UniversalSidebar({
                 className="h-10 w-auto max-w-none object-contain object-left"
               />
             </div>
-          </div>
+          </Link>
 
           <nav aria-label="Menu Utama" className="space-y-1">
             {items.map((item) => {
@@ -250,38 +286,22 @@ export default function UniversalSidebar({
 
         <div className="space-y-2 border-t border-tiby-teal-100 pt-4">
           <ThemeToggle variant="sidebar" collapsed={collapsed} />
-          <div
-            className={`flex items-center rounded-xl ${
+          <Link
+            href={profileUrl ?? "#"}
+            aria-disabled={profileUrl === undefined}
+            aria-label="Profil saya"
+            title="Profil saya"
+            onClick={
+              profileUrl === undefined
+                ? (e) => e.preventDefault()
+                : undefined
+            }
+            className={`flex items-center rounded-xl transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tiby-teal-600 ${
               collapsed ? "justify-center" : "gap-3 bg-tiby-teal-50/60 p-2.5"
             }`}
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-tiby-teal-600 text-xs font-bold uppercase text-white">
-              {image ? (
-                // One-off plain img: S3 avatar host is dynamic
-                // (S3_PUBLIC_BASE_URL), so next/image remotePatterns cannot cover it.
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={image}
-                  alt={`Foto profil ${user?.name || user?.username || ""}`}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                avatarText
-              )}
-            </div>
-            <div
-              className={`min-w-0 transition-opacity duration-200 motion-reduce:transition-none ${
-                collapsed ? "hidden opacity-0" : "opacity-100"
-              }`}
-            >
-              <p className="truncate text-xs font-semibold text-tiby-ink">
-                {user?.name || user?.username}
-              </p>
-              <p className="truncate text-[11px] text-tiby-muted">
-                {roleTitle}
-              </p>
-            </div>
-          </div>
+            {profileBlock}
+          </Link>
 
           <div className="group relative border-t border-tiby-teal-100 pt-2">
             <button
