@@ -15,7 +15,13 @@ export default function PmoCheckInPage() {
     <div className="h-full bg-tiby-white">
       {/* useSearchParams() in CheckInView needs a Suspense boundary so the
           segment can pre-render for instant navigation. */}
-      <Suspense fallback={<SkeletonRegion label="Memuat..."><SkeletonRows rows={3} /></SkeletonRegion>}>,
+      <Suspense
+        fallback={
+          <SkeletonRegion label="Memuat...">
+            <SkeletonRows rows={3} />
+          </SkeletonRegion>
+        }
+      >
         <CheckInView role="PMO" />
       </Suspense>
     </div>

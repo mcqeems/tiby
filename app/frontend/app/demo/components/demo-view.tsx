@@ -30,28 +30,24 @@ const ROLES: Array<{
   icon: typeof User;
   label: string;
   name: string;
-  blurb: string;
 }> = [
   {
     role: "PASIEN",
     icon: User,
     label: "Pasien",
     name: "Budi Santoso",
-    blurb: "Rasakan alur check-in harian dan pendampingan pengobatan.",
   },
   {
     role: "PMO",
     icon: UserCheck,
     label: "PMO",
     name: "Ratna Dewi",
-    blurb: "Pantau kepatuhan pasien dari sisi pendamping.",
   },
   {
     role: "NAKES",
     icon: Users,
     label: "Nakes",
     name: "dr. Rini Suryani",
-    blurb: "Lihat dasbor faskes dan tindak lanjuti pasien.",
   },
 ];
 
@@ -107,7 +103,9 @@ export default function DemoView() {
       await demoApi.start();
       await refresh();
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Gagal memulai demo.");
+      setErrorMessage(
+        err instanceof Error ? err.message : "Gagal memulai demo.",
+      );
       await refresh();
     } finally {
       setStarting(false);
@@ -141,17 +139,14 @@ export default function DemoView() {
   const isFull = activeCount >= maxActive;
   const remainingSlots = Math.max(maxActive - activeCount, 0);
   const nextExpiry = status?.sessions.length
-    ? [...status.sessions]
-        .sort(
-          (a, b) =>
-            new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime(),
-        )[0].expiresAt
+    ? [...status.sessions].sort(
+        (a, b) =>
+          new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime(),
+      )[0].expiresAt
     : null;
   const waitLabel = nextExpiry && now ? formatRemaining(nextExpiry, now) : null;
   const countdown =
-    status?.expiresAt && now
-      ? formatRemaining(status.expiresAt, now)
-      : null;
+    status?.expiresAt && now ? formatRemaining(status.expiresAt, now) : null;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col items-center px-6 py-10">
@@ -308,9 +303,7 @@ export default function DemoView() {
                     <span className="text-sm font-medium text-tiby-teal-700">
                       {item.name}
                     </span>
-                    <span className="mt-1 text-sm leading-relaxed text-gray-500">
-                      {item.blurb}
-                    </span>
+
                     <span className="mt-auto inline-flex items-center gap-1 pt-3 text-sm font-semibold text-gray-900 transition-transform duration-300 group-hover:translate-x-0.5">
                       <Play className="h-3.5 w-3.5" />
                       Masuk

@@ -14,7 +14,13 @@ export default function PasienCheckInPage() {
     <div className="flex h-full w-full flex-col bg-tiby-white">
       {/* useSearchParams() in CheckInView needs a Suspense boundary so the
           segment can pre-render for instant navigation. */}
-      <Suspense fallback={<SkeletonRegion label="Memuat..."><SkeletonRows rows={3} /></SkeletonRegion>}>,
+      <Suspense
+        fallback={
+          <SkeletonRegion label="Memuat...">
+            <SkeletonRows rows={3} />
+          </SkeletonRegion>
+        }
+      >
         <CheckInView role="PASIEN" />
       </Suspense>
     </div>
