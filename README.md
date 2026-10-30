@@ -72,7 +72,7 @@ Backend:
 | --- | --- | --- |
 | `BETTER_AUTH_SECRET` | Ya | Acak, minimal 32 karakter |
 | `BETTER_AUTH_URL` | Ya | Origin publik backend, mis. `https://tiby.web.id` |
-| `DATABASE_URL` | Ya | Connection string Postgres Supabase (lewat pooler Supavisor, akhiri dengan `?sslmode=require`). Diisi di file `.env` root — lihat `.env.example`. Stack tidak membawa database sendiri |
+| `DATABASE_URL` | Ya | Connection string Postgres Supabase (lewat pooler Supavisor, akhiri dengan `?sslmode=no-verify`). Diisi di file `.env` root — lihat `.env.example`. Stack tidak membawa database sendiri |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Ya | Generate pasangan sendiri, jangan pakai contoh dari `.env.example` |
 | `PII_ENCRYPTION_KEY` | Ya | Hex 64 karakter |
 | `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_BUCKET`, `S3_REGION` | Ya, untuk upload | Dari provider S3 (mis. Supabase Storage) |
@@ -163,6 +163,9 @@ docker compose logs -f backend # log per service
 | Webhook WAHA ditolak backend | Secret webhook tidak sama | Samakan `WAHA_WEBHOOK_SECRET` (backend) dengan `X-Waha-Secret` (service waha), lalu recreate kedua service |
 | WAHA API membalas 401 | Header `X-Api-Key` tidak sesuai `WAHA_API_KEY` | Samakan API key pemanggil dengan konfigurasi service waha |
 | File ter-upload tapi URL-nya membalas 403 saat dibuka | `S3_PUBLIC_BASE_URL` belum diset, sehingga URL dibentuk dari endpoint S3 | Set `S3_PUBLIC_BASE_URL` ke URL publik bucket (lihat Konfigurasi Environment), lalu recreate backend |
+| `auth-migrate` gagal: `self-signed certificate in certificate chain` | Driver Node (pg) menolak sertifikat CA pooler Supabase saat memakai `sslmode=require` | Ganti akhiran `DATABASE_URL` menjadi `?sslmode=no-verify`, lalu naikkan ulang stack |
+| `auth-migrate` gagal: `relation "users" already exists` | Database hasil restore/migrasi — tabel auth memang sudah ada dan lengkap | Normal untuk database yang tidak kosong; gerbang ini hanya untuk instalasi baru. Naikkan service lain tanpa gerbangnya: `docker compose up -d --no-deps backend seed-admin frontend proxy` |
+| Restore dump lokal ke Supabase gagal di banyak tabel: `function public.uuid_generate_v4() does not exist` | Ekstensi `uuid-ossp` di Supabase terpasang di schema `extensions`, dump lama mereferensikan schema `public` | Sekali saja sebelum restore: `ALTER EXTENSION "uuid-ossp" SET SCHEMA public;`, lalu restore ulang dari schema kosong |
 
 ### Deployment Tanpa Docker
 
