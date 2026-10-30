@@ -43,7 +43,7 @@ Seluruh stack berjalan dari satu `docker-compose.yml` di root repo.
 | Frontend | Next.js 16 | 3000 | Web app |
 | Backend | NestJS | 3001 | Semua route di bawah prefix `/api` |
 | AI Service | FastAPI, Python 3.10 | 8000 | Health check di `/health` |
-| Database | PostgreSQL 16 | 5432 | Volume `tiby-pgdata` |
+| Database | PostgreSQL (Supabase) | - | Eksternal, di luar compose; diakses backend lewat `DATABASE_URL` |
 | WhatsApp | WAHA | 3008 | Dashboard + API, sesi di volume `tiby-waha-sessions` |
 | Proxy | Caddy | 8080 | Entrypoint tunggal: `/api/*` ke backend, sisanya ke frontend |
 | Tunnel | cloudflared | - | Opsional, profile `tunnel`, untuk domain publik |
@@ -51,13 +51,13 @@ Seluruh stack berjalan dari satu `docker-compose.yml` di root repo.
 ### Prasyarat
 
 - Docker Engine dan Docker Compose v2.
-- Akun S3-compatible storage (mis. Supabase Storage). Tidak ada object storage bawaan di stack ini; tanpa S3 asli, fitur upload tidak berfungsi.
+- Proyek Supabase untuk database Postgres dan object storage. Stack ini tidak membawa database sendiri: isi `DATABASE_URL` di file `.env` root (salin dari `.env.example`) dengan connection string Supabase sebelum menjalankan compose. Tanpa S3 asli, fitur upload tidak berfungsi.
 - Token provider AI (NaraRouter, Groq, Fish Audio) untuk fitur AI penuh. Tanpa token asli, ai-service tetap hidup tetapi panggilan AI mengembalikan 503.
 - Untuk publik dengan domain sendiri: akun Cloudflare dan domain yang DNS-nya dikelola Cloudflare.
 
 ### Konfigurasi Environment
 
-Semua nilai ada di blok `environment` pada `docker-compose.yml`. Nilai yang ter-commit di repo adalah **dummy** untuk uji lokal.
+Semua nilai ada di blok `environment` pada `docker-compose.yml`, kecuali `DATABASE_URL` yang dibaca dari file `.env` di root (tidak ter-commit; lihat `.env.example`). Nilai yang ter-commit di repo adalah **dummy** untuk uji lokal.
 
 Aturan:
 
@@ -72,7 +72,7 @@ Backend:
 | --- | --- | --- |
 | `BETTER_AUTH_SECRET` | Ya | Acak, minimal 32 karakter |
 | `BETTER_AUTH_URL` | Ya | Origin publik backend, mis. `https://tiby.web.id` |
-| `DATABASE_URL` | Otomatis | Sudah mengarah ke service `db` |
+| `DATABASE_URL` | Ya | Connection string Postgres Supabase (lewat pooler Supavisor, akhiri dengan `?sslmode=require`). Diisi di file `.env` root — lihat `.env.example`. Stack tidak membawa database sendiri |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Ya | Generate pasangan sendiri, jangan pakai contoh dari `.env.example` |
 | `PII_ENCRYPTION_KEY` | Ya | Hex 64 karakter |
 | `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_BUCKET`, `S3_REGION` | Ya, untuk upload | Dari provider S3 (mis. Supabase Storage) |
@@ -115,7 +115,7 @@ Catatan first boot:
 
 ### Deploy Publik (Cloudflare Tunnel)
 
-Prinsip: hanya proxy (8080) yang menerima trafik publik. Port backend (3001), database (5432), dan WAHA (3008) jangan dipublish ke internet.
+Prinsip: hanya proxy (8080) yang menerima trafik publik. Port backend (3001) dan WAHA (3008) jangan dipublish ke internet. Database berada di Supabase (managed) dan hanya diakses backend lewat `DATABASE_URL`.
 
 1. Buat tunnel di Cloudflare Zero Trust: Networks, Tunnels, Create tunnel, pilih Cloudflared. Salin token-nya.
 2. Tulis token ke file `.env` di root repo pada server:
@@ -143,7 +143,7 @@ docker compose up -d --build   # recreate service yang berubah
 docker compose logs -f backend # log per service
 ```
 
-- Backup database: backup volume `tiby-pgdata`, atau dump: `docker compose exec db pg_dump -U tiby tiby > backup.sql`.
+- Backup database: database berada di Supabase — gunakan fitur backup/pg_dump dari dashboard Supabase atau `pg_dump` dengan connection string yang sama seperti `DATABASE_URL`.
 - Hemat disk: jalankan `docker builder prune` secara berkala; image WAHA berukuran besar (sekitar 4 GB).
 
 ### Aturan
