@@ -1,0 +1,139 @@
+# Tiby — standby stack on Coolify (failover target for https://tiby.web.id).
+#
+# This stack is the backup half of the production deployment. The primary
+# stack runs on the InstaBox machine; a Cloudflare Worker in front of
+# tiby.web.id forwards traffic here only when the primary is unreachable.
+#
+# Deliberate differences from the primary stack:
+#   - No database service: both stacks share the same external Supabase
+#     Postgres via DATABASE_URL, so data and login sessions are identical
+#     on both sides.
+#   - No auth-migrate / seed-admin one-shots: the shared database is
+#     already initialized by the primary. auth-migrate would also fail
+#     here, because the Better Auth CLI errors when its tables already
+#     exist.
+#   - WAHA lives here permanently (single WhatsApp session). The primary
+#     backend reaches it over https://waha.mustaqim.web.id; this stack's
+#     backend uses the internal service name.
+#   - No cloudflared: this host is reached through the existing
+#     *.mustaqim.web.id Cloudflare Tunnel in front of Coolify (Traefik).
+#     Domains are assigned in Coolify (docker_compose_domains):
+#       proxy -> http://cadangan.mustaqim.web.id
+#       waha  -> http://waha.mustaqim.web.id
+#
+# All secrets come from the application's Coolify environment variables
+# and MUST be identical to the primary stack's values (BETTER_AUTH_SECRET,
+# PII_ENCRYPTION_KEY, VAPID pair, WAHA keys, S3 keys, AI tokens,
+# DATABASE_URL). NEXT_PUBLIC_API_URL stays https://tiby.web.id: the
+# browser always talks to the public domain, whichever stack serves it.
+
+services:
+  ai-service:
+    build:
+      context: ./app/ai-service
+      dockerfile: Dockerfile
+    environment:
+      NARAROUTER_API_TOKEN: ${NARAROUTER_API_TOKEN}
+      NARAROUTER_API_KEY: ${NARAROUTER_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      FISH_AUDIO_API_TOKEN: ${FISH_AUDIO_API_TOKEN}
+      FISH_API_KEY: ${FISH_API_KEY}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  waha:
+    image: devlikeapro/waha
+    restart: unless-stopped
+    environment:
+      WAHA_DASHBOARD_USERNAME: ${WAHA_DASHBOARD_USERNAME}
+      WAHA_DASHBOARD_PASSWORD: ${WAHA_DASHBOARD_PASSWORD}
+      WAHA_API_KEY: ${WAHA_API_KEY}
+      WHATSAPP_DEFAULT_ENGINE: NOWEB
+      # The webhook always targets the public domain: it lands on
+      # whichever backend is live (primary normally, this stack during a
+      # failover) through the failover Worker.
+      WHATSAPP_HOOK_URL: https://tiby.web.id/api/webhooks/waha
+      WHATSAPP_HOOK_EVENTS: message
+      WHATSAPP_HOOK_CUSTOM_HEADERS: "X-Waha-Secret:${WAHA_WEBHOOK_SECRET}"
+      WHATSAPP_RESTART_ALL_SESSIONS: "True"
+      WHATSAPP_START_SESSION: "default"
+    expose:
+      - "3000"
+    volumes:
+      - tiby-waha-sessions:/app/.sessions
+
+  backend:
+    build:
+      context: .
+      dockerfile: app/backend/Dockerfile
+    environment:
+      NODE_ENV: development
+      PORT: "3001"
+      DATABASE_URL: ${DATABASE_URL}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: https://tiby.web.id
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_SUBJECT: mailto:admin@tiby.health
+      PII_ENCRYPTION_KEY: ${PII_ENCRYPTION_KEY}
+      AI_SERVICE_URL: http://ai-service:8000
+      AI_SERVICE_TIMEOUT_MS: "90000"
+      WAHA_ENABLED: "true"
+      WAHA_BASE_URL: http://waha:3000
+      WAHA_SESSION: default
+      WAHA_API_KEY: ${WAHA_API_KEY}
+      WAHA_BOT_PHONE_NUMBER: ${WAHA_BOT_PHONE_NUMBER}
+      WAHA_WEBHOOK_SECRET: ${WAHA_WEBHOOK_SECRET}
+      WEB_URL: https://tiby.web.id
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_PUBLIC_BASE_URL: https://lzijctcwzzccxyhqxmeg.supabase.co/storage/v1/object/public/tiby-uploads
+      S3_REGION: ap-southeast-1
+      S3_BUCKET: tiby-uploads
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      S3_FORCE_PATH_STYLE: "true"
+    depends_on:
+      ai-service:
+        condition: service_started
+      waha:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: app/frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://tiby.web.id
+    depends_on:
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    expose:
+      - "8080"
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  tiby-waha-sessions:
