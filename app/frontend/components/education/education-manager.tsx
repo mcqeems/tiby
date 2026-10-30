@@ -166,7 +166,7 @@ export default function EducationManager({
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-heading font-bold text-tiby-ink">
             Kelola Edukasi
@@ -186,7 +186,7 @@ export default function EducationManager({
         </button>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 gap-4">
         {loading ? (
           <SkeletonRegion label="Memuat materi edukasi">
             <SkeletonRows
@@ -205,10 +205,10 @@ export default function EducationManager({
           cards.map((card) => (
             <div
               key={card.id}
-              className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex flex-col md:flex-row justify-between md:items-center gap-4"
+              className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs flex flex-col md:flex-row justify-between md:items-center gap-4 w-full min-w-0"
             >
               <div className="space-y-1.5 flex-1 min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-tiby-teal-700 bg-tiby-teal-50 px-2 py-0.5 rounded-md border border-tiby-teal-100">
                     {card.category}
                   </span>
@@ -251,7 +251,7 @@ export default function EducationManager({
       </div>
 
       {total > 0 && (
-        <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-gray-200 bg-white px-5 py-3">
           <span className="text-xs text-tiby-muted">
             Menampilkan <strong>{(page - 1) * LIMIT + 1}</strong> -{" "}
             <strong>{Math.min(page * LIMIT, total)}</strong> dari{" "}

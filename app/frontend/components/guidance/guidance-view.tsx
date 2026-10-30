@@ -183,7 +183,7 @@ export default function GuidanceView() {
           event.preventDefault();
           submit(question);
         }}
-        className="sticky bottom-20 z-20 mt-auto md:bottom-0"
+        className="sticky bottom-24 z-20 mt-auto md:bottom-0"
       >
         <div className="rounded-2xl border border-gray-200 bg-white/90 p-3 shadow-[0_-4px_24px_rgba(15,60,60,0.08)] backdrop-blur">
           <label htmlFor="guidance-question" className="sr-only">

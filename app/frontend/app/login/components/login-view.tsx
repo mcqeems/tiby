@@ -168,14 +168,16 @@ export default function LoginView() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 sm:p-8 relative">
+    <div className="flex min-h-screen flex-col bg-gray-50 p-4 sm:p-8">
       <Link
         href="/"
-        className="absolute top-6 left-6 sm:top-8 sm:left-8 z-50 flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-tiby-ink shadow-sm border border-gray-200 transition-all hover:bg-gray-50 hover:shadow-md"
+        aria-label="Kembali ke beranda"
+        className="mb-4 self-start text-tiby-ink transition-colors hover:text-tiby-teal-700 sm:mb-6"
       >
-        <ArrowLeft className="w-4 h-4" />
+        <ArrowLeft className="h-6 w-6" strokeWidth={2.5} />
       </Link>
 
+      <div className="flex w-full flex-1 items-center justify-center">
       <div className="flex w-full max-w-5xl flex-col md:flex-row overflow-hidden rounded-3xl bg-white shadow-2xl shadow-gray-200/50 border border-gray-100 min-h-150">
         <div className="relative hidden w-full md:flex md:w-1/2 flex-col justify-between p-10 sm:p-10 lg:p-12 text-white overflow-hidden bg-tiby-teal-900">
           <Image
@@ -373,6 +375,7 @@ export default function LoginView() {
             </form>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

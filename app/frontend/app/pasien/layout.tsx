@@ -54,7 +54,7 @@ export default function PasienLayout({
           items={pasienMenuItems}
         />
 
-        <main className="flex flex-1 flex-col overflow-y-auto p-6 md:p-8">
+        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto p-6 md:p-8">
           <div className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col">
             <div className="absolute right-0 top-0 z-30">
               <UserNotificationBell />

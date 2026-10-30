@@ -38,7 +38,7 @@ export default function AdminLayout({
             items={adminMenuItems}
           />
         </Suspense>
-        <main className="flex flex-1 flex-col overflow-y-auto p-6 md:p-8">
+        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto p-6 md:p-8">
           <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col">
             <div className="shrink-0">
               <Suspense

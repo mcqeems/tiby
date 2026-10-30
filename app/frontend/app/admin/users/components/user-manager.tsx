@@ -159,7 +159,8 @@ export default function UserManager() {
         </SkeletonRegion>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-2xs overflow-hidden">
-          <table className="w-full text-left text-sm border-collapse">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-155 text-left text-sm border-collapse">
             <thead className="bg-gray-50 border-b border-gray-100 text-xs text-gray-600 uppercase font-semibold">
               <tr>
                 <th className="px-5 py-4">Nama / Username</th>
@@ -222,6 +223,7 @@ export default function UserManager() {
               ))}
             </tbody>
           </table>
+          </div>
 
           {total > 0 && (
             <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-5 py-3">

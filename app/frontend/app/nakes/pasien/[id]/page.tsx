@@ -725,8 +725,8 @@ export default function PatientDetailPage() {
             onClose={() => setTicketOpen(false)}
             dismissOnBackdrop={false}
           >
-            <ModalCard className="w-full max-w-md rounded-2xl bg-white shadow-xl">
-              <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 bg-amber-50/50">
+            <ModalCard className="w-full max-w-md rounded-2xl bg-white shadow-xl overflow-hidden">
+              <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
                 <h3 className="font-heading text-sm font-semibold text-tiby-ink">
                   Buat Tiket Manual
                 </h3>
