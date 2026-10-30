@@ -124,11 +124,15 @@ services:
       retries: 12
       start_period: 30s
 
+  # The Caddyfile is baked into a small image instead of bind-mounted:
+  # Coolify copies this compose file into its own application directory
+  # where ./Caddyfile does not exist, and Docker then creates the mount
+  # source as a directory, which cannot be mounted onto a file.
   proxy:
-    image: caddy:2-alpine
+    build:
+      context: .
+      dockerfile: infra/proxy/Dockerfile
     restart: unless-stopped
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
     expose:
       - "8080"
     depends_on:
