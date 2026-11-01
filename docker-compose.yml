@@ -37,6 +37,8 @@ services:
       # that need a real provider will return 503 until real tokens are set.
       NARAROUTER_API_TOKEN: dummy-token
       NARAROUTER_API_KEY: dummy-token
+      NARAROUTER_BASE_URL: https://api.meta.ai/v1
+      TIBY_LLM_MODEL: muse-spark-1.3-contributor
       GROQ_API_KEY: dummy-key
       FISH_AUDIO_API_TOKEN: dummy-token
       FISH_API_KEY: dummy-key

@@ -35,6 +35,8 @@ services:
     environment:
       NARAROUTER_API_TOKEN: ${NARAROUTER_API_TOKEN}
       NARAROUTER_API_KEY: ${NARAROUTER_API_KEY}
+      NARAROUTER_BASE_URL: https://api.meta.ai/v1
+      TIBY_LLM_MODEL: muse-spark-1.3-contributor
       GROQ_API_KEY: ${GROQ_API_KEY}
       FISH_AUDIO_API_TOKEN: ${FISH_AUDIO_API_TOKEN}
       FISH_API_KEY: ${FISH_API_KEY}
