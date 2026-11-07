@@ -57,6 +57,7 @@ export default function PageHeader() {
       pasien: "Pasien",
       facilities: "Fasilitas Kesehatan",
       users: "Manajemen Akun",
+      notifications: "Simulasi Notifikasi",
       onboarding: "Onboarding Pasien",
       "check-in": "Check-in Harian",
       riwayat: "Riwayat Check-In",

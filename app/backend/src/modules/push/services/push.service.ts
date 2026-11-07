@@ -64,6 +64,11 @@ export class PushService {
     return { publicKey };
   }
 
+  /** False when VAPID keys are missing; sends are skipped, not failed. */
+  isConfigured(): boolean {
+    return this.vapidConfigured;
+  }
+
   async subscribe(
     userId: string,
     dto: PushSubscriptionPayload,

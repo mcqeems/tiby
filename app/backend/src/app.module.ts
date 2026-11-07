@@ -29,6 +29,7 @@ import { UsersModule } from "./modules/users/users.module.js";
 import { GuidanceModule } from "./modules/guidance/guidance.module.js";
 import { StatsModule } from "./modules/stats/stats.module.js";
 import { NotificationsModule } from "./modules/notifications/notifications.module.js";
+import { AdminNotificationsModule } from "./modules/admin-notifications/admin-notifications.module.js";
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { NotificationsModule } from "./modules/notifications/notifications.modul
     DemoModule,
     StatsModule,
     NotificationsModule,
+    AdminNotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

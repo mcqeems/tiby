@@ -18,4 +18,5 @@ export * from "./facilities.schema.js";
 export * from "./tickets.schema.js";
 export * from "./users.schema.js";
 export * from "./notifications.schema.js";
+export * from "./admin-notifications.schema.js";
 export * from "./demo.schema.js";

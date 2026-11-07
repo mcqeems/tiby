@@ -121,6 +121,7 @@ export const FacilityAlertTypes = [
   "CONSENT_REVOKED_WARNING",
   "STREAK_RESET_WARNING",
   "SILENCE_H3_WARNING",
+  "ADMIN_SIMULATION",
 ] as const;
 export const FacilityAlertTypeSchema = z.enum(FacilityAlertTypes);
 export type FacilityAlertType = z.infer<typeof FacilityAlertTypeSchema>;
@@ -175,6 +176,7 @@ export const NotificationTriggerCircumstances = [
   "RED_FLAG_ALERT",
   "INTENT_TO_STOP_ALERT",
   "WHATSAPP_VERIFIED_ACK",
+  "ADMIN_SIMULATION",
 ] as const;
 export const NotificationTriggerCircumstanceSchema = z.enum(NotificationTriggerCircumstances);
 export type NotificationTriggerCircumstance = z.infer<typeof NotificationTriggerCircumstanceSchema>;

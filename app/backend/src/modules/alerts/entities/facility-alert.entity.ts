@@ -25,12 +25,12 @@ export class FacilityAlert {
   facility: Facility;
 
   @Index("idx_facility_alerts_plan")
-  @Column({ name: "treatment_plan_id", type: "uuid" })
-  treatmentPlanId: string;
+  @Column({ name: "treatment_plan_id", type: "uuid", nullable: true })
+  treatmentPlanId: string | null;
 
-  @ManyToOne(() => TreatmentPlan, { onDelete: "CASCADE" })
+  @ManyToOne(() => TreatmentPlan, { nullable: true, onDelete: "CASCADE" })
   @JoinColumn({ name: "treatment_plan_id" })
-  treatmentPlan: TreatmentPlan;
+  treatmentPlan?: TreatmentPlan | null;
 
   @Column({ name: "alert_type", type: "varchar", length: 50 })
   alertType: string;

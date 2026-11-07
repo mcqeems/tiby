@@ -69,7 +69,8 @@ export type ListAlertsQuery = z.infer<typeof ListAlertsQuerySchema>;
 export const FacilityAlertSchema = z.object({
   id: z.string().uuid(),
   facilityId: z.string().uuid(),
-  treatmentPlanId: z.string().uuid(),
+  /** Null for system-wide alerts such as an admin simulation. */
+  treatmentPlanId: z.string().uuid().nullable(),
   patientName: z.string(),
   alertType: FacilityAlertTypeSchema,
   severity: AlertSeveritySchema,

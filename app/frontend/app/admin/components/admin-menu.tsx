@@ -1,7 +1,7 @@
 "use client";
 
 import type { SidebarItem } from "@/components/layout/universal-sidebar";
-import { Home, Building2, Users, BookOpen } from "lucide-react";
+import { Home, Building2, Users, BookOpen, BellRing } from "lucide-react";
 
 export const adminMenuItems: SidebarItem[] = [
   {
@@ -23,5 +23,10 @@ export const adminMenuItems: SidebarItem[] = [
     label: "Kelola Edukasi",
     href: "/admin/education",
     icon: <BookOpen className="w-5 md:w-4 h-5 md:h-4" />,
+  },
+  {
+    label: "Simulasi Notifikasi",
+    href: "/admin/notifications",
+    icon: <BellRing className="w-5 md:w-4 h-5 md:h-4" />,
   },
 ];

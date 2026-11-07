@@ -3,6 +3,10 @@ import { OnEvent } from "@nestjs/event-emitter";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { NotificationTriggerEvent } from "../../../common/events/notification-trigger.event.js";
+import {
+  getMessageForCircumstance,
+  getSeverity,
+} from "../../../common/notifications/notification-templates.js";
 import { NotificationLog } from "../entities/notification-log.entity.js";
 import { TreatmentPlan } from "../../patients/entities/treatment-plan.entity.js";
 import { PmoAssignment } from "../../patients/entities/pmo-assignment.entity.js";
@@ -11,79 +15,6 @@ import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
 import { PushService } from "../../push/services/push.service.js";
 import { WahaClientService } from "./waha-client.service.js";
 import { NotificationsService } from "../../notifications/services/notifications.service.js";
-
-function getSeverity(circumstance: string): "INFO" | "WARNING" | "HIGH" {
-  if (
-    circumstance === "RED_FLAG_ALERT" ||
-    circumstance === "INTENT_TO_STOP_ALERT" ||
-    circumstance === "SILENCE_H3" ||
-    circumstance === "SILENCE_H3_ESCALATION"
-  ) {
-    return "HIGH";
-  }
-  if (
-    circumstance === "SILENCE_H2" ||
-    circumstance === "SILENCE_H2_ESCALATION" ||
-    circumstance === "DOSE_INCOMPLETE_NUDGE"
-  ) {
-    return "WARNING";
-  }
-  return "INFO";
-}
-
-function getMessageForCircumstance(circumstance: string, custom?: string): { title: string; body: string } {
-  switch (circumstance) {
-    case "DAILY_REMINDER":
-    case "REMINDER_SCHEDULED":
-      return {
-        title: "Waktunya Minum Obat Bersama Pandu",
-        body: custom || "Halo! Mari minum obat tepat waktu agar senantiasa sehat.",
-      };
-    case "DOSE_INCOMPLETE_NUDGE":
-      return {
-        title: "Catatan Pengingat dari Pandu",
-        body: custom || "Pandu mengingatkan untuk melengkapi obat hari ini ya.",
-      };
-    case "RED_FLAG_ALERT":
-      return {
-        title: "Perhatian dari Pandu",
-        body: custom || "Laporan kesehatan Anda memerlukan perhatian medis. Petugas faskes telah diberitahu.",
-      };
-    case "INTENT_TO_STOP_ALERT":
-      return {
-        title: "Pandu Siap Mendampingi",
-        body: custom || "Jangan cemas, silakan konsultasikan kendala Anda dengan faskes terdekat.",
-      };
-    case "SILENCE_H1_ESCALATION":
-    case "SILENCE_H1":
-      return {
-        title: "Pandu Kangen Kabarmu",
-        body: custom || "Sudahkah minum obat hari ini? Luangkan waktu sebentar untuk check-in ya.",
-      };
-    case "SILENCE_H2_ESCALATION":
-    case "SILENCE_H2":
-      return {
-        title: "Pengingat Pendamping Obat",
-        body: custom || "Pasien belum melapor kemarin. Mohon bantu dampingi dan ingatkan minum obat hari ini.",
-      };
-    case "SILENCE_H3_ESCALATION":
-    case "SILENCE_H3":
-      return {
-        title: "Pemberitahuan Pendamping Obat",
-        body: custom || "Pasien belum melapor selama 3 hari berturut-turut. Tim faskes telah membuka tindak lanjut.",
-      };
-    case "WHATSAPP_VERIFIED_ACK":
-      return {
-        title: "WhatsApp Terhubung",
-        body: custom || "Nomor WhatsApp Anda sudah terhubung dengan Pandu. Pandu siap mendampingi!",
-      };
-    default:
-      return {
-        title: "Pesan dari Pandu",
-        body: custom || "Halo, ada pesan baru dari pendamping kesehatan Anda.",
-      };
-  }
-}
 
 @Injectable()
 export class NotificationDispatchService {
