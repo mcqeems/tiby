@@ -5,7 +5,7 @@ import { errorMessage } from "@/lib/errors";
 import { usersApi, type UserItem } from "@/lib/api/users";
 import type { FacilityItem } from "@/lib/types/facilities";
 import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
-import { X, Loader2, Save } from "lucide-react";
+import { X, Loader2, Save, AlertTriangle } from "lucide-react";
 
 import { notify } from "@/lib/toast";
 interface UserFormModalProps {
@@ -103,16 +103,28 @@ export default function UserFormModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {editingUser?.isDemo && (
+            <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[11px] leading-relaxed text-amber-800">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                Akun demo: faskes terkunci dan akun ini dihapus otomatis saat
+                sesi demo berakhir. Perubahan langsung terlihat oleh pengunjung
+                demo.
+              </span>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
               Pilih Faskes Penempatan *
             </label>
             <select
               value={formData.facilityId}
+              disabled={editingUser?.isDemo}
               onChange={(e) =>
                 setFormData({ ...formData, facilityId: e.target.value })
               }
-              className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none"
+              className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500"
             >
               <option value="">-- Pilih Faskes --</option>
               {facilities.map((f) => (
@@ -184,10 +196,15 @@ export default function UserFormModal({
               <select
                 value={formData.role}
                 onChange={(e) =>
-                  setFormData({ ...formData, role: e.target.value as "NAKES" | "ADMIN" })
+                  setFormData({
+                    ...formData,
+                    role: e.target.value as UserItem["role"],
+                  })
                 }
                 className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 outline-none"
               >
+                <option value="PASIEN">PASIEN</option>
+                <option value="PMO">PMO</option>
                 <option value="NAKES">NAKES</option>
                 <option value="ADMIN">ADMIN</option>
               </select>

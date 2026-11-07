@@ -14,6 +14,11 @@ describe("UsersService Unit Tests", () => {
   let mockAuditRepo: any;
   let mockStorageService: any;
   let mockConfigService: any;
+  let mockPlanRepo: any;
+  let mockCheckInRepo: any;
+  let mockNotificationRepo: any;
+  let mockFamilyContactRepo: any;
+  let mockDemoService: any;
 
   beforeEach(() => {
     mockUserRepo = {
@@ -21,6 +26,8 @@ describe("UsersService Unit Tests", () => {
       findOne: vi.fn(),
       find: vi.fn(),
       findAndCount: vi.fn().mockResolvedValue([[], 0]),
+      delete: vi.fn().mockResolvedValue({}),
+      count: vi.fn().mockResolvedValue(2),
     };
     mockFacilityRepo = {
       findOneBy: vi.fn(),
@@ -31,19 +38,41 @@ describe("UsersService Unit Tests", () => {
     };
     mockStorageService = {
       putObject: vi.fn(),
-      deleteObject: vi.fn(),
+      deleteObject: vi.fn().mockResolvedValue(undefined),
       buildPublicUrl: vi.fn(),
+      keyFromPublicUrl: vi.fn().mockReturnValue(null),
     };
     mockConfigService = {
       get: vi.fn().mockReturnValue("profile-pictures/"),
+    };
+    mockPlanRepo = {
+      count: vi.fn().mockResolvedValue(0),
+    };
+    mockCheckInRepo = {
+      count: vi.fn().mockResolvedValue(0),
+    };
+    mockNotificationRepo = {
+      delete: vi.fn().mockResolvedValue({}),
+    };
+    mockFamilyContactRepo = {
+      count: vi.fn().mockResolvedValue(0),
+    };
+    mockDemoService = {
+      syncPersonaPassword: vi.fn().mockResolvedValue(undefined),
+      deleteSessionById: vi.fn().mockResolvedValue(undefined),
     };
 
     service = new UsersService(
       mockUserRepo,
       mockFacilityRepo,
       mockAuditRepo,
+      mockPlanRepo,
+      mockCheckInRepo,
+      mockNotificationRepo,
+      mockFamilyContactRepo,
       mockStorageService,
       mockConfigService,
+      mockDemoService,
     );
   });
 
@@ -178,6 +207,37 @@ describe("UsersService Unit Tests", () => {
       expect(res.success).toBe(true);
       expect(spyUpdatePassword).toHaveBeenCalledWith("user-1", "hashed_new_password");
     });
+
+    it("syncs the demo credential when a demo persona changes its password", async () => {
+      mockUserRepo.findOneBy.mockResolvedValueOnce({
+        id: "demo-pasien",
+        role: "PASIEN",
+        demoSessionId: "demo-1",
+      });
+
+      const ctx = await auth.$context;
+      vi.spyOn(ctx.internalAdapter, "findCredentialAccount").mockResolvedValueOnce({
+        userId: "demo-pasien",
+        password: "hashed_old_password",
+      } as any);
+      vi.spyOn(ctx.password, "verify").mockResolvedValueOnce(true);
+      vi.spyOn(ctx.password, "hash").mockResolvedValueOnce("hashed_demo_pw" as any);
+      vi.spyOn(ctx.internalAdapter, "updatePassword").mockResolvedValueOnce(
+        undefined as any,
+      );
+
+      await service.changeOwnPassword("demo-pasien", {
+        currentPassword: "correct_password",
+        newPassword: "new_password_123",
+      });
+
+      expect(mockDemoService.syncPersonaPassword).toHaveBeenCalledWith(
+        "demo-1",
+        "demo-pasien",
+        "new_password_123",
+        "hashed_demo_pw",
+      );
+    });
   });
 
   describe("resetUserPassword", () => {
@@ -202,6 +262,38 @@ describe("UsersService Unit Tests", () => {
 
       expect(res.success).toBe(true);
       expect(spyUpdatePassword).toHaveBeenCalledWith("target-1", "hashed_reset_pw");
+    });
+
+    it("resets a demo persona password and syncs the session credential", async () => {
+      mockUserRepo.findOneBy.mockResolvedValueOnce({
+        id: "demo-pasien",
+        role: "PASIEN",
+        facilityId: "fac-demo",
+        username: "demo_x_pasien",
+        demoSessionId: "demo-1",
+      });
+
+      const ctx = await auth.$context;
+      vi.spyOn(ctx.password, "hash").mockResolvedValueOnce(
+        "hashed_demo_pw" as any,
+      );
+      vi.spyOn(ctx.internalAdapter, "updatePassword").mockResolvedValueOnce(
+        undefined as any,
+      );
+
+      const res = await service.resetUserPassword(
+        { id: "admin-1", role: "ADMIN" },
+        "demo-pasien",
+        { newPassword: "new_password_123" },
+      );
+
+      expect(res.success).toBe(true);
+      expect(mockDemoService.syncPersonaPassword).toHaveBeenCalledWith(
+        "demo-1",
+        "demo-pasien",
+        "new_password_123",
+        "hashed_demo_pw",
+      );
     });
 
     it("allows NAKES to reset PASIEN in the same facility", async () => {
@@ -449,6 +541,48 @@ describe("UsersService Unit Tests", () => {
       );
     });
 
+    it("allows ADMIN to change the role of a demo account", async () => {
+      mockTarget({ demoSessionId: "demo-1" });
+      const ctx = await auth.$context;
+      const spyUpdateUser = vi
+        .spyOn(ctx.internalAdapter, "updateUser")
+        .mockResolvedValue({} as any);
+      mockUserRepo.findOne.mockResolvedValueOnce({
+        id: "pasien-1",
+        username: "pasien_budi",
+        email: "b@x",
+        name: "Budi",
+        role: "PMO",
+        facilityId: "fac-1",
+        demoSessionId: "demo-1",
+        facility: null,
+      });
+
+      await service.updateUser(
+        { id: "admin-1", role: "ADMIN" },
+        "pasien-1",
+        { role: "PMO" },
+      );
+
+      expect(spyUpdateUser).toHaveBeenCalledWith(
+        "pasien-1",
+        expect.objectContaining({ role: "PMO" }),
+      );
+    });
+
+    it("keeps demo accounts inside their demo facility", async () => {
+      mockTarget({ demoSessionId: "demo-1" });
+
+      await expect(
+        service.updateUser(
+          { id: "admin-1", role: "ADMIN" },
+          "pasien-1",
+          { facilityId: "fac-other" },
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockUserRepo.findOne).toHaveBeenCalledTimes(1);
+    });
+
     it("forbids PASIEN and PMO from editing anyone", async () => {
       mockTarget();
 
@@ -500,6 +634,166 @@ describe("UsersService Unit Tests", () => {
     });
   });
 
+  describe("uploadProfilePicture", () => {
+    it("allows a demo account to upload and reports the public URL", async () => {
+      mockUserRepo.findOneBy.mockResolvedValueOnce({
+        id: "demo-pasien",
+        role: "PASIEN",
+        demoSessionId: "demo-1",
+        image: null,
+      });
+      mockStorageService.putObject.mockResolvedValueOnce(
+        "https://cdn.example/profile-pictures/demo-pasien/a.jpg",
+      );
+      const ctx = await auth.$context;
+      const spyUpdateUser = vi
+        .spyOn(ctx.internalAdapter, "updateUser")
+        .mockResolvedValue({} as any);
+
+      const res = await service.uploadProfilePicture("demo-pasien", {
+        mimetype: "image/jpeg",
+        buffer: Buffer.from("image"),
+      } as any);
+
+      expect(res.imageUrl).toBe(
+        "https://cdn.example/profile-pictures/demo-pasien/a.jpg",
+      );
+      expect(spyUpdateUser).toHaveBeenCalledWith("demo-pasien", {
+        image: "https://cdn.example/profile-pictures/demo-pasien/a.jpg",
+      });
+    });
+
+    it("rejects an unsupported mime type", async () => {
+      mockUserRepo.findOneBy.mockResolvedValueOnce({
+        id: "user-1",
+        image: null,
+      });
+
+      await expect(
+        service.uploadProfilePicture("user-1", {
+          mimetype: "image/gif",
+          buffer: Buffer.from("image"),
+        } as any),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockStorageService.putObject).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("deleteUser", () => {
+    const caller = { id: "admin-1", role: "ADMIN" };
+
+    it("rejects deleting your own account", async () => {
+      mockUserRepo.findOneBy.mockResolvedValueOnce({
+        id: "admin-1",
+        role: "ADMIN",
+        username: "admin",
+      });
+
+      await expect(service.deleteUser(caller, "admin-1")).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it("blocks deleting the last admin", async () => {
+      mockUserRepo.findOneBy.mockResolvedValueOnce({
+        id: "admin-2",
+        role: "ADMIN",
+        username: "admin2",
+      });
+      mockUserRepo.count.mockResolvedValueOnce(1);
+
+      await expect(service.deleteUser(caller, "admin-2")).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockUserRepo.delete).not.toHaveBeenCalled();
+    });
+
+    it("blocks a nakes with registered treatment plans", async () => {
+      mockUserRepo.findOneBy.mockResolvedValueOnce({
+        id: "nakes-1",
+        role: "NAKES",
+        username: "nakes",
+      });
+      mockPlanRepo.count.mockResolvedValueOnce(2);
+
+      await expect(service.deleteUser(caller, "nakes-1")).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockUserRepo.delete).not.toHaveBeenCalled();
+    });
+
+    it("blocks a pmo with reported check-ins", async () => {
+      mockUserRepo.findOneBy.mockResolvedValueOnce({
+        id: "pmo-1",
+        role: "PMO",
+        username: "pmo",
+      });
+      mockCheckInRepo.count.mockResolvedValueOnce(1);
+
+      await expect(service.deleteUser(caller, "pmo-1")).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockUserRepo.delete).not.toHaveBeenCalled();
+    });
+
+    it("blocks a staff account that added family contacts", async () => {
+      mockUserRepo.findOneBy.mockResolvedValueOnce({
+        id: "nakes-1",
+        role: "NAKES",
+        username: "nakes",
+      });
+      mockFamilyContactRepo.count.mockResolvedValueOnce(1);
+
+      await expect(service.deleteUser(caller, "nakes-1")).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockUserRepo.delete).not.toHaveBeenCalled();
+    });
+
+    it("deletes a regular user, notifications, and profile image", async () => {
+      mockUserRepo.findOneBy.mockResolvedValueOnce({
+        id: "pasien-1",
+        role: "PASIEN",
+        username: "pasien",
+        image: "https://cdn.example/profile-pictures/pasien-1/a.jpg",
+      });
+      mockStorageService.keyFromPublicUrl.mockReturnValueOnce(
+        "profile-pictures/pasien-1/a.jpg",
+      );
+
+      const res = await service.deleteUser(caller, "pasien-1");
+
+      expect(res.success).toBe(true);
+      expect(mockNotificationRepo.delete).toHaveBeenCalledWith({
+        recipientUserId: "pasien-1",
+      });
+      expect(mockUserRepo.delete).toHaveBeenCalledWith({ id: "pasien-1" });
+      expect(mockStorageService.deleteObject).toHaveBeenCalledWith(
+        "profile-pictures/pasien-1/a.jpg",
+      );
+      expect(mockAuditRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ action: "USER_DELETE" }),
+      );
+    });
+
+    it("deletes the whole demo session when a demo account is removed", async () => {
+      mockUserRepo.findOneBy.mockResolvedValueOnce({
+        id: "demo-nakes",
+        role: "NAKES",
+        username: "demo_nakes",
+        demoSessionId: "demo-1",
+        image: null,
+      });
+
+      const res = await service.deleteUser(caller, "demo-nakes");
+
+      expect(res.success).toBe(true);
+      expect(mockDemoService.deleteSessionById).toHaveBeenCalledWith("demo-1");
+      expect(mockUserRepo.delete).not.toHaveBeenCalled();
+      expect(mockPlanRepo.count).not.toHaveBeenCalled();
+    });
+  });
+
   describe("listUsers", () => {
     it("scopes NAKES to their facility and paginates", async () => {
       await service.listUsers(
@@ -520,7 +814,7 @@ describe("UsersService Unit Tests", () => {
       await service.listUsers({ id: "admin-1", role: "ADMIN" }, {} as any);
 
       expect(mockUserRepo.findAndCount).toHaveBeenCalledWith({
-        where: [{ demoSessionId: expect.anything() }],
+        where: [{}],
         relations: { facility: true },
         order: { createdAt: "DESC", id: "DESC" },
         skip: 0,
@@ -571,6 +865,34 @@ describe("UsersService Unit Tests", () => {
       expect(res.total).toBe(1);
       expect(res.items[0].facility).toBe("Puskesmas Gampang");
     });
+
+    it("keeps demo accounts in the admin list and flags them", async () => {
+      mockUserRepo.findAndCount.mockResolvedValue([
+        [
+          {
+            id: "u-demo",
+            username: "demo_x_pasien",
+            email: "demo@demo.tiby.internal",
+            name: "Budi Santoso",
+            role: "PASIEN",
+            facilityId: "faskes-demo",
+            demoSessionId: "demo-1",
+            facility: { name: "Puskesmas Demo Argon" },
+          },
+        ],
+        1,
+      ]);
+
+      const res = await service.listUsers(
+        { id: "admin-1", role: "ADMIN" },
+        {} as any,
+      );
+
+      expect(res.items[0].isDemo).toBe(true);
+      expect(
+        mockUserRepo.findAndCount.mock.calls[0][0].where[0],
+      ).not.toHaveProperty("demoSessionId");
+    });
   });
   describe("listUsers filtering", () => {
     it("searches name, username and email", async () => {
@@ -599,7 +921,6 @@ describe("UsersService Unit Tests", () => {
       const where = mockUserRepo.findAndCount.mock.calls[0][0].where;
       expect(where[0]).toEqual({
         facilityId: "faskes-9",
-        demoSessionId: expect.anything(),
       });
     });
 

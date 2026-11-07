@@ -20,6 +20,7 @@ import {
   Search,
   Loader2,
   X,
+  Trash2,
 } from "lucide-react";
 
 const LIMIT = 20;
@@ -39,6 +40,8 @@ export default function UserManager() {
   const [resetUser, setResetUser] = useState<UserItem | null>(null);
   const [resetPassword, setResetPassword] = useState("");
   const [resetSubmitting, setResetSubmitting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<UserItem | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -173,7 +176,14 @@ export default function UserManager() {
               {users.map((u) => (
                 <tr key={u.id} className="hover:bg-gray-50/50">
                   <td className="px-5 py-4">
-                    <p className="font-semibold text-tiby-ink">{u.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-tiby-ink">{u.name}</p>
+                      {u.isDemo && (
+                        <span className="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-700">
+                          Demo
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs font-mono text-tiby-muted">
                       @{u.username}
                     </p>
@@ -216,6 +226,14 @@ export default function UserManager() {
                         className="rounded-lg p-2 text-gray-400 transition hover:bg-amber-50 hover:text-amber-600"
                       >
                         <KeyRound className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        title="Hapus akun"
+                        onClick={() => setDeleteTarget(u)}
+                        className="rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   </td>
@@ -348,6 +366,83 @@ export default function UserManager() {
                   </button>
                 </div>
               </form>
+            </ModalCard>
+          </ModalOverlay>
+        )}
+
+        {deleteTarget && (
+          <ModalOverlay
+            label="Hapus Akun"
+            onClose={() => setDeleteTarget(null)}
+            dismissOnBackdrop={false}
+          >
+            <ModalCard className="w-full max-w-md rounded-2xl bg-white shadow-xl">
+              <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 px-5 py-4">
+                <h3 className="font-heading font-bold text-tiby-ink">
+                  Hapus Akun
+                </h3>
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-200"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="space-y-4 p-5">
+                <div className="flex items-start gap-3 rounded-xl border border-red-100 bg-red-50 p-3">
+                  <Trash2 className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+                  <p className="text-xs leading-relaxed text-red-800">
+                    Akun{" "}
+                    <span className="font-semibold">@{deleteTarget.username}</span>{" "}
+                    akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.
+                    {deleteTarget.isDemo &&
+                      " Seluruh sesi demo beserta akun dan datanya juga akan diakhiri."}
+                  </p>
+                </div>
+                <div className="flex gap-3 border-t border-gray-100 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setDeleteTarget(null)}
+                    className="h-11 flex-1 rounded-xl border border-gray-200 text-xs font-semibold hover:bg-gray-50"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deleteSubmitting}
+                    onClick={async () => {
+                      setDeleteSubmitting(true);
+                      try {
+                        await usersApi.deleteUser(deleteTarget.id);
+                        notify.success(
+                          "Berhasil",
+                          deleteTarget.isDemo
+                            ? "Sesi demo telah diakhiri dan akun demo dihapus."
+                            : "Akun berhasil dihapus.",
+                        );
+                        setDeleteTarget(null);
+                        if (users.length === 1 && page > 1) setPage(page - 1);
+                        else fetchData();
+                      } catch (err: unknown) {
+                        notify.error(
+                          "Gagal",
+                          errorMessage(err, "Tidak dapat menghapus akun."),
+                        );
+                      } finally {
+                        setDeleteSubmitting(false);
+                      }
+                    }}
+                    className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {deleteSubmitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                    Hapus Akun
+                  </button>
+                </div>
+              </div>
             </ModalCard>
           </ModalOverlay>
         )}

@@ -17,9 +17,12 @@ export class StorageService {
   private readonly client: S3Client;
   private readonly bucket: string;
   private readonly publicBaseUrl: string;
+  private readonly profilePrefix: string;
 
   constructor(config: ConfigService) {
     this.bucket = config.get<string>("S3_BUCKET")!;
+    this.profilePrefix =
+      config.get<string>("S3_PROFILE_PREFIX") || "profile-pictures/";
     const endpoint = config.get<string>("S3_ENDPOINT")!;
     this.publicBaseUrl =
       config.get<string>("S3_PUBLIC_BASE_URL") || `${endpoint}/${this.bucket}`;
@@ -55,5 +58,12 @@ export class StorageService {
 
   buildPublicUrl(key: string): string {
     return `${this.publicBaseUrl.replace(/\/+$/, "")}/${key}`;
+  }
+
+  /** Extracts the S3 key from a stored profile URL; null when it is not ours. */
+  keyFromPublicUrl(url: string | null | undefined): string | null {
+    if (!url) return null;
+    const idx = url.indexOf(this.profilePrefix);
+    return idx === -1 ? null : url.slice(idx);
   }
 }

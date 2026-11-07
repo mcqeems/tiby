@@ -110,6 +110,11 @@ export default function RecipientPicker({
               <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider text-tiby-teal-600">
                 {roleLabel(user.role)}
               </span>
+              {user.isDemo && (
+                <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-700">
+                  Demo
+                </span>
+              )}
               <button
                 type="button"
                 onClick={() => remove(user.id)}
@@ -160,6 +165,11 @@ export default function RecipientPicker({
                         {user.facility ? ` · ${user.facility}` : ""}
                       </span>
                     </span>
+                    {user.isDemo && (
+                      <span className="shrink-0 rounded-md bg-amber-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-700">
+                        Demo
+                      </span>
+                    )}
                     <span className="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-gray-600">
                       {user.role}
                     </span>

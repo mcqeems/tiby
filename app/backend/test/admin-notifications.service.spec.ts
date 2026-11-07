@@ -116,6 +116,32 @@ describe("AdminNotificationsService", () => {
     });
   });
 
+  it("delivers an alert to a demo account like a regular user", async () => {
+    const demoUser = {
+      ...pasien,
+      id: "demo-pasien",
+      username: "demo_x_pasien",
+      demoSessionId: "demo-1",
+    };
+    const { service, notificationsService } = makeService([demoUser]);
+
+    const res = await service.send(
+      { id: "admin-1", role: "ADMIN" },
+      { ...baseDto, recipientUserIds: ["demo-pasien"], channels: ["ALERT"] },
+    );
+
+    expect(notificationsService.createMany).toHaveBeenCalledWith(
+      ["demo-pasien"],
+      expect.objectContaining({ type: "ADMIN_SIMULATION" }),
+    );
+    expect(res.summary).toEqual({
+      recipients: 1,
+      delivered: 1,
+      skipped: 0,
+      failed: 0,
+    });
+  });
+
   it("writes a facility alert for nakes and skips nakes without a facility", async () => {
     const withFacility = makeService([nakes]);
     const res = await withFacility.service.send(

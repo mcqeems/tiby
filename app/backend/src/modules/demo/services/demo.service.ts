@@ -25,6 +25,7 @@ import { DailyCheckIn } from "../../check-ins/entities/daily-check-in.entity.js"
 import { ConsentRecord } from "../../consent/entities/consent-record.entity.js";
 import { UserNotification } from "../../notifications/entities/user-notification.entity.js";
 import { AuditLog } from "../../internal/audit/entities/audit-log.entity.js";
+import { StorageService } from "../../internal/storage/storage.service.js";
 
 export const DEMO_COOKIE = "tiby_demo";
 export const DEMO_TTL_MS = 2 * 60 * 60 * 1000;
@@ -95,6 +96,7 @@ export class DemoService {
     private readonly notificationRepo: Repository<UserNotification>,
     @InjectRepository(AuditLog)
     private readonly auditRepo: Repository<AuditLog>,
+    private readonly storageService: StorageService,
   ) {}
 
   readToken(req: { headers?: unknown }): string | null {
@@ -360,6 +362,38 @@ export class DemoService {
     return { role, setCookie };
   }
 
+  /**
+   * Keeps all three personas and the /enter credential in sync when a demo
+   * password is reset or changed; otherwise role switching breaks.
+   */
+  async syncPersonaPassword(
+    demoSessionId: string,
+    userId: string,
+    rawPassword: string,
+    passwordHash: string,
+  ): Promise<void> {
+    const demo = await this.demoRepo.findOneBy({ id: demoSessionId });
+    if (!demo) return;
+    const personaIds = [
+      demo.patientUserId,
+      demo.pmoUserId,
+      demo.nakesUserId,
+    ].filter(Boolean);
+    if (!personaIds.includes(userId)) return;
+
+    const ctx = await auth.$context;
+    for (const personaId of personaIds) {
+      await ctx.internalAdapter.updatePassword(personaId, passwordHash);
+    }
+    await this.demoRepo.update(demo.id, { passwordEncrypted: rawPassword });
+  }
+
+  /** Deletes a whole demo when an admin removes one of its accounts. */
+  async deleteSessionById(demoSessionId: string): Promise<void> {
+    const demo = await this.demoRepo.findOneBy({ id: demoSessionId });
+    if (demo) await this.deleteDemo(demo);
+  }
+
   async end(token: string | null): Promise<DemoEndResponse> {
     if (!token) return { ok: true };
     const demo = await this.demoRepo.findOneBy({
@@ -393,13 +427,15 @@ export class DemoService {
     // column and a varchar column without risking a uuid cast error.
     const inFacility = await this.userRepo.find({
       where: { facilityId: demo.facilityId },
-      select: { id: true },
+      select: { id: true, image: true },
     });
     const inSession = await this.userRepo.find({
       where: { demoSessionId: demo.id },
-      select: { id: true },
+      select: { id: true, image: true },
     });
-    const userIds = [...new Set([...inFacility, ...inSession].map((u) => u.id))];
+    const users = new Map<string, AuthUser>();
+    for (const user of [...inFacility, ...inSession]) users.set(user.id, user);
+    const userIds = [...users.keys()];
     const plans = await this.planRepo.find({
       where: { facilityId: demo.facilityId },
       select: { id: true },
@@ -421,5 +457,24 @@ export class DemoService {
     await this.userRepo.delete({ demoSessionId: demo.id });
     await this.facilityRepo.delete({ id: demo.facilityId });
     await this.demoRepo.delete({ id: demo.id });
+    await this.deleteProfileImages(
+      [...users.values()].map((user) => user.image),
+    );
+  }
+
+  private async deleteProfileImages(
+    images: Array<string | null | undefined>,
+  ): Promise<void> {
+    for (const image of images) {
+      const key = this.storageService.keyFromPublicUrl(image);
+      if (!key) continue;
+      try {
+        await this.storageService.deleteObject(key);
+      } catch (err) {
+        this.logger.warn(
+          `Could not delete demo image ${key}: ${(err as Error).message}`,
+        );
+      }
+    }
   }
 }

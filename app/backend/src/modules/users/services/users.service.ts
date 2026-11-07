@@ -5,13 +5,18 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, In, IsNull, Repository, type FindOptionsWhere } from 'typeorm';
+import { ILike, In, Repository, type FindOptionsWhere } from 'typeorm';
 import { createHash, randomUUID } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
 import { AuthUser } from '../../../auth/entities/auth-user.entity.js';
 import { Facility } from '../../facilities/entities/facilities.entity.js';
 import { AuditLog } from '../../internal/audit/entities/audit-log.entity.js';
 import { StorageService } from '../../internal/storage/storage.service.js';
+import { TreatmentPlan } from '../../patients/entities/treatment-plan.entity.js';
+import { DailyCheckIn } from '../../check-ins/entities/daily-check-in.entity.js';
+import { UserNotification } from '../../notifications/entities/user-notification.entity.js';
+import { FamilyContact } from '../../family-contacts/entities/family-contact.entity.js';
+import { DemoService } from '../../demo/services/demo.service.js';
 import { auth } from '../../../auth/auth.config.js';
 import type {
   CreateUserDto,
@@ -21,6 +26,7 @@ import type {
   ListUsersQuery,
   UserListResponse,
   UserSummary,
+  DeleteUserResponse,
 } from '@tiby/ts-shared';
 
 function hashPhone(phone: string): string {
@@ -84,8 +90,17 @@ export class UsersService {
     private readonly facilityRepo: Repository<Facility>,
     @InjectRepository(AuditLog)
     private readonly auditRepo: Repository<AuditLog>,
+    @InjectRepository(TreatmentPlan)
+    private readonly planRepo: Repository<TreatmentPlan>,
+    @InjectRepository(DailyCheckIn)
+    private readonly checkInRepo: Repository<DailyCheckIn>,
+    @InjectRepository(UserNotification)
+    private readonly notificationRepo: Repository<UserNotification>,
+    @InjectRepository(FamilyContact)
+    private readonly familyContactRepo: Repository<FamilyContact>,
     private readonly storageService: StorageService,
     private readonly config: ConfigService,
+    private readonly demoService: DemoService,
   ) {}
 
   async createUser(
@@ -195,6 +210,7 @@ export class UsersService {
       whatsappNumber: dto.whatsappNumber,
       facilityId: targetFacilityId,
       facility: targetFacilityName,
+      isDemo: false,
     };
   }
 
@@ -233,6 +249,14 @@ export class UsersService {
 
     const newHash = await ctx.password.hash(dto.newPassword);
     await ctx.internalAdapter.updatePassword(callerUserId, newHash);
+    if (user.demoSessionId) {
+      await this.demoService.syncPersonaPassword(
+        user.demoSessionId,
+        callerUserId,
+        dto.newPassword,
+        newHash,
+      );
+    }
 
     await this.auditRepo.save(
       this.auditRepo.create({
@@ -263,18 +287,17 @@ export class UsersService {
 
     assertCanManage(caller, targetUser);
 
-    // Demo accounts are deleted with their session; changing their password
-    // would break the /api/demo/enter handshake for the visitor.
-    if (targetUser.demoSessionId) {
-      throw new ForbiddenException({
-        code: 'FORBIDDEN',
-        message: 'Tidak tersedia dalam mode demo',
-      });
-    }
-
     const ctx = await auth.$context;
     const newHash = await ctx.password.hash(dto.newPassword);
     await ctx.internalAdapter.updatePassword(targetUserId, newHash);
+    if (targetUser.demoSessionId) {
+      await this.demoService.syncPersonaPassword(
+        targetUser.demoSessionId,
+        targetUserId,
+        dto.newPassword,
+        newHash,
+      );
+    }
 
     await this.auditRepo.save(
       this.auditRepo.create({
@@ -296,6 +319,121 @@ export class UsersService {
     };
   }
 
+  async deleteUser(
+    caller: { id: string; role: string },
+    targetUserId: string,
+  ): Promise<DeleteUserResponse> {
+    const targetUser = await this.userRepo.findOneBy({ id: targetUserId });
+    if (!targetUser) {
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Target user not found',
+      });
+    }
+
+    if (targetUser.id === caller.id) {
+      throw new ForbiddenException({
+        code: 'FORBIDDEN',
+        message: 'You cannot delete your own account',
+      });
+    }
+
+    // Demo accounts are deleted as a whole session so no persona is left
+    // dangling; the usual last-admin/data guards do not apply to them.
+    if (targetUser.demoSessionId) {
+      await this.demoService.deleteSessionById(targetUser.demoSessionId);
+    } else {
+      if (targetUser.role === 'ADMIN') {
+        const adminCount = await this.userRepo.count({
+          where: { role: 'ADMIN' },
+        });
+        if (adminCount <= 1) {
+          throw new BadRequestException({
+            code: 'BAD_REQUEST',
+            message: 'The last admin account cannot be deleted',
+          });
+        }
+      }
+
+      // Deleting a nakes cascades into registered plans; block instead.
+      if (targetUser.role === 'NAKES') {
+        const planCount = await this.planRepo.count({
+          where: { registeredByNakesId: targetUserId },
+        });
+        if (planCount > 0) {
+          throw new BadRequestException({
+            code: 'BAD_REQUEST',
+            message:
+              'Cannot delete a nakes account that registered treatment plans',
+          });
+        }
+      }
+
+      // Check-ins authored by a PMO are part of the patient's record.
+      if (targetUser.role === 'PMO') {
+        const checkInCount = await this.checkInRepo.count({
+          where: { reportedByUserId: targetUserId },
+        });
+        if (checkInCount > 0) {
+          throw new BadRequestException({
+            code: 'BAD_REQUEST',
+            message: 'Cannot delete a pmo account that reported check-ins',
+          });
+        }
+      }
+
+      // Family contacts belong to the patient; deleting the staff member who
+      // added them would cascade those records away.
+      if (targetUser.role !== 'PASIEN') {
+        const contactCount = await this.familyContactRepo.count({
+          where: { addedByUserId: targetUserId },
+        });
+        if (contactCount > 0) {
+          throw new BadRequestException({
+            code: 'BAD_REQUEST',
+            message:
+              'Cannot delete an account that added family contacts',
+          });
+        }
+      }
+
+      // user_notifications has no FK; remove rows so no orphan inbox remains.
+      await this.notificationRepo.delete({ recipientUserId: targetUserId });
+      await this.userRepo.delete({ id: targetUserId });
+
+      const imageKey = this.storageService.keyFromPublicUrl(targetUser.image);
+      if (imageKey) {
+        try {
+          await this.storageService.deleteObject(imageKey);
+        } catch {
+          // Best-effort: the account is already deleted.
+        }
+      }
+    }
+
+    await this.auditRepo.save(
+      this.auditRepo.create({
+        actorUserId: caller.id,
+        actorRole: caller.role,
+        action: 'USER_DELETE',
+        targetEntity: 'users',
+        targetId: targetUserId,
+        metadataJson: {
+          targetRole: targetUser.role,
+          targetUsername: targetUser.username,
+          demoSessionId: targetUser.demoSessionId,
+        },
+      }),
+    );
+
+    return {
+      success: true,
+      message: targetUser.demoSessionId
+        ? 'Demo session deleted'
+        : `User '${targetUser.username}' successfully deleted`,
+    };
+  }
+
   async updateUser(
     caller: { id: string; role: string; facilityId?: string | null },
     targetUserId: string,
@@ -314,16 +452,16 @@ export class UsersService {
 
     assertCanManage(caller, targetUser);
 
-    // Demo accounts must keep their role and session; moving them out of the
-    // demo facility or changing the persona role would break the demo.
+    // Demo personas may change role, but must stay in the demo facility:
+    // moving them out would let cleanup cascade into real facilities.
     if (
       targetUser.demoSessionId &&
-      ((dto.role !== undefined && dto.role !== targetUser.role) ||
-        (dto.facilityId !== undefined && dto.facilityId !== targetUser.facilityId))
+      dto.facilityId !== undefined &&
+      dto.facilityId !== targetUser.facilityId
     ) {
       throw new ForbiddenException({
         code: 'FORBIDDEN',
-        message: 'Tidak tersedia dalam mode demo',
+        message: 'Akun demo tidak dapat dipindahkan ke faskes lain',
       });
     }
 
@@ -439,8 +577,6 @@ export class UsersService {
       ...(caller.role === 'NAKES' ? { facilityId: caller.facilityId! } : {}),
       ...(query.facilityId ? { facilityId: query.facilityId } : {}),
       ...(query.role?.length ? { role: In(query.role) } : {}),
-      // Demo accounts are ephemeral; keep them out of the ADMIN global list.
-      ...(caller.role === 'ADMIN' ? { demoSessionId: IsNull() } : {}),
     };
     const term = query.search?.trim();
     const where: FindOptionsWhere<AuthUser>[] = term
@@ -470,6 +606,7 @@ export class UsersService {
         image: user.image,
         facilityId: user.facilityId,
         facility: user.facility?.name ?? null,
+        isDemo: Boolean(user.demoSessionId),
       })),
       total,
       page,
@@ -498,6 +635,7 @@ export class UsersService {
       whatsappNumber: user.whatsappEncrypted!,
       facilityId: user.facilityId,
       facility: user.facility?.name ?? null,
+      isDemo: Boolean(user.demoSessionId),
     };
   }
 
@@ -513,14 +651,8 @@ export class UsersService {
       });
     }
 
-    // Demo sessions are wiped after 2h; an S3 object would survive the wipe.
-    if (user.demoSessionId) {
-      throw new ForbiddenException({
-        code: 'FORBIDDEN',
-        message: 'Tidak tersedia dalam mode demo',
-      });
-    }
-
+    // Demo sessions are wiped after 2h, and DemoService.deleteDemo removes
+    // their uploaded images from S3 as well.
     const ext = PROFILE_PICTURE_EXTENSIONS[file.mimetype];
     if (!ext) {
       throw new BadRequestException({
@@ -540,7 +672,7 @@ export class UsersService {
     });
 
     if (user.image) {
-      const oldKey = this.extractStorageKey(user.image, prefix);
+      const oldKey = this.storageService.keyFromPublicUrl(user.image);
       if (oldKey) await this.storageService.deleteObject(oldKey);
     }
 
@@ -561,11 +693,5 @@ export class UsersService {
     );
 
     return { imageUrl };
-  }
-
-  private extractStorageKey(url: string, prefix: string): string | null {
-    const idx = url.indexOf(prefix);
-    if (idx === -1) return null;
-    return url.slice(idx);
   }
 }

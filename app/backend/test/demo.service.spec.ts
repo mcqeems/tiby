@@ -27,6 +27,7 @@ describe("DemoService Unit Tests", () => {
   let consentRepo: any;
   let notificationRepo: any;
   let auditRepo: any;
+  let storageService: any;
 
   beforeEach(() => {
     demoRepo = mockRepo();
@@ -38,6 +39,10 @@ describe("DemoService Unit Tests", () => {
     consentRepo = mockRepo();
     notificationRepo = mockRepo();
     auditRepo = mockRepo();
+    storageService = {
+      keyFromPublicUrl: vi.fn().mockReturnValue(null),
+      deleteObject: vi.fn().mockResolvedValue(undefined),
+    };
     service = new DemoService(
       demoRepo,
       userRepo,
@@ -48,6 +53,7 @@ describe("DemoService Unit Tests", () => {
       consentRepo,
       notificationRepo,
       auditRepo,
+      storageService,
     );
     vi.restoreAllMocks();
   });
@@ -119,6 +125,81 @@ describe("DemoService Unit Tests", () => {
     const res = await service.cleanupExpired();
     expect(res.cleaned).toBe(0);
     expect(demoRepo.delete).not.toHaveBeenCalled();
+  });
+
+  it("deletes demo profile images from S3 during cleanup", async () => {
+    demoRepo.find.mockResolvedValue([
+      { id: "demo-old", facilityId: "fac-old", expiresAt: new Date(0) },
+    ]);
+    userRepo.find.mockResolvedValue([
+      {
+        id: "u-1",
+        image: "https://cdn.example/profile-pictures/u-1/a.jpg",
+      },
+    ]);
+    planRepo.find.mockResolvedValue([]);
+    storageService.keyFromPublicUrl.mockReturnValue(
+      "profile-pictures/u-1/a.jpg",
+    );
+
+    await service.cleanupExpired();
+
+    expect(storageService.deleteObject).toHaveBeenCalledWith(
+      "profile-pictures/u-1/a.jpg",
+    );
+  });
+
+  it("syncs all persona passwords and the demo credential", async () => {
+    demoRepo.findOneBy.mockResolvedValue({
+      id: "demo-1",
+      patientUserId: "p-1",
+      pmoUserId: "m-1",
+      nakesUserId: "n-1",
+    });
+    const ctx = await auth.$context;
+    const updatePassword = vi
+      .spyOn(ctx.internalAdapter, "updatePassword")
+      .mockResolvedValue(undefined as any);
+
+    await service.syncPersonaPassword("demo-1", "p-1", "new-password", "hash-1");
+
+    expect(updatePassword).toHaveBeenCalledTimes(3);
+    expect(updatePassword).toHaveBeenCalledWith("p-1", "hash-1");
+    expect(updatePassword).toHaveBeenCalledWith("m-1", "hash-1");
+    expect(updatePassword).toHaveBeenCalledWith("n-1", "hash-1");
+    expect(demoRepo.update).toHaveBeenCalledWith("demo-1", {
+      passwordEncrypted: "new-password",
+    });
+  });
+
+  it("ignores password sync for non-persona demo users", async () => {
+    demoRepo.findOneBy.mockResolvedValue({
+      id: "demo-1",
+      patientUserId: "p-1",
+      pmoUserId: "m-1",
+      nakesUserId: "n-1",
+    });
+    const ctx = await auth.$context;
+    const updatePassword = vi.spyOn(ctx.internalAdapter, "updatePassword");
+
+    await service.syncPersonaPassword("demo-1", "extra-1", "new-password", "hash-1");
+
+    expect(updatePassword).not.toHaveBeenCalled();
+    expect(demoRepo.update).not.toHaveBeenCalled();
+  });
+
+  it("deletes a demo session by id for admin account deletion", async () => {
+    demoRepo.findOneBy.mockResolvedValue({
+      id: "demo-1",
+      facilityId: "fac-1",
+    });
+    userRepo.find.mockResolvedValue([]);
+    planRepo.find.mockResolvedValue([]);
+
+    await service.deleteSessionById("demo-1");
+
+    expect(facilityRepo.delete).toHaveBeenCalledWith({ id: "fac-1" });
+    expect(demoRepo.delete).toHaveBeenCalledWith({ id: "demo-1" });
   });
 
   it("reports live sessions, the cap, and which session is mine", async () => {

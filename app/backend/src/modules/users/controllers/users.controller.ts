@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -29,6 +30,7 @@ import {
   UpdateUserSchema,
   ListUsersQuerySchema,
   UploadProfilePictureResponseSchema,
+  DeleteUserResponseSchema,
   type CreateUserDto,
   type ChangeOwnPasswordDto,
   type ResetUserPasswordDto,
@@ -38,6 +40,7 @@ import {
   type UserListResponse,
   type UserSummary,
   type UserRole,
+  type DeleteUserResponse,
 } from '@tiby/ts-shared';
 
 @Controller('users')
@@ -150,5 +153,16 @@ export class UsersController {
   ): Promise<{ success: boolean; message: string }> {
     const caller = this.extractCaller(req);
     return this.usersService.resetUserPassword(caller, targetUserId, body);
+  }
+
+  @Delete(':id')
+  @Roles(['ADMIN'])
+  @SerializeOptions({ schema: DeleteUserResponseSchema })
+  async deleteUser(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') targetUserId: string,
+  ): Promise<DeleteUserResponse> {
+    const caller = this.extractCaller(req);
+    return this.usersService.deleteUser(caller, targetUserId);
   }
 }

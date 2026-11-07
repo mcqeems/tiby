@@ -200,7 +200,14 @@ export default function FacilityDetail() {
                 {staff.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50/50">
                     <td className="px-5 py-3.5 sm:px-6">
-                      <p className="font-semibold text-tiby-ink">{user.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-tiby-ink">{user.name}</p>
+                        {user.isDemo && (
+                          <span className="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-700">
+                            Demo
+                          </span>
+                        )}
+                      </div>
                       <p className="font-mono text-xs text-tiby-muted">
                         @{user.username}
                       </p>

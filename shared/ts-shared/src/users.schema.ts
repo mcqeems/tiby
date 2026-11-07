@@ -54,8 +54,16 @@ export const UserSummarySchema = z.object({
   whatsappNumber: z.string().optional(),
   facilityId: z.string().nullable().optional(),
   facility: z.string().nullable().optional(),
+  /** True for the ephemeral accounts created by a demo session. */
+  isDemo: z.boolean().optional(),
 });
 export type UserSummary = z.infer<typeof UserSummarySchema>;
+
+export const DeleteUserResponseSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+});
+export type DeleteUserResponse = z.infer<typeof DeleteUserResponseSchema>;
 
 export const ListUsersQuerySchema = PaginationQuerySchema.extend({
   /** Comma-separated roles, e.g. `role=NAKES,ADMIN`. */

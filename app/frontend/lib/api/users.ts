@@ -16,6 +16,7 @@ export interface UserItem {
   facilityId?: string | null;
   facility?: string | null;
   whatsappNumber?: string;
+  isDemo?: boolean;
 }
 
 export interface CreateUserPayload {
@@ -102,6 +103,13 @@ export const usersApi = {
       method: "PATCH",
       body: JSON.stringify(dto),
     });
+  },
+
+  async deleteUser(userId: string) {
+    return apiFetch<{ success: boolean; message: string }>(
+      `/api/users/${userId}`,
+      { method: "DELETE" },
+    );
   },
 
   async uploadProfilePicture(file: File) {
