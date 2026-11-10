@@ -35,8 +35,10 @@ services:
     environment:
       NARAROUTER_API_TOKEN: ${NARAROUTER_API_TOKEN}
       NARAROUTER_API_KEY: ${NARAROUTER_API_KEY}
-      NARAROUTER_BASE_URL: https://api.meta.ai/v1
-      TIBY_LLM_MODEL: muse-spark-1.3-contributor
+      # Provider endpoint & model come from the Coolify env vars so the
+      # LLM provider can be switched from the dashboard without a commit.
+      NARAROUTER_BASE_URL: ${NARAROUTER_BASE_URL}
+      TIBY_LLM_MODEL: ${TIBY_LLM_MODEL}
       GROQ_API_KEY: ${GROQ_API_KEY}
       FISH_AUDIO_API_TOKEN: ${FISH_AUDIO_API_TOKEN}
       FISH_API_KEY: ${FISH_API_KEY}
