@@ -16,6 +16,7 @@ from contracts import OcrOnboardingDraft
 from onboarding_ocr.constants import (
     AMBIGUOUS_DATE_CONFIDENCE,
     COMPILED_LABELS,
+    DATE_LABEL_TOKENS,
     DRAFT_FIELDS,
     ISO_DATE_PATTERN,
     MIN_LINE_SCORE,
@@ -38,6 +39,79 @@ class DateRead(NamedTuple):
     value: str | None
     ambiguous: bool
     reason: str | None
+
+
+def _within_one_edit(word: str, target: str) -> bool:
+    """True when ``word`` is ``target`` with at most one edit.
+
+    One insert, one delete, one substitution, or one adjacent transposition —
+    the four mistakes a CTC recogniser actually makes. Words shorter than five
+    characters are rejected outright so a coincidental near-match (``mulia``,
+    ``selatan``) cannot be promoted into a date label.
+    """
+    a, b = word.lower(), target.lower()
+    if a == b:
+        return True
+    # Guard on the *target* length, not the word: 'mula' -> 'mulai' is a single
+    # insertion in a five-letter canonical term, while a four-letter target
+    # ('muia' -> 'mulai' is two inserts) stays out of reach on purpose.
+    if len(b) < 5 or abs(len(a) - len(b)) > 1:
+        return False
+    if len(a) == len(b):
+        diff = [i for i in range(len(a)) if a[i] != b[i]]
+        if len(diff) == 1:
+            return True
+        if len(diff) == 2 and diff[1] == diff[0] + 1:
+            i, j = diff
+            return a[i] == b[j] and a[j] == b[i]
+        return False
+    if len(a) > len(b):
+        a, b = b, a
+    i = j = edits = 0
+    while i < len(a) and j < len(b):
+        if a[i] == b[j]:
+            i += 1
+            j += 1
+            continue
+        edits += 1
+        if edits > 1:
+            return False
+        j += 1
+    return True
+
+
+_DATE_VALUE = re.compile(r"\d{1,4}\s*[/-]\s*\d{1,2}\s*[/-]\s*\d{2,4}")
+
+
+def repair_detected_labels(lines: list[OcrLine]) -> list[OcrLine]:
+    """Correct a misspelled date label so the strict patterns still match.
+
+    The smaller recognition model reads 'Selesai' as 'Selesat' and 'Mulai' as
+    'Muia'. The label regex then misses, and the field is lost entirely rather
+    than misread. This rewrites only the label word on a line that already
+    looks like a labelled date, so a stray word cannot become a field.
+
+    The value is never touched: it still goes through the same validation and
+    the same ambiguity check as before.
+    """
+    fixed: list[OcrLine] = []
+    for line in lines:
+        text = line.text
+        if _DATE_VALUE.search(text):
+            for token, canonical in DATE_LABEL_TOKENS.values():
+                if re.search(canonical, text, re.IGNORECASE):
+                    continue
+                for word in re.findall(r"[A-Za-z]{4,}", text):
+                    if _within_one_edit(word, token):
+                        text = re.sub(
+                            re.escape(word), token, text, count=1, flags=re.IGNORECASE
+                        )
+                        break
+                else:
+                    continue
+                break
+        fixed.append(type(line)(text, line.score))
+    return fixed
 
 
 def segment(line: str) -> list[tuple[str | None, str]]:
@@ -175,6 +249,7 @@ def _next_row_value(lines: list[OcrLine], index: int) -> str:
 
 def parse_onboarding_lines(lines: list[OcrLine]) -> OcrOnboardingDraft:
     """Build a draft from detected rows, each carrying its own OCR score."""
+    lines = repair_detected_labels(lines)
     reads: dict[str, tuple[str, float]] = {}
     for index, line in enumerate(lines):
         if line.score < MIN_LINE_SCORE:
