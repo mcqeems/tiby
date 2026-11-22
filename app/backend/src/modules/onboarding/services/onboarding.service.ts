@@ -1,4 +1,11 @@
-import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  Logger,
+  ServiceUnavailableException,
+  GatewayTimeoutException,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { createHash, randomBytes } from "node:crypto";
@@ -31,8 +38,30 @@ function calculateTargetEndDate(startDateStr: string, days = 180): string {
   return date.toISOString().slice(0, 10);
 }
 
+/**
+ * How long the OCR call may take before we give up.
+ *
+ * The previous 5000ms ceiling was below the real OCR time on a small CPU-only
+ * host, so a slow-but-successful read was aborted and replaced with fake data.
+ * The AI service is already 2.4x faster than it was; this ceiling leaves room
+ * for a cold page cache on the deployed box without hanging a request forever.
+ */
+const DEFAULT_OCR_TIMEOUT_MS = 20_000;
+
+function resolveOcrTimeoutMs(): number {
+  const raw = process.env.OCR_TIMEOUT_MS;
+  const parsed = raw === undefined ? Number.NaN : Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_OCR_TIMEOUT_MS;
+  }
+  return parsed;
+}
+
 @Injectable()
 export class OnboardingService {
+  private readonly logger = new Logger(OnboardingService.name);
+  private readonly ocrTimeoutMs = resolveOcrTimeoutMs();
+
   constructor(
     @InjectRepository(AuthUser)
     private readonly userRepo: Repository<AuthUser>,
@@ -274,6 +303,7 @@ export class OnboardingService {
     const targetEndDate = calculateTargetEndDate(today, 180);
 
     if (!file) {
+      // No image at all: this is the manual-entry starting point, not OCR.
       return {
         patientName: null,
         regimenCode: "FDC-4",
@@ -285,35 +315,66 @@ export class OnboardingService {
       };
     }
 
-    // Call FastAPI AI service or fallback
+    // A card image was uploaded, so the caller expects the card's own values.
+    // Returning a canned FDC-4 template here would be indistinguishable from a
+    // successful read at confidence 0.85, and a Nakes could save it as fact.
+    // Refuse instead: an error the caller can show is safe, fake data is not.
     const aiServiceUrl = process.env.AI_SERVICE_URL || "http://localhost:8000";
+    const timeoutMs = this.ocrTimeoutMs;
+
+    let res: Response;
     try {
       const formData = new FormData();
       const blob = new Blob([new Uint8Array(file.buffer)], { type: file.mimetype });
       formData.append("cardImage", blob, file.originalname);
 
-      const res = await fetch(`${aiServiceUrl}/ocr/extract`, {
+      res = await fetch(`${aiServiceUrl}/ocr/extract`, {
         method: "POST",
         body: formData,
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(timeoutMs),
       });
-
-      if (res.ok) {
-        return (await res.json()) as OcrOnboardingDraft;
+    } catch (err: unknown) {
+      const timedOut =
+        err instanceof Error &&
+        (err.name === "TimeoutError" || err.name === "AbortError");
+      const reason = err instanceof Error ? err.message : String(err);
+      this.logger.warn(
+        `OCR request failed (${timedOut ? `timeout ${timeoutMs}ms` : reason}).`,
+      );
+      if (timedOut) {
+        throw new GatewayTimeoutException({
+          code: "AI_TIMEOUT",
+          message:
+            "Pembacaan kartu memakan waktu terlalu lama. Coba lagi atau masukkan data secara manual.",
+        });
       }
-    } catch {
-      // Graceful fallback when FastAPI is offline in test or local dev
+      throw new ServiceUnavailableException({
+        code: "AI_UNAVAILABLE",
+        message:
+          "Layanan pembaca kartu sedang tidak tersedia. Masukkan data secara manual.",
+      });
     }
 
-    return {
-      patientName: null,
-      regimenCode: "FDC-4",
-      dailyPillQuota: 4,
-      startDate: today,
-      targetEndDate,
-      confidence: 0.85,
-      rawText: `Scanned file: ${file.originalname}`,
-    };
+    if (!res.ok) {
+      // The AI service is up but could not read the image (422), rejected the
+      // upload (413/415), or failed (5xx). Pass that along rather than
+      // substituting values the card never contained.
+      this.logger.warn(`OCR upstream returned ${res.status}.`);
+      if (res.status === 413 || res.status === 415 || res.status === 422) {
+        throw new BadRequestException({
+          code: "OCR_UNREADABLE",
+          message:
+            "Foto kartu tidak bisa dibaca. Pastikan gambar jelas dan tidak terlalu besar.",
+        });
+      }
+      throw new ServiceUnavailableException({
+        code: "AI_UNAVAILABLE",
+        message:
+          "Layanan pembaca kartu sedang tidak tersedia. Masukkan data secara manual.",
+      });
+    }
+
+    return (await res.json()) as OcrOnboardingDraft;
   }
 
 }
