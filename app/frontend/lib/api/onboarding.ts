@@ -1,4 +1,5 @@
 import { apiFetch } from "./client";
+import { compressForOcr } from "../ocr-image";
 import type {
   OnboardingPayload,
   OnboardingCredentials,
@@ -14,8 +15,13 @@ export const onboardingApi = {
   },
 
   async ocrExtract(file: File | Blob): Promise<OcrOnboardingResult> {
+    // Shrink before sending: a phone photo is 2-3 MB and crosses two hops.
+    // See lib/ocr-image.ts — this returns the original untouched when
+    // re-encoding would not help or is not supported.
+    const upload = await compressForOcr(file);
+
     const formData = new FormData();
-    formData.append("cardImage", file); // Pastikan key 'cardImage' sesuai backend
+    formData.append("cardImage", upload.blob, upload.filename); // key 'cardImage' must match backend
     return apiFetch<OcrOnboardingResult>("/api/faskes/onboarding/ocr", {
       method: "POST",
       body: formData,

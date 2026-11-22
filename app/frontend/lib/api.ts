@@ -15,6 +15,7 @@ import type {
   OnboardingCredentials,
   OcrOnboardingDraft,
 } from "@tiby/ts-shared";
+import { compressForOcr } from "./ocr-image";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -207,8 +208,11 @@ export const api = {
     },
 
     async ocrExtract(file: File | Blob): Promise<OcrOnboardingDraft> {
+      // Shrink before sending. See lib/ocr-image.ts; returns the original
+      // untouched when re-encoding would not help or is not supported.
+      const upload = await compressForOcr(file);
       const formData = new FormData();
-      formData.append("cardImage", file);
+      formData.append("cardImage", upload.blob, upload.filename);
       return apiFetch<OcrOnboardingDraft>("/api/faskes/onboarding/ocr", {
         method: "POST",
         body: formData,
