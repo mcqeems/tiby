@@ -59,6 +59,17 @@ REGIMEN_PATTERN = re.compile(r"([A-Z0-9][A-Z0-9./-]{0,19})", re.IGNORECASE)
 ISO_DATE_PATTERN = re.compile(r"\b(\d{4})-(\d{1,2})-(\d{1,2})\b")
 NUMERIC_DATE_PATTERN = re.compile(r"\b(\d{1,2})\s*[/-]\s*(\d{1,2})\s*[/-]\s*(\d{4})\b")
 
+DATE_LABEL_TOKENS: dict[str, tuple[str, str]] = {
+    "startDate": ("mulai", "tanggal mulai"),
+    "targetEndDate": ("selesai", "tanggal selesai"),
+}
+"""Canonical label word per date field, plus the full label to rewrite to.
+
+Read by ``card_parser.repair_detected_labels``. The ``tiny`` recognition model
+reads 'Selesai' as 'Selesat' and 'Mulai' as 'Muia' often enough to matter, and
+an unmatched label loses the field entirely rather than misreading it.
+"""
+
 
 MODEL_DIR_ENV = "TIBY_OCR_MODEL_DIR"
 MODEL_LOCK = Path(__file__).with_name("models.lock.json")
@@ -70,7 +81,7 @@ RAPIDOCR_PARAMS: dict[str, str] = {
     "Det.ocr_version": "PPOCRV6",
     "Rec.engine_type": "ONNXRUNTIME",
     "Rec.lang_type": "id",
-    "Rec.model_type": "SMALL",
+    "Rec.model_type": "TINY",
     "Rec.ocr_version": "PPOCRV6",
     "Cls.engine_type": "ONNXRUNTIME",
     "Cls.lang_type": "multi",

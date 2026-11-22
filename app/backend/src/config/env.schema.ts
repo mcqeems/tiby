@@ -19,6 +19,11 @@ export const EnvSchema = z.object({
 
   AI_SERVICE_URL: z.string().default("http://localhost:8000"),
 
+  // Ceiling for one OCR round trip to the AI service, in milliseconds. Raise it
+  // on a slow CPU-only host; a value below the real OCR time aborts a
+  // successful read. See resolveOcrTimeoutMs in the onboarding service.
+  OCR_TIMEOUT_MS: z.coerce.number().int().positive().default(20000),
+
   // Comma-separated browser origins allowed in production (CORS + prod deployments).
   WEB_URL: z.string().default("http://localhost:3000"),
 

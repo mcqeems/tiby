@@ -261,17 +261,99 @@ describe("OnboardingService Unit Tests", () => {
       expect(draft.patientName).toBeNull();
     });
 
-    it("returns scanned fallback draft when file is provided and AI service is unreachable", async () => {
+    it("refuses instead of inventing a draft when the AI service is unreachable", async () => {
+      // A card image was uploaded, so the caller expects that card's values.
+      // Returning the FDC-4 template with confidence 0.85 would be
+      // indistinguishable from a successful read.
       const mockFile = {
         originalname: "tb_card.jpg",
         mimetype: "image/jpeg",
         buffer: Buffer.from("image-bytes"),
       } as Express.Multer.File;
 
-      const draft = await service.extractOcr(mockFile);
-      expect(draft.regimenCode).toBe("FDC-4");
-      expect(draft.dailyPillQuota).toBe(4);
-      expect(draft.rawText).toContain("tb_card.jpg");
+      const realFetch = globalThis.fetch;
+      globalThis.fetch = vi.fn().mockRejectedValue(
+        Object.assign(new Error("connect ECONNREFUSED"), { name: "TypeError" }),
+      ) as unknown as typeof fetch;
+
+      await expect(service.extractOcr(mockFile)).rejects.toMatchObject({
+        status: 503,
+        response: { code: "AI_UNAVAILABLE" },
+      });
+
+      globalThis.fetch = realFetch;
+    });
+
+    it("reports a timeout as 504, not as fabricated data", async () => {
+      const mockFile = {
+        originalname: "tb_card.jpg",
+        mimetype: "image/jpeg",
+        buffer: Buffer.from("image-bytes"),
+      } as Express.Multer.File;
+
+      const realFetch = globalThis.fetch;
+      globalThis.fetch = vi.fn().mockRejectedValue(
+        Object.assign(new Error("The operation was aborted due to timeout"), {
+          name: "TimeoutError",
+        }),
+      ) as unknown as typeof fetch;
+
+      await expect(service.extractOcr(mockFile)).rejects.toMatchObject({
+        status: 504,
+        response: { code: "AI_TIMEOUT" },
+      });
+
+      globalThis.fetch = realFetch;
+    });
+
+    it("maps an unreadable image to 400 rather than a template draft", async () => {
+      const mockFile = {
+        originalname: "tb_card.png",
+        mimetype: "image/png",
+        buffer: Buffer.from("not-an-image"),
+      } as Express.Multer.File;
+
+      const realFetch = globalThis.fetch;
+      globalThis.fetch = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ code: "INVALID_REQUEST" }), { status: 422 }),
+      ) as unknown as typeof fetch;
+
+      await expect(service.extractOcr(mockFile)).rejects.toMatchObject({
+        status: 400,
+        response: { code: "OCR_UNREADABLE" },
+      });
+
+      globalThis.fetch = realFetch;
+    });
+
+    it("returns the AI service draft unchanged when the call succeeds", async () => {
+      const draft = {
+        patientName: "Siti Aminah",
+        regimenCode: "HRZE",
+        dailyPillQuota: 4,
+        startDate: "2026-04-03",
+        targetEndDate: "2026-10-03",
+        confidence: 0.79,
+        rawText: "KARTU PENGOBATAN TB",
+        fieldConfidence: { patientName: 0.99 },
+        uncertainties: [],
+      };
+      const mockFile = {
+        originalname: "card.png",
+        mimetype: "image/png",
+        buffer: Buffer.from("image-bytes"),
+      } as Express.Multer.File;
+
+      const realFetch = globalThis.fetch;
+      globalThis.fetch = vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(draft), { status: 200 }),
+        ) as unknown as typeof fetch;
+
+      await expect(service.extractOcr(mockFile)).resolves.toEqual(draft);
+
+      globalThis.fetch = realFetch;
     });
   });
 });

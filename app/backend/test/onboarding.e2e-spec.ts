@@ -333,4 +333,20 @@ describe("Phase 2: Auth, Consent, and Faskes Onboarding (e2e)", () => {
     expect(res.body.regimenCode).toBe("FDC-4");
     expect(res.body.dailyPillQuota).toBe(4);
   });
+
+  it("6b. an unreadable card is refused, never replaced with template values", async () => {
+    // A file was uploaded, so the response must describe that card or fail.
+    // A 2xx here with FDC-4/4 would look like a successful read at 0.85.
+    const res = await request(app.getHttpServer())
+      .post("/api/faskes/onboarding/ocr")
+      .set("Cookie", nakesCookie)
+      .attach("cardImage", Buffer.from("not-really-a-png"), {
+        filename: "card.png",
+        contentType: "image/png",
+      });
+
+    expect(res.status).toBeGreaterThanOrEqual(400);
+    expect(res.body.code).toBeDefined();
+    expect(res.body.regimenCode).toBeUndefined();
+  });
 });
