@@ -13,7 +13,7 @@ from providers.base import (
     env_str,
 )
 
-DEFAULT_MODEL = "laguna-s-2.1"
+DEFAULT_MODEL = "muse-spark-1.3-contributor"
 
 
 @dataclass(frozen=True)
@@ -89,7 +89,9 @@ class NaraRouterExtractor:
     """Check-in fact extraction through the NaraRouter chat-completions API.
 
     Named after the provider, not the model: ``TIBY_LLM_MODEL`` picks the model
-    (``laguna-s-2.1`` by default) and can change without touching this class.
+    (``muse-spark-1.3-contributor`` by default) and can change without touching
+    this class. The default is the same model the deploy compose files use, so a
+    container without ``TIBY_LLM_MODEL`` set does not silently differ from dev.
     """
 
     def __init__(self, client: NaraRouterClient | None = None):
