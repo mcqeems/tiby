@@ -29,10 +29,13 @@ def test_the_lock_covers_every_model_the_engine_loads():
     names = {model.name for model in MODELS}
     assert names == {
         "PP-OCRv6_det_small.onnx",
-        # rec is 'tiny', not 'small': measured 2.5x faster across the dataset
-        # with identical draft fields once labels are repaired. See
-        # tests/test_ocr_label_repair.py and scripts/bench_ocr_tiny_plan.py.
-        "PP-OCRv6_rec_tiny.onnx",
+        # rec stays 'small'. 'tiny' is 1.6x faster but misreads drug names on
+        # real photographed forms -- 'Isoniazid' comes back as '1soniazid', so
+        # only 3 of 4 drugs in a standard card are recognised. Regimen
+        # derivation depends on those names, so the speed is not worth it. The
+        # synthetic layouts that made 'tiny' look lossless read too cleanly to
+        # catch this; dataset/ocr/photos/card-synthetic.png does not.
+        "PP-OCRv6_rec_small.onnx",
         "ch_ppocr_mobile_v2.0_cls_mobile.onnx",
     }
 

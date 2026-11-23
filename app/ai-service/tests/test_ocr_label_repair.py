@@ -1,6 +1,6 @@
 """The label repair must recover misspellings without inventing fields.
 
-The ``tiny`` recognition model reads 'Selesai' as 'Selesat' and 'Mulai' as
+The recognition model reads 'Selesai' as 'Selesat' and 'Mulai' as 'Mula' on
 'Muia'. Without repair the label regex misses and the field is lost entirely.
 Repair is a one-edit tolerance on the label word only, so the boundaries matter
 as much as the recovery: a near-miss on some other word must never become a
@@ -20,7 +20,7 @@ from onboarding_ocr.card_parser import (
 @pytest.mark.parametrize(
     ("word", "target"),
     [
-        ("selesat", "selesai"),  # substitution: what tiny actually emits
+        ("selesat", "selesai"),  # substitution seen on photographed cards
         ("mula", "mulai"),  # deletion of the final vowel
         ("mullai", "mulai"),  # insertion
         ("selesai", "selesai"),  # already correct

@@ -81,9 +81,9 @@ DATE_LABEL_TOKENS: dict[str, tuple[str, str]] = {
 }
 """Canonical label word per date field, plus the full label to rewrite to.
 
-Read by ``card_parser.repair_detected_labels``. The ``tiny`` recognition model
-reads 'Selesai' as 'Selesat' and 'Mulai' as 'Muia' often enough to matter, and
-an unmatched label loses the field entirely rather than misreading it.
+Read by ``card_parser.repair_detected_labels``. A strict recognition model reads
+'Selesai' as 'Selesat' and 'Mulai' as 'Mula' often enough to matter, and an
+unmatched label loses the field entirely rather than misreading it.
 """
 
 
@@ -97,7 +97,7 @@ RAPIDOCR_PARAMS: dict[str, str] = {
     "Det.ocr_version": "PPOCRV6",
     "Rec.engine_type": "ONNXRUNTIME",
     "Rec.lang_type": "id",
-    "Rec.model_type": "TINY",
+    "Rec.model_type": "SMALL",
     "Rec.ocr_version": "PPOCRV6",
     "Cls.engine_type": "ONNXRUNTIME",
     "Cls.lang_type": "multi",
