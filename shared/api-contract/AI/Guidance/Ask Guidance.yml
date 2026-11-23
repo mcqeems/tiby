@@ -102,6 +102,26 @@ examples:
               "Informasi ini merupakan ringkasan umum berdasarkan panduan Kemenkes dan bukan penilaian spesifik untuk kasus pasien tertentu. Untuk pertanyaan mengenai kondisi pribadi, konsultasikan dengan tenaga kesehatan yang menangani."
             ]
           }
+  - name: 200 - answered without a citation
+    request:
+      url: "{{baseUrl}}/ai/guidance"
+      method: POST
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: content-type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "answer": "TBC (tuberkulosis) adalah penyakit menular yang disebabkan oleh kuman Mycobacterium tuberculosis. Paling sering menyerang paru-paru, dan bisa sembuh bila obat diminum teratur sampai tuntas.",
+            "grounded": false,
+            "evidence": [],
+            "citations": [],
+            "limitations": []
+          }
   - name: 200 - fail closed on personal dosing question
     request:
       url: "{{baseUrl}}/ai/guidance"
@@ -126,9 +146,11 @@ examples:
           }
 
 docs: |-
-  Answers general educational questions using approved Kemenkes/WHO evidence only. It does not diagnose or instruct treatment.
+  Answers general health and tuberculosis education, plus questions about Pandu and what Tiby offers. It does not diagnose, assign risk, or instruct treatment.
 
-  Fails closed - `answer: null`, still HTTP 200 - for personal decision questions (dose, start/stop/switch medication) or when no evidence matches; `limitations` explains why.
+  Answers are grounded when a supplied Kemenkes/WHO source supports the claim; `grounded: true` then comes with at least one citation. A basic question with no matching source is still answered, returned with `grounded: false` and no citations - that is a normal result, not a refusal.
+
+  Fails closed - `answer: null`, still HTTP 200 - only for personal decision questions (dose, start/stop/switch medication), or a question wholly outside health; `limitations` explains why.
 
   Responses:
   - 200: Answer (possibly null) with `grounded`, `evidence`, `citations`, and `limitations`.
