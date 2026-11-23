@@ -33,6 +33,26 @@ class Evidence:
     text: str
 
 
+# Minimum fraction of a query's content terms a chunk must contain to count as
+# evidence. At 0.5 a two-concept question needs both concepts and a three-concept
+# question needs two, which keeps natural questions answerable while rejecting
+# chunks that share only one incidental word.
+MIN_COVERAGE = 0.5
+
+# Indonesian function words: they appear in nearly every chunk, so they would
+# inflate coverage without carrying meaning.
+STOPWORDS = frozenset(
+    [
+        "ada", "adalah", "agar", "akan", "atau", "bagaimana", "bila", "bukan",
+        "dalam", "dan", "dapat", "dari", "dengan", "di", "digunakan", "ini",
+        "itu", "jadi", "jika", "juga", "kalau", "karena", "ke", "kenapa",
+        "kepada", "saat", "saja", "salah", "sama", "sambil", "sampai", "sangat",
+        "secara", "sedang", "sehingga", "sudah", "sebagai", "seperti", "tentang",
+        "terhadap", "tidak", "untuk", "yaitu", "yang",
+    ]
+)
+
+
 class SQLiteRetriever:
     """Small auditable FTS5 store; no vector database required for the MVP."""
 
@@ -73,17 +93,55 @@ class SQLiteRetriever:
             db.execute("INSERT INTO chunks_fts(chunks_fts) VALUES('rebuild')")
 
     def search(self, query: str, limit: int = 4) -> list[Evidence]:
-        """Return the best bm25-ranked chunks for a free-text query.
+        """Return chunks that actually cover the query's concepts, best first.
 
-        The query is lowered, split into word tokens (first 12), OR-joined, and
-        quoted to keep FTS5 syntax out of user input. Returns ``[]`` when the
-        query has no word characters; there is no relevance threshold yet, so
-        callers treat weak hits as candidates only.
+        A plain ``OR`` match is unusable here: common Indonesian words (``apa``,
+        ``itu``, ``obat``) appear in nearly every chunk, so OR always returns
+        confident nonsense and the caller can never take its "no evidence"
+        path. A plain ``AND`` is equally unusable, because one stray word in a
+        natural question empties the result set.
+
+        So candidates come from ``OR`` and are then filtered by *coverage*: the
+        fraction of the query's content terms a chunk contains. Chunks that
+        cover only a single incidental word are dropped (``MIN_COVERAGE``); the
+        rest are ranked by coverage, then by bm25 as the tie-break. Coverage is
+        language-agnostic and needs no calibrated score threshold, which bm25
+        cannot honestly provide for a corpus this size.
+
+        Terms are lowercased, split on word boundaries, prefix-matched so
+        ``obat`` also finds ``obatnya``, and quoted to keep FTS5 operator syntax
+        out of user input. Returns ``[]`` when the query has no content terms or
+        nothing covers enough of them.
         """
-        terms = re.findall(r"[\wÀ-ÿ]+", query.lower())
+        terms = self._content_terms(query)
         if not terms:
             return []
-        match = " OR ".join(f'"{term}"' for term in terms[:12])
+        candidates = self._match_any(
+            " OR ".join(f'"{term}"*' for term in terms), limit * 8, terms
+        )
+        scored = [
+            (self._coverage(item.text, terms), rank, item)
+            for rank, item in enumerate(candidates)
+        ]
+        relevant = [entry for entry in scored if entry[0] >= MIN_COVERAGE]
+        relevant.sort(key=lambda entry: (-entry[0], entry[1]))
+        return [item for _, _, item in relevant[:limit]]
+
+    @staticmethod
+    def _content_terms(query: str) -> list[str]:
+        """Query words minus Indonesian function words that carry no meaning."""
+        words = re.findall(r"[\wÀ-ÿ]+", query.lower())
+        return [word for word in words if len(word) > 2 and word not in STOPWORDS][:12]
+
+    @staticmethod
+    def _coverage(text: str, terms: list[str]) -> float:
+        """Fraction of query terms whose prefix appears in ``text``."""
+        haystack = text.lower()
+        hits = sum(1 for term in terms if term in haystack)
+        return hits / len(terms)
+
+    def _match_any(self, match: str, limit: int, terms: list[str]) -> list[Evidence]:
+        """Run one FTS5 MATCH expression and map the rows to ``Evidence``."""
         with sqlite3.connect(self.db_path) as db:
             rows = db.execute(
                 """SELECT c.chunk_id, d.document_id, d.organization, d.title, d.year,

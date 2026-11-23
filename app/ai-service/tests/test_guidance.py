@@ -47,17 +47,44 @@ def test_render_answer_rejects_unknown_citation_id():
         )
 
 
-def test_render_answer_drops_answer_when_not_grounded():
+def test_render_answer_keeps_uncited_answer_but_reports_not_grounded():
+    """A general-health answer with no backing source is still an answer.
+
+    Regression guard for the bug where any ``grounded=false`` response was
+    stripped to ``answer=null``, which the app rendered as "out of scope".
+    """
     evidence = pack_evidence([make_evidence()])
     result = render_answer(
-        {"answer": "x", "grounded": False, "citation_ids": ["src-1"], "limitations": ["a"]},
+        {"answer": "x", "grounded": False, "citation_ids": [], "limitations": ["a"]},
         evidence,
     )
-    assert result.answer is None
+    assert result.answer == "x"
     assert result.grounded is False
     assert result.citations == []
     assert result.evidence == []
     assert result.limitations == ["a"]
+
+
+def test_render_answer_ignores_grounded_claim_without_citation():
+    """The provider cannot mark itself grounded while citing nothing."""
+    result = render_answer(
+        {"answer": "x", "grounded": True, "citation_ids": [], "limitations": []},
+        pack_evidence([make_evidence()]),
+    )
+    assert result.answer == "x"
+    assert result.grounded is False
+
+
+def test_render_answer_keeps_answer_when_grounded_discards_evidence():
+    """``grounded`` gates the citations, not the answer text."""
+    evidence = pack_evidence([make_evidence()])
+    result = render_answer(
+        {"answer": "Ringkasan.", "grounded": True, "citation_ids": ["src-1"], "limitations": []},
+        evidence,
+    )
+    assert result.answer == "Ringkasan."
+    assert result.grounded is True
+    assert [item.citation_id for item in result.evidence] == ["src-1"]
 
 
 def test_render_answer_treats_blank_answer_as_not_grounded():

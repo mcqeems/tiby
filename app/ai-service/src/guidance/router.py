@@ -27,9 +27,13 @@ async def guidance_endpoint(
 ) -> GuidanceResponse | JSONResponse:
     """Answer a general educational question from approved-source evidence.
 
-    Fails closed (``answer: null``) when no evidence matches or when the local
-    guard detects a personal decision request such as dosing or start/stop
-    questions; citations are allowlisted against the retrieved evidence.
+    Answers even when no evidence matches: a basic health question ("what is
+    TB?") is answerable from general knowledge, and is returned with
+    ``grounded=false`` and no citations instead of being reported as out of
+    scope. ``answer`` is null only for a personal decision request (dosing,
+    start/stop/switch), which the guard blocks before the model is called, or
+    when the model itself declines. Citations are allowlisted against the
+    retrieved evidence.
     """
     retriever = getattr(request.app.state, "guidance_retriever", None)
     if retriever is None:
@@ -38,15 +42,6 @@ async def guidance_endpoint(
     if payload.transcript:
         question = f"{payload.question} {payload.transcript}"
     evidence = retriever.search(question, limit=4)
-    if not evidence:
-        return GuidanceResponse(
-            answer=None,
-            grounded=False,
-            limitations=[
-                "Belum ada evidence yang cocok dari dokumen rujukan resmi.",
-                "Informasi ini bukan diagnosis atau instruksi pengobatan.",
-            ],
-        )
     try:
         if getattr(request.app.state, "guidance_answerer", None) is None:
             request.app.state.guidance_answerer = GroundedAnswerer()

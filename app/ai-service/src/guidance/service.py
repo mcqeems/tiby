@@ -1,9 +1,17 @@
-"""Grounded answering for general educational questions (``POST /ai/guidance``).
+"""Answering for general educational questions (``POST /ai/guidance``).
 
-Flow: deterministic action-request guard (``safety.py``) → provider call with
-packed evidence → citation allowlisting. Every failure path returns
-``answer=None`` instead of an ungrounded answer; the model may only cite
-``src-N`` IDs that were actually retrieved.
+Flow: deterministic personal-decision guard (``safety.py``) → provider call with
+whatever evidence retrieval found → citation allowlisting.
+
+Two properties are separate on purpose:
+
+- **Safety** — a personal decision request (dose, start/stop/switch) is refused
+  deterministically and never reaches the model.
+- **Grounding** — whether a supplied source backs the answer. A basic health
+  question with no matching source is still answerable; it is returned with
+  ``grounded=false`` and no citations rather than being refused.
+
+The model may only cite ``src-N`` IDs that were actually retrieved.
 """
 
 import json
@@ -43,6 +51,14 @@ def pack_evidence(evidence: list[Evidence]) -> list[dict]:
 def render_answer(provider_result: dict, evidence: list[dict]) -> GuidanceResponse:
     """Validate a provider JSON answer against the citation allowlist.
 
+    ``grounded`` means "a supplied source backs this answer", not "this answer is
+    allowed". An uncited general-health answer is legitimate and keeps its text;
+    it is simply reported as ``grounded=false`` with no citations, so the client
+    can tell the two apart instead of being told the question was out of scope.
+
+    Any citation the provider returns must still be in the allowlist; that stays
+    a hard error, because citing a source it was not given is fabrication.
+
     Raises ValueError when the provider cites a source it was not given.
     """
     allowed = {item["citation"]["citation_id"] for item in evidence}
@@ -54,12 +70,9 @@ def render_answer(provider_result: dict, evidence: list[dict]) -> GuidanceRespon
     citations = [GuidanceCitation.model_validate(item["citation"]) for item in selected]
 
     answer_text = provider_result.get("answer")
-    grounded = (
-        bool(provider_result.get("grounded"))
-        and bool(citations)
-        and isinstance(answer_text, str)
-        and bool(answer_text.strip())
-    )
+    has_answer = isinstance(answer_text, str) and bool(answer_text.strip())
+    # Grounded requires a real answer *and* a citation that survived the allowlist.
+    grounded = bool(provider_result.get("grounded")) and bool(citations) and has_answer
 
     raw_limitations = provider_result.get("limitations")
     limitations = (
@@ -69,7 +82,7 @@ def render_answer(provider_result: dict, evidence: list[dict]) -> GuidanceRespon
     )
 
     return GuidanceResponse(
-        answer=answer_text if grounded else None,
+        answer=answer_text if has_answer else None,
         grounded=grounded,
         evidence=[
             GuidanceEvidence(citation_id=item["citation"]["citation_id"], text=item["text"])
@@ -83,7 +96,7 @@ def render_answer(provider_result: dict, evidence: list[dict]) -> GuidanceRespon
 
 
 class GroundedAnswerer:
-    """Turns retrieved evidence into one citation-grounded GuidanceResponse."""
+    """Turns retrieved evidence (and Pandu's own product knowledge) into one answer."""
 
     def __init__(self, client: NaraRouterClient | None = None):
         self.client = client or NaraRouterClient()
@@ -91,7 +104,14 @@ class GroundedAnswerer:
     async def answer(
         self, question: str, transcript: str | None, evidence: list[dict]
     ) -> GuidanceResponse:
-        """Answer one question, failing closed on guard hits or invalid citations."""
+        """Answer one question, failing closed only on personal decisions.
+
+        ``evidence`` may be empty: findings no source is a normal outcome for a
+        basic question, and the model answers those from general knowledge with
+        ``grounded=false``. A personal decision request still never reaches the
+        model, and the empty-evidence limitation is only added when the model
+        declined, so an uncited answer is not labelled as out of scope.
+        """
         if detect_action_request(question, transcript):
             return GuidanceResponse(answer=None, grounded=False, limitations=[ACTION_LIMITATION])
         user = json.dumps(

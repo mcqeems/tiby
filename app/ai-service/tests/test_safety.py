@@ -14,6 +14,9 @@ from guidance.safety import detect_action_request
         "Apakah aman menghentikan pengobatan sekarang?",
         "Should I stop my medication?",
         "Obat saya diubah, apakah boleh?",
+        # Personal framing with a modal verb still blocks even without a dosing word.
+        "Saya harus minum berapa tablet?",
+        "Apakah saya boleh minum obat dengan kopi?",
     ],
 )
 def test_detects_personal_action_requests(text):
@@ -27,6 +30,15 @@ def test_detects_personal_action_requests(text):
         "Apa saja keluhan ringan yang dicatat saat terapi TBC?",
         "Menurut panduan, apakah mual termasuk efek samping umum obat TB?",
         "Saya mual dari siang.",
+        # Informational questions that merely contain a modal verb. These were
+        # blocked by a bare harus/bolehkah pattern and reported as out of scope
+        # even though the user was only asking for education.
+        "Kenapa obat harus diminum setiap hari?",
+        "Bolehkah diminum bersamaan dengan makanan?",
+        "Bagaimana kalau obat diminum terlambat?",
+        "Apakah TB menular?",
+        "Halo Pandu, kamu siapa?",
+        "Fitur apa saja yang ada di Tiby?",
     ],
 )
 def test_allows_general_educational_questions(text):
