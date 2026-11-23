@@ -10,8 +10,15 @@ import type { OnboardingFormState } from "@/lib/types/onboarding";
 
 const draft = (overrides: Partial<OcrOnboardingDraft> = {}): OcrOnboardingDraft => ({
   patientName: "BUDI SANTOSO",
+  patientUsername: null,
+  patientPhone: null,
+  pmoName: null,
+  pmoUsername: null,
+  pmoPhone: null,
+  pmoRelationship: null,
   regimenCode: "FDC-3",
   dailyPillQuota: 3,
+  reminderTimeLocal: null,
   startDate: "2026-10-28",
   targetEndDate: null,
   confidence: 0.79,
