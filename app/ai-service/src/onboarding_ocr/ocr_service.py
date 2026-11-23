@@ -118,17 +118,35 @@ def _engine() -> OcrEngine:
 
 
 def _extract_lines(image: np.ndarray) -> list[OcrLine]:
-    """Run the engine and keep each row's score attached to its text."""
+    """Run the engine and keep each row's score and box attached to its text."""
     result = _engine()(image)
-    texts = getattr(result, "txts", None) or ()
-    scores = getattr(result, "scores", None) or ()
+    texts = getattr(result, "txts", None)
+    scores = getattr(result, "scores", None)
+    boxes = getattr(result, "boxes", None)
+    texts = () if texts is None else texts
+    scores = () if scores is None else scores
+    # `boxes` is a numpy array, so it must not be truth-tested directly.
+    box_rows = np.asarray(boxes) if boxes is not None else None
     lines = []
     for index, text in enumerate(texts):
         if not isinstance(text, str) or not text.strip():
             continue
         raw_score = scores[index] if index < len(scores) else None
         score = float(raw_score) if isinstance(raw_score, (int, float)) else 0.0
-        lines.append(OcrLine(text.strip(), score))
+        box = box_rows[index] if box_rows is not None and index < len(box_rows) else None
+        if box is not None and box.size:
+            lines.append(
+                OcrLine(
+                    text.strip(),
+                    score,
+                    float(box[:, 0].min()),
+                    float(box[:, 1].min()),
+                    float(box[:, 1].max()),
+                    float(box[:, 0].max()),
+                )
+            )
+        else:
+            lines.append(OcrLine(text.strip(), score))
     return lines
 
 

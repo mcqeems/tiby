@@ -358,6 +358,9 @@ def test_guidance_validation_uses_error_envelope():
 def test_onboarding_ocr_route_returns_a_draft(monkeypatch):
     expected = {
         "patientName": None,
+        "patientPhone": None,
+        "pmoName": None,
+        "pmoPhone": None,
         "regimenCode": None,
         "dailyPillQuota": None,
         "startDate": None,
@@ -387,6 +390,9 @@ def test_onboarding_ocr_rejects_non_image_upload():
 def test_onboarding_ocr_accepts_jpg_mime_type(monkeypatch):
     draft = {
         "patientName": None,
+        "patientPhone": None,
+        "pmoName": None,
+        "pmoPhone": None,
         "regimenCode": None,
         "dailyPillQuota": None,
         "startDate": None,

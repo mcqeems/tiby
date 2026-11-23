@@ -15,6 +15,9 @@ AMBIGUOUS_DATE_CONFIDENCE = 0.5
 
 DRAFT_FIELDS = (
     "patientName",
+    "patientPhone",
+    "pmoName",
+    "pmoPhone",
     "regimenCode",
     "dailyPillQuota",
     "startDate",
@@ -22,7 +25,10 @@ DRAFT_FIELDS = (
 )
 """The draft fields the contract exposes, in the order a card lists them."""
 
-SEPARATOR = r"\s*[:=-]?\s*"
+# `*` is the paper form's "required" marker and sits between the label and its
+# value (`Nama Lengkap Pasien *` then the name on the next row). It is part
+# of the separator, never part of the value.
+SEPARATOR = r"\s*[*\u2022]?\s*[:=-]?\s*"
 """Cards separate label from value with a colon, an equals sign, or nothing."""
 
 LABEL_START = r"(?<![A-Za-z])"
@@ -31,12 +37,44 @@ LABEL_START = r"(?<![A-Za-z])"
 _LABELS: tuple[tuple[str | None, str], ...] = (
     (
         "patientName",
-        rf"{LABEL_START}nama\s*(?:pasien|terduga|penderita|klien)\b{SEPARATOR}",
+        (
+            rf"{LABEL_START}nama\s*(?:lengkap\s*)?(?:pasien|terduga|penderita|klien)\b"
+            rf"{SEPARATOR}"
+        ),
+    ),
+    # `Nama PMO` and the PMO's own `No.telp/Hp` appear on the national TB.01
+    # card. They must be matched before the generic phone label below, and the
+    # PMO section header decides which of the two phone numbers is the PMO's
+    # (`_assign_phones_by_section`).
+    ("pmoName", rf"{LABEL_START}nama\s*(?:lengkap\s*)?pmo\b{SEPARATOR}"),
+    (
+        "pmoPhone",
+        (
+            rf"{LABEL_START}(?:whats?app|wa|no\.?\s*(?:telp|telpon|telepon|tlp|hp|hape)\.?(?:\s*/\s*(?:hp|hape)\.?)?)"
+            rf"\s*pmo\b{SEPARATOR}"
+        ),
+    ),
+    # A bare phone label: on its own it is the patient's, but the same words
+    # label the PMO's number on TB.01, so its owner comes from the section.
+    (
+        "patientPhone",
+        (
+            rf"{LABEL_START}(?:whats?app|wa|no\.?\s*(?:telp|telpon|telepon|tlp|hp|hape)\.?(?:\s*/\s*(?:hp|hape)\.?)?)"
+            rf"(?:\s*(?:pasien|peserta))?\b{SEPARATOR}"
+        ),
     ),
     ("regimenCode", rf"{LABEL_START}(?:regimen|paduan\s*obat)\b{SEPARATOR}"),
     (
         "dailyPillQuota",
-        rf"{LABEL_START}(?:kuota(?:\s*(?:pil|obat))?|dosis(?:\s*harian)?|jumlah\s*obat|aturan\s*pakai)\b{SEPARATOR}",
+        # `Dosis` alone is a medication table's column header (mg per drug), not
+        # the daily pill count, so it only counts when qualified as daily.
+        # `tablet/hari` is how TB.01 prints the real quota, as in
+        # `4KDT(FDC): ... tablet/hari`.
+        (
+            rf"{LABEL_START}(?:kuota(?:\s*(?:pil|obat))?"
+            rf"|dosis|jumlah\s*(?:obat|tablet)|aturan\s*pakai"
+            rf"|(?:\d\s*kdt\s*\(?fdc\)?)|tablet\s*/\s*hari)\b{SEPARATOR}"
+        ),
     ),
     # `Mulai Terapi` and `Mulai Pengobatan` appear on Kemenkes forms where the
     # onboarding cards say `Tanggal Mulai`.
@@ -48,7 +86,14 @@ _LABELS: tuple[tuple[str | None, str], ...] = (
         "targetEndDate",
         rf"{LABEL_START}(?:tanggal\s*|tgl\.?\s*)?(?:target\s+|akhir\s+)?(?:selesai|akhir)\b{SEPARATOR}",
     ),
-    ("patientName", rf"{LABEL_START}nama\b{SEPARATOR}"),
+    # `Nama Dokter Pengirim`, `Nama Fasyankes`, `Nama Kader` are other people.
+    (
+        "patientName",
+        (
+            rf"{LABEL_START}nama(?!\s*(?:dokter|dr|fasyankes|faskes|puskesmas|klinik|kader"
+            rf"|petugas|pengirim|pmo|ibu|ayah|orang\s*tua))\b{SEPARATOR}"
+        ),
+    ),
     # A bare `Tanggal:` is the prescription date on a Puskesmas treatment card,
     # where the onboarding `Tanggal Mulai` wording does not appear at all. It is
     # still a cut point for whatever row preceded it, so the value is read and

@@ -106,6 +106,9 @@ class OcrOnboardingDraft(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     patientName: str | None
+    patientPhone: str | None = None
+    pmoName: str | None = None
+    pmoPhone: str | None = None
     regimenCode: str | None
     dailyPillQuota: int | None = Field(ge=1)
     startDate: str | None

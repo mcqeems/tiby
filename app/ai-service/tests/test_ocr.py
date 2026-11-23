@@ -62,7 +62,8 @@ def test_segmentation_finds_a_label_welded_to_the_previous_value():
 
 
 def test_segmentation_does_not_read_a_name_out_of_the_faskes_label():
-    assert ("patientName", "") in segment("Nama Faskes: Puskesmas Tebet")
+    """A facility label must not produce a patient name segment at all."""
+    assert not any(field == "patientName" for field, _ in segment("Nama Faskes: Puskesmas Tebet"))
 
 
 def test_segmentation_cuts_at_a_label_the_draft_does_not_care_about():
@@ -193,6 +194,9 @@ def test_every_draft_field_reports_a_confidence_even_when_missing():
     draft = parse_onboarding_lines(lines(("Regimen: HRZE", 0.9)))
     assert set(draft.fieldConfidence) == {
         "patientName",
+        "patientPhone",
+        "pmoName",
+        "pmoPhone",
         "regimenCode",
         "dailyPillQuota",
         "startDate",
@@ -291,7 +295,10 @@ def test_a_shadowed_rotated_scan_still_needs_no_conditioning(engine: None):
     draft = extract_onboarding_card(cv2.imencode(".png", image)[1].tobytes())
     assert draft.patientName == "Siti Aminah"
     assert draft.dailyPillQuota == 4
-    assert all(score > 0 for score in draft.fieldConfidence.values())
+    # Every field this card can carry was read. The PMO and patient-phone
+    # fields are opt-in and absent here, so they are not held against it.
+    for field in ("patientName", "regimenCode", "dailyPillQuota", "startDate"):
+        assert draft.fieldConfidence[field] > 0, field
 
 
 def test_a_date_the_engine_cannot_disambiguate_is_never_confident(engine: None):
@@ -418,3 +425,71 @@ def test_a_photographed_puskesmas_form_yields_the_required_fields(engine: None):
     assert draft.dailyPillQuota is None
     # A derived regimen is flagged so the Nakes knows to confirm it.
     assert any("disimpulkan" in note for note in draft.uncertainties)
+
+
+# --- a real formulir pemantauan pengobatan TBC -----------------------------
+#
+# `card-form-pemantauan.jpg` is the form the Nakes actually photographs: a
+# header row of labels with the values on the row below, in columns, plus a row
+# where the value sits to the right of its label. It carries the PMO block and
+# both phone numbers, which is what makes it the reference for these fields.
+
+
+def test_the_pemantauan_form_yields_every_field_it_prints(engine: None):
+    draft = extract_onboarding_card(read("photos", "card-form-pemantauan.jpg"))
+    assert draft.patientName == "Ahmad Rizky Pratama"
+    assert draft.patientPhone == "081289765432"
+    assert draft.pmoName == "Budi Santoso"
+    assert draft.pmoPhone == "081298765431"
+    assert draft.regimenCode == "FDC-4"
+    assert draft.dailyPillQuota == 4
+    assert draft.startDate == "2026-08-08"
+    # `08/08/2026` reads the same either way round, so it is not ambiguous.
+    assert draft.uncertainties == []
+
+
+def test_the_two_phone_numbers_on_a_pemantauan_form_never_swap(engine: None):
+    """`No. Telp. Pasien` and `WhatsApp PMO` print the same label twice.
+
+    Filing the PMO's number under the patient (or the reverse) is silent and
+    plausible, so this asserts the exact values rather than just "both present".
+    """
+    draft = extract_onboarding_card(read("photos", "card-form-pemantauan.jpg"))
+    assert draft.patientPhone == "081289765432"
+    assert draft.pmoPhone == "081298765431"
+    assert draft.patientPhone != draft.pmoPhone
+
+
+def test_a_birth_date_never_becomes_the_start_date():
+    """`Tanggal Lahir` sits on the same form as the real start date."""
+    draft = parse_onboarding_lines(
+        lines(
+            ("Nama Pasien: Siti", 0.99),
+            ("Tanggal Lahir *", 0.98),
+            ("12/08/2005", 0.98),
+            ("Tanggal Mulai *", 0.98),
+            ("08/08/2026", 0.98),
+        )
+    )
+    assert draft.startDate == "2026-08-08"
+
+
+def test_a_drug_strength_is_not_a_daily_pill_count():
+    """`300 mg` under a table's `Dosis` column is one drug's strength."""
+    draft = parse_onboarding_lines(
+        lines(("Dosis: 300 mg", 0.99), ("Rifampisin 600 mg", 0.98))
+    )
+    assert draft.dailyPillQuota is None
+
+
+def test_the_usage_column_is_the_daily_pill_count():
+    """`1 x 1 sehari` is one pill a day, not one per dose."""
+    draft = parse_onboarding_lines(lines(("Aturan Pakai: 1 x 1 sehari (pagi)", 0.97)))
+    assert draft.dailyPillQuota == 1
+
+
+def test_a_full_phone_number_is_kept_whole_and_localised():
+    draft = parse_onboarding_lines(
+        lines(("Informasi Pasien", 0.99), ("No. Telp. Pasien", 0.98), ("081289765432", 0.99))
+    )
+    assert draft.patientPhone == "081289765432"

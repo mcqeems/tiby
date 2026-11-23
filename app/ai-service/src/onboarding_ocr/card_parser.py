@@ -30,10 +30,21 @@ from onboarding_ocr.constants import (
 
 
 class OcrLine(NamedTuple):
-    """One detected row of text and the engine's confidence in it."""
+    """One detected row of text, its confidence, and where it sits on the page.
+
+    ``x``/``y``/``y_end`` are optional so the parser stays usable on plain text
+    (``parse_onboarding_text``) and in tests. They are what makes a form whose
+    labels and values sit in separate rows, side by side in columns, parseable
+    at all: ``Nama Lengkap PMO`` and ``WhatsApp PMO`` are both labels on one row,
+    and the values that belong to them are on the row below.
+    """
 
     text: str
     score: float
+    x: float = 0.0
+    y: float = 0.0
+    y_end: float = 0.0
+    x_end: float = 0.0
 
 
 class DateRead(NamedTuple):
@@ -113,7 +124,7 @@ def repair_detected_labels(lines: list[OcrLine]) -> list[OcrLine]:
                 else:
                     continue
                 break
-        fixed.append(type(line)(text, line.score))
+        fixed.append(line._replace(text=text) if text != line.text else line)
     return fixed
 
 
@@ -153,7 +164,13 @@ def _parse_quota(value: str) -> int | None:
     digit it finds; on a row that also carries `30 tablet` (a month's supply)
     that would report 30 pills a day, so the structured form wins whenever it
     is present and the first number is only used when it is not.
+
+    A milligram reading is never a pill count: `300 mg` under a table's `Dosis`
+    column is the strength of one drug, and reporting it as 300 tablets a day
+    is worse than reporting nothing.
     """
+    if _MILLIGRAM_PATTERN.search(value):
+        return None
     usage = DAILY_USAGE_PATTERN.search(value)
     if usage is not None:
         per_dose, doses = (int(group) for group in usage.groups())
@@ -216,6 +233,10 @@ def _parse_date(value: str) -> DateRead:
 
     numeric = numeric_matches[0]
     first, second, year = int(numeric[1]), int(numeric[2]), int(numeric[3])
+    if first == second:
+        # `08/08/2026` reads the same either way round, so there is nothing to
+        # disambiguate and flagging it would teach Nakes to ignore the warning.
+        return _validated_date(year, second, first)
     if first > 12 >= second:
         return _validated_date(year, second, first)
     if second > 12 >= first:
@@ -250,15 +271,77 @@ def _read_date_field(
 
 
 def _overall_confidence(confidence: dict[str, float], lines: list[OcrLine]) -> float:
-    """Average the fields that were read, scaled by how many were read at all."""
-    read = [score for score in confidence.values() if score > 0]
+    """Average the fields that were read, scaled by how many were read at all.
+
+    The denominator is the fields the *document* could carry, not every field in
+    the contract: a Kemenkes treatment card has no PMO block at all, and
+    counting its PMO fields as misses would report a fully read card as barely
+    half read.
+    """
+    relevant = {
+        field: score
+        for field, score in confidence.items()
+        if field in _reporting_fields(lines)
+    }
+    read = [score for score in relevant.values() if score > 0]
     if not read:
         return min((line.score for line in lines), default=0.0)
-    coverage = len(read) / len(confidence)
+    coverage = len(read) / len(relevant)
     return sum(read) / len(read) * coverage
 
 
+def _reporting_fields(lines: list[OcrLine]) -> set[str]:
+    """Which contract fields this particular document could plausibly carry.
+
+    The PMO block and the patient phone number are opt-in: TB.01 prints them,
+    many treatment cards do not. The document decides, so a card without a PMO
+    section is not penalised for fields it was never going to have.
+    """
+    fields = {
+        "patientName",
+        "regimenCode",
+        "dailyPillQuota",
+        "startDate",
+        "targetEndDate",
+    }
+    text = " ".join(line.text for line in lines)
+    if _PMO_SECTION.search(text):
+        fields |= {"pmoName", "pmoPhone"}
+    if _ANY_PHONE_LABEL.search(text):
+        fields.add("patientPhone")
+    return fields
+
+
 _DATE_FIELDS = frozenset({"startDate", "targetEndDate"})
+_PHONE_FIELDS = frozenset({"patientPhone", "pmoPhone"})
+"""Assigned by section (``_assign_phones_by_section``), never by label text."""
+
+_ROW_GAP_FACTOR = 1.6
+"""How far below a label row its value row may sit, in label-row heights."""
+_COLUMN_TOLERANCE = 60.0
+"""Pixels of slack when deciding a value sits under a label's column."""
+_SAME_ROW_REACH = 50.0
+"""How far right of a label a same-row value may start before it is a neighbour.
+
+Measured on the committed forms: a value that belongs to a label starts within
+about 45 px of the label's end, while the next label in the row starts 117 px or
+more away. Anything wider swallows the neighbouring label as a value.
+"""
+
+_PHONE_VALUE = re.compile(r"[+(]?[\d][\d\s().-]{6,}[\d]")
+"""A whole row that is just a phone number, no label attached."""
+
+_MILLIGRAM_PATTERN = re.compile(r"\d\s*(?:mg|mcg|gram|g)\b", re.IGNORECASE)
+"""A drug strength, which is never a pill count."""
+
+_PATIENT_SECTION = re.compile(r"informasi\s*pasien|identitas\s*pasien|data\s*pasien", re.IGNORECASE)
+_PMO_SECTION = re.compile(r"pengawas\s*menelan|\bpmo\b", re.IGNORECASE)
+"""Section headers that decide whose phone number a bare number belongs to."""
+
+_ANY_PHONE_LABEL = re.compile(
+    r"(?:whats?app|\bwa\b|no\.?\s*(?:telp|telpon|telepon|hp|hape))", re.IGNORECASE
+)
+"""Any phone-number wording at all, used only to decide whether to report it."""
 """Fields whose value must carry a digit: ``selesai pengakatan`` is prose, not a date."""
 
 _NOT_A_PERSON = re.compile(
@@ -280,7 +363,140 @@ def _next_row_value(lines: list[OcrLine], index: int) -> str:
     following = lines[index + 1]
     if following.score < MIN_LINE_SCORE or segment(following.text):
         return ""
-    return following.text.strip(" \t:.-")
+    return following.text.strip(" \t:.-\u2022\u00b7*")
+
+
+def _read_value_below(lines: list[OcrLine], index: int) -> str:
+    """Read the value that sits in the same column, one row below a label.
+
+    A form laid out as a header row of labels (``Nama Lengkap PMO`` |
+    ``WhatsApp PMO`` | ...) with the filled-in values on the next row needs the
+    *column* to pair them, not the reading order: the values arrive as one flat
+    row, so the second label would otherwise take the first value.
+
+    Only used when the label carries no value of its own, and only when the
+    candidate row is a different row on the page. Returns ``""`` when the
+    layout carries no usable geometry, so plain-text parsing is unaffected.
+    """
+    label = lines[index]
+    if label.y_end <= 0 or label.x_end <= label.x:
+        return ""
+    best: tuple[tuple[int, int, float, float], str] | None = None
+    for candidate in lines:
+        if candidate is label or candidate.score < MIN_LINE_SCORE:
+            continue
+        if segment(candidate.text):
+            continue
+        # Two layouts carry the value: to the right on the same row (most
+        # Puskesmas forms), or in the same column one row below (a header row of
+        # labels with the answers underneath). Anything else is a different
+        # field's value and must not be taken.
+        # A value on the label's own row only counts when it sits close enough
+        # to be *this* field's value. Beyond a column's width the neighbour is
+        # another label (`Nama Lengkap PMO *` has `Username PMO *` to its
+        # right), and the real value is the row underneath.
+        # A value that belongs to the label starts close to it. The allowed gap
+        # scales with the label's own width, because a short label (`Nama`) is
+        # followed by a wider gap before its rule and value than a long one
+        # (`Nama Lengkap Pasien *`). It stays well under the distance to the
+        # next label in the row, measured at 117 px and up on these forms.
+        reach = max(_SAME_ROW_REACH, (label.x_end - label.x) * 0.5)
+        # `: Siti Nur Aisyah` is unambiguously this label's value however far
+        # right it starts: no incoming label begins with a colon. That is what
+        # keeps `Nama` followed by a wide gap and a rule working, without
+        # widening the gap for plain text where the next word is a new label.
+        is_colon_value = candidate.text.lstrip().startswith((":", "\uff1a"))
+        if is_colon_value:
+            reach = float("inf")
+        same_row = (
+            candidate.y < label.y_end
+            and candidate.y_end > label.y
+            and label.x_end - _COLUMN_TOLERANCE
+            <= candidate.x
+            <= label.x_end + reach
+        )
+        below_row = (
+            candidate.y > label.y_end
+            and candidate.y - label.y_end
+            <= (_ROW_GAP_FACTOR * (label.y_end - label.y)) + 1
+            and label.x - _COLUMN_TOLERANCE <= candidate.x <= label.x_end
+        )
+        if not (same_row or below_row):
+            continue
+        # Same row beats a later row, an overlapping column beats a stray one,
+        # then the cleanest read, then nearest. Confidence comes before distance
+        # on purpose: a half-detected glyph often sits one pixel closer than the
+        # value beside it, and `曲` at 0.50 must not win over `08/08/2026` at
+        # 1.00 merely because it starts 30 px earlier.
+        vertical_rank = 0 if same_row else 1
+        overlaps = (
+            candidate.x < label.x_end + _COLUMN_TOLERANCE
+            and candidate.x_end > label.x - _COLUMN_TOLERANCE
+        )
+        distance = (
+            abs(candidate.x - label.x_end) if same_row else abs(candidate.x - label.x)
+        )
+        rank = (vertical_rank, 0 if overlaps else 1, -candidate.score, distance)
+        if best is None or rank < best[0]:
+            best = (rank, candidate.text.strip(" \t:.-\u2022\u00b7*"))
+    return best[1] if best else ""
+
+
+def _assign_phones_by_section(lines: list[OcrLine]) -> dict[str, tuple[str, float]]:
+    """Decide whose phone number each detected number is, using the section.
+
+    TB.01 prints the same ``No.telp/Hp`` wording twice, once for the patient and
+    once for the PMO. Filing the PMO's number under the patient is silent and
+    plausible, so the number is assigned by which section header it appears
+    under rather than by the label wording.
+
+    Returns the same ``{field: (value, score)}`` shape as the main parse.
+    """
+    numbers = [
+        line
+        for line in lines
+        if line.score >= MIN_LINE_SCORE and _PHONE_VALUE.fullmatch(line.text.strip())
+    ]
+    headers = sorted(
+        (
+            (line.y, "patient" if _PATIENT_SECTION.search(line.text) else "pmo")
+            for line in lines
+            if _PATIENT_SECTION.search(line.text) or _PMO_SECTION.search(line.text)
+        ),
+        key=lambda item: item[0],
+    )
+    reads: dict[str, tuple[str, float]] = {}
+    for number in numbers:
+        owner = "patient"
+        for position, section in headers:
+            if position <= number.y:
+                owner = section
+            else:
+                break
+        field = "pmoPhone" if owner == "pmo" else "patientPhone"
+        value = _normalise_phone(number.text)
+        if value is None:
+            continue
+        previous = reads.get(field)
+        if previous is None or number.score > previous[1]:
+            reads[field] = (value, number.score)
+    return reads
+
+
+def _normalise_phone(raw: str) -> str | None:
+    """Keep digits, turning an Indonesian ``+62`` into a local ``0``.
+
+    Returns ``None`` when the result is not a plausible phone number, so a
+    stray NIK or BPJS number is never reported as a contact number.
+    """
+    digits = re.sub(r"\D", "", raw)
+    if digits.startswith("62"):
+        digits = "0" + digits[2:]
+    if not (8 <= len(digits) <= 15):
+        return None
+    if not digits.startswith("0"):
+        return None
+    return digits
 
 
 def parse_onboarding_lines(lines: list[OcrLine]) -> OcrOnboardingDraft:
@@ -295,16 +511,29 @@ def parse_onboarding_lines(lines: list[OcrLine]) -> OcrOnboardingDraft:
             if field is None:
                 continue
             if not value and position == len(segments) - 1:
-                value = _next_row_value(lines, index)
+                # Same column, next row: the label-row / value-row layout that
+                # a form with four labels side by side uses. Falls back to the
+                # next reading row for the stacked layout.
+                value = _read_value_below(lines, index) or _next_row_value(lines, index)
             if not value:
                 continue
             if field in _DATE_FIELDS and not any(char.isdigit() for char in value):
                 continue
             if field == "patientName" and _NOT_A_PERSON.search(value):
                 continue
+            if field in _PHONE_FIELDS:
+                continue
             previous = reads.get(field)
             if previous is None or line.score > previous[1]:
                 reads[field] = (value, line.score)
+
+    # Phone numbers carry their own resolution: the same `No.telp/Hp` label is
+    # printed twice on TB.01, so which number belongs to whom comes from the
+    # section it sits under, not from the label that introduced it.
+    for field, found in _assign_phones_by_section(lines).items():
+        previous = reads.get(field)
+        if previous is None or found[1] > previous[1]:
+            reads[field] = found
 
     patient_name: str | None = None
     regimen_code: str | None = None
@@ -365,6 +594,9 @@ def parse_onboarding_lines(lines: list[OcrLine]) -> OcrOnboardingDraft:
 
     return OcrOnboardingDraft(
         patientName=patient_name,
+        patientPhone=_read_simple(reads, "patientPhone", confidence),
+        pmoName=_read_simple(reads, "pmoName", confidence),
+        pmoPhone=_read_simple(reads, "pmoPhone", confidence),
         regimenCode=regimen_code,
         dailyPillQuota=quota,
         startDate=dates.get("startDate"),
@@ -374,6 +606,17 @@ def parse_onboarding_lines(lines: list[OcrLine]) -> OcrOnboardingDraft:
         fieldConfidence=confidence,
         uncertainties=uncertainties,
     )
+
+
+def _read_simple(
+    reads: dict[str, tuple[str, float]], field: str, confidence: dict[str, float]
+) -> str | None:
+    """Take a plain-text field out of ``reads``, recording its confidence."""
+    found = reads.get(field)
+    if found is None:
+        return None
+    confidence[field] = found[1]
+    return found[0]
 
 
 def parse_onboarding_text(text: str, confidence: float) -> OcrOnboardingDraft:
