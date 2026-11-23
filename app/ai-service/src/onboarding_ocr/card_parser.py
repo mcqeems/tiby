@@ -15,13 +15,16 @@ from typing import NamedTuple
 from contracts import OcrOnboardingDraft
 from onboarding_ocr.constants import (
     AMBIGUOUS_DATE_CONFIDENCE,
+    ANTITUBERCULOSIS_DRUGS,
     COMPILED_LABELS,
+    DAILY_USAGE_PATTERN,
     DATE_LABEL_TOKENS,
     DRAFT_FIELDS,
     ISO_DATE_PATTERN,
     MIN_LINE_SCORE,
     NUMERIC_DATE_PATTERN,
     QUOTA_PATTERN,
+    REGIMEN_CODE_ORDER,
     REGIMEN_PATTERN,
 )
 
@@ -143,6 +146,19 @@ def segment(line: str) -> list[tuple[str | None, str]]:
 
 
 def _parse_quota(value: str) -> int | None:
+    """Read a daily pill count, preferring the `n x m sehari` usage form.
+
+    A medication table's `Aturan Pakai` column reads `1 x 1 sehari (pagi)`,
+    which is one pill a day. The bare-number fallback would take the first
+    digit it finds; on a row that also carries `30 tablet` (a month's supply)
+    that would report 30 pills a day, so the structured form wins whenever it
+    is present and the first number is only used when it is not.
+    """
+    usage = DAILY_USAGE_PATTERN.search(value)
+    if usage is not None:
+        per_dose, doses = (int(group) for group in usage.groups())
+        quota = per_dose * doses
+        return quota if quota >= 1 else None
     match = QUOTA_PATTERN.search(value)
     if match is None:
         return None
@@ -153,6 +169,26 @@ def _parse_quota(value: str) -> int | None:
 def _parse_regimen(value: str) -> str | None:
     match = REGIMEN_PATTERN.search(value)
     return match.group(1).upper() if match else None
+
+
+def _derive_regimen_from_drugs(texts: list[str]) -> str | None:
+    """Build a regimen code from the drugs named across the detected rows.
+
+    Returns ``HRZE`` for a card listing rifampisin, isoniazid, pirazinamid, and
+    etambutol even though the card never says `Regimen`. At least two of the
+    six mapped drugs must appear: one drug is not a regimen, and a code built
+    from a single name would be a guess the Nakes cannot tell apart from a
+    reading of the card.
+    """
+    letters: set[str] = set()
+    for text in texts:
+        lowered = text.lower()
+        for drug, letter in ANTITUBERCULOSIS_DRUGS.items():
+            if drug in lowered:
+                letters.add(letter)
+    if len(letters) < 2:
+        return None
+    return "".join(letter for letter in REGIMEN_CODE_ORDER if letter in letters)
 
 
 def _validated_date(year: int, month: int, day: int) -> DateRead:
@@ -289,6 +325,23 @@ def parse_onboarding_lines(lines: list[OcrLine]) -> OcrOnboardingDraft:
         if regimen_code is None:
             uncertainties.append(
                 f"Regimen '{regimen[0]}' tidak bisa dibaca sebagai kode."
+            )
+    if regimen_code is None:
+        # A Puskesmas card names drugs, not a regimen, so fall back to the drug
+        # table. Confidence stays below a read regimen: it is derived from the
+        # drugs present rather than stated on the card, and the Nakes should
+        # confirm it.
+        drug_rows = [
+            line for line in lines
+            if line.score >= MIN_LINE_SCORE
+            and any(drug in line.text.lower() for drug in ANTITUBERCULOSIS_DRUGS)
+        ]
+        derived = _derive_regimen_from_drugs([line.text for line in drug_rows])
+        if derived is not None:
+            regimen_code = derived
+            confidence["regimenCode"] = min(line.score for line in drug_rows)
+            uncertainties.append(
+                f"Regimen '{derived}' disimpulkan dari daftar obat, bukan tertulis di kartu."
             )
 
     dose = reads.get("dailyPillQuota")

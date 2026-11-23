@@ -315,3 +315,106 @@ def test_the_route_returns_the_draft_for_a_real_card(engine: None):
 def test_bytes_that_are_not_an_image_are_refused():
     with pytest.raises(ValueError, match="not a decodable image"):
         extract_onboarding_card(b"this is not an image")
+
+# --- a real Kemenkes treatment card ----------------------------------------
+#
+# `card-synthetic.png` is a photographed Puskesmas form, not an onboarding
+# card. It says `Tanggal:` rather than `Tanggal Mulai:`, has no `Regimen` or
+# `Kuota` row at all, and lists the regimen as a drug table. Before these
+# rules it yielded only the patient name, so the Nakes had to retype the three
+# fields the form actually requires (regimen, daily quota, start date).
+
+
+def test_a_bare_tanggal_row_is_the_start_date():
+    """`Tanggal:` on a treatment card is when the regimen was prescribed."""
+    draft = parse_onboarding_lines(
+        lines(("Nama Pasien: Siti Nur Aisyah", 0.99), ("Tanggal : 28-04-2025", 0.98))
+    )
+    assert draft.startDate == "2025-04-28"
+
+
+@pytest.mark.parametrize(
+    "row",
+    [
+        "Tanggal Lahir : 03-07-1989",
+        "Tgl Lahir : 03-07-1989",
+        "Tanggal Kunjungan : 28-04-2025",
+        "Tanggal Masuk : 28-04-2025",
+        "Tanggal Selesai : 03-10-2026",
+    ],
+)
+def test_a_qualified_tanggal_is_never_the_start_date(row):
+    """A birth date or a visit date must never date the regimen.
+
+    Reading `Tanggal Lahir` as the start date would date a TB regimen to the
+    year the patient was born, and the Nakes has no way to notice that from a
+    plausible-looking value. Only an unqualified `Tanggal:` is the start.
+    """
+    draft = parse_onboarding_lines(lines(("Nama Pasien: Siti", 0.99), (row, 0.99)))
+    assert draft.startDate is None
+
+
+def test_a_bare_tanggal_still_cuts_the_previous_value():
+    """It became a field, but it must not swallow the row it followed."""
+    draft = parse_onboarding_lines(
+        lines(("Nama Pasien: Siti Nur Aisyah", 0.99), ("Tanggal : 28-04-2025", 0.98))
+    )
+    assert draft.patientName == "Siti Nur Aisyah"
+
+
+@pytest.mark.parametrize(
+    ("drugs", "expected"),
+    [
+        (["Rifampisin 600 mg", "Isoniazid 300 mg", "Pirazinamid 500 mg", "Etambutol 400 mg"], "HRZE"),
+        (["Rifampisin 600 mg", "Isoniazid 300 mg", "Pirazinamid 500 mg"], "HRZ"),
+        (["Rifampisin 600 mg", "Isoniazid 300 mg", "Etambutol 400 mg"], "HRE"),
+        (["Rifampisin 600 mg", "Isoniazid 300 mg"], "HR"),
+    ],
+)
+def test_the_regimen_is_derived_from_the_drug_table(drugs, expected):
+    rows = [OcrLine("Nama Pasien: Siti", 0.99), OcrLine("Nama Obat", 0.99)]
+    rows += [OcrLine(drug, 0.98) for drug in drugs]
+    assert parse_onboarding_lines(rows).regimenCode == expected
+
+
+def test_a_drug_table_never_invents_a_regimen_from_one_drug():
+    """A single drug is not a standard regimen, so it is left for the Nakes."""
+    rows = [OcrLine("Nama Pasien: Siti", 0.99), OcrLine("Rifampisin 600 mg", 0.98)]
+    assert parse_onboarding_lines(rows).regimenCode is None
+
+
+def test_aturan_pakai_is_the_daily_quota_not_the_monthly_total():
+    """`1 x 1 sehari` is one pill a day; `30 tablet` is the month's supply."""
+    draft = parse_onboarding_lines(
+        lines(
+            ("Nama Obat", 0.99),
+            ("Rifampisin 600 mg", 0.98),
+            ("Isoniazid 300 mg", 0.98),
+            ("Aturan Pakai: 1 x 1 sehari (pagi)", 0.97),
+        )
+    )
+    assert draft.dailyPillQuota == 1
+    assert draft.regimenCode == "HR"
+
+
+def test_the_monthly_tablet_count_is_never_read_as_a_daily_quota():
+    """`30 tablet` is a month's supply, so it must not become 30 pills a day."""
+    draft = parse_onboarding_lines(lines(("Jumlah: 30 tablet", 0.98),))
+    assert draft.dailyPillQuota is None
+
+
+def test_a_photographed_puskesmas_form_yields_the_required_fields(engine: None):
+    """The regimen, the start date, and the name, from a drug table.
+
+    `dailyPillQuota` is deliberately not asserted: on this form the `Aturan
+    Pakai` column is a separate column of the drug table, not a labelled row,
+    so there is no value the parser can read without guessing from geometry.
+    A wrong daily quota is worse than an empty one, so it stays for the Nakes.
+    """
+    draft = extract_onboarding_card(read("photos", "card-synthetic.png"))
+    assert draft.patientName == "Siti Nur Aisyah"
+    assert draft.regimenCode == "HRZE"
+    assert draft.startDate == "2025-04-28"
+    assert draft.dailyPillQuota is None
+    # A derived regimen is flagged so the Nakes knows to confirm it.
+    assert any("disimpulkan" in note for note in draft.uncertainties)
