@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   // before using `quality={...}` on an Image.
   experimental: {
     agentFeedback: true,
+    agentUpgrade: "security",
   },
   cacheComponents: true,
   partialPrefetching: true,
