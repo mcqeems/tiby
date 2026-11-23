@@ -35,6 +35,7 @@ import { AdminNotificationsModule } from "./modules/admin-notifications/admin-no
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: [".env", "app/backend/.env"],
       validate: validateEnv,
     }),
     EventEmitterModule.forRoot(),

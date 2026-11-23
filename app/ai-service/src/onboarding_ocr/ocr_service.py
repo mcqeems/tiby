@@ -159,4 +159,13 @@ def extract_onboarding_card(image_bytes: bytes) -> OcrOnboardingDraft:
     image = cv2.imdecode(np.frombuffer(image_bytes, dtype=np.uint8), cv2.IMREAD_COLOR)
     if image is None:
         raise ValueError("Uploaded file is not a decodable image.")
+    h, w = image.shape[:2]
+    if w < 1400:
+        scale = min(2.5, 1400.0 / w)
+        if scale > 1.05:
+            image = cv2.resize(
+                image,
+                (round(w * scale), round(h * scale)),
+                interpolation=cv2.INTER_CUBIC,
+            )
     return parse_onboarding_lines(_extract_lines(image))

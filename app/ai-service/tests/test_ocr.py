@@ -194,11 +194,15 @@ def test_every_draft_field_reports_a_confidence_even_when_missing():
     draft = parse_onboarding_lines(lines(("Regimen: HRZE", 0.9)))
     assert set(draft.fieldConfidence) == {
         "patientName",
+        "patientUsername",
         "patientPhone",
         "pmoName",
+        "pmoUsername",
         "pmoPhone",
+        "pmoRelationship",
         "regimenCode",
         "dailyPillQuota",
+        "reminderTimeLocal",
         "startDate",
         "targetEndDate",
     }
@@ -438,11 +442,15 @@ def test_a_photographed_puskesmas_form_yields_the_required_fields(engine: None):
 def test_the_pemantauan_form_yields_every_field_it_prints(engine: None):
     draft = extract_onboarding_card(read("photos", "card-form-pemantauan.jpg"))
     assert draft.patientName == "Ahmad Rizky Pratama"
+    assert draft.patientUsername == "ahmadrizky"
     assert draft.patientPhone == "081289765432"
     assert draft.pmoName == "Budi Santoso"
+    assert draft.pmoUsername == "budisantoso99"
     assert draft.pmoPhone == "081298765431"
+    assert draft.pmoRelationship == "KELUARGA"
     assert draft.regimenCode == "FDC-4"
     assert draft.dailyPillQuota == 4
+    assert draft.reminderTimeLocal == "07:00"
     assert draft.startDate == "2026-08-08"
     # `08/08/2026` reads the same either way round, so it is not ambiguous.
     assert draft.uncertainties == []

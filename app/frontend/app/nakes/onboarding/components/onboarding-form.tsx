@@ -368,7 +368,28 @@ export default function OnboardingForm() {
 
     try {
       const draft = await onboardingApi.ocrExtract(file);
-      const merged = mergeOcrDraft(form, draft, touched);
+      // A PMO the Nakes already picked stays picked: the card's PMO block must
+      // not replace a deliberately chosen registered account. With no PMO
+      // chosen yet, the card's identity is the better default and the form
+      // switches back to "Buat Baru" so the filled fields are visible.
+      const pmoFields: OcrFieldKey[] = [
+        "pmoName",
+        "pmoUsername",
+        "pmoPhone",
+        "pmoRelationship",
+      ];
+      const blocked = selectedExistingPmo
+        ? new Set([...touched, ...pmoFields])
+        : touched;
+      const merged = mergeOcrDraft(form, draft, blocked);
+
+      if (
+        pmoMode === "existing" &&
+        !selectedExistingPmo &&
+        merged.filled.some((key) => pmoFields.includes(key))
+      ) {
+        setPmoMode("baru");
+      }
 
       setForm(merged.form);
       setOcrResult({ draft, filled: merged.filled, skipped: merged.skipped });
@@ -702,6 +723,8 @@ export default function OnboardingForm() {
                 icon={AtSign}
                 fieldKey="patient.username"
                 error={errorFor("patient.username")}
+                fromCard={fromCard("patientUsername")}
+                confidence={confidenceFor("patientUsername")}
                 wiggleToken={wiggleToken}
                 hint="3–30 karakter."
               >
@@ -711,12 +734,13 @@ export default function OnboardingForm() {
                   minLength={3}
                   maxLength={30}
                   value={form.patient.username}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    markTouched("patientUsername");
                     setForm({
                       ...form,
                       patient: { ...form.patient, username: e.target.value },
-                    })
-                  }
+                    });
+                  }}
                   placeholder="cth: budisantoso"
                   className={`${inputCls} pl-10`}
                 />
@@ -727,6 +751,8 @@ export default function OnboardingForm() {
                 icon={Phone}
                 fieldKey="patient.whatsappNumber"
                 error={errorFor("patient.whatsappNumber")}
+                fromCard={fromCard("patientPhone")}
+                confidence={confidenceFor("patientPhone")}
                 wiggleToken={wiggleToken}
                 hint="Minimal 8 digit angka."
               >
@@ -735,15 +761,16 @@ export default function OnboardingForm() {
                   required
                   minLength={8}
                   value={form.patient.whatsappNumber}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    markTouched("patientPhone");
                     setForm({
                       ...form,
                       patient: {
                         ...form.patient,
                         whatsappNumber: e.target.value,
                       },
-                    })
-                  }
+                    });
+                  }}
                   placeholder="cth: 08123456789"
                   className={`${inputCls} pl-10`}
                 />
@@ -905,18 +932,21 @@ export default function OnboardingForm() {
                   icon={User}
                   fieldKey="pmo.fullName"
                   error={errorFor("pmo.fullName")}
+                  fromCard={fromCard("pmoName")}
+                  confidence={confidenceFor("pmoName")}
                   wiggleToken={wiggleToken}
                 >
                   <input
                     type="text"
                     required
                     value={form.pmo.fullName}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      markTouched("pmoName");
                       setForm({
                         ...form,
                         pmo: { ...form.pmo, fullName: e.target.value },
-                      })
-                    }
+                      });
+                    }}
                     placeholder="cth: Ratna Dewi"
                     className={`${inputCls} pl-10`}
                   />
@@ -927,6 +957,8 @@ export default function OnboardingForm() {
                   icon={AtSign}
                   fieldKey="pmo.username"
                   error={errorFor("pmo.username")}
+                  fromCard={fromCard("pmoUsername")}
+                  confidence={confidenceFor("pmoUsername")}
                   wiggleToken={wiggleToken}
                   hint="3–30 karakter."
                 >
@@ -936,12 +968,13 @@ export default function OnboardingForm() {
                     minLength={3}
                     maxLength={30}
                     value={form.pmo.username}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      markTouched("pmoUsername");
                       setForm({
                         ...form,
                         pmo: { ...form.pmo, username: e.target.value },
-                      })
-                    }
+                      });
+                    }}
                     placeholder="cth: ratnadewi"
                     className={`${inputCls} pl-10`}
                   />
@@ -952,34 +985,43 @@ export default function OnboardingForm() {
                   icon={Phone}
                   fieldKey="pmo.whatsappNumber"
                   error={errorFor("pmo.whatsappNumber")}
+                  fromCard={fromCard("pmoPhone")}
+                  confidence={confidenceFor("pmoPhone")}
                   wiggleToken={wiggleToken}
                 >
                   <input
                     type="tel"
                     required
                     value={form.pmo.whatsappNumber}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      markTouched("pmoPhone");
                       setForm({
                         ...form,
                         pmo: { ...form.pmo, whatsappNumber: e.target.value },
-                      })
-                    }
+                      });
+                    }}
                     placeholder="cth: 08812312345"
                     className={`${inputCls} pl-10`}
                   />
                 </Field>
-                <Field label="Hubungan" required>
+                <Field
+                  label="Hubungan"
+                  required
+                  fromCard={fromCard("pmoRelationship")}
+                  confidence={confidenceFor("pmoRelationship")}
+                >
                   <select
                     value={form.pmo.relationship}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      markTouched("pmoRelationship");
                       setForm({
                         ...form,
                         pmo: {
                           ...form.pmo,
                           relationship: e.target.value as PmoRelationship,
                         },
-                      })
-                    }
+                      });
+                    }}
                     className={`${inputCls} cursor-pointer appearance-none pr-10`}
                   >
                     <option value="KELUARGA">Keluarga</option>
@@ -1055,15 +1097,18 @@ export default function OnboardingForm() {
                 icon={Clock}
                 fieldKey="reminderTimeLocal"
                 error={errorFor("reminderTimeLocal")}
+                fromCard={fromCard("reminderTimeLocal")}
+                confidence={confidenceFor("reminderTimeLocal")}
                 wiggleToken={wiggleToken}
               >
                 <input
                   type="time"
                   required
                   value={form.reminderTimeLocal}
-                  onChange={(e) =>
-                    setForm({ ...form, reminderTimeLocal: e.target.value })
-                  }
+                  onChange={(e) => {
+                    markTouched("reminderTimeLocal");
+                    setForm({ ...form, reminderTimeLocal: e.target.value });
+                  }}
                   className={`${inputCls} pl-10`}
                 />
               </Field>

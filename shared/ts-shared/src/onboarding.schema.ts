@@ -91,8 +91,15 @@ export type OnboardingCredentials = z.infer<typeof OnboardingCredentialsSchema>;
 
 export const OcrOnboardingDraftSchema = z.object({
   patientName: z.string().nullable(),
+  patientUsername: z.string().nullable().optional().default(null),
+  patientPhone: z.string().nullable().optional().default(null),
+  pmoName: z.string().nullable().optional().default(null),
+  pmoUsername: z.string().nullable().optional().default(null),
+  pmoPhone: z.string().nullable().optional().default(null),
+  pmoRelationship: z.string().nullable().optional().default(null),
   regimenCode: z.string().nullable(),
   dailyPillQuota: z.number().int().positive().nullable(),
+  reminderTimeLocal: z.string().nullable().optional().default(null),
   startDate: z.string().nullable(),
   targetEndDate: z.string().nullable(),
   confidence: z.number().min(0).max(1),

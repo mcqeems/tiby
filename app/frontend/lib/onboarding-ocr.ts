@@ -4,16 +4,35 @@ import type { OnboardingFormState } from "@/lib/types/onboarding";
 /**
  * What OCR may fill, and what still blocks the submit.
  *
- * The scanned card only carries these four things. Everything else on the form
- * (username, PMO, reminder time, family contact) is decided by the Nakes, so
- * OCR must never look like it supplied them.
+ * The card can carry both identities (patient and PMO), their phone numbers,
+ * and the regimen details. Reminder time, family contact, and the PMO
+ * relationship are never printed on these cards, so OCR must not look like it
+ * supplied them.
  */
-export type OcrFieldKey = "patientName" | "regimenCode" | "dailyPillQuota" | "startDate";
+export type OcrFieldKey =
+  | "patientName"
+  | "patientUsername"
+  | "patientPhone"
+  | "pmoName"
+  | "pmoUsername"
+  | "pmoPhone"
+  | "pmoRelationship"
+  | "regimenCode"
+  | "dailyPillQuota"
+  | "reminderTimeLocal"
+  | "startDate";
 
 export const OCR_FIELD_LABELS: Record<OcrFieldKey, string> = {
   patientName: "Nama pasien",
+  patientUsername: "Username pasien",
+  patientPhone: "WhatsApp pasien",
+  pmoName: "Nama PMO",
+  pmoUsername: "Username PMO",
+  pmoPhone: "WhatsApp PMO",
+  pmoRelationship: "Hubungan PMO",
   regimenCode: "Regimen",
   dailyPillQuota: "Kuota harian",
+  reminderTimeLocal: "Jam pengingat",
   startDate: "Tanggal mulai",
 };
 
@@ -36,8 +55,8 @@ export interface MergeResult {
  *
  * "Fill only empty" is not enough: regimen and daily quota start at a default
  * (FDC-4 / 4), so an empty check would silently refuse to correct a card that
- * says FDC-3. The form tracks which of the four the Nakes has touched; OCR
- * fills the untouched ones and leaves everything they typed alone.
+ * says FDC-3. The form tracks which of the scan's fields the Nakes has touched;
+ * OCR fills the untouched ones and leaves everything they typed alone.
  */
 export function mergeOcrDraft(
   form: OnboardingFormState,
@@ -47,6 +66,7 @@ export function mergeOcrDraft(
   const next: OnboardingFormState = {
     ...form,
     patient: { ...form.patient },
+    pmo: { ...form.pmo },
   };
   const filled: OcrFieldKey[] = [];
   const skipped: OcrFieldKey[] = [];
@@ -68,11 +88,38 @@ export function mergeOcrDraft(
   apply("patientName", draft.patientName, () => {
     next.patient.fullName = draft.patientName as string;
   });
+  apply("patientUsername", draft.patientUsername, () => {
+    next.patient.username = draft.patientUsername as string;
+  });
+  apply("patientPhone", draft.patientPhone, () => {
+    next.patient.whatsappNumber = draft.patientPhone as string;
+  });
+  apply("pmoName", draft.pmoName, () => {
+    next.pmo.fullName = draft.pmoName as string;
+  });
+  apply("pmoUsername", draft.pmoUsername, () => {
+    next.pmo.username = draft.pmoUsername as string;
+  });
+  apply("pmoPhone", draft.pmoPhone, () => {
+    next.pmo.whatsappNumber = draft.pmoPhone as string;
+  });
+  apply("pmoRelationship", draft.pmoRelationship, () => {
+    if (
+      draft.pmoRelationship === "KELUARGA" ||
+      draft.pmoRelationship === "KADER" ||
+      draft.pmoRelationship === "NAKES"
+    ) {
+      next.pmo.relationship = draft.pmoRelationship;
+    }
+  });
   apply("regimenCode", draft.regimenCode, () => {
     next.regimenCode = draft.regimenCode as string;
   });
   apply("dailyPillQuota", draft.dailyPillQuota, () => {
     next.dailyPillQuota = draft.dailyPillQuota as number;
+  });
+  apply("reminderTimeLocal", draft.reminderTimeLocal, () => {
+    next.reminderTimeLocal = draft.reminderTimeLocal as string;
   });
   apply("startDate", draft.startDate, () => {
     next.startDate = draft.startDate as string;
@@ -154,12 +201,40 @@ export function formatIsoDateShort(iso: string | null | undefined): string | nul
   return `${day}/${month}/${year}`;
 }
 
+/**
+ * One person and the identifiers the card printed next to their name.
+ *
+ * `Ahmad Rizky Pratama (@ahmadrizky, 081289765432)` keeps the summary readable
+ * when both identities and both numbers were read, instead of a flat list that
+ * makes it impossible to tell whose number is whose.
+ */
+function personSummary(
+  name: string | null | undefined,
+  username: string | null | undefined,
+  phone: string | null | undefined,
+): string | null {
+  const details = [username ? `@${username}` : null, phone].filter(
+    (part): part is string => Boolean(part),
+  );
+  if (!name && details.length === 0) return null;
+  if (details.length === 0) return name ?? null;
+  return `${name ? `${name} ` : ""}(${details.join(", ")})`.trim();
+}
+
 /** One line for the OCR result: only what the card actually yielded. */
 export function ocrSummary(draft: OcrOnboardingDraft): string {
-  const parts = [
+  const patient = personSummary(
     draft.patientName,
+    draft.patientUsername,
+    draft.patientPhone,
+  );
+  const pmo = personSummary(draft.pmoName, draft.pmoUsername, draft.pmoPhone);
+  const parts = [
+    patient,
+    pmo ? `PMO ${pmo}` : null,
     draft.regimenCode,
     draft.dailyPillQuota ? `${draft.dailyPillQuota} butir` : null,
+    draft.reminderTimeLocal ? `pukul ${draft.reminderTimeLocal}` : null,
     formatIsoDateShort(draft.startDate),
   ].filter(Boolean);
   return parts.length ? parts.join(" · ") : "Kartu terbaca, tetapi tidak ada kolom yang dikenali.";

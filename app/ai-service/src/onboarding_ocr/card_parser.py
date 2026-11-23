@@ -307,6 +307,14 @@ def _reporting_fields(lines: list[OcrLine]) -> set[str]:
     text = " ".join(line.text for line in lines)
     if _PMO_SECTION.search(text):
         fields |= {"pmoName", "pmoPhone"}
+    if _PMO_USERNAME_LABEL.search(text):
+        fields.add("pmoUsername")
+    if _PATIENT_USERNAME_LABEL.search(text):
+        fields.add("patientUsername")
+    if _RELATIONSHIP_LABEL.search(text):
+        fields.add("pmoRelationship")
+    if _REMINDER_LABEL.search(text):
+        fields.add("reminderTimeLocal")
     if _ANY_PHONE_LABEL.search(text):
         fields.add("patientPhone")
     return fields
@@ -342,6 +350,79 @@ _ANY_PHONE_LABEL = re.compile(
     r"(?:whats?app|\bwa\b|no\.?\s*(?:telp|telpon|telepon|hp|hape))", re.IGNORECASE
 )
 """Any phone-number wording at all, used only to decide whether to report it."""
+
+_PMO_USERNAME_LABEL = re.compile(
+    r"\busername\s*(?:pmo|pengawas)", re.IGNORECASE
+)
+_PATIENT_USERNAME_LABEL = re.compile(
+    r"\busername(?!\s*(?:pmo|pengawas))", re.IGNORECASE
+)
+"""Which side a username belongs to, decided by the label's own wording."""
+
+_RELATIONSHIP_LABEL = re.compile(r"\bhubungan\b", re.IGNORECASE)
+_REMINDER_LABEL = re.compile(
+    r"(?:jam|waktu)\s*(?:pengingat|minum|pemberian|obat)", re.IGNORECASE
+)
+
+_RELATIONSHIP_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (re.compile(r"\bkader\b", re.IGNORECASE), "KADER"),
+    (re.compile(r"\b(?:nakes|petugas|perawat|bidan|dokter)\b", re.IGNORECASE), "NAKES"),
+    (
+        re.compile(
+            r"\b(?:ayah|ibu|suami|istri|anak|keluarga|orang\s*tua|saudara|kakak|adik|famili|wali|teman|kerabat)\b",
+            re.IGNORECASE,
+        ),
+        "KELUARGA",
+    ),
+)
+
+
+def _parse_relationship(raw: str) -> str | None:
+    text = raw.strip()
+    if not text:
+        return None
+    for pattern, category in _RELATIONSHIP_PATTERNS:
+        if pattern.search(text):
+            return category
+    if re.match(r"^[A-Za-z\s]+$", text):
+        return "KELUARGA"
+    return None
+
+
+_TIME_PATTERN = re.compile(
+    r"(?:(?:waktu|jam)\s*(?:minum|pengingat)?\s*:?\s*)?(\d{1,2})[:.](\d{2})(?:\s*([ap]\.?m\.?))?",
+    re.IGNORECASE,
+)
+
+
+def _parse_time(raw: str) -> str | None:
+    match = _TIME_PATTERN.search(raw)
+    if not match:
+        return None
+    hour = int(match.group(1))
+    minute = int(match.group(2))
+    meridiem = match.group(3)
+    if meridiem:
+        m = meridiem.lower().replace(".", "")
+        if m == "pm" and hour < 12:
+            hour += 12
+        elif m == "am" and hour == 12:
+            hour = 0
+    if 0 <= hour <= 23 and 0 <= minute <= 59:
+        return f"{hour:02d}:{minute:02d}"
+    return None
+
+
+def _suggest_username(name: str) -> str | None:
+    tokens = [re.sub(r"[^a-z0-9]", "", part.lower()) for part in name.split()]
+    tokens = [t for t in tokens if t]
+    if not tokens:
+        return None
+    candidate = "".join(tokens[:2]) if len(tokens) >= 2 else tokens[0]
+    candidate = candidate[:30]
+    if len(candidate) >= 3:
+        return candidate
+    return None
 """Fields whose value must carry a digit: ``selesai pengakatan`` is prose, not a date."""
 
 _NOT_A_PERSON = re.compile(
@@ -592,13 +673,36 @@ def parse_onboarding_lines(lines: list[OcrLine]) -> OcrOnboardingDraft:
         dates[field], confidence[field], notes = _read_date_field(label, raw[0], raw[1])
         uncertainties.extend(notes)
 
+    patient_username = _read_simple(reads, "patientUsername", confidence)
+    if not patient_username and patient_name:
+        suggested = _suggest_username(patient_name)
+        if suggested:
+            patient_username = suggested
+            confidence["patientUsername"] = round(confidence.get("patientName", 0.9) * 0.95, 2)
+
+    pmo_relationship: str | None = None
+    raw_rel = reads.get("pmoRelationship")
+    if raw_rel is not None:
+        pmo_relationship = _parse_relationship(raw_rel[0])
+        confidence["pmoRelationship"] = raw_rel[1] if pmo_relationship else 0.0
+
+    reminder_time: str | None = None
+    raw_time = reads.get("reminderTimeLocal")
+    if raw_time is not None:
+        reminder_time = _parse_time(raw_time[0])
+        confidence["reminderTimeLocal"] = raw_time[1] if reminder_time else 0.0
+
     return OcrOnboardingDraft(
         patientName=patient_name,
+        patientUsername=patient_username,
         patientPhone=_read_simple(reads, "patientPhone", confidence),
         pmoName=_read_simple(reads, "pmoName", confidence),
+        pmoUsername=_read_simple(reads, "pmoUsername", confidence),
         pmoPhone=_read_simple(reads, "pmoPhone", confidence),
+        pmoRelationship=pmo_relationship,
         regimenCode=regimen_code,
         dailyPillQuota=quota,
+        reminderTimeLocal=reminder_time,
         startDate=dates.get("startDate"),
         targetEndDate=dates.get("targetEndDate"),
         confidence=_overall_confidence(confidence, lines),

@@ -15,11 +15,15 @@ AMBIGUOUS_DATE_CONFIDENCE = 0.5
 
 DRAFT_FIELDS = (
     "patientName",
+    "patientUsername",
     "patientPhone",
     "pmoName",
+    "pmoUsername",
     "pmoPhone",
+    "pmoRelationship",
     "regimenCode",
     "dailyPillQuota",
+    "reminderTimeLocal",
     "startDate",
     "targetEndDate",
 )
@@ -42,6 +46,23 @@ _LABELS: tuple[tuple[str | None, str], ...] = (
             rf"{SEPARATOR}"
         ),
     ),
+    # Usernames are login identifiers, not names: `Username PMO` must not be
+    # read as the patient's, and a bare `Username` in the patient block still
+    # is. The section wording on the card is the only thing that disambiguates.
+    (
+        "pmoUsername",
+        (
+            rf"{LABEL_START}username\s*(?:pmo|pengawas(?:\s*menelan\s*obat)?)\b"
+            rf"{SEPARATOR}"
+        ),
+    ),
+    (
+        "patientUsername",
+        (
+            rf"{LABEL_START}username(?!\s*(?:pmo|pengawas))"
+            rf"\s*(?:pasien|peserta|terduga|penderita|klien)?\b{SEPARATOR}"
+        ),
+    ),
     # `Nama PMO` and the PMO's own `No.telp/Hp` appear on the national TB.01
     # card. They must be matched before the generic phone label below, and the
     # PMO section header decides which of the two phone numbers is the PMO's
@@ -53,6 +74,14 @@ _LABELS: tuple[tuple[str | None, str], ...] = (
             rf"{LABEL_START}(?:whats?app|wa|no\.?\s*(?:telp|telpon|telepon|tlp|hp|hape)\.?(?:\s*/\s*(?:hp|hape)\.?)?)"
             rf"\s*pmo\b{SEPARATOR}"
         ),
+    ),
+    (
+        "pmoRelationship",
+        rf"{LABEL_START}hubungan(?:\s*pmo|\s*keluarga|\s*dengan\s*pasien)?\b{SEPARATOR}",
+    ),
+    (
+        "reminderTimeLocal",
+        rf"{LABEL_START}(?:jam|waktu)\s*(?:pengingat|minum|pemberian|obat)\b{SEPARATOR}",
     ),
     # A bare phone label: on its own it is the patient's, but the same words
     # label the PMO's number on TB.01, so its owner comes from the section.

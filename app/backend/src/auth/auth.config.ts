@@ -5,7 +5,20 @@ import { createAuthEndpoint, APIError } from "better-auth/api";
 import { setSessionCookie } from "better-auth/cookies";
 import { z } from "zod";
 import pg from "pg";
+import dotenv from "dotenv";
+import { resolve } from "node:path";
+import { existsSync } from "node:fs";
 import { ac, ADMIN, NAKES, PMO, PASIEN } from "./permissions.js";
+
+for (const envFile of [
+  resolve(process.cwd(), ".env"),
+  resolve(process.cwd(), "app/backend/.env"),
+  resolve(process.cwd(), "../.env"),
+]) {
+  if (existsSync(envFile)) {
+    dotenv.config({ path: envFile });
+  }
+}
 
 const { Pool } = pg;
 

@@ -66,6 +66,34 @@ describe("mergeOcrDraft", () => {
     expect(result.skipped).toEqual([]);
   });
 
+  it("fills PMO details, relationship, and reminder time from draft", () => {
+    const fullDraft = draft({
+      patientUsername: "budisantoso",
+      patientPhone: "081289765432",
+      pmoName: "Ratna Dewi",
+      pmoUsername: "ratnadewi",
+      pmoPhone: "081298765431",
+      pmoRelationship: "KELUARGA",
+      reminderTimeLocal: "07:00",
+    });
+    const result = mergeOcrDraft(form(), fullDraft, new Set());
+
+    expect(result.form.patient.username).toBe("budisantoso");
+    expect(result.form.patient.whatsappNumber).toBe("081289765432");
+    expect(result.form.pmo.fullName).toBe("Ratna Dewi");
+    expect(result.form.pmo.username).toBe("ratnadewi");
+    expect(result.form.pmo.whatsappNumber).toBe("081298765431");
+    expect(result.form.pmo.relationship).toBe("KELUARGA");
+    expect(result.form.reminderTimeLocal).toBe("07:00");
+    expect(result.filled).toContain("patientUsername");
+    expect(result.filled).toContain("patientPhone");
+    expect(result.filled).toContain("pmoName");
+    expect(result.filled).toContain("pmoUsername");
+    expect(result.filled).toContain("pmoPhone");
+    expect(result.filled).toContain("pmoRelationship");
+    expect(result.filled).toContain("reminderTimeLocal");
+  });
+
   it("never overwrites a value the Nakes typed", () => {
     const result = mergeOcrDraft(form(), draft(), new Set(["dailyPillQuota", "patientName"]));
 
