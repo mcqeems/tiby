@@ -168,6 +168,7 @@ export default function Footer() {
               <FooterLink href="#fitur">Fitur</FooterLink>
               <FooterLink href="#peran">Peran</FooterLink>
               <FooterLink href="#faq">Keamanan</FooterLink>
+              <FooterLink href="/contact">Hubungi Kami</FooterLink>
             </ul>
           </div>
           <div>

@@ -18,6 +18,7 @@ import {
   MessageCircle,
   ShieldCheck,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 interface WhatsappConnectCardProps {
   familyContactId?: string;
@@ -34,6 +35,49 @@ function formatRemaining(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function challengeCacheKey(familyContactId?: string): string {
+  return `tiby:wa-challenge:${familyContactId ?? "self"}`;
+}
+
+function saveCachedChallenge(
+  key: string,
+  challenge: WhatsappConnectChallenge,
+): void {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(challenge));
+  } catch {
+    // Ignore storage errors in private browsing or restricted contexts.
+  }
+}
+
+function loadCachedChallenge(
+  key: string,
+  pendingCode: string,
+): WhatsappConnectChallenge | null {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as WhatsappConnectChallenge;
+    if (
+      parsed.verificationCode === pendingCode &&
+      Date.parse(parsed.expiresAt) > Date.now()
+    ) {
+      return parsed;
+    }
+  } catch {
+    // Ignore malformed or inaccessible cache entries.
+  }
+  return null;
+}
+
+function clearCachedChallenge(key: string): void {
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // Ignore storage errors.
+  }
 }
 
 export default function WhatsappConnectCard({
@@ -60,6 +104,8 @@ export default function WhatsappConnectCard({
     verifiedCallback.current = onVerified;
   }, [onVerified]);
 
+  const cacheKey = challengeCacheKey(familyContactId);
+
   const loadStatus = useCallback(async () => {
     try {
       const res = await whatsappApi.getStatus(familyContactId);
@@ -68,12 +114,16 @@ export default function WhatsappConnectCard({
         setPhone((prev) => prev || res.phoneNumber!);
       }
       if (res.verified) {
+        clearCachedChallenge(cacheKey);
         setChallenge(null);
       } else if (res.pendingCode && res.expiresAt) {
         // The status endpoint already knows about a code created before this
-        // mount (modal reopened, page reloaded). Show it instead of losing it.
+        // mount (modal reopened, page reloaded). Restore cached deep link when
+        // available so the QR code and Buka WhatsApp link stay intact.
+        const cached = loadCachedChallenge(cacheKey, res.pendingCode);
         setChallenge((prev) =>
-          prev ?? {
+          (prev && prev.verificationCode === res.pendingCode ? prev : null) ??
+          cached ?? {
             verificationCode: res.pendingCode!,
             botPhoneNumber: "",
             wahaDeepLink: "",
@@ -86,6 +136,8 @@ export default function WhatsappConnectCard({
             Math.floor((Date.parse(res.expiresAt) - Date.now()) / 1000),
           ),
         );
+      } else {
+        clearCachedChallenge(cacheKey);
       }
       return res;
     } catch (err: unknown) {
@@ -96,7 +148,7 @@ export default function WhatsappConnectCard({
     } finally {
       setLoading(false);
     }
-  }, [familyContactId]);
+  }, [cacheKey, familyContactId]);
 
   useEffect(() => {
     let active = true;
@@ -125,6 +177,7 @@ export default function WhatsappConnectCard({
       const left = Math.max(0, Math.floor((expires - Date.now()) / 1000));
       setRemaining(left);
       if (left === 0) {
+        clearCachedChallenge(cacheKey);
         setChallenge(null);
         setStatus((prev) =>
           prev ? { ...prev, pendingCode: null, expiresAt: null } : prev,
@@ -132,7 +185,7 @@ export default function WhatsappConnectCard({
       }
     }, 1000);
     return () => clearInterval(timer);
-  }, [challenge]);
+  }, [cacheKey, challenge]);
 
   // Poll until the phone sends the code.
   useEffect(() => {
@@ -143,6 +196,7 @@ export default function WhatsappConnectCard({
         const res = await whatsappApi.getStatus(familyContactId);
         if (!active) return;
         if (res.verified) {
+          clearCachedChallenge(cacheKey);
           setStatus(res);
           setChallenge(null);
           setChanging(false);
@@ -156,7 +210,7 @@ export default function WhatsappConnectCard({
       active = false;
       clearInterval(timer);
     };
-  }, [challenge, familyContactId]);
+  }, [cacheKey, challenge, familyContactId]);
 
   const requestCode = async () => {
     setError(null);
@@ -174,6 +228,7 @@ export default function WhatsappConnectCard({
         phoneNumber: digits,
         ...(familyContactId ? { familyContactId } : {}),
       });
+      saveCachedChallenge(cacheKey, res);
       setChallenge(res);
       setRemaining(
         Math.max(0, Math.floor((Date.parse(res.expiresAt) - Date.now()) / 1000)),
@@ -284,6 +339,32 @@ export default function WhatsappConnectCard({
                 {copied ? "Tersalin" : "Salin"}
               </button>
             </div>
+
+            {challenge.wahaDeepLink && (
+              <div className="flex flex-col items-center gap-2.5 rounded-xl border border-gray-200 bg-gray-50/70 p-4 text-center">
+                <a
+                  href={challenge.wahaDeepLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Pindai atau klik untuk membuka tautan verifikasi WhatsApp"
+                  className="inline-block rounded-2xl border border-gray-200 bg-[#ffffff] p-3 shadow-xs transition hover:border-tiby-teal-500"
+                >
+                  <QRCodeSVG
+                    value={challenge.wahaDeepLink}
+                    size={176}
+                    level="M"
+                    marginSize={2}
+                    bgColor="#ffffff"
+                    fgColor="#111c1e"
+                    title="Kode QR verifikasi WhatsApp"
+                  />
+                </a>
+                <p className="text-xs leading-relaxed text-tiby-muted">
+                  Pindai kode QR dengan kamera ponsel untuk langsung membuka
+                  WhatsApp, atau ketuk tombol di bawah.
+                </p>
+              </div>
+            )}
 
             <div className="flex flex-wrap items-center justify-between gap-3">
               {challenge.wahaDeepLink ? (

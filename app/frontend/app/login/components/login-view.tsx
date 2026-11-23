@@ -200,11 +200,6 @@ export default function LoginView() {
               Silakan masuk untuk melanjutkan pendampingan dan pemantauan
               rutinitas sehatmu.
             </p>
-            <div className="mt-4 px-4 py-2 bg-black/25 rounded-2xl justify">
-              <p className="text-sm font-semibold text-white/90">
-                Juri UINIC 8.0 bisa menggunakan Demo ya 🙂
-              </p>
-            </div>
           </div>
 
           <div className="relative z-20 flex items-center justify-between gap-4 border-l-4 border-white/30 pl-4">
@@ -354,7 +349,7 @@ export default function LoginView() {
                   {loading ? "Memproses..." : "Login"}
                 </button>
 
-                <div className="space-y-2 md:hidden">
+                <div className="md:hidden">
                   <Link
                     href="/demo"
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-tiby-teal-200 bg-tiby-teal-50 py-3.5 text-sm font-bold text-tiby-teal-700 transition-colors hover:bg-tiby-teal-100"
@@ -362,15 +357,23 @@ export default function LoginView() {
                     <Play className="h-4 w-4" />
                     Coba Mode Demo
                   </Link>
-                  <p className="text-center text-xs font-medium text-tiby-muted">
-                    Juri UINIC 8.0 bisa menggunakan Demo ya 🙂
-                  </p>
                 </div>
               </div>
 
-              <div className="pt-4 text-center text-xs text-tiby-muted font-body leading-relaxed">
-                Akun Tiby dibuat oleh Tenaga Kesehatan (Nakes) di Faskes Anda.
-                Hubungi Faskes untuk mendapatkan akses.
+              <div className="space-y-1.5 pt-4 text-center text-xs text-tiby-muted font-body leading-relaxed">
+                <p>
+                  Akun Tiby dibuat oleh Tenaga Kesehatan (Nakes) di Faskes Anda.
+                  Hubungi Faskes untuk mendapatkan akses.
+                </p>
+                <p>
+                  Faskes Anda membutuhkan layanan Tiby?{" "}
+                  <Link
+                    href="/contact"
+                    className="font-semibold text-tiby-teal-700 underline-offset-4 hover:underline"
+                  >
+                    Hubungi admin kami
+                  </Link>
+                </p>
               </div>
             </form>
           </div>
