@@ -1,15 +1,19 @@
-"""Answering for general educational questions (``POST /ai/guidance``).
+"""Answering for general educational and Tiby app questions (``POST /ai/guidance``).
 
-Flow: deterministic personal-decision guard (``safety.py``) → provider call with
-whatever evidence retrieval found → citation allowlisting.
+Flow: deterministic prompt-injection guard (``safety.py``) → clinical caution
+classification → provider call with retrieved evidence and Tiby product
+knowledge → citation allowlisting + guaranteed Nakes referral on caution queries.
 
 Two properties are separate on purpose:
 
-- **Safety** — a personal decision request (dose, start/stop/switch) is refused
-  deterministically and never reaches the model.
-- **Grounding** — whether a supplied source backs the answer. A basic health
-  question with no matching source is still answerable; it is returned with
-  ``grounded=false`` and no citations rather than being refused.
+- **Safety** — prompt injections fail closed immediately; personal dosing or
+  medication-change prompts reach the model in ``caution_mode`` so Pandu gives
+  safe context (e.g., onboarding regimens like FDC-4/FDC-3) and strongly
+  refers the user to their Nakes/Faskes.
+- **Grounding** — whether a supplied Kemenkes/WHO source backs the answer. A
+  basic health or Tiby app question with no matching source is still answerable;
+  it is returned with ``grounded=false`` and no citations rather than being
+  refused.
 
 The model may only cite ``src-N`` IDs that were actually retrieved.
 """
@@ -20,16 +24,27 @@ from pathlib import Path
 
 from contracts import GuidanceCitation, GuidanceEvidence, GuidanceResponse
 from guidance.retrieval import Evidence
-from guidance.safety import detect_action_request
+from guidance.safety import detect_clinical_caution, detect_prompt_injection
 from providers.base import ProviderError
 from providers.nararouter import NaraRouterClient
 
 GUIDANCE_SYSTEM = Path(__file__).with_name("guidance_system.txt")
 GUIDANCE_SYSTEM_TEXT = GUIDANCE_SYSTEM.read_text(encoding="utf-8")
+TIBY_KNOWLEDGE = Path(__file__).with_name("tiby_knowledge.txt")
+TIBY_KNOWLEDGE_TEXT = TIBY_KNOWLEDGE.read_text(encoding="utf-8")
+FULL_GUIDANCE_SYSTEM_TEXT = (
+    f"{GUIDANCE_SYSTEM_TEXT.strip()}\n\n{TIBY_KNOWLEDGE_TEXT.strip()}"
+)
 
-ACTION_LIMITATION = (
-    "Permintaan ini menyangkut keputusan atau tindakan pengobatan pribadi; "
-    "silakan hubungi tenaga kesehatan yang menangani Anda."
+INJECTION_LIMITATION = (
+    "Permintaan ini tidak dapat diproses karena mencoba mengubah aturan Pandu. "
+    "Silakan ajukan pertanyaan seputar pengobatan atau penggunaan aplikasi Tiby, "
+    "atau hubungi tenaga kesehatan yang menangani Anda."
+)
+CLINICAL_CAUTION_LIMITATION = (
+    "Untuk memastikan dosis, kelanjutan, atau penyesuaian obat sesuai kondisi pribadi "
+    "Anda, sangat disarankan segera menghubungi tenaga kesehatan atau faskes yang "
+    "menangani Anda."
 )
 
 
@@ -104,22 +119,39 @@ class GroundedAnswerer:
     async def answer(
         self, question: str, transcript: str | None, evidence: list[dict]
     ) -> GuidanceResponse:
-        """Answer one question, failing closed only on personal decisions.
+        """Answer one question, blocking only prompt injections deterministically.
 
-        ``evidence`` may be empty: findings no source is a normal outcome for a
-        basic question, and the model answers those from general knowledge with
-        ``grounded=false``. A personal decision request still never reaches the
-        model, and the empty-evidence limitation is only added when the model
-        declined, so an uncited answer is not labelled as out of scope.
+        ``evidence`` may be empty: finding no source is normal for basic health
+        or Tiby app questions, which are returned with ``grounded=false``. When
+        ``detect_clinical_caution`` fires, ``caution_mode`` guides the model and
+        a strong Nakes/Faskes referral is guaranteed in ``limitations``.
         """
-        if detect_action_request(question, transcript):
-            return GuidanceResponse(answer=None, grounded=False, limitations=[ACTION_LIMITATION])
-        user = json.dumps(
-            {"question": question, "transcript": transcript, "evidence": evidence},
-            ensure_ascii=False,
-        )
-        provider_result = await self.client.chat_json(GUIDANCE_SYSTEM_TEXT, user)
+        if detect_prompt_injection(question, transcript):
+            return GuidanceResponse(
+                answer=None, grounded=False, limitations=[INJECTION_LIMITATION]
+            )
+        caution = detect_clinical_caution(question, transcript)
+        payload: dict[str, object] = {
+            "question": question,
+            "transcript": transcript,
+            "evidence": evidence,
+        }
+        if caution is not None:
+            payload["caution_mode"] = caution
+        user = json.dumps(payload, ensure_ascii=False)
+        provider_result = await self.client.chat_json(FULL_GUIDANCE_SYSTEM_TEXT, user)
         try:
-            return render_answer(provider_result, evidence)
+            response = render_answer(provider_result, evidence)
         except ValueError as exc:
             raise ProviderError("Guidance generation failed or returned invalid citations.") from exc
+
+        if caution is not None and response.answer is not None:
+            has_nakes_note = any(
+                "tenaga kesehatan" in item.lower()
+                or "nakes" in item.lower()
+                or "faskes" in item.lower()
+                for item in response.limitations
+            )
+            if not has_nakes_note:
+                response.limitations.append(CLINICAL_CAUTION_LIMITATION)
+        return response

@@ -25,7 +25,7 @@ from guidance.safety import detect_action_request
 from guidance.service import GroundedAnswerer, pack_evidence
 from providers.base import ProviderError
 
-CASES = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "guidance" / "guidance.jsonl"
+CASES = Path(__file__).resolve().parents[1] / "dataset" / "guidance" / "guidance.jsonl"
 
 
 def main() -> None:

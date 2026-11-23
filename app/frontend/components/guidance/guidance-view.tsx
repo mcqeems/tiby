@@ -97,7 +97,7 @@ export default function GuidanceView() {
           Tanya Pandu
         </h1>
         <p className="mt-1 text-sm text-tiby-muted">
-          Jawaban dari panduan resmi Kemenkes dan WHO. Bukan diagnosis.
+          Jawaban seputar pengobatan dan cara menggunakan aplikasi Tiby. Bukan diagnosis.
         </p>
       </header>
 
@@ -200,7 +200,7 @@ export default function GuidanceView() {
             onKeyDown={handleKeyDown}
             rows={2}
             maxLength={MAX_LENGTH}
-            placeholder="Tulis pertanyaan umum Anda..."
+            placeholder="Tulis pertanyaan seputar pengobatan atau aplikasi Tiby..."
             aria-invalid={fieldError ? true : undefined}
             aria-describedby={fieldError ? "guidance-error" : undefined}
             className="max-h-40 w-full resize-none rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-tiby-ink outline-none placeholder:text-gray-400 focus:border-tiby-teal-600 focus:ring-4 focus:ring-tiby-teal-600/10"

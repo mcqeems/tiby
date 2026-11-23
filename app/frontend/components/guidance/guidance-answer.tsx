@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useCallback, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   BookOpen,
@@ -15,11 +15,15 @@ import {
 } from "lucide-react";
 import type { GuidanceResponse } from "@tiby/ts-shared";
 import Mascot from "@/components/mascot";
+import MarkdownContent from "@/components/ui/markdown-content";
 import { evidenceFor, splitAnswerCitations } from "@/lib/guidance";
 import { banner, fadeUp, listItem, staggerParent } from "@/lib/motion";
 
-const DISCLAIMER =
+const DISCLAIMER_GROUNDED =
   "Informasi ini bersifat umum berdasarkan panduan resmi dan bukan penilaian untuk kasus pribadi. Untuk keluhan atau keputusan pengobatan, hubungi tenaga kesehatan Anda.";
+
+const DISCLAIMER_GENERAL =
+  "Informasi ini bersifat umum dan bukan penilaian untuk kasus pribadi. Untuk keluhan atau keputusan pengobatan, segera hubungi tenaga kesehatan Anda.";
 
 interface AnswerProps {
   answer: GuidanceResponse;
@@ -28,7 +32,7 @@ interface AnswerProps {
   onRetry: () => void;
 }
 
-/** Turns `src-1` markers into chips that open the matching note below. */
+/** Renders Markdown prose and turns `src-1` markers into citation chips. */
 function AnswerBody({
   answer,
   onOpenSource,
@@ -36,30 +40,39 @@ function AnswerBody({
   answer: GuidanceResponse;
   onOpenSource: (citationId: string) => void;
 }) {
-  const segments = splitAnswerCitations(answer.answer ?? "", answer.citations);
+  const renderText = useCallback(
+    (text: string) => (
+      <>
+        {splitAnswerCitations(text, answer.citations).map((segment, i) =>
+          segment.kind === "text" ? (
+            <Fragment key={i}>{segment.text}</Fragment>
+          ) : (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onOpenSource(segment.id)}
+              aria-label={`Lihat sumber ${segment.number ?? segment.id}`}
+              className={`mx-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 align-super text-[10px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tiby-teal-600 ${
+                segment.number
+                  ? "bg-tiby-teal-100 text-tiby-teal-700 hover:bg-tiby-teal-600 hover:text-white"
+                  : "cursor-help bg-gray-100 text-gray-500"
+              }`}
+            >
+              {segment.number ?? "?"}
+            </button>
+          ),
+        )}
+      </>
+    ),
+    [answer.citations, onOpenSource],
+  );
 
   return (
-    <p className="whitespace-pre-wrap text-sm leading-relaxed text-tiby-ink">
-      {segments.map((segment, i) =>
-        segment.kind === "text" ? (
-          <span key={i}>{segment.text}</span>
-        ) : (
-          <button
-            key={i}
-            type="button"
-            onClick={() => onOpenSource(segment.id)}
-            aria-label={`Lihat sumber ${segment.number ?? segment.id}`}
-            className={`mx-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 align-super text-[10px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tiby-teal-600 ${
-              segment.number
-                ? "bg-tiby-teal-100 text-tiby-teal-700 hover:bg-tiby-teal-600 hover:text-white"
-                : "cursor-help bg-gray-100 text-gray-500"
-            }`}
-          >
-            {segment.number ?? "?"}
-          </button>
-        ),
-      )}
-    </p>
+    <MarkdownContent
+      content={answer.answer ?? ""}
+      variant="compact"
+      renderText={renderText}
+    />
   );
 }
 
@@ -168,10 +181,11 @@ function Sources({
   );
 }
 
-/** Grounded answer: prose with inline citation chips, evidence, sources, actions. */
+/** Answer card: prose with optional inline citation chips, evidence, sources, actions. */
 export function GuidanceAnswer({ answer, latest = false, onRetry }: AnswerProps) {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [copied, setCopied] = useState(false);
+  const hasCitations = answer.grounded && answer.citations.length > 0;
 
   const toggle = (citationId: string) =>
     setOpen((current) => ({ ...current, [citationId]: !current[citationId] }));
@@ -190,10 +204,12 @@ export function GuidanceAnswer({ answer, latest = false, onRetry }: AnswerProps)
           `${i + 1}. ${citation.title} — ${citation.organization}${citation.year ? `, ${citation.year}` : ""}${citation.source_url ? ` (${citation.source_url})` : ""}`,
       )
       .join("\n");
+    const text =
+      answer.citations.length > 0
+        ? `${answer.answer ?? ""}\n\nSumber:\n${sources}`
+        : (answer.answer ?? "");
     try {
-      await navigator.clipboard.writeText(
-        `${answer.answer ?? ""}\n\nSumber:\n${sources}`,
-      );
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -230,9 +246,15 @@ export function GuidanceAnswer({ answer, latest = false, onRetry }: AnswerProps)
                 <ShieldCheck className="h-3 w-3" aria-hidden="true" />
                 Jawaban Pandu
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-100">
-                Berbasis bukti
-              </span>
+              {hasCitations ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-100">
+                  Berbasis bukti
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-semibold text-tiby-muted ring-1 ring-gray-200">
+                  Informasi umum
+                </span>
+              )}
             </div>
 
             <div className="mt-3">
@@ -252,7 +274,11 @@ export function GuidanceAnswer({ answer, latest = false, onRetry }: AnswerProps)
             ) : (
               <Copy className="h-3.5 w-3.5" aria-hidden="true" />
             )}
-            {copied ? "Tersalin" : "Salin jawaban + sumber"}
+            {copied
+              ? "Tersalin"
+              : answer.citations.length > 0
+                ? "Salin jawaban + sumber"
+                : "Salin jawaban"}
           </button>
           <button
             type="button"
@@ -296,7 +322,7 @@ export function GuidanceAnswer({ answer, latest = false, onRetry }: AnswerProps)
         variants={fadeUp}
         className="text-center text-[11px] leading-relaxed text-tiby-muted"
       >
-        {DISCLAIMER}
+        {hasCitations ? DISCLAIMER_GROUNDED : DISCLAIMER_GENERAL}
       </motion.p>
     </motion.section>
   );

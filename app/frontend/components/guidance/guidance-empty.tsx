@@ -12,11 +12,11 @@ import { listItem, staggerParent } from "@/lib/motion";
  */
 const GROUPS: { label: string; hint: string; items: string[] }[] = [
   {
-    label: "Minum obat",
-    hint: "Cara dan waktu",
+    label: "Tentang Tiby",
+    hint: "Fitur dan cara pakai",
     items: [
-      "Kenapa obat harus diminum setiap hari?",
-      "Bolehkah diminum bersamaan dengan makanan?",
+      "Fitur apa saja yang ada di Tiby?",
+      "Bagaimana cara check-in harian dan hubungkan WhatsApp?",
     ],
   },
   {
@@ -75,8 +75,8 @@ export default function GuidanceEmpty({
           </h2>
           <p className="max-w-md text-sm leading-relaxed text-tiby-muted">
             Pandu menjawab pertanyaan umum seputar pengobatan dari panduan resmi
-            Kemenkes dan WHO. Bukan diagnosis, dan bukan instruksi untuk kasus
-            pribadi Anda.
+            Kemenkes dan WHO, serta cara menggunakan fitur aplikasi Tiby. Bukan
+            diagnosis, dan bukan instruksi untuk kasus pribadi Anda.
           </p>
         </motion.div>
       </motion.div>

@@ -7,6 +7,7 @@ import { ModalCard, ModalOverlay } from "@/components/ui/modal-frame";
 import { AnimatePresence, motion } from "motion/react";
 import { educationApi, type EducationItem } from "@/lib/api/education";
 import Mascot from "@/components/mascot";
+import MarkdownContent from "@/components/ui/markdown-content";
 import {
   BookOpen,
   X,
@@ -213,52 +214,10 @@ export default function EducationView({
               </div>
 
               <div className="p-6 sm:p-10 overflow-y-auto bg-white">
-                <div className="prose prose-sm sm:prose-base prose-teal max-w-none">
-                  {selectedCard.contentMarkdown
-                    .split("\n")
-                    .map((paragraph, idx) => {
-                      if (paragraph.startsWith("###")) {
-                        return (
-                          <h4
-                            key={idx}
-                            className="font-heading font-bold text-xl text-tiby-ink mt-8 mb-4"
-                          >
-                            {paragraph.replace("###", "").trim()}
-                          </h4>
-                        );
-                      }
-                      if (paragraph.startsWith("**")) {
-                        const text = paragraph.replace(/\*\*/g, "");
-                        return (
-                          <p
-                            key={idx}
-                            className="font-bold text-base text-tiby-ink mt-6 mb-2"
-                          >
-                            {text}
-                          </p>
-                        );
-                      }
-                      if (paragraph.startsWith("-")) {
-                        return (
-                          <li
-                            key={idx}
-                            className="text-base text-tiby-muted ml-4 mb-3 leading-relaxed"
-                          >
-                            {paragraph.replace("-", "").trim()}
-                          </li>
-                        );
-                      }
-                      if (paragraph.trim() === "") return <br key={idx} />;
-                      return (
-                        <p
-                          key={idx}
-                          className="text-base text-tiby-muted leading-relaxed mb-5"
-                        >
-                          {paragraph}
-                        </p>
-                      );
-                    })}
-                </div>
+                <MarkdownContent
+                  content={selectedCard.contentMarkdown}
+                  variant="article"
+                />
               </div>
 
               <div className="p-4 sm:p-6 border-t border-gray-100 bg-gray-50 shrink-0">

@@ -1,65 +1,99 @@
-"""Deterministic guard for personal clinical action requests.
+"""Deterministic guardrails for guidance queries.
 
-The guidance endpoint answers general educational questions. Anything that asks
-Pandu to decide something for this specific person (start/stop/adjust
-medication, dosing, switching treatment) never reaches the language model; it is
-redirected to a treating healthcare professional instead.
+Two tiers keep Tanya Pandu both safe and genuinely usable:
 
-The guard answers a narrow question: *is Pandu being asked to make a decision
-for this patient?* It deliberately does NOT fire on informational questions that
-merely contain a modal word. "Kenapa obat harus diminum setiap hari?" and
-"Bolehkah diminum bersamaan dengan makanan?" are education, not decisions, so
-bare ``harus``/``bolehkah`` are no longer blockers on their own; they only count
-when the question is framed around the speaker (see ``_PERSONAL_SUBJECT``).
+1. **Hard fail-closed (`detect_prompt_injection`)** — instruction overrides,
+   jailbreaks, or attempts to force unsafe directives are rejected immediately
+   without calling the language model.
+2. **Clinical caution (`detect_clinical_caution`)** — personal dosing math,
+   stopping/switching medication, or drug-prescription requests still reach the
+   model so Pandu can explain general context (e.g., regimens like FDC-4/FDC-3
+   assigned at onboarding) or simple safe comfort steps, while deterministically
+   enforcing a strong recommendation to contact the treating Nakes/Faskes.
 
-Unambiguous personal actions stay fail-closed regardless of framing: dosing,
-stopping, continuing, and switching treatment. Those are exactly the decisions
-this product must never make, so they are matched directly.
-
-This guard runs on the question and, when supplied, the patient transcript, so
-an action request hidden in either one is still caught. Callers should treat a
-hit as "do not answer personally", not as a medical classification.
+App-usage questions ("cara ganti password", "cara stop notifikasi") and general
+educational queries ("kenapa tidak boleh berhenti minum obat?") trigger neither.
 """
 
 import re
+from typing import Literal
 
-ACTION_REQUEST_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
+CautionCategory = Literal["dosing", "medication_change", "prescription"]
+
+PROMPT_INJECTION_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
     re.compile(pattern)
     for pattern in (
-        # Dosing and dose changes.
-        r"\b(?:dosis|overdosis)\b",
-        r"\bberapa\s+(?:tablet|butir|obat|biji|pil|mg|dosis)\b",
-        r"\b(?:tambah(?:kan)?|menambah(?:kan)?|ditambah(?:kan)?|menggandakan|gandakan|dobel(?:kan)?)\b",
-        r"\b(?:kurangi|mengurangi|dikurangi|dikurangkan)\b",
-        # Stopping or continuing treatment.
-        r"\b(?:berhenti|berhentikan|menghentikan|hentikan|menyetop|stop)\b",
-        r"\b(?:lanjut|lanjutkan|melanjutkan|dilanjutkan|meneruskan|teruskan)\b",
-        # Switching or changing treatment.
-        r"\b(?:ganti|mengganti|diganti|ubah|mengubah|diubah|rubah)\b",
-        # English fallbacks.
-        r"\b(?:what\s+)?should\s+(?:i|we)\b",
-        r"\b(?:change|adjust|skip)\b",
+        r"\b(?:abaikan|lupakan|hiraukan|lewati)\s+(?:\w+\s+){0,2}(?:system\s*prompt|prompt|instruksi|aturan|panduan\s+sistem)\b",
+        r"\b(?:ignore|disregard|forget|override|bypass)\s+(?:\w+\s+){0,2}(?:system\s*prompt|prompt|instructions?|rules?|guardrails?)\b",
+        r"\b(?:jailbreak|developer\s+mode)\b",
+        r"\b(?:katakan|bilang|jawab|tulis)\s+(?:bahwa\s+)?pasien\s+(?:harus|boleh|wajib)\s+(?:menggandakan|gandakan|dobel|berhenti|stop)\b",
     )
 )
 
+DOSING_CAUTION_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
+    re.compile(pattern)
+    for pattern in (
+        r"\bberapa\s+(?:tablet|butir|biji|pil|mg|dosis|obat)\b",
+        r"\b(?:gandakan|menggandakan|dobel(?:kan)?|overdosis)\b",
+        r"\b(?:tambah(?:kan)?|menambah(?:kan)?|ditambah(?:kan)?|kurangi|mengurangi|dikurangi|ubah|mengubah|diubah|ganti|mengganti|diganti|sesuaikan)\s+(?:\w+\s+){0,2}(?:dosis|tablet|butir|pil|takaran)\b",
+        r"\bdosis\s+(?:saya|ku|aku|pasien|yang\s+harus|untuk\s+saya)\b",
+    )
+)
 
-# Modals that only become a personal decision when the speaker is the subject.
-_PERSONAL_MODAL = r"(?:harus|haruskah|harusnya|sebaiknya|sebaik|perlukah|bolehkah|boleh|perlu)"
-# First/second person, or the patient being discussed in a transcript.
-_PERSONAL_SUBJECT = r"(?:saya|aku|gue|ku|kamu|anda|pasien)"
+MEDICATION_CHANGE_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
+    re.compile(pattern)
+    for pattern in (
+        r"\b(?:berhenti|berhentikan|menghentikan|hentikan|menyetop|stop|jeda|lewatkan|skip|ganti|mengganti|diganti|ubah|mengubah|diubah|switch|change|adjust)\s+(?:\w+\s+){0,2}(?:obat|oat|terapi|pengobatan|regimen|med(?:ication|icine)?|pills?)\b",
+        r"\b(?:obat|oat|terapi|pengobatan|regimen)\s+(?:\w+\s+){0,2}(?:berhenti|dihentikan|distop|diganti|diubah|dijeda|dilewatkan)\b",
+        r"\b(?:haruskah|bolehkah|sebaiknya|mending|should\s+i)\s+(?:saya\s+|aku\s+)?(?:\w+\s+){0,2}(?:berhenti|stop|jeda|ganti|ubah|skip)\b",
+    )
+)
 
-PERSONAL_DECISION_PATTERNS: tuple[re.Pattern[str], ...] = (
-    # "haruskah saya berhenti", "apakah saya boleh menambah", "saya harus minum berapa".
-    re.compile(rf"\b(?:apakah\s+)?{_PERSONAL_SUBJECT}\s+(?:\w+\s+){{0,3}}{_PERSONAL_MODAL}\b"),
-    re.compile(rf"\b{_PERSONAL_MODAL}\s+{_PERSONAL_SUBJECT}\b"),
-    # "apa yang harus saya lakukan" is the common inverse framing.
-    re.compile(rf"\bapa\s+yang\s+(?:harus|sebaiknya)\s+{_PERSONAL_SUBJECT}\b"),
+PRESCRIPTION_CAUTION_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
+    re.compile(pattern)
+    for pattern in (
+        r"\bobat\s+apa\s+(?:yang\s+)?(?:harus|sebaiknya|perlu|bisa|cocok|ampuh)\s+(?:saya|aku|pasien|diminum)\b",
+        r"\b(?:resepkan|berikan\s+resep|rekomendasikan\s+obat)\b",
+    )
+)
+
+# General "why/consequence" questions ("kenapa tidak boleh berhenti minum obat?")
+# are educational unless paired with explicit personal decision intent.
+_WHY_EDUCATIONAL_PATTERN = re.compile(
+    r"\b(?:kenapa|mengapa|apa\s+(?:bahaya|dampak|akibat|risiko|efek)(?:nya)?)\b"
+)
+_PERSONAL_DECISION_INTENT = re.compile(
+    r"\b(?:haruskah|bolehkah|sebaiknya|mending|ingin|mau|rencana|berencana|should\s+i)\s+(?:saya|aku|gue)\b|\b(?:saya|aku|gue)\s+(?:harus|boleh|ingin|mau)\b"
 )
 
 
-def detect_action_request(*texts: str | None) -> bool:
-    """Return True when any supplied text asks for a personal decision or action."""
-    combined = " ".join(text.lower() for text in texts if text)
-    if any(pattern.search(combined) for pattern in ACTION_REQUEST_PATTERNS):
-        return True
-    return any(pattern.search(combined) for pattern in PERSONAL_DECISION_PATTERNS)
+def _join_texts(*texts: str | None) -> str:
+    return " ".join(text.lower() for text in texts if text)
+
+
+def detect_prompt_injection(*texts: str | None) -> bool:
+    """Return True only when supplied text attempts to override system safety rules."""
+    combined = _join_texts(*texts)
+    if not combined:
+        return False
+    return any(pattern.search(combined) for pattern in PROMPT_INJECTION_PATTERNS)
+
+
+def detect_clinical_caution(*texts: str | None) -> CautionCategory | None:
+    """Classify personal clinical decision prompts that require soft guidance + Nakes referral."""
+    combined = _join_texts(*texts)
+    if not combined:
+        return None
+    if any(pattern.search(combined) for pattern in DOSING_CAUTION_PATTERNS):
+        return "dosing"
+    if any(pattern.search(combined) for pattern in PRESCRIPTION_CAUTION_PATTERNS):
+        return "prescription"
+    if any(pattern.search(combined) for pattern in MEDICATION_CHANGE_PATTERNS):
+        if _WHY_EDUCATIONAL_PATTERN.search(combined) and not _PERSONAL_DECISION_INTENT.search(combined):
+            return None
+        return "medication_change"
+    return None
+
+
+# Alias kept for existing runners that check hard-blocked requests.
+detect_action_request = detect_prompt_injection

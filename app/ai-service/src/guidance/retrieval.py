@@ -39,16 +39,22 @@ class Evidence:
 # chunks that share only one incidental word.
 MIN_COVERAGE = 0.5
 
-# Indonesian function words: they appear in nearly every chunk, so they would
-# inflate coverage without carrying meaning.
+# Indonesian function words and common question fillers: they appear in nearly
+# every chunk or add noise without carrying clinical/product meaning.
 STOPWORDS = frozenset(
     [
-        "ada", "adalah", "agar", "akan", "atau", "bagaimana", "bila", "bukan",
-        "dalam", "dan", "dapat", "dari", "dengan", "di", "digunakan", "ini",
-        "itu", "jadi", "jika", "juga", "kalau", "karena", "ke", "kenapa",
-        "kepada", "saat", "saja", "salah", "sama", "sambil", "sampai", "sangat",
-        "secara", "sedang", "sehingga", "sudah", "sebagai", "seperti", "tentang",
-        "terhadap", "tidak", "untuk", "yaitu", "yang",
+        "ada", "adalah", "agar", "akan", "aku", "anda", "apa", "apakah",
+        "atau", "bagaimana", "belum", "berapa", "biasa", "biasanya", "bila",
+        "bisa", "boleh", "bolehkah", "bukan", "cara", "dalam", "dan", "dapat",
+        "dari", "dengan", "di", "digunakan", "dimana", "dong", "gak", "gimana",
+        "gue", "harus", "haruskah", "ini", "itu", "jadi", "jelaskan", "jika",
+        "juga", "kalau", "kalo", "kamu", "kapan", "karena", "ke", "kenapa",
+        "kepada", "kita", "lagi", "mana", "masih", "memang", "mengapa",
+        "mereka", "mohon", "nggak", "pasien", "perlu", "perlukah", "saat",
+        "saja", "salah", "sama", "sambil", "sampai", "sangat", "saya",
+        "sebagai", "sebaiknya", "secara", "sedang", "sehingga", "seperti",
+        "siapa", "sih", "sudah", "tahu", "tapi", "tentang", "terhadap",
+        "termasuk", "tetapi", "tidak", "tolong", "untuk", "yaitu", "yang",
     ]
 )
 
@@ -131,7 +137,11 @@ class SQLiteRetriever:
     def _content_terms(query: str) -> list[str]:
         """Query words minus Indonesian function words that carry no meaning."""
         words = re.findall(r"[\wÀ-ÿ]+", query.lower())
-        return [word for word in words if len(word) > 2 and word not in STOPWORDS][:12]
+        return [
+            word
+            for word in words
+            if (len(word) > 2 or word == "tb") and word not in STOPWORDS
+        ][:12]
 
     @staticmethod
     def _coverage(text: str, terms: list[str]) -> float:

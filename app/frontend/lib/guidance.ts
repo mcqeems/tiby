@@ -1,4 +1,9 @@
-import type { GuidanceCitation } from "@tiby/ts-shared";
+import type { GuidanceCitation, GuidanceResponse } from "@tiby/ts-shared";
+
+/** Any non-empty prose answer renders as complete; only null/blank is refused. */
+export function phaseFor(answer: GuidanceResponse): "complete" | "refused" {
+  return answer.answer && answer.answer.trim().length > 0 ? "complete" : "refused";
+}
 
 /** One piece of an answer: plain prose, or a `src-N` marker to render as a chip. */
 export type AnswerSegment =

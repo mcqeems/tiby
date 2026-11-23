@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { GuidanceResponse } from "@tiby/ts-shared";
 import { guidanceApi } from "@/lib/api/guidance";
 import { errorMessage } from "@/lib/errors";
+import { phaseFor } from "@/lib/guidance";
 
 /**
  * `idle` is the page before any question; a turn moves through `thinking` to
@@ -22,11 +23,6 @@ export interface GuidanceTurn {
   phase: GuidancePhase;
   answer: GuidanceResponse | null;
   error: string | null;
-}
-
-/** The response is grounded only when it came back with prose and sources. */
-function phaseFor(answer: GuidanceResponse): GuidancePhase {
-  return answer.answer && answer.grounded ? "complete" : "refused";
 }
 
 const newId = () =>

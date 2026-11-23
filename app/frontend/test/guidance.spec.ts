@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { GuidanceCitation } from "@tiby/ts-shared";
+import type { GuidanceCitation, GuidanceResponse } from "@tiby/ts-shared";
 import {
   citationIndex,
   evidenceFor,
   formatElapsed,
+  phaseFor,
   splitAnswerCitations,
   thinkingStatus,
 } from "@/lib/guidance";
@@ -120,5 +121,41 @@ describe("formatElapsed", () => {
     expect(formatElapsed(0)).toBe("0:00");
     expect(formatElapsed(9_400)).toBe("0:09");
     expect(formatElapsed(65_000)).toBe("1:05");
+  });
+});
+
+describe("phaseFor", () => {
+  const base: GuidanceResponse = {
+    answer: null,
+    grounded: false,
+    evidence: [],
+    citations: [],
+    limitations: [],
+  };
+
+  it("marks grounded answers with prose as complete", () => {
+    expect(
+      phaseFor({
+        ...base,
+        answer: "Mual adalah efek samping umum.",
+        grounded: true,
+        citations: [citation("src-1")],
+      }),
+    ).toBe("complete");
+  });
+
+  it("marks uncited answers with prose as complete instead of refused", () => {
+    expect(
+      phaseFor({
+        ...base,
+        answer: "Jumlah tablet tergantung regimen yang diberikan saat onboarding.",
+        grounded: false,
+      }),
+    ).toBe("complete");
+  });
+
+  it("marks null or blank answers as refused", () => {
+    expect(phaseFor(base)).toBe("refused");
+    expect(phaseFor({ ...base, answer: "   " })).toBe("refused");
   });
 });
