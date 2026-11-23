@@ -15,5 +15,7 @@ COPY . .
 RUN uv sync --frozen
 
 ENV PYTHONPATH=/app/src
+# Build the gitignored FTS5 knowledge index from dataset/knowledge/raw + manifest.json.
+RUN rm -f dataset/knowledge/tiby.db && /app/.venv/bin/python scripts/ingest_knowledge.py
 EXPOSE 8000
 CMD ["/app/.venv/bin/uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
