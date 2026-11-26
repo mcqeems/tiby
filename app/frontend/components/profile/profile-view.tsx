@@ -351,9 +351,9 @@ export default function ProfileView() {
               value={user.username || "-"}
               mono
             />
-            {user.email && (
+            {/*{user.email && (
               <InfoItem icon={Mail} label="Email" value={user.email} />
-            )}
+            )}*/}
             <InfoItem
               icon={Building2}
               label="Faskes"
