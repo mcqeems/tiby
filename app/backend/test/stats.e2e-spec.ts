@@ -285,7 +285,7 @@ describe("Dashboard stats (e2e)", () => {
       role: "PASIEN",
       currentStreak: 3,
       adherenceRate: 0.273,
-      daysRemaining: 170,
+      daysRemaining: 177,
       todayCheckInStatus: "TERKENDALI",
       totalPillsTaken: 12,
       currentPhase: "INTENSIF",

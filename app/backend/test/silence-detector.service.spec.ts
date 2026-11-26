@@ -63,6 +63,7 @@ describe("SilenceDetectorService Unit Tests", () => {
 
     expect(plan.currentStreak).toBe(0);
     expect(plan.consecutiveSilenceDays).toBe(1);
+    expect(plan.targetEndDate).toBe("2027-04-14");
     expect(mockPlanRepo.save).toHaveBeenCalledWith(plan);
 
     // Verify STREAK_RESET status history
@@ -85,20 +86,22 @@ describe("SilenceDetectorService Unit Tests", () => {
       }),
     );
 
-    // Verify H+1 event emitted
+    // Verify H+1 event emitted with missedDate metadata
     expect(mockEventEmitter.emit).toHaveBeenCalledWith(
       "notification.trigger",
       expect.objectContaining({
         circumstance: "SILENCE_H1_ESCALATION",
         recipientRole: "PASIEN",
+        metadata: { missedDate: "2026-10-15" },
       }),
     );
   });
 
-  it("Day 2 missed: sets silence=2, transitions to BERISIKO, increases riskScore, emits SILENCE_H2_ESCALATION to PMO", async () => {
+  it("Day 2 missed: sets silence=2, transitions to BERISIKO, increases riskScore, emits SILENCE_H2_ESCALATION to PMO and KELUARGA with patient name", async () => {
     const plan = {
       id: "plan-1",
       patientUserId: "user-1",
+      patientUser: { name: "Budi Santoso" },
       facilityId: "faskes-1",
       patientState: "AKTIF",
       currentStreak: 0,
@@ -114,19 +117,23 @@ describe("SilenceDetectorService Unit Tests", () => {
     expect(plan.patientState).toBe("BERISIKO");
     expect(plan.riskScore).toBe(15);
 
-    expect(mockEventEmitter.emit).toHaveBeenCalledWith(
-      "notification.trigger",
-      expect.objectContaining({
-        circumstance: "SILENCE_H2_ESCALATION",
-        recipientRole: "PMO",
-      }),
-    );
+    for (const recipientRole of ["PMO", "KELUARGA"]) {
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith(
+        "notification.trigger",
+        expect.objectContaining({
+          circumstance: "SILENCE_H2_ESCALATION",
+          recipientRole,
+          customMessage: expect.stringContaining("Budi Santoso"),
+        }),
+      );
+    }
   });
 
   it("Day 3 missed: sets silence=3, creates CRITICAL SILENCE_H3 ticket, creates SILENCE_H3_WARNING alert, emits SILENCE_H3_ESCALATION", async () => {
     const plan = {
       id: "plan-1",
       patientUserId: "user-1",
+      patientUser: { name: "Budi Santoso" },
       facilityId: "faskes-1",
       patientState: "BERISIKO",
       currentStreak: 0,
@@ -158,17 +165,21 @@ describe("SilenceDetectorService Unit Tests", () => {
         facilityId: "faskes-1",
         alertType: "SILENCE_H3_WARNING",
         severity: "HIGH",
+        message: expect.stringContaining("Budi Santoso"),
       }),
     );
 
-    // Verify H+3 event emitted
-    expect(mockEventEmitter.emit).toHaveBeenCalledWith(
-      "notification.trigger",
-      expect.objectContaining({
-        circumstance: "SILENCE_H3_ESCALATION",
-        recipientRole: "PMO",
-      }),
-    );
+    // Verify H+3 event emitted across PMO, KELUARGA, and NAKES with unified patient copy
+    for (const recipientRole of ["PMO", "KELUARGA", "NAKES"]) {
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith(
+        "notification.trigger",
+        expect.objectContaining({
+          circumstance: "SILENCE_H3_ESCALATION",
+          recipientRole,
+          customMessage: expect.stringContaining("Budi Santoso"),
+        }),
+      );
+    }
   });
 
   it("batches the fulfilled check-in lookup into a single query for all plans", async () => {

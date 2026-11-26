@@ -121,6 +121,8 @@ export const FacilityAlertTypes = [
   "CONSENT_REVOKED_WARNING",
   "STREAK_RESET_WARNING",
   "SILENCE_H3_WARNING",
+  "RED_FLAG_WARNING",
+  "INTENT_TO_STOP_WARNING",
   "ADMIN_SIMULATION",
 ] as const;
 export const FacilityAlertTypeSchema = z.enum(FacilityAlertTypes);
@@ -147,6 +149,8 @@ export const PatientStatusEventTypes = [
   "CHECK_IN_LOCKED",
   "CHECK_IN_INCOMPLETE_RETRY",
   "STREAK_RESET",
+  "MISSED_CHECKIN_REPORTED",
+  "MISSED_CHECKIN_VERIFIED",
   "TICKET_OPENED",
   "TICKET_AUTO_CLOSED",
   "TICKET_RESOLVED",
@@ -173,6 +177,8 @@ export const NotificationTriggerCircumstances = [
   "SILENCE_H1_ESCALATION",
   "SILENCE_H2_ESCALATION",
   "SILENCE_H3_ESCALATION",
+  "MISSED_CHECKIN_REPORT",
+  "MISSED_CHECKIN_VERIFIED",
   "RED_FLAG_ALERT",
   "INTENT_TO_STOP_ALERT",
   "WHATSAPP_VERIFIED_ACK",
@@ -202,6 +208,10 @@ export const WhatsappVerificationStatuses = [
 ] as const;
 export const WhatsappVerificationStatusSchema = z.enum(WhatsappVerificationStatuses);
 export type WhatsappVerificationStatus = z.infer<typeof WhatsappVerificationStatusSchema>;
+
+export const MissedReportStatuses = ["PENDING", "VERIFIED", "REJECTED"] as const;
+export const MissedReportStatusSchema = z.enum(MissedReportStatuses);
+export type MissedReportStatus = z.infer<typeof MissedReportStatusSchema>;
 
 // PMO Follow-Up / Outreach Actions
 export const PmoFollowUpActions = [

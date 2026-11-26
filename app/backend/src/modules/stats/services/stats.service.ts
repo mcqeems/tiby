@@ -10,6 +10,7 @@ import { InterventionTicket } from "../../tickets/entities/intervention-ticket.e
 import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
 import { Facility } from "../../facilities/entities/facilities.entity.js";
 import { NotificationsService } from "../../notifications/services/notifications.service.js";
+import { TARGET_TREATMENT_DAYS } from "../../internal/escalation/streak-reconcile.js";
 import type {
   StatsResponse,
   TodayCheckInStatus,
@@ -68,8 +69,11 @@ export function elapsedDays(
   return days;
 }
 
-export function daysRemaining(today: string, targetEndDate: string): number {
-  return Math.max(0, Math.ceil((Date.parse(targetEndDate) - Date.parse(today)) / DAY_MS));
+export function daysRemaining(
+  currentStreak: number,
+  totalDays = TARGET_TREATMENT_DAYS,
+): number {
+  return Math.max(0, totalDays - Math.max(0, currentStreak));
 }
 
 /** 0..1, rounded to three decimals. No elapsed days means nothing missed yet. */
@@ -209,7 +213,7 @@ export class StatsService {
       role: "PASIEN",
       currentStreak: plan.currentStreak,
       adherenceRate: adherenceRate(fulfilledDays.size, elapsed),
-      daysRemaining: daysRemaining(today, toDateString(plan.targetEndDate)),
+      daysRemaining: daysRemaining(plan.currentStreak),
       todayCheckInStatus,
       totalPillsTaken,
       currentPhase: plan.phase as TreatmentPhase,

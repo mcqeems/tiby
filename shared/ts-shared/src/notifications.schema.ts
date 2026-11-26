@@ -20,6 +20,7 @@ export const UserNotificationSchema = z.object({
   title: z.string(),
   message: z.string(),
   isRead: z.boolean(),
+  metadata: z.record(z.string(), z.unknown()).nullable().optional(),
   createdAt: z.string(),
   readAt: z.string().nullable(),
 });

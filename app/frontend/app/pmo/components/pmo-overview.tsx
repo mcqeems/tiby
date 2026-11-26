@@ -11,7 +11,9 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { useSession, type TibyUser } from "@/lib/auth-client";
 import { statsApi } from "@/lib/api/stats";
+import { pmoApi } from "@/lib/api/pmo";
 import type { PmoStats } from "@/lib/types/stats";
+import type { PmoPatient } from "@/lib/types/pmo";
 import Mascot from "@/components/mascot";
 import {
   Users,
@@ -20,6 +22,7 @@ import {
   ChevronRight,
   ShieldAlert,
   Bell,
+  CalendarClock,
 } from "lucide-react";
 
 export default function PmoOverview() {
@@ -27,15 +30,25 @@ export default function PmoOverview() {
   const user = session?.user as TibyUser | undefined;
 
   const [stats, setStats] = useState<PmoStats | null>(null);
+  const [patients, setPatients] = useState<PmoPatient[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
     async function fetchStats() {
       try {
-        const res = await statsApi.getStats();
+        const [res, patientsRes] = await Promise.all([
+          statsApi.getStats(),
+          pmoApi.getPatients().catch(() => []),
+        ]);
         if (active && res.role === "PMO") {
           setStats(res as PmoStats);
+        }
+        if (active) {
+          const list = Array.isArray(patientsRes)
+            ? patientsRes
+            : (patientsRes as { items?: PmoPatient[] }).items || [];
+          setPatients(list);
         }
       } catch (err) {
         console.error("Gagal memuat stats PMO:", err);
@@ -86,6 +99,10 @@ export default function PmoOverview() {
     totalPatients > 0
       ? Math.round(((stats?.highRiskPatients ?? 0) / totalPatients) * 100)
       : 0;
+  const pendingVerifications = patients.reduce(
+    (sum, p) => sum + (p.pendingMissedReports?.length ?? 0),
+    0,
+  );
 
   return (
     <motion.div
@@ -170,6 +187,35 @@ export default function PmoOverview() {
               </div>
             </div>
           </motion.div>
+
+          {pendingVerifications > 0 && (
+            <motion.div
+              variants={listItem}
+              role="status"
+              className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between shadow-2xs"
+            >
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                  <CalendarClock className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-heading text-sm font-bold text-amber-950">
+                    {pendingVerifications} Laporan Lupa Check-in Menunggu Verifikasi
+                  </p>
+                  <p className="mt-0.5 text-xs text-amber-900">
+                    Pasien binaan melaporkan sudah minum obat pada tanggal terlewat. Verifikasi lewat Wakili Check-in di daftar pasien.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/pmo/pasien"
+                className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-amber-700 transition"
+              >
+                Periksa &amp; Verifikasi
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </motion.div>
+          )}
 
           <motion.div variants={staggerParent(0.05)} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <motion.div

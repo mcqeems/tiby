@@ -17,6 +17,7 @@ import {
 } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DailyCheckIn } from '../entities/daily-check-in.entity.js';
+import { MissedCheckInReport } from '../entities/missed-check-in-report.entity.js';
 import { SafetyEvaluation } from '../../internal/rule-engine/entities/safety-evaluation.entity.js';
 import { TreatmentPlan } from '../../patients/entities/treatment-plan.entity.js';
 import { PmoAssignment } from '../../patients/entities/pmo-assignment.entity.js';
@@ -27,6 +28,12 @@ import { AuditLog } from '../../internal/audit/entities/audit-log.entity.js';
 import { AiClientService } from '../../internal/ai-client/ai-client.service.js';
 import { RuleEngineService } from '../../internal/rule-engine/rule-engine.service.js';
 import { NotificationTriggerEvent } from '../../../common/events/notification-trigger.event.js';
+import {
+  addDays,
+  computeStreakStats,
+  computeTargetEndDate,
+} from '../../internal/escalation/streak-reconcile.js';
+import { toDateString } from '../../stats/services/stats.service.js';
 import type {
   AiAudioExtractionResponse,
   AiAudioTranscriptResponse,
@@ -38,6 +45,10 @@ import type {
   ListCheckInsQuery,
   CheckInList,
   CheckInListItem,
+  CreateMissedCheckInReportDto,
+  MissedCheckInReportItem,
+  MissedCheckInSummaryResponse,
+  MissedReportStatus,
 } from '@tiby/ts-shared';
 
 @Injectable()
@@ -59,6 +70,8 @@ export class CheckInService {
     private readonly historyRepo: Repository<PatientStatusHistory>,
     @InjectRepository(AuditLog)
     private readonly auditRepo: Repository<AuditLog>,
+    @InjectRepository(MissedCheckInReport)
+    private readonly missedReportRepo: Repository<MissedCheckInReport>,
     private readonly aiClientService: AiClientService,
     private readonly ruleEngine: RuleEngineService,
     private readonly eventEmitter: EventEmitter2,
@@ -72,6 +85,7 @@ export class CheckInService {
     if (role === 'PASIEN') {
       const plan = await this.planRepo.findOne({
         where: { patientUserId: userId },
+        relations: { patientUser: true },
       });
       if (!plan) {
         throw new NotFoundException({
@@ -100,6 +114,7 @@ export class CheckInService {
       }
       const plan = await this.planRepo.findOne({
         where: { id: treatmentPlanId },
+        relations: { patientUser: true },
       });
       if (!plan) {
         throw new NotFoundException({
@@ -304,15 +319,317 @@ export class CheckInService {
     return [];
   }
 
+  private toMissedReportDto(r: MissedCheckInReport): MissedCheckInReportItem {
+    return {
+      id: r.id,
+      treatmentPlanId: r.treatmentPlanId,
+      reportedDate: toDateString(r.reportedDate),
+      status: r.status as MissedReportStatus,
+      patientNote: r.patientNote ?? null,
+      verifiedCheckInId: r.verifiedCheckInId ?? null,
+      verifiedAt: r.verifiedAt ? r.verifiedAt.toISOString() : null,
+      createdAt: r.createdAt.toISOString(),
+    };
+  }
+
+  private resolveTargetDate(
+    plan: TreatmentPlan,
+    role: string,
+    requestedDate?: string,
+  ): { today: string; targetDate: string; isRetroactive: boolean } {
+    const today = new Date().toISOString().slice(0, 10);
+    const targetDate = requestedDate || today;
+
+    if (targetDate > today) {
+      throw new BadRequestException({
+        code: 'BAD_REQUEST',
+        message: 'Cannot submit check-in for a future date',
+      });
+    }
+
+    if (targetDate < today) {
+      if (role !== 'PMO') {
+        throw new ForbiddenException({
+          code: 'FORBIDDEN',
+          message: 'Hanya PMO yang dapat memverifikasi check-in tanggal terlewat.',
+        });
+      }
+      if (plan.startDate && targetDate < toDateString(plan.startDate)) {
+        throw new BadRequestException({
+          code: 'BAD_REQUEST',
+          message: 'Tanggal check-in berada di luar periode pengobatan.',
+        });
+      }
+    }
+
+    return { today, targetDate, isRetroactive: targetDate < today };
+  }
+
+  async getMissedReportSummary(
+    userId: string,
+    role: string,
+    treatmentPlanId?: string,
+  ): Promise<MissedCheckInSummaryResponse> {
+    const plan = await this.resolvePlan(userId, role, treatmentPlanId);
+    const today = new Date().toISOString().slice(0, 10);
+    const startDate = toDateString(plan.startDate);
+    const yesterday = addDays(today, -1);
+
+    const eligibleDates: string[] = [];
+    if (startDate <= yesterday) {
+      const fulfilledRows = await this.checkInRepo.find({
+        where: {
+          treatmentPlanId: plan.id,
+          isDoseFulfilled: true,
+          checkInDate: Between(startDate, yesterday),
+        },
+        select: { checkInDate: true },
+      });
+      const fulfilledSet = new Set(
+        fulfilledRows.map((r) => toDateString(r.checkInDate)),
+      );
+      let cursor = yesterday;
+      let guard = 0;
+      while (cursor >= startDate && guard < 3650) {
+        if (!fulfilledSet.has(cursor)) {
+          eligibleDates.push(cursor);
+        }
+        cursor = addDays(cursor, -1);
+        guard += 1;
+      }
+    }
+
+    const reports = await this.missedReportRepo.find({
+      where: { treatmentPlanId: plan.id },
+      order: { reportedDate: 'DESC', createdAt: 'DESC' },
+    });
+
+    return {
+      startDate,
+      currentStreak: plan.currentStreak,
+      eligibleDates,
+      reports: reports.map((r) => this.toMissedReportDto(r)),
+    };
+  }
+
+  async createMissedReport(
+    userId: string,
+    role: string,
+    dto: CreateMissedCheckInReportDto,
+  ): Promise<MissedCheckInReportItem> {
+    if (role !== 'PASIEN') {
+      throw new ForbiddenException({
+        code: 'FORBIDDEN',
+        message: 'Hanya pasien yang dapat mengajukan laporan lupa check-in.',
+      });
+    }
+
+    const plan = await this.planRepo.findOne({
+      where: { patientUserId: userId },
+      relations: { patientUser: true },
+    });
+    if (!plan) {
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'No active treatment plan found for patient',
+      });
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const startDate = toDateString(plan.startDate);
+    if (dto.reportedDate < startDate || dto.reportedDate >= today) {
+      throw new BadRequestException({
+        code: 'BAD_REQUEST',
+        message: 'Tanggal terlewat harus antara awal pengobatan hingga kemarin.',
+      });
+    }
+
+    const existingFulfilled = await this.checkInRepo.findOne({
+      where: {
+        treatmentPlanId: plan.id,
+        checkInDate: dto.reportedDate,
+        isDoseFulfilled: true,
+      },
+    });
+    if (existingFulfilled) {
+      throw new ConflictException({
+        code: 'ALREADY_FULFILLED',
+        message: 'Tanggal tersebut sudah memiliki catatan minum obat lengkap.',
+      });
+    }
+
+    const existingPending = await this.missedReportRepo.findOne({
+      where: {
+        treatmentPlanId: plan.id,
+        reportedDate: dto.reportedDate,
+        status: 'PENDING',
+      },
+    });
+    if (existingPending) {
+      throw new ConflictException({
+        code: 'MISSED_REPORT_ALREADY_PENDING',
+        message: 'Laporan untuk tanggal ini sudah dikirim dan menunggu verifikasi PMO.',
+      });
+    }
+
+    const activePmos = await this.pmoRepo.find({
+      where: { treatmentPlanId: plan.id, active: true },
+    });
+    if (activePmos.length === 0) {
+      throw new BadRequestException({
+        code: 'NO_ACTIVE_PMO',
+        message: 'Belum ada PMO aktif yang dapat memverifikasi laporan.',
+      });
+    }
+
+    const cleanedNote = dto.patientNote?.trim() || null;
+    const report = await this.missedReportRepo.save(
+      this.missedReportRepo.create({
+        treatmentPlanId: plan.id,
+        reportedDate: dto.reportedDate,
+        reportedByUserId: userId,
+        patientNote: cleanedNote,
+        status: 'PENDING',
+      }),
+    );
+
+    const patientName = plan.patientUser?.name || 'Pasien';
+
+    await this.historyRepo.save(
+      this.historyRepo.create({
+        treatmentPlanId: plan.id,
+        eventType: 'MISSED_CHECKIN_REPORTED',
+        previousState: plan.patientState,
+        newState: plan.patientState,
+        previousStreak: plan.currentStreak,
+        newStreak: plan.currentStreak,
+        actorUserId: userId,
+        actorRole: role,
+        reasonOrSummary: `Pasien melaporkan sudah minum obat pada ${dto.reportedDate} namun lupa check-in`,
+        metadataJson: {
+          missedReportId: report.id,
+          reportedDate: dto.reportedDate,
+        },
+      }),
+    );
+
+    await this.auditRepo.save(
+      this.auditRepo.create({
+        actorUserId: userId,
+        actorRole: role,
+        action: 'CREATE_MISSED_CHECKIN_REPORT',
+        targetEntity: 'missed_check_in_reports',
+        targetId: report.id,
+        metadataJson: {
+          reportedDate: dto.reportedDate,
+        },
+      }),
+    );
+
+    const pmoMessage = cleanedNote
+      ? `${patientName} melaporkan sudah minum obat pada ${dto.reportedDate} namun lupa check-in ("${cleanedNote}"). Verifikasi lewat Wakili Check-in.`
+      : `${patientName} melaporkan sudah minum obat pada ${dto.reportedDate} namun lupa check-in. Verifikasi lewat Wakili Check-in.`;
+
+    this.eventEmitter.emit(
+      'notification.trigger',
+      new NotificationTriggerEvent(
+        'MISSED_CHECKIN_REPORT',
+        plan.id,
+        'PMO',
+        undefined,
+        undefined,
+        pmoMessage,
+        {
+          missedReportId: report.id,
+          reportedDate: dto.reportedDate,
+          treatmentPlanId: plan.id,
+          patientName,
+        },
+      ),
+    );
+
+    return this.toMissedReportDto(report);
+  }
+
+  private async recoverFromSilence(
+    plan: TreatmentPlan,
+    previousState: string,
+    previousStreak: number,
+    newStreak: number,
+    userId: string,
+    role: string,
+    recoverySummary: string,
+    alertMessage: string,
+    ticketResolutionNotes: string,
+  ): Promise<void> {
+    plan.patientState = 'AKTIF';
+
+    const openSilenceTickets = await this.ticketRepo.find({
+      where: {
+        treatmentPlanId: plan.id,
+        triggerSource: 'SILENCE_H3',
+        status: In(['OPEN', 'IN_PROGRESS']),
+      },
+    });
+
+    for (const t of openSilenceTickets) {
+      t.status = 'AUTO_CLOSED_BY_CHECKIN';
+      t.closedAt = new Date();
+      t.resolutionReason = 'PATIENT_CHECKED_IN_RECOVERED';
+      t.resolutionNotes = ticketResolutionNotes;
+      await this.ticketRepo.save(t);
+
+      await this.historyRepo.save(
+        this.historyRepo.create({
+          treatmentPlanId: plan.id,
+          eventType: 'TICKET_AUTO_CLOSED',
+          previousState,
+          newState: 'AKTIF',
+          previousStreak,
+          newStreak,
+          actorUserId: userId,
+          actorRole: role,
+          reasonOrSummary: `Ticket ${t.id} auto-closed by recovered check-in`,
+        }),
+      );
+    }
+
+    await this.alertRepo.save(
+      this.alertRepo.create({
+        facilityId: plan.facilityId,
+        treatmentPlanId: plan.id,
+        alertType: 'SILENCE_RECOVERED_WARNING',
+        severity: 'WARNING',
+        title: 'Pasien Pulih dari Putus Kontak',
+        message: alertMessage,
+      }),
+    );
+
+    await this.historyRepo.save(
+      this.historyRepo.create({
+        treatmentPlanId: plan.id,
+        eventType: 'STATE_TRANSITION',
+        previousState,
+        newState: 'AKTIF',
+        previousStreak,
+        newStreak,
+        actorUserId: userId,
+        actorRole: role,
+        reasonOrSummary: recoverySummary,
+      }),
+    );
+  }
+
   async extractAudioPreview(
     userId: string,
     role: string,
     file: Express.Multer.File,
     treatmentPlanId?: string,
+    checkInDate?: string,
   ): Promise<AiAudioTranscriptResponse> {
-    const today = new Date().toISOString().slice(0, 10);
     const plan = await this.resolvePlan(userId, role, treatmentPlanId);
-    await this.checkIsLockedToday(plan.id, today);
+    const { targetDate } = this.resolveTargetDate(plan, role, checkInDate);
+    await this.checkIsLockedToday(plan.id, targetDate);
 
     return this.aiClientService.transcribeFromAudio(
       file.buffer,
@@ -326,9 +643,9 @@ export class CheckInService {
     role: string,
     dto: TextExtractRequest,
   ): Promise<AiAudioExtractionResponse> {
-    const today = new Date().toISOString().slice(0, 10);
     const plan = await this.resolvePlan(userId, role, dto.treatmentPlanId);
-    await this.checkIsLockedToday(plan.id, today);
+    const { targetDate } = this.resolveTargetDate(plan, role, dto.checkInDate);
+    await this.checkIsLockedToday(plan.id, targetDate);
 
     return this.aiClientService.extractFromText(dto.editedTranscript);
   }
@@ -338,9 +655,47 @@ export class CheckInService {
     role: string,
     dto: SubmitCheckInDto,
   ): Promise<CheckInVerdictResponse> {
-    const today = new Date().toISOString().slice(0, 10);
     const plan = await this.resolvePlan(userId, role, dto.treatmentPlanId);
-    const todaySnapshot = await this.checkIsLockedToday(plan.id, today);
+    const requestedMissedReport = dto.missedReportId
+      ? await this.missedReportRepo.findOne({
+          where: { id: dto.missedReportId, treatmentPlanId: plan.id },
+        })
+      : null;
+
+    if (dto.missedReportId && !requestedMissedReport) {
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Missed check-in report not found',
+      });
+    }
+    if (
+      requestedMissedReport &&
+      dto.checkInDate &&
+      toDateString(requestedMissedReport.reportedDate) !== dto.checkInDate
+    ) {
+      throw new BadRequestException({
+        code: 'BAD_REQUEST',
+        message: 'checkInDate does not match missedReportId',
+      });
+    }
+    if (requestedMissedReport && requestedMissedReport.status !== 'PENDING') {
+      throw new ConflictException({
+        code: 'MISSED_REPORT_ALREADY_PROCESSED',
+        message: 'Laporan lupa check-in ini sudah diproses sebelumnya.',
+      });
+    }
+
+    const effectiveRequestedDate =
+      dto.checkInDate ??
+      (requestedMissedReport
+        ? toDateString(requestedMissedReport.reportedDate)
+        : undefined);
+    const { today, targetDate, isRetroactive } = this.resolveTargetDate(
+      plan,
+      role,
+      effectiveRequestedDate,
+    );
+    const todaySnapshot = await this.checkIsLockedToday(plan.id, targetDate);
 
     let medicationStatus: MedicationStatus = 'SUDAH_MINUM';
     let pillsTakenCount: number | null = plan.dailyPillQuota;
@@ -432,7 +787,7 @@ export class CheckInService {
       : await this.checkInRepo.save(
           this.checkInRepo.create({
             treatmentPlanId: plan.id,
-            checkInDate: today,
+            checkInDate: targetDate,
             attemptNumber,
             reportedByUserId: userId,
             reportedByRole: role,
@@ -468,12 +823,98 @@ export class CheckInService {
           }),
     );
 
-    const yesterday = new Date(Date.parse(today) - 86_400_000)
-      .toISOString()
-      .slice(0, 10);
+    const yesterday = addDays(today, -1);
 
     // Business Logic updates
-    if (verdictResult.isDoseFulfilled) {
+    if (isRetroactive) {
+      const previousStreak = plan.currentStreak;
+      const fulfilledRows = await this.checkInRepo.find({
+        where: { treatmentPlanId: plan.id, isDoseFulfilled: true },
+        select: { checkInDate: true },
+      });
+      const fulfilledSet = new Set(
+        fulfilledRows.map((r) => toDateString(r.checkInDate)),
+      );
+      if (verdictResult.isDoseFulfilled) {
+        fulfilledSet.add(targetDate);
+      } else {
+        fulfilledSet.delete(targetDate);
+      }
+
+      const fulfilledDates = [...fulfilledSet];
+      const planStart = plan.startDate ? toDateString(plan.startDate) : targetDate;
+      const effectiveStart = fulfilledDates.reduce(
+        (min, d) => (d < min ? d : min),
+        planStart,
+      );
+      const windowEnd =
+        plan.targetEndDate && toDateString(plan.targetEndDate) > today
+          ? toDateString(plan.targetEndDate)
+          : today;
+
+      const stats = computeStreakStats({
+        startDate: effectiveStart,
+        targetEndDate: windowEnd,
+        fulfilledDates,
+        today,
+      });
+
+      plan.currentStreak = stats.currentStreak;
+      plan.consecutiveSilenceDays = stats.consecutiveSilenceDays;
+      plan.targetEndDate = computeTargetEndDate(
+        stats.latestFulfilled,
+        stats.currentStreak,
+        today,
+      );
+
+      if (
+        verdictResult.isDoseFulfilled &&
+        stats.consecutiveSilenceDays === 0 &&
+        ['BERISIKO', 'PUTUS_FOLLOW_UP'].includes(plan.patientState) &&
+        !isRedFlag &&
+        !wasRedFlagToday
+      ) {
+        const openCritical = await this.ticketRepo.find({
+          where: {
+            treatmentPlanId: plan.id,
+            triggerSource: In(['RED_FLAG', 'INTENT_TO_STOP']),
+            status: In(['OPEN', 'IN_PROGRESS']),
+          },
+        });
+        if (openCritical.length === 0) {
+          await this.recoverFromSilence(
+            plan,
+            plan.patientState,
+            previousStreak,
+            plan.currentStreak,
+            userId,
+            role,
+            `PMO verified missed check-in for ${targetDate}; streak restored to ${plan.currentStreak}`,
+            `PMO memverifikasi check-in tanggal ${targetDate}. Kepatuhan pasien kembali aktif.`,
+            `PMO memverifikasi check-in tanggal ${targetDate} sehingga periode sunyi pulih.`,
+          );
+        }
+      }
+
+      await this.planRepo.save(plan);
+
+      await this.historyRepo.save(
+        this.historyRepo.create({
+          treatmentPlanId: plan.id,
+          eventType: isTerkendali ? 'CHECK_IN_LOCKED' : 'CHECK_IN_INCOMPLETE_RETRY',
+          previousStreak,
+          newStreak: plan.currentStreak,
+          actorUserId: userId,
+          actorRole: role,
+          reasonOrSummary: `PMO verified check-in for missed date ${targetDate} (${verdictResult.verdict})`,
+          metadataJson: {
+            checkInId: checkIn.id,
+            checkInDate: targetDate,
+            verdict: verdictResult.verdict,
+          },
+        }),
+      );
+    } else if (verdictResult.isDoseFulfilled) {
       const previousStreak = plan.currentStreak;
 
       if (!wasFulfilledToday) {
@@ -491,73 +932,29 @@ export class CheckInService {
 
         if (wasSilentOrAtRisk && !isRedFlag) {
           const previousState = plan.patientState;
-          plan.patientState = 'AKTIF';
           plan.consecutiveSilenceDays = 0;
           plan.currentStreak = 1; // Locked decision DEC-05: resets to 1
-
-          // Auto-close open SILENCE_H3 tickets
-          const openSilenceTickets = await this.ticketRepo.find({
-            where: {
-              treatmentPlanId: plan.id,
-              triggerSource: 'SILENCE_H3',
-              status: In(['OPEN', 'IN_PROGRESS']),
-            },
-          });
-
-          for (const t of openSilenceTickets) {
-            t.status = 'AUTO_CLOSED_BY_CHECKIN';
-            t.closedAt = new Date();
-            t.resolutionReason = 'PATIENT_CHECKED_IN_RECOVERED';
-            t.resolutionNotes =
-              'Pasien kembali melakukan check-in dosis penuh secara mandiri.';
-            await this.ticketRepo.save(t);
-
-            await this.historyRepo.save(
-              this.historyRepo.create({
-                treatmentPlanId: plan.id,
-                eventType: 'TICKET_AUTO_CLOSED',
-                previousState,
-                newState: 'AKTIF',
-                previousStreak: 0,
-                newStreak: 1,
-                actorUserId: userId,
-                actorRole: role,
-                reasonOrSummary: `Ticket ${t.id} auto-closed by recovered check-in`,
-              }),
-            );
-          }
-
-          // Emit FacilityAlert warning
-          await this.alertRepo.save(
-            this.alertRepo.create({
-              facilityId: plan.facilityId,
-              treatmentPlanId: plan.id,
-              alertType: 'SILENCE_RECOVERED_WARNING',
-              severity: 'WARNING',
-              title: 'Pasien Pulih dari Putus Kontak',
-              message:
-                'Pasien yang sebelumnya tidak melapor telah berhasil check-in dosis penuh hari ini.',
-            }),
-          );
-
-          await this.historyRepo.save(
-            this.historyRepo.create({
-              treatmentPlanId: plan.id,
-              eventType: 'STATE_TRANSITION',
-              previousState,
-              newState: 'AKTIF',
-              previousStreak: 0,
-              newStreak: 1,
-              actorUserId: userId,
-              actorRole: role,
-              reasonOrSummary: 'Patient recovered adherence after silence period',
-            }),
+          await this.recoverFromSilence(
+            plan,
+            previousState,
+            0,
+            1,
+            userId,
+            role,
+            'Patient recovered adherence after silence period',
+            'Pasien yang sebelumnya tidak melapor telah berhasil check-in dosis penuh hari ini.',
+            'Pasien kembali melakukan check-in dosis penuh secara mandiri.',
           );
         } else {
           plan.currentStreak = missedDay ? 1 : plan.currentStreak + 1;
           plan.consecutiveSilenceDays = 0;
         }
 
+        plan.targetEndDate = computeTargetEndDate(
+          plan.currentStreak > 0 ? today : null,
+          plan.currentStreak,
+          today,
+        );
         await this.planRepo.save(plan);
       }
 
@@ -587,6 +984,13 @@ export class CheckInService {
         plan.currentStreak = fulfilledYesterday
           ? Math.max(0, plan.currentStreak - 1)
           : 0;
+        plan.targetEndDate = computeTargetEndDate(
+          plan.currentStreak > 0 && lastFulfilled
+            ? toDateString(lastFulfilled.checkInDate)
+            : null,
+          plan.currentStreak,
+          today,
+        );
         await this.planRepo.save(plan);
       }
 
@@ -630,6 +1034,69 @@ export class CheckInService {
           verdictResult.responseMessage,
         ),
       );
+    }
+
+    if (role === 'PMO' && (requestedMissedReport || isRetroactive)) {
+      const reportToResolve =
+        requestedMissedReport ??
+        (await this.missedReportRepo.findOne({
+          where: {
+            treatmentPlanId: plan.id,
+            reportedDate: targetDate,
+            status: 'PENDING',
+          },
+        }));
+
+      if (reportToResolve && reportToResolve.status === 'PENDING') {
+        reportToResolve.status = verdictResult.isDoseFulfilled
+          ? 'VERIFIED'
+          : 'REJECTED';
+        reportToResolve.verifiedByUserId = userId;
+        reportToResolve.verifiedCheckInId = checkIn.id;
+        reportToResolve.verifiedAt = new Date();
+        await this.missedReportRepo.save(reportToResolve);
+
+        await this.historyRepo.save(
+          this.historyRepo.create({
+            treatmentPlanId: plan.id,
+            eventType: 'MISSED_CHECKIN_VERIFIED',
+            previousState: plan.patientState,
+            newState: plan.patientState,
+            previousStreak: plan.currentStreak,
+            newStreak: plan.currentStreak,
+            actorUserId: userId,
+            actorRole: role,
+            reasonOrSummary: verdictResult.isDoseFulfilled
+              ? `PMO memverifikasi laporan lupa check-in untuk ${targetDate}`
+              : `PMO menolak laporan lupa check-in untuk ${targetDate} (dosis belum terpenuhi)`,
+            metadataJson: {
+              missedReportId: reportToResolve.id,
+              checkInId: checkIn.id,
+              reportedDate: targetDate,
+              status: reportToResolve.status,
+            },
+          }),
+        );
+
+        if (verdictResult.isDoseFulfilled) {
+          this.eventEmitter.emit(
+            'notification.trigger',
+            new NotificationTriggerEvent(
+              'MISSED_CHECKIN_VERIFIED',
+              plan.id,
+              'PASIEN',
+              plan.patientUserId,
+              undefined,
+              `PMO memverifikasi minum obat tanggal ${targetDate}. Streak Anda sekarang ${plan.currentStreak} hari.`,
+              {
+                missedReportId: reportToResolve.id,
+                reportedDate: targetDate,
+                currentStreak: plan.currentStreak,
+              },
+            ),
+          );
+        }
+      }
     }
 
     // Critical Red Flag Handling: escalate once per day; keep CRITICAL tickets OPEN for Nakes verification.
@@ -685,27 +1152,44 @@ export class CheckInService {
           }),
         );
 
-        this.eventEmitter.emit(
-          'notification.trigger',
-          new NotificationTriggerEvent(
-            intentToStop ? 'INTENT_TO_STOP_ALERT' : 'RED_FLAG_ALERT',
-            plan.id,
-            'PMO',
-            undefined,
-            undefined,
-            verdictResult.responseMessage,
-          ),
+        const patientName = plan.patientUser?.name || 'Pasien';
+        const redFlagCircumstance = intentToStop
+          ? 'INTENT_TO_STOP_ALERT'
+          : 'RED_FLAG_ALERT';
+        const companionMessage = intentToStop
+          ? `Pasien ${patientName} membutuhkan dukungan untuk melanjutkan jadwal minum obat. Mohon hubungi dan koordinasikan dengan faskes terdekat.`
+          : `Pasien ${patientName} melaporkan kondisi yang memerlukan perhatian medis. Tim faskes telah diberitahu; mohon segera bantu pendampingan.`;
+
+        await this.alertRepo.save(
+          this.alertRepo.create({
+            facilityId: plan.facilityId,
+            treatmentPlanId: plan.id,
+            alertType: intentToStop
+              ? 'INTENT_TO_STOP_WARNING'
+              : 'RED_FLAG_WARNING',
+            severity: 'HIGH',
+            title: intentToStop
+              ? 'Dukungan Kepatuhan Diperlukan'
+              : 'Perhatian Medis Diperlukan',
+            message: intentToStop
+              ? `Pasien ${patientName} membutuhkan dukungan untuk melanjutkan pengobatan. Tiket tindak lanjut telah dibuka.`
+              : `Pasien ${patientName} melaporkan kondisi yang memerlukan perhatian medis segera. Tiket tindak lanjut telah dibuka.`,
+          }),
         );
 
-        // Family contacts get the same escalation over WhatsApp (no login).
-        this.eventEmitter.emit(
-          'notification.trigger',
-          new NotificationTriggerEvent(
-            intentToStop ? 'INTENT_TO_STOP_ALERT' : 'RED_FLAG_ALERT',
-            plan.id,
-            'KELUARGA',
-          ),
-        );
+        for (const recipientRole of ['PMO', 'KELUARGA', 'NAKES'] as const) {
+          this.eventEmitter.emit(
+            'notification.trigger',
+            new NotificationTriggerEvent(
+              redFlagCircumstance,
+              plan.id,
+              recipientRole,
+              undefined,
+              undefined,
+              companionMessage,
+            ),
+          );
+        }
       }
     }
 

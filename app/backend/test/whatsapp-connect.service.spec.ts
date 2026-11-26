@@ -331,7 +331,7 @@ describe("WhatsappConnectService Unit Tests", () => {
       expect(mockWahaClient.sendSeen).toHaveBeenCalledWith("6281234567890@c.us", "waha-msg-uuid");
       expect(mockWahaClient.sendText).toHaveBeenCalledWith(
         "6281234567890@c.us",
-        expect.stringContaining("terhubung dengan Pandu"),
+        expect.stringMatching(/^\*WhatsApp Terhubung\*\n\n.*terhubung dengan Pandu/),
       );
     });
 

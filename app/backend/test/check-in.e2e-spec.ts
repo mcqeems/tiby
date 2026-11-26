@@ -824,4 +824,101 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
       res.body.items.every((i: any) => i.facilityId === facilityBId),
     ).toBe(true);
   });
+
+  it("17. PASIEN reports missed date -> PMO verifies retroactively -> continuous streak (4) & daysRemaining (176)", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const offset = (days: number) =>
+      new Date(Date.parse(today) + days * 86_400_000).toISOString().slice(0, 10);
+
+    const checkInRepo = dataSource.getRepository(DailyCheckIn);
+    const planRepo = dataSource.getRepository(TreatmentPlan);
+
+    // Prepare 3 consecutive fulfilled days (-4, -3, -2), missed -1 (streak reset to 0), no today check-in yet
+    await checkInRepo.delete({ treatmentPlanId: plan1Id });
+    await planRepo.update(
+      { id: plan1Id },
+      {
+        startDate: offset(-4),
+        targetEndDate: offset(180),
+        currentStreak: 0,
+        consecutiveSilenceDays: 1,
+        patientState: "BERISIKO",
+      },
+    );
+
+    for (const d of [offset(-4), offset(-3), offset(-2)]) {
+      await checkInRepo.save(
+        checkInRepo.create({
+          treatmentPlanId: plan1Id,
+          checkInDate: d,
+          attemptNumber: 1,
+          reportedByUserId: patient1Id,
+          reportedByRole: "PASIEN",
+          inputMode: "FALLBACK_BUTTONS",
+          medicationStatus: "SUDAH_MINUM",
+          pillsTakenCount: 4,
+          isDoseFulfilled: true,
+        }),
+      );
+    }
+
+    const resetStats = await request(app.getHttpServer())
+      .get("/api/stats")
+      .set("Cookie", patient1Cookie);
+    expect(resetStats.status).toBe(200);
+    expect(resetStats.body.currentStreak).toBe(0);
+    expect(resetStats.body.daysRemaining).toBe(180);
+
+    const summaryBefore = await request(app.getHttpServer())
+      .get("/api/check-ins/missed-reports")
+      .set("Cookie", patient1Cookie);
+    expect(summaryBefore.status).toBe(200);
+    expect(summaryBefore.body.eligibleDates).toContain(offset(-1));
+
+    const reportRes = await request(app.getHttpServer())
+      .post("/api/check-ins/missed-reports")
+      .set("Cookie", patient1Cookie)
+      .send({
+        reportedDate: offset(-1),
+        patientNote: "Sudah minum obat jam 08.00 tapi lupa check-in",
+      });
+    expect(reportRes.status).toBe(201);
+    const reportId = reportRes.body.id;
+
+    const pmoListRes = await request(app.getHttpServer())
+      .get("/api/pmo/patients")
+      .set("Cookie", pmo1Cookie);
+    expect(pmoListRes.status).toBe(200);
+    const plan1Item = pmoListRes.body.find((p: any) => p.treatmentPlanId === plan1Id);
+    expect(plan1Item.pendingMissedReports).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: reportId, reportedDate: offset(-1) }),
+      ]),
+    );
+
+    const verifyRes = await request(app.getHttpServer())
+      .post("/api/check-ins")
+      .set("Cookie", pmo1Cookie)
+      .send({
+        inputMode: "FALLBACK_BUTTONS",
+        treatmentPlanId: plan1Id,
+        checkInDate: offset(-1),
+        missedReportId: reportId,
+        fallbackButtons: {
+          medicationStatus: "SUDAH_MINUM",
+          pillsTakenCount: 4,
+          hasComplaints: false,
+          selectedComplaints: [],
+        },
+      });
+    expect(verifyRes.status).toBe(201);
+    expect(verifyRes.body.currentStreak).toBe(4);
+
+    const statsAfter = await request(app.getHttpServer())
+      .get("/api/stats")
+      .set("Cookie", patient1Cookie);
+    expect(statsAfter.status).toBe(200);
+    expect(statsAfter.body.currentStreak).toBe(4);
+    expect(statsAfter.body.daysRemaining).toBe(176);
+  });
 });

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { stripDiseaseStigma } from "../../../common/notifications/notification-templates.js";
 
 @Injectable()
 export class WahaClientService {
@@ -116,8 +117,8 @@ export class WahaClientService {
   }
 
   async sendText(chatId: string, text: string): Promise<{ success: boolean; messageId?: string }> {
-    // Zero-Stigma Invariant: Strip TBC/Tuberkulosis mention
-    const cleanText = text.replace(/\b(TBC|Tuberkulosis)\b/gi, "").trim();
+    // Zero-Stigma Invariant: Strip TB/anti-TB/TBC/Tuberkulosis mention
+    const cleanText = stripDiseaseStigma(text);
 
     if (!this.isEnabled) {
       this.logger.log(`[MOCK WAHA] Sent message to ${chatId}: "${cleanText}"`);

@@ -92,9 +92,11 @@ describe("StatsService date maths", () => {
     expect(toDateString("2026-10-17")).toBe("2026-10-17");
   });
 
-  it("clamps days remaining at zero", () => {
-    expect(daysRemaining(today, dayOffset(10))).toBe(10);
-    expect(daysRemaining(today, dayOffset(-3))).toBe(0);
+  it("computes remaining days from current streak (180 - currentStreak)", () => {
+    expect(daysRemaining(0)).toBe(180);
+    expect(daysRemaining(4)).toBe(176);
+    expect(daysRemaining(185)).toBe(0);
+    expect(daysRemaining(-2)).toBe(180);
   });
 
   it("treats zero elapsed days as nothing missed", () => {
@@ -175,7 +177,7 @@ describe("StatsService role payloads", () => {
       todayCheckInStatus: "TERKENDALI",
       totalPillsTaken: 12, // 4 + 4 (latest retry) + 4
       adherenceRate: 0.273, // 3 fulfilled days / 11 elapsed
-      daysRemaining: 170,
+      daysRemaining: 177, // 180 - 3 streak
       careTeam: {
         facility: {
           id: "facility-1",

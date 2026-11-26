@@ -41,7 +41,7 @@ export default function NotificationPreview({
   const displayMessage =
     message.trim() || "Isi pesan akan tampil di sini saat kamu mulai menulis.";
   // Mirrors the server-side zero-stigma guard on push and WhatsApp.
-  const stripped = /(tbc|tuberkulosis)/i.test(`${title} ${message}`);
+  const stripped = /\b(anti-TB|TBC|Tuberkulosis|TB)\b/i.test(`${title} ${message}`);
   const Icon = severityIcon(severity);
 
   return (
@@ -136,8 +136,10 @@ export default function NotificationPreview({
 
         {stripped && (
           <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
-            Kata &quot;TBC&quot; atau &quot;Tuberkulosis&quot; akan dihapus
-            otomatis dari pesan Push dan WhatsApp sesuai aturan bebas stigma.
+            Istilah terkait penyakit (&quot;TB&quot;, &quot;anti-TB&quot;,
+            &quot;TBC&quot;, &quot;Tuberkulosis&quot;) akan dihapus otomatis
+            dari pesan Push, WhatsApp, Notifikasi, dan Alert sesuai aturan
+            bebas stigma.
           </p>
         )}
       </div>

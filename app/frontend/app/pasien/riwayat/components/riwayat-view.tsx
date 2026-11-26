@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Skeleton, SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
-import { formatShortDate, formatTime, localDateKey } from "@/lib/format";
+import { formatLongDateUtc, formatShortDate, formatTime, localDateKey } from "@/lib/format";
 import { motion } from "motion/react";
 import { checkInsApi } from "@/lib/api/check-in";
 import { statsApi } from "@/lib/api/stats";
@@ -110,13 +110,9 @@ export default function RiwayatView() {
 
   const startDate =
     history.length > 0
-      ? localDateKey(
-          [...history].sort(
-            (a, b) =>
-              new Date(a.submittedAt).getTime() -
-              new Date(b.submittedAt).getTime(),
-          )[0].submittedAt,
-        )
+      ? [...history]
+          .map((item) => item.checkInDate.slice(0, 10))
+          .sort()[0]
       : localDateKey(new Date().toISOString());
 
   return (
@@ -209,7 +205,9 @@ export default function RiwayatView() {
               history.map((item) => {
                 const style = getVerdictStyle(item.verdict);
                 const Icon = style.icon;
-                const date = new Date(item.submittedAt);
+                const submittedDate = new Date(item.submittedAt);
+                const logicalDate = item.checkInDate.slice(0, 10);
+                const isRetroactive = logicalDate !== localDateKey(submittedDate);
 
                 return (
                   <div
@@ -220,7 +218,7 @@ export default function RiwayatView() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5 text-tiby-ink font-semibold text-sm">
                           <CalendarDays className="w-3.5 h-3.5 text-tiby-muted" />
-                          {formatShortDate(date)}
+                          {formatLongDateUtc(logicalDate)}
                         </div>
                         <div
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${style.bg} ${style.text} ${style.border}`}
@@ -229,8 +227,9 @@ export default function RiwayatView() {
                         </div>
                       </div>
                       <span className="text-[11px] text-tiby-muted bg-gray-50 w-fit px-1.5 py-0.5 rounded">
-                        {formatTime(date)}{" "}
-                        WIB
+                        {isRetroactive
+                          ? `Diverifikasi ${formatShortDate(submittedDate)} · ${formatTime(submittedDate)} WIB`
+                          : `${formatTime(submittedDate)} WIB`}
                       </span>
                     </div>
 

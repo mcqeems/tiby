@@ -5,6 +5,7 @@ import { TreatmentPlan } from '../entities/treatment-plan.entity.js';
 import { PatientStatusHistory } from '../entities/patient-status-history.entity.js';
 import { PmoAssignment } from '../entities/pmo-assignment.entity.js';
 import { DailyCheckIn } from '../../check-ins/entities/daily-check-in.entity.js';
+import { MissedCheckInReport } from '../../check-ins/entities/missed-check-in-report.entity.js';
 import { SafetyEvaluation } from '../../internal/rule-engine/entities/safety-evaluation.entity.js';
 import { PushSubscription } from '../../push/entities/push-subscription.entity.js';
 import { AuthUser } from '../../../auth/entities/auth-user.entity.js';
@@ -18,6 +19,7 @@ import type {
   PatientState,
   TreatmentPhase,
   PmoPatientStatusList,
+  PmoPendingMissedReport,
   CreatePmoFollowUpDto,
   PmoFollowUpResponse,
   SafetyVerdict,
@@ -40,6 +42,8 @@ export class PatientsService {
     private readonly pushRepo: Repository<PushSubscription>,
     @InjectRepository(AuthUser)
     private readonly userRepo: Repository<AuthUser>,
+    @InjectRepository(MissedCheckInReport)
+    private readonly missedReportRepo: Repository<MissedCheckInReport>,
   ) {}
 
   async getPatientHistory(
@@ -260,6 +264,25 @@ export class PatientsService {
     });
 
     const todayStr = new Date().toISOString().slice(0, 10);
+    const planIds = assignments.map((a) => a.treatmentPlan.id);
+    const pendingReports = planIds.length
+      ? await this.missedReportRepo.find({
+          where: { treatmentPlanId: In(planIds), status: 'PENDING' },
+          order: { reportedDate: 'DESC', createdAt: 'DESC' },
+        })
+      : [];
+
+    const reportsByPlan = new Map<string, PmoPendingMissedReport[]>();
+    for (const r of pendingReports) {
+      const list = reportsByPlan.get(r.treatmentPlanId) ?? [];
+      list.push({
+        id: r.id,
+        reportedDate: String(r.reportedDate).slice(0, 10),
+        patientNote: r.patientNote ?? null,
+        createdAt: r.createdAt.toISOString(),
+      });
+      reportsByPlan.set(r.treatmentPlanId, list);
+    }
 
     const patients = await Promise.all(
       assignments.map(async (a) => {
@@ -275,6 +298,7 @@ export class PatientsService {
           currentStreak: plan.currentStreak,
           phase: plan.phase,
           consecutiveSilenceDays: plan.consecutiveSilenceDays,
+          pendingMissedReports: reportsByPlan.get(plan.id) ?? [],
         };
       }),
     );

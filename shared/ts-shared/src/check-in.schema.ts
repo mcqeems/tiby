@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   CheckInInputModeSchema,
   MedicationStatusSchema,
+  MissedReportStatusSchema,
   SafetyVerdictSchema,
 } from "./enums.js";
 import { PaginationQuerySchema } from "./faskes.schema.js";
@@ -28,6 +29,7 @@ export type AiAudioExtractionResponse = z.infer<typeof AiAudioExtractionResponse
 export const TextExtractRequestSchema = z.object({
   editedTranscript: z.string().min(1),
   treatmentPlanId: z.uuid().optional(),
+  checkInDate: z.iso.date().optional(),
 });
 export type TextExtractRequest = z.infer<typeof TextExtractRequestSchema>;
 
@@ -57,6 +59,8 @@ export type FallbackButtonsPayload = z.infer<typeof FallbackButtonsPayloadSchema
 export const SubmitCheckInSchema = z.object({
   inputMode: CheckInInputModeSchema,
   treatmentPlanId: z.uuid().optional(),
+  checkInDate: z.iso.date().optional(),
+  missedReportId: z.uuid().optional(),
   confirmedFacts: ConfirmedCheckInFactsSchema.optional(),
   fallbackButtons: FallbackButtonsPayloadSchema.optional(),
 });
@@ -128,6 +132,16 @@ export const CheckInListSchema = z.object({
 });
 export type CheckInList = z.infer<typeof CheckInListSchema>;
 
+export const PmoPendingMissedReportSchema = z.object({
+  id: z.uuid(),
+  reportedDate: z.string(),
+  patientNote: z.string().nullable(),
+  createdAt: z.string(),
+});
+export type PmoPendingMissedReport = z.infer<
+  typeof PmoPendingMissedReportSchema
+>;
+
 export const PmoPatientStatusItemSchema = z.object({
   treatmentPlanId: z.uuid(),
   patientName: z.string(),
@@ -136,8 +150,41 @@ export const PmoPatientStatusItemSchema = z.object({
   currentStreak: z.number().int().nonnegative(),
   phase: z.string(),
   consecutiveSilenceDays: z.number().int().nonnegative(),
+  pendingMissedReports: z.array(PmoPendingMissedReportSchema).optional(),
 });
 export type PmoPatientStatusItem = z.infer<typeof PmoPatientStatusItemSchema>;
 
 export const PmoPatientStatusListSchema = z.array(PmoPatientStatusItemSchema);
 export type PmoPatientStatusList = z.infer<typeof PmoPatientStatusListSchema>;
+
+export const CreateMissedCheckInReportSchema = z.object({
+  reportedDate: z.iso.date(),
+  patientNote: z.string().trim().max(500).optional(),
+});
+export type CreateMissedCheckInReportDto = z.infer<
+  typeof CreateMissedCheckInReportSchema
+>;
+
+export const MissedCheckInReportItemSchema = z.object({
+  id: z.uuid(),
+  treatmentPlanId: z.uuid(),
+  reportedDate: z.string(),
+  status: MissedReportStatusSchema,
+  patientNote: z.string().nullable(),
+  verifiedCheckInId: z.uuid().nullable(),
+  verifiedAt: z.string().nullable(),
+  createdAt: z.string(),
+});
+export type MissedCheckInReportItem = z.infer<
+  typeof MissedCheckInReportItemSchema
+>;
+
+export const MissedCheckInSummaryResponseSchema = z.object({
+  startDate: z.string(),
+  currentStreak: z.number().int().nonnegative(),
+  eligibleDates: z.array(z.string()),
+  reports: z.array(MissedCheckInReportItemSchema),
+});
+export type MissedCheckInSummaryResponse = z.infer<
+  typeof MissedCheckInSummaryResponseSchema
+>;

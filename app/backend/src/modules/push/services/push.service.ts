@@ -12,6 +12,7 @@ import { PushSubscription } from "../entities/push-subscription.entity.js";
 import { TreatmentPlan } from "../../patients/entities/treatment-plan.entity.js";
 import { PatientStatusHistory } from "../../patients/entities/patient-status-history.entity.js";
 import { AuthUser } from "../../../auth/entities/auth-user.entity.js";
+import { stripDiseaseStigma } from "../../../common/notifications/notification-templates.js";
 import type {
   PushSubscriptionPayload,
   PushSubscriptionStatus,
@@ -201,9 +202,9 @@ export class PushService {
       return { sent: 0, failed: 0 };
     }
 
-    // Zero-Stigma Invariant: Strip any TBC/Tuberkulosis mention
-    const cleanTitle = payload.title.replace(/\b(TBC|Tuberkulosis)\b/gi, "").trim();
-    const cleanBody = payload.body.replace(/\b(TBC|Tuberkulosis)\b/gi, "").trim();
+    // Zero-Stigma Invariant: Strip any TB/anti-TB/TBC/Tuberkulosis mention
+    const cleanTitle = stripDiseaseStigma(payload.title);
+    const cleanBody = stripDiseaseStigma(payload.body);
 
     const cleanPayload = {
       ...payload,

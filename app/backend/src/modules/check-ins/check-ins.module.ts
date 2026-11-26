@@ -3,6 +3,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { CheckInController } from "./controllers/check-in.controller.js";
 import { CheckInService } from "./services/check-in.service.js";
 import { DailyCheckIn } from "./entities/daily-check-in.entity.js";
+import { MissedCheckInReport } from "./entities/missed-check-in-report.entity.js";
 import { SafetyEvaluation } from "../internal/rule-engine/entities/safety-evaluation.entity.js";
 import { TreatmentPlan } from "../patients/entities/treatment-plan.entity.js";
 import { PmoAssignment } from "../patients/entities/pmo-assignment.entity.js";
@@ -17,6 +18,7 @@ import { RuleEngineModule } from "../internal/rule-engine/rule-engine.module.js"
   imports: [
     TypeOrmModule.forFeature([
       DailyCheckIn,
+      MissedCheckInReport,
       SafetyEvaluation,
       TreatmentPlan,
       PmoAssignment,

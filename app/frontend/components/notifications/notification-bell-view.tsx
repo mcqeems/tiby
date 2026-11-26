@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
 import { formatTime } from "@/lib/format";
 import { AnimatePresence, motion } from "motion/react";
@@ -15,6 +16,11 @@ export interface BellItem {
   isRead: boolean;
   createdAt: string;
   meta?: string;
+  action?: {
+    label: string;
+    href?: string;
+    onClick?: () => void;
+  };
 }
 
 interface NotificationBellViewProps {
@@ -141,9 +147,37 @@ export default function NotificationBellView({
                             >
                               {item.title}
                             </p>
-                            <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-tiby-muted">
+                            <p className="mt-0.5 line-clamp-3 text-xs leading-relaxed text-tiby-muted">
                               {item.message}
                             </p>
+                            {item.action && (
+                              <div className="mt-2">
+                                {item.action.href ? (
+                                  <Link
+                                    href={item.action.href}
+                                    onClick={() => {
+                                      setIsOpen(false);
+                                      if (!item.isRead) void onMarkRead(item.id);
+                                    }}
+                                    className="inline-flex items-center rounded-lg bg-tiby-teal-600 px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-tiby-teal-700"
+                                  >
+                                    {item.action.label}
+                                  </Link>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setIsOpen(false);
+                                      if (!item.isRead) void onMarkRead(item.id);
+                                      item.action?.onClick?.();
+                                    }}
+                                    className="inline-flex items-center rounded-lg bg-tiby-teal-600 px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-tiby-teal-700"
+                                  >
+                                    {item.action.label}
+                                  </button>
+                                )}
+                              </div>
+                            )}
                             <p className="mt-1 text-[10px] text-gray-400">
                               {formatTime(item.createdAt)}
                               {item.meta ? ` - ${item.meta}` : ""}

@@ -24,10 +24,17 @@ const INITIAL_STATE: CheckInState = {
   verdict: null,
 };
 
-export function useCheckIn(treatmentPlanId?: string, enabled = true) {
+export function useCheckIn(
+  treatmentPlanId?: string,
+  enabled = true,
+  targetDate?: string,
+  missedReportId?: string,
+) {
   const { confirm } = usePopup();
 
-  const targetKey = enabled ? (treatmentPlanId ?? "self") : null;
+  const targetKey = enabled
+    ? `${treatmentPlanId ?? "self"}:${targetDate ?? "today"}`
+    : null;
   const [checkedKey, setCheckedKey] = useState<string | null>(null);
   const [todayPrevious, setTodayPrevious] =
     useState<TodayPreviousSummary | null>(null);
@@ -41,16 +48,19 @@ export function useCheckIn(treatmentPlanId?: string, enabled = true) {
 
     async function checkStatus() {
       try {
-        const todayCheckIn = await checkInsApi.getTodayStatus(treatmentPlanId);
+        const existingCheckIn = await checkInsApi.getStatusForDate(
+          treatmentPlanId,
+          targetDate,
+        );
         if (!active) return;
 
-        if (todayCheckIn && isCheckInLockedToday(todayCheckIn.verdict)) {
+        if (existingCheckIn && isCheckInLockedToday(existingCheckIn.verdict)) {
           setTodayPrevious(null);
           setState({ ...INITIAL_STATE, step: "locked" });
-        } else if (todayCheckIn) {
+        } else if (existingCheckIn) {
           setTodayPrevious({
-            verdict: todayCheckIn.verdict,
-            isDoseFulfilled: todayCheckIn.isDoseFulfilled,
+            verdict: existingCheckIn.verdict,
+            isDoseFulfilled: existingCheckIn.isDoseFulfilled,
           });
           setState(INITIAL_STATE);
         } else {
@@ -67,7 +77,7 @@ export function useCheckIn(treatmentPlanId?: string, enabled = true) {
     return () => {
       active = false;
     };
-  }, [treatmentPlanId, enabled, targetKey]);
+  }, [treatmentPlanId, targetDate, enabled, targetKey]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -121,7 +131,11 @@ export function useCheckIn(treatmentPlanId?: string, enabled = true) {
 
   const processAudio = async (blob: Blob, treatmentPlanId?: string) => {
     try {
-      const res = await checkInsApi.extractAudio(blob, treatmentPlanId);
+      const res = await checkInsApi.extractAudio(
+        blob,
+        treatmentPlanId,
+        targetDate,
+      );
       setState((s) => ({ ...s, transcript: res.transcript, step: "review" }));
     } catch (err: unknown) {
       const message =
@@ -141,11 +155,14 @@ export function useCheckIn(treatmentPlanId?: string, enabled = true) {
       const extractRes = await checkInsApi.extractText({
         editedTranscript,
         treatmentPlanId,
+        checkInDate: targetDate,
       });
 
       const payload: SubmitCheckInDto = {
         inputMode: "VOICE_STT",
         treatmentPlanId,
+        checkInDate: targetDate,
+        missedReportId,
         confirmedFacts: {
           transcript: extractRes.transcript,
           medicationStatus: extractRes.medicationTaken as MedicationStatus,
@@ -199,6 +216,8 @@ export function useCheckIn(treatmentPlanId?: string, enabled = true) {
       const payload: SubmitCheckInDto = {
         inputMode: "FALLBACK_BUTTONS",
         treatmentPlanId,
+        checkInDate: targetDate,
+        missedReportId,
         fallbackButtons: data,
       };
 

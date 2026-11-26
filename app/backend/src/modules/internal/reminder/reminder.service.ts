@@ -99,36 +99,61 @@ export class ReminderService {
     const due = plans.filter((plan) => isReminderDue(plan, now));
     if (due.length === 0) return;
 
-    const today = now.toISOString().slice(0, 10);
+    const localTodayByPlan = new Map<string, string>();
+    for (const plan of due) {
+      localTodayByPlan.set(plan.id, localDate(plan.timezone, now));
+    }
+    const uniqueLocalDates = [...new Set(localTodayByPlan.values())];
+    const earliestLocalDate = [...uniqueLocalDates].sort()[0];
+    const logWindowStart = new Date(
+      Date.parse(`${earliestLocalDate}T00:00:00.000Z`) - 14 * 3_600_000,
+    );
     const ids = due.map((plan) => plan.id);
 
     const [fulfilled, alreadyLogged] = await Promise.all([
       this.checkInRepo.find({
         where: {
           treatmentPlanId: In(ids),
-          checkInDate: today,
+          checkInDate: In(uniqueLocalDates),
           isDoseFulfilled: true,
         },
-        select: { treatmentPlanId: true },
+        select: { treatmentPlanId: true, checkInDate: true },
       }),
       this.logRepo.find({
         where: {
           treatmentPlanId: In(ids),
           triggerCircumstance: "DAILY_REMINDER",
-          sentAt: MoreThanOrEqual(new Date(`${today}T00:00:00.000Z`)),
+          sentAt: MoreThanOrEqual(logWindowStart),
         },
-        select: { treatmentPlanId: true },
+        select: { treatmentPlanId: true, sentAt: true },
       }),
     ]);
 
-    const done = new Set(fulfilled.map((row) => row.treatmentPlanId));
-    const logged = new Set(alreadyLogged.map((row) => row.treatmentPlanId));
+    const done = new Set(
+      fulfilled
+        .filter((row) => {
+          const planToday = localTodayByPlan.get(row.treatmentPlanId);
+          return !row.checkInDate || String(row.checkInDate).slice(0, 10) === planToday;
+        })
+        .map((row) => row.treatmentPlanId),
+    );
+    const logged = new Set(
+      alreadyLogged
+        .filter((row) => {
+          const planToday = localTodayByPlan.get(row.treatmentPlanId);
+          const plan = due.find((p) => p.id === row.treatmentPlanId);
+          if (!row.sentAt || !plan || !planToday) return true;
+          return localDate(plan.timezone, row.sentAt) === planToday;
+        })
+        .map((row) => row.treatmentPlanId),
+    );
 
     for (const plan of due) {
+      const planToday = localTodayByPlan.get(plan.id)!;
       if (done.has(plan.id) || logged.has(plan.id)) continue;
-      if (this.sentToday.get(plan.id) === today) continue;
+      if (this.sentToday.get(plan.id) === planToday) continue;
 
-      this.sentToday.set(plan.id, today);
+      this.sentToday.set(plan.id, planToday);
       this.eventEmitter.emit(
         "notification.trigger",
         new NotificationTriggerEvent(
@@ -140,10 +165,11 @@ export class ReminderService {
       );
     }
 
-    // The map only needs today's entries.
+    // The map only needs current-day entries.
     if (this.sentToday.size > 1000) {
+      const activeDates = new Set(uniqueLocalDates);
       for (const [planId, date] of this.sentToday) {
-        if (date !== today) this.sentToday.delete(planId);
+        if (!activeDates.has(date)) this.sentToday.delete(planId);
       }
     }
     this.logger.debug(`DAILY_REMINDER due for ${due.length} plan(s)`);

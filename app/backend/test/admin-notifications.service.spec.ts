@@ -84,6 +84,15 @@ describe("AdminNotificationsService", () => {
     expect(items.some((t) => t.key === "DAILY_REMINDER")).toBe(true);
     expect(items.some((t) => t.source === "PRESET")).toBe(true);
     expect(items.some((t) => t.key === "ADMIN_SIMULATION")).toBe(false);
+
+    // Legacy duplicate aliases omitted; Nakes presets and role hints present
+    for (const legacyKey of ["REMINDER_SCHEDULED", "SILENCE_H1", "SILENCE_H2", "SILENCE_H3"]) {
+      expect(items.some((t) => t.key === legacyKey)).toBe(false);
+    }
+    expect(new Set(items.map((t) => t.title)).size).toBe(items.length);
+    const nakesPreset = items.find((t) => t.key === "PRESET_NAKES_RED_FLAG");
+    expect(nakesPreset).toBeDefined();
+    expect(nakesPreset?.audienceLabel).toBe("Nakes / Faskes");
   });
 
   it("delivers an alert to a patient's notification bell", async () => {
@@ -269,5 +278,39 @@ describe("AdminNotificationsService", () => {
     await expect(
       missing.service.send({ id: "admin-1", role: "ADMIN" }, baseDto),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it("formats simulated WhatsApp, attaches role push url, and strips disease terms across Alert/Push/WA", async () => {
+    process.env.WAHA_ENABLED = "true";
+    const { service, alertRepo, pushService, wahaClient } = makeService([nakes]);
+
+    await service.send(
+      { id: "admin-1", role: "ADMIN" },
+      {
+        recipientUserIds: ["nakes-1"],
+        channels: ["ALERT", "PUSH", "WHATSAPP"],
+        title: "Simulasi anti-TB",
+        message: "Pasien TBC perlu evaluasi TB segera.",
+        severity: "HIGH",
+      },
+    );
+
+    expect(alertRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Simulasi",
+        message: "Pasien perlu evaluasi segera.",
+      }),
+    );
+    expect(pushService.sendNotificationToUser).toHaveBeenCalledWith(
+      "nakes-1",
+      expect.objectContaining({
+        url: "/nakes",
+        data: expect.objectContaining({ url: "/nakes" }),
+      }),
+    );
+    expect(wahaClient.sendText).toHaveBeenCalledWith(
+      "628123456789@c.us",
+      "*Simulasi*\n\nPasien perlu evaluasi segera.",
+    );
   });
 });

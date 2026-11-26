@@ -16,6 +16,10 @@ import { PmoAssignment } from "../../patients/entities/pmo-assignment.entity.js"
 import { PatientStatusHistory } from "../../patients/entities/patient-status-history.entity.js";
 import { AuditLog } from "../../internal/audit/entities/audit-log.entity.js";
 import { WahaClientService } from "./waha-client.service.js";
+import {
+  formatWhatsappText,
+  getMessageForCircumstance,
+} from "../../../common/notifications/notification-templates.js";
 import type {
   WhatsappConnectRequest,
   WhatsappConnectChallenge,
@@ -354,11 +358,12 @@ export class WhatsappConnectService {
       }),
     );
 
-    // Bot handshake response via WAHA
+    // Bot handshake response via WAHA using the unified WHATSAPP_VERIFIED_ACK template
+    const ack = getMessageForCircumstance("WHATSAPP_VERIFIED_ACK");
     await this.wahaClient.sendSeen(payload.from, payload.id);
     await this.wahaClient.sendText(
       payload.from,
-      "Halo! Nomor WhatsApp Anda sudah berhasil terhubung dengan Pandu. Pandu siap mendampingi perjalanan sehat Anda!",
+      formatWhatsappText(ack.title, ack.body),
     );
 
     return { handled: true, verified: true };

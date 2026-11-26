@@ -13,6 +13,7 @@ import { PatientStatusHistory } from "../../../patients/entities/patient-status-
 import { InterventionTicket } from "../../../tickets/entities/intervention-ticket.entity.js";
 import { FacilityAlert } from "../../../alerts/entities/facility-alert.entity.js";
 import { NotificationTriggerEvent } from "../../../../common/events/notification-trigger.event.js";
+import { TARGET_TREATMENT_DAYS } from "../streak-reconcile.js";
 
 const ACTIVE_STATES = ["AKTIF", "BERISIKO", "PUTUS_FOLLOW_UP"];
 
@@ -212,9 +213,13 @@ export class SilenceDetectorService implements OnApplicationBootstrap {
     const previousStreak = plan.currentStreak;
     const previousState = plan.patientState;
 
-    // Reset streak to 0 and increment silence days
+    // Reset streak to 0, extend targetEndDate (+180 from next day), and increment silence days
     plan.currentStreak = 0;
     plan.consecutiveSilenceDays += 1;
+    const extendedTarget = addDays(day, TARGET_TREATMENT_DAYS + 1);
+    if (!plan.targetEndDate || extendedTarget > toDateString(plan.targetEndDate)) {
+      plan.targetEndDate = extendedTarget;
+    }
 
     if (previousStreak > 0) {
       await this.alertRepo.save(
@@ -259,6 +264,9 @@ export class SilenceDetectorService implements OnApplicationBootstrap {
             plan.id,
             "PASIEN",
             plan.patientUserId,
+            undefined,
+            undefined,
+            { missedDate: day },
           ),
         );
       }
@@ -280,23 +288,21 @@ export class SilenceDetectorService implements OnApplicationBootstrap {
       );
 
       if (notify) {
-        this.eventEmitter.emit(
-          "notification.trigger",
-          new NotificationTriggerEvent(
-            "SILENCE_H2_ESCALATION",
-            plan.id,
-            "PMO",
-          ),
-        );
-
-        this.eventEmitter.emit(
-          "notification.trigger",
-          new NotificationTriggerEvent(
-            "SILENCE_H2_ESCALATION",
-            plan.id,
-            "KELUARGA",
-          ),
-        );
+        const patientName = plan.patientUser?.name || "Pasien";
+        const h2Message = `Pasien ${patientName} belum melapor check-in kemarin. Mohon bantu ingatkan untuk minum obat dan check-in hari ini.`;
+        for (const recipientRole of ["PMO", "KELUARGA"] as const) {
+          this.eventEmitter.emit(
+            "notification.trigger",
+            new NotificationTriggerEvent(
+              "SILENCE_H2_ESCALATION",
+              plan.id,
+              recipientRole,
+              undefined,
+              undefined,
+              h2Message,
+            ),
+          );
+        }
       }
     } else if (silence === 3) {
       plan.patientState = "BERISIKO";
@@ -336,7 +342,7 @@ export class SilenceDetectorService implements OnApplicationBootstrap {
           alertType: "SILENCE_H3_WARNING",
           severity: "HIGH",
           title: "Pasien Putus Kontak H+3",
-          message: `Pasien belum melapor selama ${plan.consecutiveSilenceDays} hari berturut-turut. Segera lakukan tindak lanjut lapangan.`,
+          message: `Pasien ${plan.patientUser?.name || "Pasien"} belum melapor selama ${plan.consecutiveSilenceDays} hari berturut-turut. Segera lakukan tindak lanjut lapangan.`,
         }),
       );
 
@@ -354,23 +360,21 @@ export class SilenceDetectorService implements OnApplicationBootstrap {
       );
 
       if (notify) {
-        this.eventEmitter.emit(
-          "notification.trigger",
-          new NotificationTriggerEvent(
-            "SILENCE_H3_ESCALATION",
-            plan.id,
-            "PMO",
-          ),
-        );
-
-        this.eventEmitter.emit(
-          "notification.trigger",
-          new NotificationTriggerEvent(
-            "SILENCE_H3_ESCALATION",
-            plan.id,
-            "KELUARGA",
-          ),
-        );
+        const patientName = plan.patientUser?.name || "Pasien";
+        const h3Message = `Pasien ${patientName} belum melapor selama ${plan.consecutiveSilenceDays} hari berturut-turut. Tim faskes telah membuka tindak lanjut.`;
+        for (const recipientRole of ["PMO", "KELUARGA", "NAKES"] as const) {
+          this.eventEmitter.emit(
+            "notification.trigger",
+            new NotificationTriggerEvent(
+              "SILENCE_H3_ESCALATION",
+              plan.id,
+              recipientRole,
+              undefined,
+              undefined,
+              h3Message,
+            ),
+          );
+        }
       }
     } else if (silence >= 7) {
       // Prolonged silence: the ladder ends here, once.

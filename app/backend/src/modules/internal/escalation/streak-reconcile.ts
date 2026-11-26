@@ -6,14 +6,33 @@
  * yesterday, and silence counts the days missed since the last dose.
  */
 
+export const TARGET_TREATMENT_DAYS = 180;
+
 function pad(value: number): string {
   return String(value).padStart(2, "0");
 }
 
-function addDays(date: string, days: number): string {
+export function addDays(date: string, days: number): string {
   const parsed = new Date(`${date.slice(0, 10)}T00:00:00.000Z`);
   parsed.setUTCDate(parsed.getUTCDate() + days);
   return parsed.toISOString().slice(0, 10);
+}
+
+/**
+ * Compute target end date anchored to the start of the active streak
+ * (or `today + 180` when streak is 0).
+ */
+export function computeTargetEndDate(
+  latestFulfilled: string | null,
+  currentStreak: number,
+  today: string,
+  totalDays = TARGET_TREATMENT_DAYS,
+): string {
+  if (currentStreak > 0 && latestFulfilled) {
+    const streakStart = addDays(latestFulfilled, -(currentStreak - 1));
+    return addDays(streakStart, totalDays);
+  }
+  return addDays(today, totalDays);
 }
 
 function minDate(a: string, b: string): string {

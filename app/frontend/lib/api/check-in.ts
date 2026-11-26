@@ -3,6 +3,9 @@ import type {
   AiAudioExtractionResponse,
   AiAudioTranscriptResponse,
   CheckInVerdictResponse,
+  CreateMissedCheckInReportDto,
+  MissedCheckInReportItem,
+  MissedCheckInSummaryResponse,
   SubmitCheckInDto,
   TextExtractRequest,
   CheckInHistoryResponse,
@@ -13,11 +16,15 @@ export const checkInsApi = {
   async extractAudio(
     audioBlob: Blob,
     treatmentPlanId?: string,
+    checkInDate?: string,
   ): Promise<AiAudioTranscriptResponse> {
     const formData = new FormData();
     formData.append("audio", audioBlob, "recording.webm");
     if (treatmentPlanId) {
       formData.append("treatmentPlanId", treatmentPlanId);
+    }
+    if (checkInDate) {
+      formData.append("checkInDate", checkInDate);
     }
 
     return apiFetch<AiAudioTranscriptResponse>("/api/check-ins/audio-extract", {
@@ -57,13 +64,14 @@ export const checkInsApi = {
       },
     );
   },
-  async getTodayStatus(
+  async getStatusForDate(
     treatmentPlanId?: string,
+    dateStr?: string,
   ): Promise<CheckInHistoryItem | null> {
-    const today = new Date().toISOString().split("T")[0];
+    const target = dateStr || new Date().toISOString().split("T")[0];
     const params = new URLSearchParams({
-      from: today,
-      to: today,
+      from: target,
+      to: target,
       limit: "1",
     });
 
@@ -76,5 +84,32 @@ export const checkInsApi = {
     );
 
     return res.items?.[0] ?? null;
+  },
+
+  async getTodayStatus(
+    treatmentPlanId?: string,
+  ): Promise<CheckInHistoryItem | null> {
+    return this.getStatusForDate(treatmentPlanId);
+  },
+
+  async getMissedReports(
+    treatmentPlanId?: string,
+  ): Promise<MissedCheckInSummaryResponse> {
+    const params = new URLSearchParams();
+    if (treatmentPlanId) params.set("treatmentPlanId", treatmentPlanId);
+    const qs = params.toString();
+    return apiFetch<MissedCheckInSummaryResponse>(
+      `/api/check-ins/missed-reports${qs ? `?${qs}` : ""}`,
+      { method: "GET" },
+    );
+  },
+
+  async createMissedReport(
+    payload: CreateMissedCheckInReportDto,
+  ): Promise<MissedCheckInReportItem> {
+    return apiFetch<MissedCheckInReportItem>("/api/check-ins/missed-reports", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   },
 };

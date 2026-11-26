@@ -18,12 +18,14 @@ describe("CheckInService Unit Tests", () => {
   let mockAlertRepo: any;
   let mockHistoryRepo: any;
   let mockAuditRepo: any;
+  let mockMissedReportRepo: any;
   let mockAiClient: any;
   let mockRuleEngine: any;
   let mockEventEmitter: any;
 
   beforeEach(() => {
     mockCheckInRepo = {
+      find: vi.fn().mockResolvedValue([]),
       findOne: vi.fn(),
       findAndCount: vi.fn(),
       countBy: vi.fn().mockResolvedValue(0),
@@ -44,7 +46,7 @@ describe("CheckInService Unit Tests", () => {
     };
     mockPmoRepo = {
       findOne: vi.fn(),
-      find: vi.fn(),
+      find: vi.fn().mockResolvedValue([]),
     };
     mockTicketRepo = {
       find: vi.fn().mockResolvedValue([]),
@@ -62,6 +64,12 @@ describe("CheckInService Unit Tests", () => {
     mockAuditRepo = {
       create: vi.fn((data) => data),
       save: vi.fn((data) => Promise.resolve(data)),
+    };
+    mockMissedReportRepo = {
+      find: vi.fn().mockResolvedValue([]),
+      findOne: vi.fn().mockResolvedValue(null),
+      create: vi.fn((data) => ({ id: "report-1", ...data, createdAt: new Date() })),
+      save: vi.fn((data) => Promise.resolve({ id: "report-1", ...data, createdAt: new Date() })),
     };
     mockAiClient = {
       transcribeFromAudio: vi.fn(),
@@ -83,6 +91,7 @@ describe("CheckInService Unit Tests", () => {
       mockAlertRepo,
       mockHistoryRepo,
       mockAuditRepo,
+      mockMissedReportRepo,
       mockAiClient,
       mockRuleEngine,
       mockEventEmitter,
@@ -481,6 +490,7 @@ describe("CheckInService Unit Tests", () => {
       const plan = {
         id: "plan-1",
         patientUserId: "user-1",
+        patientUser: { name: "Budi Santoso" },
         facilityId: "faskes-1",
         dailyPillQuota: 4,
         currentStreak: 4,
@@ -516,6 +526,9 @@ describe("CheckInService Unit Tests", () => {
       expect(res.verdict).toBe("SEGERA_KE_FASKES");
       expect(plan.patientState).toBe("BERISIKO");
       expect(plan.riskScore).toBe(35); // 10 + 25
+      expect(mockPlanRepo.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({ relations: { patientUser: true } }),
+      );
 
       // Verify CRITICAL ticket created
       expect(mockTicketRepo.save).toHaveBeenCalledWith(
@@ -528,13 +541,124 @@ describe("CheckInService Unit Tests", () => {
         }),
       );
 
-      // Verify notification event emitted for PMO
+      // Verify FacilityAlert RED_FLAG_WARNING with patient name and zero symptom leakage
+      expect(mockAlertRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          facilityId: "faskes-1",
+          alertType: "RED_FLAG_WARNING",
+          severity: "HIGH",
+          message: expect.stringContaining("Budi Santoso"),
+        }),
+      );
+
+      // Verify notification event emitted for PMO, KELUARGA, and NAKES without transcript/symptom names
+      for (const recipientRole of ["PMO", "KELUARGA", "NAKES"]) {
+        expect(mockEventEmitter.emit).toHaveBeenCalledWith(
+          "notification.trigger",
+          expect.objectContaining({
+            circumstance: "RED_FLAG_ALERT",
+            treatmentPlanId: "plan-1",
+            recipientRole,
+            customMessage: expect.stringContaining("Budi Santoso"),
+          }),
+        );
+      }
+      const emitCalls = mockEventEmitter.emit.mock.calls.map((c) => JSON.stringify(c[1]));
+      for (const payload of emitCalls) {
+        expect(payload).not.toContain("Batuk darah");
+        expect(payload).not.toContain("BATUK_DARAH");
+      }
+    });
+
+    it("opens INTENT_TO_STOP_WARNING alert and emits INTENT_TO_STOP_ALERT when intentToStop is true", async () => {
+      mockPlanRepo.findOne.mockResolvedValue({
+        id: "plan-1",
+        patientUserId: "user-1",
+        patientUser: { name: "Siti Aminah" },
+        facilityId: "faskes-1",
+        dailyPillQuota: 4,
+        currentStreak: 2,
+        consecutiveSilenceDays: 0,
+        patientState: "AKTIF",
+        riskScore: 0,
+      });
+      mockCheckInRepo.findOne.mockResolvedValue(null);
+      mockRuleEngine.evaluate.mockReturnValue({
+        verdict: "SEGERA_KE_FASKES",
+        isDoseFulfilled: false,
+        redoRequiredToday: false,
+        matchedRuleCodes: ["RULE_INTENT_TO_STOP"],
+        failSafeTriggered: false,
+        failSafeReason: null,
+        responseMessage: "Jangan berhenti minum obat sebelum berkonsultasi dengan tim faskes.",
+      });
+
+      await service.submitCheckIn("user-1", "PASIEN", {
+        inputMode: "VOICE_STT",
+        confirmedFacts: {
+          transcript: "Saya mau berhenti.",
+          medicationStatus: "BELUM_MINUM",
+          pillsTakenCount: 0,
+          symptoms: [],
+          intentToStop: true,
+          confidence: 0.95,
+        },
+      });
+
+      expect(mockAlertRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          alertType: "INTENT_TO_STOP_WARNING",
+          severity: "HIGH",
+          message: expect.stringContaining("Siti Aminah"),
+        }),
+      );
       expect(mockEventEmitter.emit).toHaveBeenCalledWith(
         "notification.trigger",
         expect.objectContaining({
-          circumstance: "RED_FLAG_ALERT",
-          treatmentPlanId: "plan-1",
-          recipientRole: "PMO",
+          circumstance: "INTENT_TO_STOP_ALERT",
+          recipientRole: "NAKES",
+          customMessage: expect.stringContaining("Siti Aminah"),
+        }),
+      );
+    });
+
+    it("uses loaded patientUser.name inside DOSE_RETRY_WARNING FacilityAlert", async () => {
+      mockPlanRepo.findOne.mockResolvedValue({
+        id: "plan-1",
+        patientUserId: "user-1",
+        patientUser: { name: "Budi Santoso" },
+        facilityId: "faskes-1",
+        dailyPillQuota: 4,
+        currentStreak: 1,
+        consecutiveSilenceDays: 0,
+        patientState: "AKTIF",
+        riskScore: 0,
+      });
+      mockCheckInRepo.findOne.mockResolvedValue(null);
+      mockRuleEngine.evaluate.mockReturnValue({
+        verdict: "PERLU_PERHATIAN",
+        isDoseFulfilled: false,
+        redoRequiredToday: true,
+        matchedRuleCodes: ["RULE_PARTIAL_DOSE"],
+        failSafeTriggered: false,
+        failSafeReason: null,
+        responseMessage: "Anda baru meminum 2 dari 4 butir obat.",
+      });
+
+      await service.submitCheckIn("user-1", "PASIEN", {
+        inputMode: "FALLBACK_BUTTONS",
+        fallbackButtons: {
+          medicationStatus: "SEBAGIAN",
+          pillsTakenCount: 2,
+          hasComplaints: false,
+          selectedComplaints: [],
+        },
+      });
+
+      expect(mockAlertRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          alertType: "DOSE_RETRY_WARNING",
+          message: expect.stringContaining("Pasien Budi Santoso"),
         }),
       );
     });
@@ -1010,6 +1134,168 @@ describe("CheckInService Unit Tests", () => {
 
       const where = mockCheckInRepo.findAndCount.mock.calls[0][0].where;
       expect(where.treatmentPlan).toEqual({ facilityId: "faskes-9" });
+    });
+  });
+
+  describe("missed check-in reports & PMO retroactive verification", () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const offset = (days: number) =>
+      new Date(Date.parse(today) + days * 86_400_000).toISOString().slice(0, 10);
+
+    it("lists eligible unfulfilled dates since startDate and rejects duplicate/fulfilled reports", async () => {
+      mockPlanRepo.findOne.mockResolvedValue({
+        id: "plan-1",
+        patientUserId: "user-1",
+        startDate: offset(-4),
+        currentStreak: 0,
+      });
+      mockCheckInRepo.find.mockResolvedValue([
+        { checkInDate: offset(-4) },
+        { checkInDate: offset(-3) },
+        { checkInDate: offset(-2) },
+      ]);
+      mockMissedReportRepo.find.mockResolvedValue([]);
+
+      const summary = await service.getMissedReportSummary("user-1", "PASIEN");
+
+      expect(summary.eligibleDates).toEqual([offset(-1)]);
+      expect(summary.currentStreak).toBe(0);
+
+      // Duplicate pending report fails with ConflictException
+      mockPlanRepo.findOne.mockResolvedValue({
+        id: "plan-1",
+        patientUserId: "user-1",
+        startDate: offset(-4),
+        currentStreak: 0,
+        patientState: "AKTIF",
+        patientUser: { name: "Ahmad" },
+      });
+      mockCheckInRepo.findOne.mockResolvedValueOnce(null);
+      mockMissedReportRepo.findOne.mockResolvedValueOnce({ id: "rep-existing", status: "PENDING" });
+
+      await expect(
+        service.createMissedReport("user-1", "PASIEN", { reportedDate: offset(-1) }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it("creates missed report and notifies active PMO with metadata", async () => {
+      mockPlanRepo.findOne.mockResolvedValue({
+        id: "plan-1",
+        patientUserId: "user-1",
+        startDate: offset(-4),
+        currentStreak: 0,
+        patientState: "AKTIF",
+        patientUser: { name: "Ahmad" },
+      });
+      mockCheckInRepo.findOne.mockResolvedValue(null);
+      mockMissedReportRepo.findOne.mockResolvedValue(null);
+      mockPmoRepo.find.mockResolvedValue([{ pmoUserId: "pmo-1", active: true }]);
+
+      const created = await service.createMissedReport("user-1", "PASIEN", {
+        reportedDate: offset(-1),
+        patientNote: "Minum jam 8 pagi tapi lupa",
+      });
+
+      expect(created.reportedDate).toBe(offset(-1));
+      expect(created.status).toBe("PENDING");
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith(
+        "notification.trigger",
+        expect.objectContaining({
+          circumstance: "MISSED_CHECKIN_REPORT",
+          recipientRole: "PMO",
+          metadata: expect.objectContaining({
+            reportedDate: offset(-1),
+            treatmentPlanId: "plan-1",
+            patientName: "Ahmad",
+          }),
+        }),
+      );
+    });
+
+    it("forbids PASIEN from submitting a past checkInDate directly", async () => {
+      mockPlanRepo.findOne.mockResolvedValue({
+        id: "plan-1",
+        patientUserId: "user-1",
+        startDate: offset(-4),
+      });
+
+      await expect(
+        service.submitCheckIn("user-1", "PASIEN", {
+          inputMode: "FALLBACK_BUTTONS",
+          checkInDate: offset(-1),
+          fallbackButtons: {
+            medicationStatus: "SUDAH_MINUM",
+            pillsTakenCount: 4,
+            hasComplaints: false,
+            selectedComplaints: [],
+          },
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it("PMO retroactive Wakili Check-in restores continuous streak (3 -> 4), targetEndDate, and marks report VERIFIED", async () => {
+      const mockPlan: any = {
+        id: "plan-1",
+        patientUserId: "user-1",
+        facilityId: "faskes-1",
+        patientState: "BERISIKO",
+        dailyPillQuota: 4,
+        startDate: offset(-4),
+        targetEndDate: offset(180),
+        currentStreak: 0,
+        consecutiveSilenceDays: 1,
+      };
+      const pendingReport: any = {
+        id: "rep-1",
+        treatmentPlanId: "plan-1",
+        reportedDate: offset(-1),
+        status: "PENDING",
+      };
+      mockPmoRepo.findOne.mockResolvedValue({ pmoUserId: "pmo-1", treatmentPlanId: "plan-1", active: true });
+      mockPlanRepo.findOne.mockResolvedValue(mockPlan);
+      mockMissedReportRepo.findOne.mockResolvedValue(pendingReport);
+      mockCheckInRepo.findOne.mockResolvedValue(null);
+      mockCheckInRepo.find.mockResolvedValue([
+        { checkInDate: offset(-4) },
+        { checkInDate: offset(-3) },
+        { checkInDate: offset(-2) },
+      ]);
+      mockRuleEngine.evaluate.mockReturnValue({
+        verdict: "TERKENDALI",
+        isDoseFulfilled: true,
+        redoRequiredToday: false,
+        matchedRuleCodes: [],
+        failSafeTriggered: false,
+        failSafeReason: null,
+        responseMessage: "Terverifikasi",
+      });
+
+      const res = await service.submitCheckIn("pmo-1", "PMO", {
+        inputMode: "FALLBACK_BUTTONS",
+        treatmentPlanId: "plan-1",
+        checkInDate: offset(-1),
+        missedReportId: "rep-1",
+        fallbackButtons: {
+          medicationStatus: "SUDAH_MINUM",
+          pillsTakenCount: 4,
+          hasComplaints: false,
+          selectedComplaints: [],
+        },
+      });
+
+      expect(res.currentStreak).toBe(4);
+      expect(mockPlan.currentStreak).toBe(4);
+      expect(mockPlan.consecutiveSilenceDays).toBe(0);
+      expect(mockPlan.patientState).toBe("AKTIF");
+      expect(mockPlan.targetEndDate).toBe(offset(176));
+      expect(pendingReport.status).toBe("VERIFIED");
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith(
+        "notification.trigger",
+        expect.objectContaining({
+          circumstance: "MISSED_CHECKIN_VERIFIED",
+          recipientRole: "PASIEN",
+        }),
+      );
     });
   });
 });

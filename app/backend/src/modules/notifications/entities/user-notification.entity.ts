@@ -37,6 +37,9 @@ export class UserNotification {
   @Column({ name: "is_read", type: "boolean", default: false })
   isRead: boolean;
 
+  @Column({ name: "metadata_json", type: "jsonb", nullable: true })
+  metadataJson: Record<string, unknown> | null;
+
   @Column({ name: "read_at", type: "timestamptz", nullable: true })
   readAt: Date | null;
 

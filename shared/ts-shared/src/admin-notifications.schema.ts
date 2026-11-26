@@ -41,6 +41,8 @@ export const NotificationTemplateSchema = z.object({
   title: z.string(),
   body: z.string(),
   severity: NotificationSeveritySchema,
+  audienceLabel: z.string().optional(),
+  targetRoles: z.array(UserRoleSchema).optional(),
 });
 export type NotificationTemplate = z.infer<typeof NotificationTemplateSchema>;
 

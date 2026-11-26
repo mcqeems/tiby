@@ -1,7 +1,10 @@
+import type { PmoPendingMissedReport } from "@tiby/ts-shared";
+
 export type {
   CreatePmoFollowUpDto,
   PmoFollowUpResponse,
   PmoPatientStatusList,
+  PmoPendingMissedReport,
 } from "@tiby/ts-shared";
 export type { PmoFollowUpAction as PmoAction } from "@tiby/ts-shared";
 
@@ -18,4 +21,5 @@ export interface PmoPatient {
   currentStreak: number;
   phase: string;
   consecutiveSilenceDays: number;
+  pendingMissedReports?: PmoPendingMissedReport[];
 }

@@ -6,7 +6,7 @@ import {
   SkeletonRegion,
   SkeletonStats,
 } from "@/components/ui/skeleton";
-import { formatMonthYear, localDateKey } from "@/lib/format";
+import { formatLongDateUtc, formatMonthYear } from "@/lib/format";
 import { fadeDown, listItem, popItem, scaleIn, slideIn, staggerParent } from "@/lib/motion";
 import Link from "next/link";
 import { motion } from "motion/react";
@@ -19,10 +19,12 @@ import {
   formatTodayStatusLabel,
   isCheckInLockedToday,
   type CheckInHistoryItem,
+  type MissedCheckInSummaryResponse,
 } from "@/lib/types/check-in";
 import type { PatientStats } from "@/lib/types/stats";
 import Dialog from "@/components/ui/dialog";
 import Mascot from "@/components/mascot";
+import MissedCheckInReportModal from "@/components/check-in/missed-check-in-report-modal";
 import {
   Pill,
   Flame,
@@ -41,7 +43,13 @@ import {
   Stethoscope,
 } from "lucide-react";
 
-const ComplianceCalendar = ({ history }: { history: CheckInHistoryItem[] }) => {
+const ComplianceCalendar = ({
+  history,
+  planStartDate,
+}: {
+  history: CheckInHistoryItem[];
+  planStartDate?: string;
+}) => {
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth();
@@ -53,24 +61,20 @@ const ComplianceCalendar = ({ history }: { history: CheckInHistoryItem[] }) => {
   const dayNames = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
 
   const checkInMap = new Map<string, CheckInHistoryItem>();
-  // History arrives newest-first; keep the first item per date so older legacy attempts cannot overwrite it.
+  // History arrives newest-first; key by logical checkInDate so retroactive verifications land on their day.
   history.forEach((item) => {
-    const key = localDateKey(item.submittedAt);
+    const key = item.checkInDate.slice(0, 10);
     if (!checkInMap.has(key)) checkInMap.set(key, item);
   });
 
-  const startDate =
+  const todayStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const earliestHistory =
     history.length > 0
-      ? localDateKey(
-          [...history].sort(
-            (a, b) =>
-              new Date(a.submittedAt).getTime() -
-              new Date(b.submittedAt).getTime(),
-          )[0].submittedAt,
-        )
-      : localDateKey(new Date().toISOString());
-
-  const todayStr = localDateKey(today.toISOString());
+      ? [...history]
+          .map((item) => item.checkInDate.slice(0, 10))
+          .sort()[0]
+      : null;
+  const startDate = planStartDate || earliestHistory || todayStr;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-2xs">
@@ -217,6 +221,9 @@ export default function PasienOverview() {
   const [history, setHistory] = useState<CheckInHistoryItem[]>([]);
   const [education, setEducation] = useState<EducationItem | null>(null);
   const [facilityName, setFacilityName] = useState<string | null>(null);
+  const [missedSummary, setMissedSummary] =
+    useState<MissedCheckInSummaryResponse | null>(null);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
   const [careTeamOpen, setCareTeamOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -224,11 +231,12 @@ export default function PasienOverview() {
     let active = true;
     async function fetchData() {
       try {
-        const [statsRes, historyRes, eduRes, meRes] = await Promise.all([
+        const [statsRes, historyRes, eduRes, meRes, missedRes] = await Promise.all([
           statsApi.getStats(),
           checkInsApi.getHistory({ limit: 30 }),
           educationApi.getDaily(),
           usersApi.getMe(),
+          checkInsApi.getMissedReports().catch(() => null),
         ]);
 
         if (active) {
@@ -240,6 +248,7 @@ export default function PasienOverview() {
             setEducation(eduRes.cards[0]);
           }
           setFacilityName(meRes.facility ?? null);
+          setMissedSummary(missedRes);
         }
       } catch (err) {
         console.error("Gagal memuat data dashboard:", err);
@@ -295,6 +304,15 @@ export default function PasienOverview() {
   const visibleNakes = nakesMembers.slice(0, 3);
   const resolvedFacilityName =
     facilityName || careTeam?.facility?.name || "Faskes Terdaftar";
+
+  const eligibleDates = missedSummary?.eligibleDates ?? [];
+  const pendingReports = (missedSummary?.reports ?? []).filter(
+    (r) => r.status === "PENDING",
+  );
+  const pendingDateSet = new Set(pendingReports.map((r) => r.reportedDate));
+  const hasUnreportedMissed = eligibleDates.some((d) => !pendingDateSet.has(d));
+  const showMissedAlert =
+    eligibleDates.length > 0 || pendingReports.length > 0;
 
   return (
     <motion.div
@@ -400,6 +418,51 @@ export default function PasienOverview() {
             </div>
           </motion.div>
 
+          {showMissedAlert && (
+            <motion.div
+              variants={listItem}
+              role="status"
+              className="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5 shadow-2xs"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                    <AlertTriangle className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-heading text-sm font-bold text-amber-950">
+                      {currentStreak === 0 && eligibleDates.length > 0
+                        ? "Streak terputus & sisa hari kembali ke 180 hari"
+                        : `Ada ${eligibleDates.length} hari terlewat sejak awal pengobatan`}
+                    </p>
+                    <p className="text-xs leading-relaxed text-amber-900">
+                      Sudah minum obat pada hari yang terlewat namun lupa check-in? Laporkan ke PMO agar dapat diverifikasi melalui{" "}
+                      <strong>Wakili Check-in</strong> dan streak berjalan kembali.
+                    </p>
+                    {pendingReports.length > 0 && (
+                      <p className="text-[11px] font-semibold text-amber-800">
+                        Menunggu verifikasi PMO:{" "}
+                        {pendingReports
+                          .map((r) => formatLongDateUtc(r.reportedDate))
+                          .join(", ")}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {hasUnreportedMissed && (
+                  <button
+                    type="button"
+                    onClick={() => setReportModalOpen(true)}
+                    className="shrink-0 rounded-xl bg-amber-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-amber-700"
+                  >
+                    {pendingReports.length > 0 ? "Lapor Tanggal Lain" : "Lapor ke PMO"}
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          )}
+
           <motion.div variants={staggerParent(0.05)} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <motion.div
               variants={listItem}
@@ -439,7 +502,7 @@ export default function PasienOverview() {
                   Sisa Hari
                 </p>
                 <p className="font-heading text-xl font-bold text-tiby-ink">
-                  {stats?.daysRemaining || 0} Hari
+                  {stats?.daysRemaining ?? 0} Hari
                 </p>
               </div>
             </motion.div>
@@ -465,7 +528,10 @@ export default function PasienOverview() {
           <motion.div
             variants={listItem}
           >
-            <ComplianceCalendar history={history} />
+            <ComplianceCalendar
+              history={history}
+              planStartDate={missedSummary?.startDate}
+            />
           </motion.div>
         </div>
 
@@ -651,6 +717,19 @@ export default function PasienOverview() {
           ))}
         </div>
       </Dialog>
+
+      <MissedCheckInReportModal
+        open={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        summary={missedSummary}
+        onSubmitted={(created) => {
+          setMissedSummary((prev) =>
+            prev
+              ? { ...prev, reports: [created, ...prev.reports] }
+              : prev,
+          );
+        }}
+      />
     </motion.div>
   );
 }

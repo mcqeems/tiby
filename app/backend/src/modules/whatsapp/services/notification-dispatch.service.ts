@@ -4,7 +4,9 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { NotificationTriggerEvent } from "../../../common/events/notification-trigger.event.js";
 import {
+  formatWhatsappText,
   getMessageForCircumstance,
+  getNotificationTargetUrl,
   getSeverity,
 } from "../../../common/notifications/notification-templates.js";
 import { NotificationLog } from "../entities/notification-log.entity.js";
@@ -52,7 +54,12 @@ export class NotificationDispatchService {
     const { circumstance, treatmentPlanId, recipientRole, customMessage } = event;
     const { title, body } = getMessageForCircumstance(circumstance, customMessage);
     const wahaEnabled = process.env.WAHA_ENABLED === "true";
-    const text = `*${title}*\n\n${body}`;
+    const text = formatWhatsappText(title, body);
+    const targetUrl = getNotificationTargetUrl(
+      circumstance,
+      recipientRole,
+      event.metadata ?? null,
+    );
 
     // Family contacts have no login, so they only get WhatsApp.
     if (recipientRole === "KELUARGA") {
@@ -104,6 +111,7 @@ export class NotificationDispatchService {
         severity: getSeverity(circumstance),
         title,
         message: body,
+        metadata: event.metadata ?? null,
       });
     }
 
@@ -113,7 +121,8 @@ export class NotificationDispatchService {
         const pushResult = await this.pushService.sendNotificationToUser(userId, {
           title,
           body,
-          data: { circumstance, treatmentPlanId },
+          url: targetUrl,
+          data: { circumstance, treatmentPlanId, url: targetUrl },
         });
         deliveryStatus =
           pushResult.sent > 0 ? "DELIVERED" : pushResult.failed > 0 ? "FAILED" : "NO_SUBSCRIPTION";
@@ -184,6 +193,16 @@ export class NotificationDispatchService {
         where: { treatmentPlanId: event.treatmentPlanId, active: true },
       });
       return assignments.map((a) => a.pmoUserId);
+    }
+
+    if (event.recipientRole === "NAKES") {
+      const plan = await this.planRepo.findOneBy({ id: event.treatmentPlanId });
+      if (!plan?.facilityId) return [];
+      const facilityNakes = await this.userRepo.find({
+        where: { role: "NAKES", facilityId: plan.facilityId },
+        select: { id: true },
+      });
+      return facilityNakes.map((n) => n.id);
     }
 
     return [];

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { formatLongDateTime } from "@/lib/format";
+import { formatLongDateTime, formatLongDateUtc } from "@/lib/format";
 import {
   CheckCircle2,
   AlertTriangle,
@@ -20,6 +20,7 @@ interface CheckInResultProps {
   result: CheckInVerdictResponse;
   onReCheckIn?: () => void;
   homeHref?: string;
+  verifiedDate?: string;
 }
 
 const RULE_LABELS: Record<string, string> = {
@@ -246,6 +247,7 @@ export default function CheckInResult({
   result,
   onReCheckIn,
   homeHref = "/pasien",
+  verifiedDate,
 }: CheckInResultProps) {
   const verdict = result.verdict;
   const streak = result.currentStreak;
@@ -371,8 +373,18 @@ export default function CheckInResult({
           Rincian Laporan
         </p>
         <dl className="mt-2.5 space-y-2 text-xs">
+          {verifiedDate && (
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-tiby-muted">Tanggal check-in</dt>
+              <dd className="font-semibold text-tiby-ink">
+                {formatLongDateUtc(verifiedDate)}
+              </dd>
+            </div>
+          )}
           <div className="flex items-center justify-between gap-3">
-            <dt className="text-tiby-muted">Dosis hari ini</dt>
+            <dt className="text-tiby-muted">
+              {verifiedDate ? "Dosis tanggal tersebut" : "Dosis hari ini"}
+            </dt>
             <dd
               className={`font-semibold ${
                 result.isDoseFulfilled ? "text-emerald-700" : "text-amber-700"
@@ -382,7 +394,9 @@ export default function CheckInResult({
             </dd>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <dt className="text-tiby-muted">Perlu check-in ulang hari ini</dt>
+            <dt className="text-tiby-muted">
+              {verifiedDate ? "Perlu check-in ulang" : "Perlu check-in ulang hari ini"}
+            </dt>
             <dd
               className={`font-semibold ${
                 result.redoRequiredToday ? "text-amber-700" : "text-tiby-ink"
@@ -495,7 +509,9 @@ export default function CheckInResult({
         {!isGood && onReCheckIn && (
           <>
             <p className="text-xs leading-relaxed text-tiby-muted">
-              Status hari ini belum terkendali. Anda dapat check-in ulang kapan saja hari ini untuk mengganti laporan sebelumnya.
+              {verifiedDate
+                ? "Status check-in belum terkendali. Anda dapat mengulang untuk mengganti laporan tanggal tersebut."
+                : "Status hari ini belum terkendali. Anda dapat check-in ulang kapan saja hari ini untuk mengganti laporan sebelumnya."}
             </p>
             <button
               type="button"

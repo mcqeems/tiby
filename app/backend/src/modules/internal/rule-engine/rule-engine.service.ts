@@ -78,7 +78,7 @@ export class RuleEngineService {
             ? "Confidence di bawah batas aman (0.75)"
             : "Status minum obat tidak pasti",
         responseMessage:
-          "Pandu kurang jelas mendengar laporanmu. Silakan ulangi check-in atau gunakan tombol konfirmasi ya.",
+          "Pandu kurang jelas mendengar laporan Anda. Silakan ulangi check-in atau gunakan tombol konfirmasi ya.",
       };
     }
 
@@ -98,7 +98,7 @@ export class RuleEngineService {
         failSafeReason: null,
         responseMessage: isMissed
           ? "Pandu mengingatkan untuk segera minum obat hari ini ya. Lakukan check-in lagi setelah obat diminum sebelum tengah malam."
-          : `Kamu baru meminum ${input.pillsTakenCount} dari ${input.dailyPillQuota} butir obat. Silakan minum sisanya dan laporkan kembali hari ini.`,
+          : `Anda baru meminum ${input.pillsTakenCount} dari ${input.dailyPillQuota} butir obat. Silakan minum sisanya dan laporkan kembali hari ini.`,
       };
     }
 
@@ -127,7 +127,7 @@ export class RuleEngineService {
       failSafeTriggered: false,
       failSafeReason: null,
       responseMessage:
-        "Luar biasa! Obat hari ini sudah diminum dengan lengkap dan tanpa keluhan. Terus pertahankan semangatmu bersama Pandu!",
+        "Luar biasa! Obat hari ini sudah diminum dengan lengkap dan tanpa keluhan. Terus pertahankan semangat Anda bersama Pandu!",
     };
   }
 }

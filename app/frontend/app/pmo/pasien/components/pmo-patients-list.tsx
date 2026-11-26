@@ -5,6 +5,9 @@ import { SkeletonRegion, SkeletonRows } from "@/components/ui/skeleton";
 import { AnimatePresence } from "motion/react";
 import Link from "next/link";
 import { pmoApi } from "@/lib/api/pmo";
+import { formatLongDateUtc } from "@/lib/format";
+import type { PmoPatient } from "@/lib/types/pmo";
+import Dialog from "@/components/ui/dialog";
 import PmoFollowUpModal from "./pmo-follow-up-modal";
 import {
   User,
@@ -14,16 +17,21 @@ import {
   MessageSquarePlus,
   AlertCircle,
   ShieldCheck,
+  CalendarClock,
+  ChevronRight,
 } from "lucide-react";
 
-interface PmoPatient {
-  treatmentPlanId: string;
-  patientName: string;
-  phase: string;
-  currentStreak: number;
-  todayVerdict: string | null;
-  isLockedToday: boolean;
-  consecutiveSilenceDays: number;
+function verificationHref(
+  patient: PmoPatient,
+  report: NonNullable<PmoPatient["pendingMissedReports"]>[number],
+): string {
+  const qs = new URLSearchParams({
+    patientId: patient.treatmentPlanId,
+    patientName: patient.patientName,
+    date: report.reportedDate,
+    missedReportId: report.id,
+  });
+  return `/pmo/check-in?${qs.toString()}`;
 }
 
 export default function PmoPatientsList() {
@@ -32,6 +40,7 @@ export default function PmoPatientsList() {
   const [selectedPatient, setSelectedPatient] = useState<PmoPatient | null>(
     null,
   );
+  const [pickingPatient, setPickingPatient] = useState<PmoPatient | null>(null);
 
   const fetchPatients = useCallback(async () => {
     setLoading(true);
@@ -180,23 +189,56 @@ export default function PmoPatientsList() {
                 {/* Action Buttons */}
                 <div className="space-y-2 mt-auto pt-4 border-t border-gray-100">
                   {patient.isLockedToday ? (
-                    <div className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-xs font-semibold text-emerald-700">
+                    <div className="h-10 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 text-xs font-semibold text-emerald-700">
                       <ShieldCheck className="w-4 h-4" />
                       Sudah Terkendali Hari Ini
                     </div>
                   ) : (
                     <Link
                       href={`/pmo/check-in?patientId=${patient.treatmentPlanId}&patientName=${encodeURIComponent(patient.patientName)}`}
-                      className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-tiby-teal-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-tiby-teal-700 transition"
+                      className="h-10 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-tiby-teal-600 px-4 text-xs font-semibold text-white shadow-sm hover:bg-tiby-teal-700 transition"
                     >
                       <ClipboardCheck className="w-4 h-4" />
                       {patient.todayVerdict ? "Check-in Ulang" : "Wakili Check-in"}
                     </Link>
                   )}
 
+                  {patient.pendingMissedReports &&
+                    patient.pendingMissedReports.length > 0 &&
+                    (() => {
+                      const count = patient.pendingMissedReports.length;
+                      const className =
+                        "h-10 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 text-xs font-semibold text-amber-950 shadow-sm hover:bg-amber-500 transition";
+                      const content = (
+                        <>
+                          <CalendarClock className="w-4 h-4 shrink-0" />
+                          <span>Verifikasi Absen ({count})</span>
+                        </>
+                      );
+                      return count === 1 ? (
+                        <Link
+                          href={verificationHref(
+                            patient,
+                            patient.pendingMissedReports[0],
+                          )}
+                          className={className}
+                        >
+                          {content}
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setPickingPatient(patient)}
+                          className={className}
+                        >
+                          {content}
+                        </button>
+                      );
+                    })()}
+
                   <button
                     onClick={() => setSelectedPatient(patient)}
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-tiby-ink shadow-sm hover:bg-gray-50 transition"
+                    className="h-10 w-full inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-xs font-semibold text-tiby-ink shadow-sm hover:bg-gray-50 transition"
                   >
                     <MessageSquarePlus className="w-4 h-4 text-tiby-teal-600" />
                     Catat Tindak Lanjut
@@ -207,6 +249,44 @@ export default function PmoPatientsList() {
           })}
         </div>
       )}
+
+      <Dialog
+        open={Boolean(pickingPatient)}
+        onClose={() => setPickingPatient(null)}
+        title="Pilih Tanggal Verifikasi Absen"
+        description={
+          pickingPatient
+            ? `${pickingPatient.patientName} memiliki ${pickingPatient.pendingMissedReports?.length ?? 0} laporan lupa check-in menunggu verifikasi.`
+            : undefined
+        }
+        size="md"
+      >
+        <div className="space-y-2.5">
+          {pickingPatient?.pendingMissedReports?.map((report) => (
+            <Link
+              key={report.id}
+              href={verificationHref(pickingPatient, report)}
+              onClick={() => setPickingPatient(null)}
+              className="flex items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-3.5 transition hover:border-amber-300 hover:bg-amber-100/70"
+            >
+              <div className="min-w-0 space-y-1">
+                <p className="font-heading text-sm font-bold text-amber-950">
+                  {formatLongDateUtc(report.reportedDate)}
+                </p>
+                {report.patientNote && (
+                  <p className="text-xs text-amber-900 line-clamp-2">
+                    &ldquo;{report.patientNote}&rdquo;
+                  </p>
+                )}
+              </div>
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-xl bg-amber-400 px-3 py-1.5 text-xs font-bold text-amber-950">
+                Pilih
+                <ChevronRight className="h-3.5 w-3.5" />
+              </span>
+            </Link>
+          ))}
+        </div>
+      </Dialog>
 
       <AnimatePresence>
         {selectedPatient && (

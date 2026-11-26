@@ -10,12 +10,15 @@ import CheckInFallback from "./check-in-fallback";
 import CheckInResult from "./check-in-result";
 import PublicLoading from "@/components/ui/public-loading";
 import { fadeUp } from "@/lib/motion";
+import { checkInsApi } from "@/lib/api/check-in";
 import { pmoApi } from "@/lib/api/pmo";
+import { formatLongDateUtc } from "@/lib/format";
 import { notify } from "@/lib/toast";
-import { CheckCircle2, RefreshCw } from "lucide-react";
+import { CalendarClock, CheckCircle2, RefreshCw } from "lucide-react";
 import {
   formatTodayStatusLabel,
   type FallbackButtonsPayload,
+  type MissedCheckInReportItem,
 } from "@/lib/types/check-in";
 
 interface PmoPatient {
@@ -34,11 +37,19 @@ export default function CheckInView({
   const [patients, setPatients] = useState<PmoPatient[]>([]);
   const urlPatientId = searchParams.get("patientId") || "";
   const urlPatientName = searchParams.get("patientName") || "";
+  const urlDate = searchParams.get("date") || "";
+  const urlMissedReportId = searchParams.get("missedReportId") || "";
+  const targetDate = role === "PMO" && urlDate ? urlDate : undefined;
+  const missedReportId =
+    role === "PMO" && urlMissedReportId ? urlMissedReportId : undefined;
   const [selectedPatientId, setSelectedPatientId] =
     useState<string>(urlPatientId);
   const [loadingPatients, setLoadingPatients] = useState(
     role === "PMO" && !urlPatientId,
   );
+  const [pendingReportsList, setPendingReportsList] = useState<
+    MissedCheckInReportItem[]
+  >([]);
 
   const {
     state,
@@ -54,8 +65,36 @@ export default function CheckInView({
   } = useCheckIn(
     selectedPatientId || undefined,
     role === "PASIEN" || Boolean(selectedPatientId),
+    targetDate,
+    missedReportId,
   );
   const homeHref = role === "PMO" ? "/pmo/pasien" : "/pasien";
+
+  useEffect(() => {
+    if (role !== "PMO" || !selectedPatientId || !targetDate) return;
+    let active = true;
+    checkInsApi
+      .getMissedReports(selectedPatientId)
+      .then((res) => {
+        if (!active) return;
+        setPendingReportsList(
+          res.reports.filter((r) => r.status === "PENDING"),
+        );
+      })
+      .catch(() => {
+        if (active) setPendingReportsList([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [role, selectedPatientId, targetDate]);
+
+  const pendingReport =
+    pendingReportsList.find((r) =>
+      missedReportId
+        ? r.id === missedReportId
+        : r.reportedDate === targetDate,
+    ) ?? null;
 
   useEffect(() => {
     let isMounted = true;
@@ -113,10 +152,14 @@ export default function CheckInView({
             <CheckCircle2 className="h-12 w-12" />
           </div>
           <h2 className="mb-2 font-heading text-2xl font-bold text-tiby-ink">
-            Laporan sudah dikirim hari ini!
+            {targetDate
+              ? `Laporan ${formatLongDateUtc(targetDate)} sudah terkendali!`
+              : "Laporan sudah dikirim hari ini!"}
           </h2>
           <p className="mx-auto max-w-xs text-sm leading-relaxed text-tiby-muted">
-            Data check-in sudah tercatat dengan aman. Kembali lagi besok ya.
+            {targetDate
+              ? "Data check-in untuk tanggal terlewat tersebut sudah terverifikasi dan tersimpan."
+              : "Data check-in sudah tercatat dengan aman. Kembali lagi besok ya."}
           </p>
           <button
             onClick={() =>
@@ -177,6 +220,63 @@ export default function CheckInView({
             </div>
           )}
 
+        {role === "PMO" && targetDate && state.step !== "result" && (
+          <div
+            role="status"
+            className="mb-5 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left"
+          >
+            <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+            <div className="min-w-0 flex-1 text-xs leading-relaxed text-amber-900">
+              <p className="font-semibold">
+                Verifikasi Absen · {formatLongDateUtc(targetDate)}
+              </p>
+              <p className="mt-0.5 text-amber-800">
+                Wakili check-in ini akan mengisi catatan dosis untuk tanggal terlewat tersebut dan menyambungkan kembali streak pasien.
+              </p>
+              {pendingReportsList.length > 1 && (
+                <div className="mt-2.5">
+                  <label
+                    htmlFor="pmo-pick-missed-date"
+                    className="mb-1 block text-[11px] font-semibold text-amber-950"
+                  >
+                    Pilih tanggal laporan yang ingin diverifikasi ({pendingReportsList.length} hari):
+                  </label>
+                  <select
+                    id="pmo-pick-missed-date"
+                    value={pendingReport?.id ?? missedReportId ?? ""}
+                    onChange={(e) => {
+                      const picked = pendingReportsList.find(
+                        (r) => r.id === e.target.value,
+                      );
+                      if (!picked) return;
+                      const qs = new URLSearchParams({
+                        patientId: selectedPatientId,
+                        patientName: urlPatientName || "Pasien",
+                        date: picked.reportedDate,
+                        missedReportId: picked.id,
+                      });
+                      reset();
+                      router.replace(`/pmo/check-in?${qs.toString()}`);
+                    }}
+                    className="h-9 w-full rounded-xl border border-amber-300 bg-white px-2.5 text-xs font-semibold text-amber-950 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  >
+                    {pendingReportsList.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {formatLongDateUtc(r.reportedDate)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {pendingReport?.patientNote && (
+                <p className="mt-2 rounded-lg border border-amber-200 bg-white/80 px-2.5 py-1.5 text-amber-950">
+                  Catatan pasien: &ldquo;{pendingReport.patientNote}&rdquo;
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         {todayPrevious &&
           (state.step === "record" ||
             state.step === "review" ||
@@ -189,11 +289,13 @@ export default function CheckInView({
               <RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
               <div className="text-xs leading-relaxed text-amber-900">
                 <p className="font-semibold">
-                  Memperbarui check-in hari ini (status saat ini:{" "}
-                  {formatTodayStatusLabel(todayPrevious.verdict)})
+                  {targetDate
+                    ? `Memperbarui check-in ${formatLongDateUtc(targetDate)}`
+                    : "Memperbarui check-in hari ini"}{" "}
+                  (status saat ini: {formatTodayStatusLabel(todayPrevious.verdict)})
                 </p>
                 <p className="mt-0.5 text-amber-800">
-                  Laporan baru akan menggantikan check-in hari ini yang
+                  Laporan baru akan menggantikan check-in tanggal tersebut yang
                   sebelumnya tersimpan.
                 </p>
               </div>
@@ -257,6 +359,7 @@ export default function CheckInView({
                     result={state.verdict}
                     onReCheckIn={reset}
                     homeHref={homeHref}
+                    verifiedDate={targetDate}
                   />
                 )}
               </>

@@ -7,7 +7,12 @@ import { AuditLog } from "../../internal/audit/entities/audit-log.entity.js";
 import { PushService } from "../../push/services/push.service.js";
 import { NotificationsService } from "../../notifications/services/notifications.service.js";
 import { WahaClientService } from "../../whatsapp/services/waha-client.service.js";
-import { listNotificationTemplates } from "../../../common/notifications/notification-templates.js";
+import {
+  formatWhatsappText,
+  getRoleHomeUrl,
+  listNotificationTemplates,
+  stripDiseaseStigma,
+} from "../../../common/notifications/notification-templates.js";
 import type {
   NotificationTemplateList,
   SendSimulatedNotificationDto,
@@ -158,10 +163,12 @@ export class AdminNotificationsService {
     }
 
     try {
+      const targetUrl = getRoleHomeUrl(user.role);
       const res = await this.pushService.sendNotificationToUser(user.id, {
         title: dto.title,
         body: dto.message,
-        data: { adminSimulation: true },
+        url: targetUrl,
+        data: { adminSimulation: true, url: targetUrl },
       });
       if (res.sent > 0) return ok("PUSH", `${res.sent} perangkat`);
       if (res.failed > 0) {
@@ -190,7 +197,7 @@ export class AdminNotificationsService {
 
     const res = await this.wahaClient.sendText(
       user.whatsappChatId,
-      `*${dto.title}*\n\n${dto.message}`,
+      formatWhatsappText(dto.title, dto.message),
     );
     return res.success
       ? ok("WHATSAPP")
@@ -226,8 +233,8 @@ export class AdminNotificationsService {
           treatmentPlanId: null,
           alertType: "ADMIN_SIMULATION",
           severity: dto.severity,
-          title: dto.title,
-          message: dto.message,
+          title: stripDiseaseStigma(dto.title),
+          message: stripDiseaseStigma(dto.message),
         }),
       );
       return ok("ALERT", "Masuk ke pusat notifikasi faskes");

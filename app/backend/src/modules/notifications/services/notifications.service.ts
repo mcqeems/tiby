@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { UserNotification } from "../entities/user-notification.entity.js";
+import { stripDiseaseStigma } from "../../../common/notifications/notification-templates.js";
 import type {
   ListNotificationsQuery,
   NotificationSeverity,
@@ -16,6 +17,7 @@ export interface CreateNotificationsPayload {
   severity: NotificationSeverity;
   title: string;
   message: string;
+  metadata?: Record<string, unknown> | null;
 }
 
 function toDto(row: UserNotification): UserNotificationDto {
@@ -27,6 +29,7 @@ function toDto(row: UserNotification): UserNotificationDto {
     title: row.title,
     message: row.message,
     isRead: row.isRead,
+    metadata: row.metadataJson ?? null,
     createdAt: row.createdAt.toISOString(),
     readAt: row.readAt ? row.readAt.toISOString() : null,
   };
@@ -46,6 +49,9 @@ export class NotificationsService {
     const recipients = [...new Set(userIds)].filter(Boolean);
     if (recipients.length === 0) return;
 
+    const cleanTitle = stripDiseaseStigma(payload.title);
+    const cleanMessage = stripDiseaseStigma(payload.message);
+
     await this.notificationRepo.save(
       recipients.map((recipientUserId) =>
         this.notificationRepo.create({
@@ -53,8 +59,9 @@ export class NotificationsService {
           treatmentPlanId: payload.treatmentPlanId,
           type: payload.type,
           severity: payload.severity,
-          title: payload.title,
-          message: payload.message,
+          title: cleanTitle,
+          message: cleanMessage,
+          metadataJson: payload.metadata ?? null,
           isRead: false,
           readAt: null,
         }),

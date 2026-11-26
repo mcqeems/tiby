@@ -13,6 +13,7 @@ describe("PatientsService Unit Tests", () => {
   let mockEvalRepo: any;
   let mockPushRepo: any;
   let mockUserRepo: any;
+  let mockMissedReportRepo: any;
 
   beforeEach(() => {
     mockPlanRepo = {
@@ -40,6 +41,9 @@ describe("PatientsService Unit Tests", () => {
     mockUserRepo = {
       findOneBy: vi.fn(),
     };
+    mockMissedReportRepo = {
+      find: vi.fn().mockResolvedValue([]),
+    };
 
     service = new PatientsService(
       mockPlanRepo,
@@ -49,6 +53,7 @@ describe("PatientsService Unit Tests", () => {
       mockEvalRepo,
       mockPushRepo,
       mockUserRepo,
+      mockMissedReportRepo,
     );
   });
 
@@ -393,7 +398,43 @@ describe("PatientsService Unit Tests", () => {
         treatmentPlanId: "plan-1",
         todayVerdict: "TERKENDALI",
         isLockedToday: true,
+        pendingMissedReports: [],
       });
+    });
+
+    it("attaches pending missed check-in reports to assigned PMO patients", async () => {
+      mockPmoRepo.find.mockResolvedValue([
+        {
+          treatmentPlan: {
+            id: "plan-1",
+            patientUser: { name: "Ahmad" },
+            currentStreak: 0,
+            phase: "INTENSIF",
+            consecutiveSilenceDays: 1,
+          },
+        },
+      ]);
+      mockCheckInRepo.findOne.mockResolvedValue(null);
+      mockMissedReportRepo.find.mockResolvedValue([
+        {
+          id: "report-1",
+          treatmentPlanId: "plan-1",
+          reportedDate: "2026-10-15",
+          patientNote: "Sudah minum jam 7 pagi",
+          createdAt: new Date("2026-10-16T01:00:00Z"),
+        },
+      ]);
+
+      const res = await service.getPmoPatients("pmo-1");
+
+      expect(res[0].pendingMissedReports).toEqual([
+        {
+          id: "report-1",
+          reportedDate: "2026-10-15",
+          patientNote: "Sudah minum jam 7 pagi",
+          createdAt: "2026-10-16T01:00:00.000Z",
+        },
+      ]);
     });
   });
 });

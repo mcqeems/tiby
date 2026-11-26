@@ -11,6 +11,7 @@ import { PmoAssignment } from "../modules/patients/entities/pmo-assignment.entit
 import { FamilyContact } from "../modules/family-contacts/entities/family-contact.entity.js";
 import { WhatsappVerification } from "../modules/whatsapp/entities/whatsapp-verification.entity.js";
 import { DailyCheckIn } from "../modules/check-ins/entities/daily-check-in.entity.js";
+import { MissedCheckInReport } from "../modules/check-ins/entities/missed-check-in-report.entity.js";
 import { SafetyEvaluation } from "../modules/internal/rule-engine/entities/safety-evaluation.entity.js";
 import { InterventionTicket } from "../modules/tickets/entities/intervention-ticket.entity.js";
 import { FacilityAlert } from "../modules/alerts/entities/facility-alert.entity.js";
@@ -34,6 +35,7 @@ export const entities = [
   FamilyContact,
   WhatsappVerification,
   DailyCheckIn,
+  MissedCheckInReport,
   SafetyEvaluation,
   InterventionTicket,
   FacilityAlert,
@@ -58,6 +60,7 @@ export {
   FamilyContact,
   WhatsappVerification,
   DailyCheckIn,
+  MissedCheckInReport,
   SafetyEvaluation,
   InterventionTicket,
   FacilityAlert,

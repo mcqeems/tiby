@@ -26,6 +26,7 @@ import {
   TextExtractRequestSchema,
   AiAudioTranscriptResponseSchema,
   ListCheckInsQuerySchema,
+  CreateMissedCheckInReportSchema,
   type SubmitCheckInDto,
   type TextExtractRequest,
   type AiAudioExtractionResponse,
@@ -33,6 +34,9 @@ import {
   type CheckInVerdictResponse,
   type ListCheckInsQuery,
   type CheckInList,
+  type CreateMissedCheckInReportDto,
+  type MissedCheckInReportItem,
+  type MissedCheckInSummaryResponse,
   type UserRole,
 } from '@tiby/ts-shared';
 
@@ -73,6 +77,31 @@ export class CheckInController {
     );
   }
 
+  @Get('missed-reports')
+  @Roles(['PASIEN', 'PMO'])
+  async getMissedReports(
+    @Req() req: AuthenticatedRequest,
+    @Query('treatmentPlanId') treatmentPlanId?: string,
+  ): Promise<MissedCheckInSummaryResponse> {
+    const { userId, role } = this.extractUser(req);
+    return this.checkInService.getMissedReportSummary(
+      userId,
+      role,
+      treatmentPlanId,
+    );
+  }
+
+  @Post('missed-reports')
+  @Roles(['PASIEN'])
+  async createMissedReport(
+    @Req() req: AuthenticatedRequest,
+    @Body({ schema: CreateMissedCheckInReportSchema })
+    body: CreateMissedCheckInReportDto,
+  ): Promise<MissedCheckInReportItem> {
+    const { userId, role } = this.extractUser(req);
+    return this.checkInService.createMissedReport(userId, role, body);
+  }
+
   @Post('audio-extract')
   @Roles(['PASIEN', 'PMO'])
   @SerializeOptions({ schema: AiAudioTranscriptResponseSchema })
@@ -101,11 +130,18 @@ export class CheckInController {
     )
     file?: Express.Multer.File,
     @Body('treatmentPlanId') treatmentPlanId?: string,
+    @Body('checkInDate') checkInDate?: string,
   ): Promise<AiAudioTranscriptResponse> {
     if (!file) {
       throw new BadRequestException({
         code: 'BAD_REQUEST',
         message: "Audio file is required in 'audio' form-data field",
+      });
+    }
+    if (checkInDate && !/^\d{4}-\d{2}-\d{2}$/.test(checkInDate)) {
+      throw new BadRequestException({
+        code: 'BAD_REQUEST',
+        message: 'Format checkInDate harus YYYY-MM-DD',
       });
     }
     const { userId, role } = this.extractUser(req);
@@ -114,6 +150,7 @@ export class CheckInController {
       role,
       file,
       treatmentPlanId,
+      checkInDate,
     );
   }
 

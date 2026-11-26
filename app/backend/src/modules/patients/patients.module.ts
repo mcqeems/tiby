@@ -6,6 +6,7 @@ import { TreatmentPlan } from "./entities/treatment-plan.entity.js";
 import { PatientStatusHistory } from "./entities/patient-status-history.entity.js";
 import { PmoAssignment } from "./entities/pmo-assignment.entity.js";
 import { DailyCheckIn } from "../check-ins/entities/daily-check-in.entity.js";
+import { MissedCheckInReport } from "../check-ins/entities/missed-check-in-report.entity.js";
 import { SafetyEvaluation } from "../internal/rule-engine/entities/safety-evaluation.entity.js";
 import { PushSubscription } from "../push/entities/push-subscription.entity.js";
 import { AuthUser } from "../../auth/entities/auth-user.entity.js";
@@ -17,6 +18,7 @@ import { AuthUser } from "../../auth/entities/auth-user.entity.js";
       PatientStatusHistory,
       PmoAssignment,
       DailyCheckIn,
+      MissedCheckInReport,
       SafetyEvaluation,
       PushSubscription,
       AuthUser,

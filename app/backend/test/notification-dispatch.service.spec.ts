@@ -10,7 +10,7 @@ function makeService() {
   const planRepo = { findOneBy: vi.fn() };
   const pmoRepo = { find: vi.fn().mockResolvedValue([]) };
   const familyRepo = { find: vi.fn().mockResolvedValue([]), findOneBy: vi.fn() };
-  const userRepo = { findOneBy: vi.fn() };
+  const userRepo = { findOneBy: vi.fn(), find: vi.fn().mockResolvedValue([]) };
   const pushService = {
     sendNotificationToUser: vi.fn().mockResolvedValue({ sent: 1, failed: 0 }),
   };
@@ -71,6 +71,7 @@ describe("NotificationDispatchService", () => {
       expect.objectContaining({
         type: "DAILY_REMINDER",
         severity: "INFO",
+        metadata: null,
       }),
     );
     expect(pushService.sendNotificationToUser).toHaveBeenCalledWith(
@@ -126,7 +127,15 @@ describe("NotificationDispatchService", () => {
     userRepo.findOneBy.mockResolvedValue({ whatsappVerified: false });
 
     await service.handleNotificationTrigger(
-      new NotificationTriggerEvent("RED_FLAG_ALERT", "plan-1", "PMO"),
+      new NotificationTriggerEvent(
+        "RED_FLAG_ALERT",
+        "plan-1",
+        "PMO",
+        undefined,
+        undefined,
+        undefined,
+        { sampleKey: "value-1" },
+      ),
     );
 
     expect(pushService.sendNotificationToUser).toHaveBeenCalledTimes(2);
@@ -200,5 +209,71 @@ describe("NotificationDispatchService", () => {
     expect(wahaClient.sendText).toHaveBeenCalledTimes(1);
     const pushRow = logRepo.save.mock.calls.find((c) => c[0].channel === "WEB_PUSH")[0];
     expect(pushRow.deliveryStatus).toBe("FAILED");
+  });
+
+  it("delivers Push + WhatsApp to facility NAKES without creating UserNotification rows", async () => {
+    process.env.WAHA_ENABLED = "true";
+    const {
+      service,
+      planRepo,
+      userRepo,
+      pushService,
+      wahaClient,
+      notificationsService,
+      logRepo,
+    } = makeService();
+    planRepo.findOneBy.mockResolvedValue({ id: "plan-1", facilityId: "faskes-1" });
+    userRepo.find.mockResolvedValue([{ id: "nakes-1" }]);
+    userRepo.findOneBy.mockResolvedValue({
+      id: "nakes-1",
+      whatsappVerified: true,
+      whatsappChatId: "628777@c.us",
+    });
+
+    await service.handleNotificationTrigger(
+      new NotificationTriggerEvent(
+        "RED_FLAG_ALERT",
+        "plan-1",
+        "NAKES",
+        undefined,
+        undefined,
+        "Pasien Budi melaporkan kondisi anti-TB yang terbuka perlu tindak lanjut TB.",
+      ),
+    );
+
+    expect(notificationsService.createMany).not.toHaveBeenCalled();
+    expect(pushService.sendNotificationToUser).toHaveBeenCalledWith(
+      "nakes-1",
+      expect.objectContaining({
+        title: "Perhatian Medis Diperlukan",
+        url: "/nakes/tiket",
+        data: expect.objectContaining({ url: "/nakes/tiket" }),
+      }),
+    );
+    expect(wahaClient.sendText).toHaveBeenCalledWith(
+      "628777@c.us",
+      "*Perhatian Medis Diperlukan*\n\nPasien Budi melaporkan kondisi yang terbuka perlu tindak lanjut.",
+    );
+    expect(logRepo.save.mock.calls.map((c) => c[0])).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ recipientRole: "NAKES", channel: "WEB_PUSH", deliveryStatus: "DELIVERED" }),
+        expect.objectContaining({ recipientRole: "NAKES", channel: "WHATSAPP", deliveryStatus: "DELIVERED" }),
+      ]),
+    );
+  });
+
+  it("maps Web Push url targets consistently per circumstance and role", async () => {
+    const { service, planRepo, pushService, userRepo } = makeService();
+    planRepo.findOneBy.mockResolvedValue({ id: "plan-1", patientUserId: "pasien-1" });
+    userRepo.findOneBy.mockResolvedValue({ whatsappVerified: false });
+
+    await service.handleNotificationTrigger(
+      new NotificationTriggerEvent("DAILY_REMINDER", "plan-1", "PASIEN"),
+    );
+
+    expect(pushService.sendNotificationToUser).toHaveBeenCalledWith(
+      "pasien-1",
+      expect.objectContaining({ url: "/pasien/check-in" }),
+    );
   });
 });
