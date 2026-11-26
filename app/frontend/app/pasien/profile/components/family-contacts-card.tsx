@@ -49,9 +49,7 @@ export default function FamilyContactsCard({
       const res = await familyContactsApi.getAll(patientId);
       setContacts(res || []);
     } catch (err: unknown) {
-      setLoadError(
-        errorMessage(err, "Tidak dapat memuat kontak darurat."),
-      );
+      setLoadError(errorMessage(err, "Tidak dapat memuat kontak darurat."));
     } finally {
       setLoading(false);
     }
@@ -94,7 +92,10 @@ export default function FamilyContactsCard({
     const name = fullName.trim();
     const digits = whatsappNumber.replace(/\D/g, "");
     if (name.length < 3 || digits.length < 8) {
-      return notify.warning("Validasi Gagal", "Nama minimal 3 karakter dan No. WA minimal 8 digit.");
+      return notify.warning(
+        "Validasi Gagal",
+        "Nama minimal 3 karakter dan No. WA minimal 8 digit.",
+      );
     }
 
     try {
@@ -111,7 +112,10 @@ export default function FamilyContactsCard({
       // A contact is useless until the number proves it can receive messages.
       setConnectingContact(created);
     } catch (err: unknown) {
-      notify.error("Gagal Menambah Kontak", errorMessage(err, "Terjadi kesalahan pada server."));
+      notify.error(
+        "Gagal Menambah Kontak",
+        errorMessage(err, "Terjadi kesalahan pada server."),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -307,21 +311,13 @@ export default function FamilyContactsCard({
             dismissOnBackdrop={false}
           >
             <ModalCard className="max-h-[90vh] w-full max-w-md overflow-y-auto">
-              <div className="mb-2 flex justify-end">
-                <button
-                  onClick={() => setConnectingContact(null)}
-                  className="rounded-lg bg-white/90 p-1.5 text-gray-500 hover:bg-white"
-                  aria-label="Tutup"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
               <WhatsappConnectCard
                 key={connectingContact.id}
                 familyContactId={connectingContact.id}
                 defaultPhoneNumber={connectingContact.whatsappNumber}
                 title={`WhatsApp ${connectingContact.fullName}`}
                 description="Kirim kode dari nomor kontak ini untuk mengaktifkan pemberitahuan."
+                onClose={() => setConnectingContact(null)}
                 onVerified={() => {
                   setConnectingContact(null);
                   fetchContacts();

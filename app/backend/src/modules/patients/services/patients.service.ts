@@ -171,13 +171,7 @@ export class PatientsService {
 
     const items: RiskSortedPatientItem[] = await Promise.all(
       plans.map(async (p) => {
-        const todayLockedCheckIn = await this.checkInRepo.findOne({
-          where: {
-            treatmentPlanId: p.id,
-            checkInDate: todayStr,
-            isDoseFulfilled: true,
-          },
-        });
+        const { isLockedToday } = await this.getTodayCheckInStatus(p.id, todayStr);
 
         const lastCheckIn = await this.checkInRepo.findOne({
           where: { treatmentPlanId: p.id, isDoseFulfilled: true },
@@ -203,7 +197,7 @@ export class PatientsService {
           consecutiveSilenceDays: p.consecutiveSilenceDays,
           riskScore: p.riskScore,
           lastCheckInDate: lastCheckIn?.checkInDate || null,
-          todayCheckInLocked: Boolean(todayLockedCheckIn),
+          todayCheckInLocked: isLockedToday,
           startDate: p.startDate,
           targetEndDate: p.targetEndDate,
           whatsappVerified: Boolean(p.patientUser?.whatsappVerified),
@@ -230,6 +224,31 @@ export class PatientsService {
     };
   }
 
+  /** Only verdict TERKENDALI locks today's check-in (legacy un-evaluated rows fall back to isDoseFulfilled). */
+  private async getTodayCheckInStatus(
+    treatmentPlanId: string,
+    todayStr: string,
+  ): Promise<{ todayVerdict: SafetyVerdict | null; isLockedToday: boolean }> {
+    const latestCheckIn = await this.checkInRepo.findOne({
+      where: { treatmentPlanId, checkInDate: todayStr },
+      order: { attemptNumber: 'DESC', submittedAt: 'DESC', id: 'DESC' },
+    });
+
+    if (!latestCheckIn) {
+      return { todayVerdict: null, isLockedToday: false };
+    }
+
+    const ev = await this.evalRepo.findOneBy({ checkInId: latestCheckIn.id });
+    const todayVerdict: SafetyVerdict =
+      (ev?.verdict as SafetyVerdict) ??
+      (latestCheckIn.isDoseFulfilled ? 'TERKENDALI' : 'PERLU_PERHATIAN');
+
+    return {
+      todayVerdict,
+      isLockedToday: todayVerdict === 'TERKENDALI',
+    };
+  }
+
   async getPmoPatients(pmoUserId: string): Promise<PmoPatientStatusList> {
     const assignments = await this.pmoRepo.find({
       where: { pmoUserId, active: true },
@@ -245,36 +264,13 @@ export class PatientsService {
     const patients = await Promise.all(
       assignments.map(async (a) => {
         const plan = a.treatmentPlan;
-        const lockedCheckIn = await this.checkInRepo.findOne({
-          where: {
-            treatmentPlanId: plan.id,
-            checkInDate: todayStr,
-            isDoseFulfilled: true,
-          },
-        });
-
-        const latestCheckIn = await this.checkInRepo.findOne({
-          where: { treatmentPlanId: plan.id, checkInDate: todayStr },
-          order: { attemptNumber: 'DESC' },
-        });
-
-        let todayVerdict: SafetyVerdict | null = null;
-        if (lockedCheckIn) {
-          const ev = await this.evalRepo.findOneBy({
-            checkInId: lockedCheckIn.id,
-          });
-          todayVerdict = (ev?.verdict as SafetyVerdict) ?? 'TERKENDALI';
-        } else if (latestCheckIn) {
-          const ev = await this.evalRepo.findOneBy({
-            checkInId: latestCheckIn.id,
-          });
-          todayVerdict = (ev?.verdict as SafetyVerdict) ?? 'PERLU_PERHATIAN';
-        }
+        const { todayVerdict, isLockedToday } =
+          await this.getTodayCheckInStatus(plan.id, todayStr);
 
         return {
           treatmentPlanId: plan.id,
           patientName: plan.patientUser?.name || 'Pasien',
-          isLockedToday: Boolean(lockedCheckIn),
+          isLockedToday,
           todayVerdict,
           currentStreak: plan.currentStreak,
           phase: plan.phase,

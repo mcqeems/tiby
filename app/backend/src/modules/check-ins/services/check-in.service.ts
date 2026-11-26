@@ -116,24 +116,57 @@ export class CheckInService {
     });
   }
 
+  private findLastFulfilledBefore(
+    treatmentPlanId: string,
+    beforeDate: string,
+  ): Promise<DailyCheckIn | null> {
+    return this.checkInRepo.findOne({
+      where: {
+        treatmentPlanId,
+        isDoseFulfilled: true,
+        checkInDate: LessThan(beforeDate),
+      },
+      order: { checkInDate: 'DESC' },
+    });
+  }
+
   async checkIsLockedToday(
     treatmentPlanId: string,
     checkInDate: string,
-  ): Promise<void> {
-    const locked = await this.checkInRepo.findOne({
+  ): Promise<{
+    checkIn: DailyCheckIn;
+    evaluation: SafetyEvaluation | null;
+  } | null> {
+    const existing = await this.checkInRepo.findOne({
       where: {
         treatmentPlanId,
         checkInDate,
-        isDoseFulfilled: true,
       },
+      order: { attemptNumber: 'DESC', submittedAt: 'DESC', id: 'DESC' },
     });
 
-    if (locked) {
+    if (!existing) {
+      return null;
+    }
+
+    const evaluation = await this.evalRepo.findOneBy({
+      checkInId: existing.id,
+    });
+
+    // Only VERDICT TERKENDALI locks today's check-in; legacy/seeded rows without
+    // an evaluation fall back to isDoseFulfilled.
+    const isLocked = evaluation
+      ? evaluation.verdict === 'TERKENDALI'
+      : existing.isDoseFulfilled;
+
+    if (isLocked) {
       throw new ConflictException({
         code: 'CHECK_IN_ALREADY_LOCKED',
         message: 'Check-in for today is already completed and locked.',
       });
     }
+
+    return { checkIn: existing, evaluation: evaluation ?? null };
   }
 
   /**
@@ -307,7 +340,7 @@ export class CheckInService {
   ): Promise<CheckInVerdictResponse> {
     const today = new Date().toISOString().slice(0, 10);
     const plan = await this.resolvePlan(userId, role, dto.treatmentPlanId);
-    await this.checkIsLockedToday(plan.id, today);
+    const todaySnapshot = await this.checkIsLockedToday(plan.id, today);
 
     let medicationStatus: MedicationStatus = 'SUDAH_MINUM';
     let pillsTakenCount: number | null = plan.dailyPillQuota;
@@ -366,149 +399,179 @@ export class CheckInService {
       extractionConfidence: confidence,
     });
 
-    const existingAttempts = await this.checkInRepo.countBy({
-      treatmentPlanId: plan.id,
-      checkInDate: today,
-    });
-    const attemptNumber = existingAttempts + 1;
+    const existingCheckIn = todaySnapshot?.checkIn ?? null;
+    const existingEval = todaySnapshot?.evaluation ?? null;
+    const wasFulfilledToday = Boolean(existingCheckIn?.isDoseFulfilled);
+    const wasRedFlagToday = existingEval?.verdict === 'SEGERA_KE_FASKES';
+    const isRedFlag = verdictResult.verdict === 'SEGERA_KE_FASKES';
+    const isTerkendali = verdictResult.verdict === 'TERKENDALI';
+    const attemptNumber = existingCheckIn ? existingCheckIn.attemptNumber + 1 : 1;
 
-    const checkIn = await this.checkInRepo.save(
-      this.checkInRepo.create({
-        treatmentPlanId: plan.id,
-        checkInDate: today,
-        attemptNumber,
-        reportedByUserId: userId,
-        reportedByRole: role,
-        inputMode: dto.inputMode,
-        rawTranscriptEncrypted: rawTranscript,
-        sttConfidence: confidence,
-        medicationStatus,
-        pillsTakenCount,
-        isDoseFulfilled: verdictResult.isDoseFulfilled,
-        extractedFactsJson: {
-          symptoms,
-          intentToStop,
-          matchedRules: verdictResult.matchedRuleCodes,
-        },
-      }),
-    );
+    const extractedFactsJson = {
+      symptoms,
+      intentToStop,
+      matchedRules: verdictResult.matchedRuleCodes,
+    };
+
+    const checkIn = existingCheckIn
+      ? await this.checkInRepo.save(
+          Object.assign(existingCheckIn, {
+            attemptNumber,
+            reportedByUserId: userId,
+            reportedByRole: role,
+            inputMode: dto.inputMode,
+            rawTranscriptEncrypted: rawTranscript,
+            sttConfidence: confidence,
+            medicationStatus,
+            pillsTakenCount,
+            isDoseFulfilled: verdictResult.isDoseFulfilled,
+            extractedFactsJson,
+            submittedAt: new Date(),
+          }),
+        )
+      : await this.checkInRepo.save(
+          this.checkInRepo.create({
+            treatmentPlanId: plan.id,
+            checkInDate: today,
+            attemptNumber,
+            reportedByUserId: userId,
+            reportedByRole: role,
+            inputMode: dto.inputMode,
+            rawTranscriptEncrypted: rawTranscript,
+            sttConfidence: confidence,
+            medicationStatus,
+            pillsTakenCount,
+            isDoseFulfilled: verdictResult.isDoseFulfilled,
+            extractedFactsJson,
+          }),
+        );
+
+    const evaluationFields = {
+      verdict: verdictResult.verdict,
+      isValidCompletion: verdictResult.isDoseFulfilled,
+      matchedRuleCodes: verdictResult.matchedRuleCodes,
+      failSafeTriggered: verdictResult.failSafeTriggered,
+      failSafeReason: verdictResult.failSafeReason,
+      responseMessageId: `msg_${checkIn.id}`,
+      ttsAudioUrl: null,
+    };
 
     await this.evalRepo.save(
-      this.evalRepo.create({
-        checkInId: checkIn.id,
-        verdict: verdictResult.verdict,
-        isValidCompletion: verdictResult.isDoseFulfilled,
-        matchedRuleCodes: verdictResult.matchedRuleCodes,
-        failSafeTriggered: verdictResult.failSafeTriggered,
-        failSafeReason: verdictResult.failSafeReason,
-        responseMessageId: `msg_${checkIn.id}`,
-      }),
+      existingEval
+        ? Object.assign(existingEval, {
+            ...evaluationFields,
+            evaluatedAt: new Date(),
+          })
+        : this.evalRepo.create({
+            checkInId: checkIn.id,
+            ...evaluationFields,
+          }),
     );
+
+    const yesterday = new Date(Date.parse(today) - 86_400_000)
+      .toISOString()
+      .slice(0, 10);
 
     // Business Logic updates
     if (verdictResult.isDoseFulfilled) {
-      const isRedFlag = verdictResult.verdict === 'SEGERA_KE_FASKES';
-      const wasSilentOrAtRisk =
-        plan.consecutiveSilenceDays > 0 ||
-        ['BERISIKO', 'PUTUS_FOLLOW_UP'].includes(plan.patientState);
+      const previousStreak = plan.currentStreak;
 
-      // The midnight cron is the only thing that normally notices a missed
-      // day. If the server was down, the plan can still look "healthy", so
-      // check the actual last dose date here and start a new streak at 1.
-      const yesterday = new Date(Date.parse(today) - 86_400_000)
-        .toISOString()
-        .slice(0, 10);
-      const lastFulfilled = await this.checkInRepo.findOne({
-        where: {
-          treatmentPlanId: plan.id,
-          isDoseFulfilled: true,
-          checkInDate: LessThan(today),
-        },
-        order: { checkInDate: 'DESC' },
-      });
-      const missedDay =
-        Boolean(lastFulfilled) && lastFulfilled!.checkInDate < yesterday;
+      if (!wasFulfilledToday) {
+        const wasSilentOrAtRisk =
+          plan.consecutiveSilenceDays > 0 ||
+          (['BERISIKO', 'PUTUS_FOLLOW_UP'].includes(plan.patientState) &&
+            !wasRedFlagToday);
 
-      if (wasSilentOrAtRisk && !isRedFlag) {
-        const previousState = plan.patientState;
-        plan.patientState = 'AKTIF';
-        plan.consecutiveSilenceDays = 0;
-        plan.currentStreak = 1; // Locked decision DEC-05: resets to 1
+        // The midnight cron is the only thing that normally notices a missed
+        // day. If the server was down, the plan can still look "healthy", so
+        // check the actual last dose date here and start a new streak at 1.
+        const lastFulfilled = await this.findLastFulfilledBefore(plan.id, today);
+        const missedDay =
+          Boolean(lastFulfilled) && lastFulfilled!.checkInDate < yesterday;
 
-        // Auto-close open SILENCE_H3 tickets
-        const openSilenceTickets = await this.ticketRepo.find({
-          where: {
-            treatmentPlanId: plan.id,
-            triggerSource: 'SILENCE_H3',
-            status: In(['OPEN', 'IN_PROGRESS']),
-          },
-        });
+        if (wasSilentOrAtRisk && !isRedFlag) {
+          const previousState = plan.patientState;
+          plan.patientState = 'AKTIF';
+          plan.consecutiveSilenceDays = 0;
+          plan.currentStreak = 1; // Locked decision DEC-05: resets to 1
 
-        for (const t of openSilenceTickets) {
-          t.status = 'AUTO_CLOSED_BY_CHECKIN';
-          t.closedAt = new Date();
-          t.resolutionReason = 'PATIENT_CHECKED_IN_RECOVERED';
-          t.resolutionNotes =
-            'Pasien kembali melakukan check-in dosis penuh secara mandiri.';
-          await this.ticketRepo.save(t);
+          // Auto-close open SILENCE_H3 tickets
+          const openSilenceTickets = await this.ticketRepo.find({
+            where: {
+              treatmentPlanId: plan.id,
+              triggerSource: 'SILENCE_H3',
+              status: In(['OPEN', 'IN_PROGRESS']),
+            },
+          });
+
+          for (const t of openSilenceTickets) {
+            t.status = 'AUTO_CLOSED_BY_CHECKIN';
+            t.closedAt = new Date();
+            t.resolutionReason = 'PATIENT_CHECKED_IN_RECOVERED';
+            t.resolutionNotes =
+              'Pasien kembali melakukan check-in dosis penuh secara mandiri.';
+            await this.ticketRepo.save(t);
+
+            await this.historyRepo.save(
+              this.historyRepo.create({
+                treatmentPlanId: plan.id,
+                eventType: 'TICKET_AUTO_CLOSED',
+                previousState,
+                newState: 'AKTIF',
+                previousStreak: 0,
+                newStreak: 1,
+                actorUserId: userId,
+                actorRole: role,
+                reasonOrSummary: `Ticket ${t.id} auto-closed by recovered check-in`,
+              }),
+            );
+          }
+
+          // Emit FacilityAlert warning
+          await this.alertRepo.save(
+            this.alertRepo.create({
+              facilityId: plan.facilityId,
+              treatmentPlanId: plan.id,
+              alertType: 'SILENCE_RECOVERED_WARNING',
+              severity: 'WARNING',
+              title: 'Pasien Pulih dari Putus Kontak',
+              message:
+                'Pasien yang sebelumnya tidak melapor telah berhasil check-in dosis penuh hari ini.',
+            }),
+          );
 
           await this.historyRepo.save(
             this.historyRepo.create({
               treatmentPlanId: plan.id,
-              eventType: 'TICKET_AUTO_CLOSED',
+              eventType: 'STATE_TRANSITION',
               previousState,
               newState: 'AKTIF',
               previousStreak: 0,
               newStreak: 1,
               actorUserId: userId,
               actorRole: role,
-              reasonOrSummary: `Ticket ${t.id} auto-closed by recovered check-in`,
+              reasonOrSummary: 'Patient recovered adherence after silence period',
             }),
           );
+        } else {
+          plan.currentStreak = missedDay ? 1 : plan.currentStreak + 1;
+          plan.consecutiveSilenceDays = 0;
         }
 
-        // Emit FacilityAlert warning
-        await this.alertRepo.save(
-          this.alertRepo.create({
-            facilityId: plan.facilityId,
-            treatmentPlanId: plan.id,
-            alertType: 'SILENCE_RECOVERED_WARNING',
-            severity: 'WARNING',
-            title: 'Pasien Pulih dari Putus Kontak',
-            message:
-              'Pasien yang sebelumnya tidak melapor telah berhasil check-in dosis penuh hari ini.',
-          }),
-        );
-
-        await this.historyRepo.save(
-          this.historyRepo.create({
-            treatmentPlanId: plan.id,
-            eventType: 'STATE_TRANSITION',
-            previousState,
-            newState: 'AKTIF',
-            previousStreak: 0,
-            newStreak: 1,
-            actorUserId: userId,
-            actorRole: role,
-            reasonOrSummary: 'Patient recovered adherence after silence period',
-          }),
-        );
-      } else {
-        plan.currentStreak = missedDay ? 1 : plan.currentStreak + 1;
-        plan.consecutiveSilenceDays = 0;
+        await this.planRepo.save(plan);
       }
-
-      await this.planRepo.save(plan);
 
       await this.historyRepo.save(
         this.historyRepo.create({
           treatmentPlanId: plan.id,
-          eventType: 'CHECK_IN_LOCKED',
-          previousStreak: plan.currentStreak - 1,
+          eventType: isTerkendali ? 'CHECK_IN_LOCKED' : 'CHECK_IN_INCOMPLETE_RETRY',
+          previousStreak,
           newStreak: plan.currentStreak,
           actorUserId: userId,
           actorRole: role,
-          reasonOrSummary: `Check-in locked for date ${today}`,
+          reasonOrSummary: isTerkendali
+            ? `Check-in locked for date ${today}`
+            : `Check-in attempt #${attemptNumber} recorded (${verdictResult.verdict}; may replace today)`,
           metadataJson: {
             checkInId: checkIn.id,
             verdict: verdictResult.verdict,
@@ -516,12 +579,23 @@ export class CheckInService {
         }),
       );
     } else {
+      const previousStreak = plan.currentStreak;
+      if (wasFulfilledToday) {
+        const lastFulfilled = await this.findLastFulfilledBefore(plan.id, today);
+        const fulfilledYesterday =
+          Boolean(lastFulfilled) && lastFulfilled!.checkInDate >= yesterday;
+        plan.currentStreak = fulfilledYesterday
+          ? Math.max(0, plan.currentStreak - 1)
+          : 0;
+        await this.planRepo.save(plan);
+      }
+
       // Incomplete dose attempt
       await this.historyRepo.save(
         this.historyRepo.create({
           treatmentPlanId: plan.id,
           eventType: 'CHECK_IN_INCOMPLETE_RETRY',
-          previousStreak: plan.currentStreak,
+          previousStreak,
           newStreak: plan.currentStreak,
           actorUserId: userId,
           actorRole: role,
@@ -558,61 +632,81 @@ export class CheckInService {
       );
     }
 
-    // Critical Red Flag Handling
-    if (verdictResult.verdict === 'SEGERA_KE_FASKES') {
-      plan.patientState = 'BERISIKO';
-      plan.riskScore += 25;
-      plan.consecutiveSilenceDays = 0;
-      await this.planRepo.save(plan);
-
-      const triggerSource = intentToStop ? 'INTENT_TO_STOP' : 'RED_FLAG';
-      const ticket = await this.ticketRepo.save(
-        this.ticketRepo.create({
+    // Critical Red Flag Handling: escalate once per day; keep CRITICAL tickets OPEN for Nakes verification.
+    if (isRedFlag) {
+      const openCriticalTickets = await this.ticketRepo.find({
+        where: {
           treatmentPlanId: plan.id,
-          facilityId: plan.facilityId,
-          triggerSource,
-          priority: 'CRITICAL',
-          status: 'OPEN',
-          pmoNotes: `Check-in flag reported by ${role}: ${symptoms.join(', ')}`,
-        }),
-      );
+          triggerSource: In(['RED_FLAG', 'INTENT_TO_STOP']),
+          status: In(['OPEN', 'IN_PROGRESS']),
+        },
+      });
+      const hasTodayTicket = openCriticalTickets.some((t) => {
+        const opened =
+          t.openedAt instanceof Date
+            ? t.openedAt.toISOString().slice(0, 10)
+            : t.openedAt
+              ? String(t.openedAt).slice(0, 10)
+              : '';
+        return opened === today;
+      });
 
-      await this.historyRepo.save(
-        this.historyRepo.create({
-          treatmentPlanId: plan.id,
-          eventType: 'TICKET_OPENED',
-          previousState: plan.patientState,
-          newState: 'BERISIKO',
-          previousStreak: plan.currentStreak,
-          newStreak: plan.currentStreak,
-          actorUserId: userId,
-          actorRole: role,
-          reasonOrSummary: `Critical ticket opened (${triggerSource})`,
-          metadataJson: { ticketId: ticket.id },
-        }),
-      );
+      if (!wasRedFlagToday && !hasTodayTicket) {
+        const previousState = plan.patientState;
+        plan.patientState = 'BERISIKO';
+        plan.riskScore += 25;
+        plan.consecutiveSilenceDays = 0;
+        await this.planRepo.save(plan);
 
-      this.eventEmitter.emit(
-        'notification.trigger',
-        new NotificationTriggerEvent(
-          intentToStop ? 'INTENT_TO_STOP_ALERT' : 'RED_FLAG_ALERT',
-          plan.id,
-          'PMO',
-          undefined,
-          undefined,
-          verdictResult.responseMessage,
-        ),
-      );
+        const triggerSource = intentToStop ? 'INTENT_TO_STOP' : 'RED_FLAG';
+        const ticket = await this.ticketRepo.save(
+          this.ticketRepo.create({
+            treatmentPlanId: plan.id,
+            facilityId: plan.facilityId,
+            triggerSource,
+            priority: 'CRITICAL',
+            status: 'OPEN',
+            pmoNotes: `Check-in flag reported by ${role}: ${symptoms.join(', ')}`,
+          }),
+        );
 
-      // Family contacts get the same escalation over WhatsApp (no login).
-      this.eventEmitter.emit(
-        'notification.trigger',
-        new NotificationTriggerEvent(
-          intentToStop ? 'INTENT_TO_STOP_ALERT' : 'RED_FLAG_ALERT',
-          plan.id,
-          'KELUARGA',
-        ),
-      );
+        await this.historyRepo.save(
+          this.historyRepo.create({
+            treatmentPlanId: plan.id,
+            eventType: 'TICKET_OPENED',
+            previousState,
+            newState: 'BERISIKO',
+            previousStreak: plan.currentStreak,
+            newStreak: plan.currentStreak,
+            actorUserId: userId,
+            actorRole: role,
+            reasonOrSummary: `Critical ticket opened (${triggerSource})`,
+            metadataJson: { ticketId: ticket.id },
+          }),
+        );
+
+        this.eventEmitter.emit(
+          'notification.trigger',
+          new NotificationTriggerEvent(
+            intentToStop ? 'INTENT_TO_STOP_ALERT' : 'RED_FLAG_ALERT',
+            plan.id,
+            'PMO',
+            undefined,
+            undefined,
+            verdictResult.responseMessage,
+          ),
+        );
+
+        // Family contacts get the same escalation over WhatsApp (no login).
+        this.eventEmitter.emit(
+          'notification.trigger',
+          new NotificationTriggerEvent(
+            intentToStop ? 'INTENT_TO_STOP_ALERT' : 'RED_FLAG_ALERT',
+            plan.id,
+            'KELUARGA',
+          ),
+        );
+      }
     }
 
     await this.auditRepo.save(
@@ -625,6 +719,8 @@ export class CheckInService {
         metadataJson: {
           isDoseFulfilled: verdictResult.isDoseFulfilled,
           verdict: verdictResult.verdict,
+          replaced: Boolean(existingCheckIn),
+          attemptNumber,
         },
       }),
     );

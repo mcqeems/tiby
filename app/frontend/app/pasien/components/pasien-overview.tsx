@@ -15,7 +15,11 @@ import { checkInsApi } from "@/lib/api/check-in";
 import { statsApi } from "@/lib/api/stats";
 import { educationApi, type EducationItem } from "@/lib/api/education";
 import { usersApi } from "@/lib/api/users";
-import type { CheckInHistoryItem } from "@/lib/types/check-in";
+import {
+  formatTodayStatusLabel,
+  isCheckInLockedToday,
+  type CheckInHistoryItem,
+} from "@/lib/types/check-in";
 import type { PatientStats } from "@/lib/types/stats";
 import Dialog from "@/components/ui/dialog";
 import Mascot from "@/components/mascot";
@@ -25,7 +29,9 @@ import {
   BookOpen,
   ChevronRight,
   CheckCircle2,
+  AlertTriangle,
   Clock,
+  RotateCcw,
   ShieldCheck,
   CalendarDays,
   User,
@@ -47,8 +53,10 @@ const ComplianceCalendar = ({ history }: { history: CheckInHistoryItem[] }) => {
   const dayNames = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
 
   const checkInMap = new Map<string, CheckInHistoryItem>();
+  // History arrives newest-first; keep the first item per date so older legacy attempts cannot overwrite it.
   history.forEach((item) => {
-    checkInMap.set(localDateKey(item.submittedAt), item);
+    const key = localDateKey(item.submittedAt);
+    if (!checkInMap.has(key)) checkInMap.set(key, item);
   });
 
   const startDate =
@@ -274,9 +282,11 @@ export default function PasienOverview() {
       </SkeletonRegion>
     );
 
-  const isCheckedInToday =
-    stats?.todayCheckInStatus !== "BELUM_CHECK_IN" &&
-    stats?.todayCheckInStatus !== undefined;
+  const todayStatus = stats?.todayCheckInStatus;
+  const isTerkendaliToday = isCheckInLockedToday(todayStatus);
+  const hasNonTerkendaliCheckIn =
+    Boolean(todayStatus) && todayStatus !== "BELUM_CHECK_IN" && !isTerkendaliToday;
+  const todayStatusLabel = formatTodayStatusLabel(todayStatus);
   const currentStreak = stats?.currentStreak || 0;
   const adherencePercent = stats ? Math.round(stats.adherenceRate * 100) : 0;
   const careTeam = stats?.careTeam;
@@ -322,17 +332,21 @@ export default function PasienOverview() {
                     Status Hari Ini
                   </p>
                   <div className="flex items-center justify-center sm:justify-start gap-2">
-                    {isCheckedInToday ? (
+                    {isTerkendaliToday ? (
                       <CheckCircle2 className="w-6 h-6 text-emerald-300" />
+                    ) : hasNonTerkendaliCheckIn ? (
+                      <AlertTriangle
+                        className={`w-6 h-6 ${
+                          todayStatus === "SEGERA_KE_FASKES"
+                            ? "text-red-200"
+                            : "text-amber-300"
+                        }`}
+                      />
                     ) : (
                       <Clock className="w-6 h-6 text-amber-300 animate-pulse" />
                     )}
                     <h2 className="text-2xl font-heading font-bold">
-                      {isCheckedInToday
-                        ? stats?.todayCheckInStatus === "TERKENDALI"
-                          ? "Terkendali"
-                          : stats?.todayCheckInStatus.replace("_", " ")
-                        : "Belum Check-in"}
+                      {todayStatusLabel}
                     </h2>
                   </div>
                   {stats?.currentPhase && (
@@ -346,22 +360,31 @@ export default function PasienOverview() {
                 </div>
 
                 <p className="text-sm text-tiby-teal-50/80 max-w-xs mx-auto sm:mx-0">
-                  {isCheckedInToday
+                  {isTerkendaliToday
                     ? "Hebat! Kamu sudah melapor hari ini. Jangan lupa istirahat yang cukup."
-                    : "Bagaimana perasaanmu hari ini? Yuk, lapor minum obatmu sekarang."}
+                    : hasNonTerkendaliCheckIn
+                      ? "Laporan hari ini belum terkendali. Kamu bisa check-in ulang untuk mengganti laporan hari ini."
+                      : "Bagaimana perasaanmu hari ini? Yuk, lapor minum obatmu sekarang."}
                 </p>
 
-                {!isCheckedInToday ? (
+                {isTerkendaliToday ? (
+                  <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-6 py-3 rounded-xl font-bold text-sm border border-white/10">
+                    <ShieldCheck className="w-5 h-5" /> Laporan Tersimpan
+                  </div>
+                ) : hasNonTerkendaliCheckIn ? (
+                  <Link
+                    href="/pasien/check-in"
+                    className="inline-flex items-center gap-2 bg-white text-tiby-teal-700 px-6 py-3 rounded-xl font-bold text-sm shadow-sm hover:scale-105 transition-transform"
+                  >
+                    <RotateCcw className="w-5 h-5" /> Check-in Ulang
+                  </Link>
+                ) : (
                   <Link
                     href="/pasien/check-in"
                     className="inline-flex items-center gap-2 bg-white text-tiby-teal-700 px-6 py-3 rounded-xl font-bold text-sm shadow-sm hover:scale-105 transition-transform"
                   >
                     <Pill className="w-5 h-5" /> Check-in Sekarang
                   </Link>
-                ) : (
-                  <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-6 py-3 rounded-xl font-bold text-sm border border-white/10">
-                    <ShieldCheck className="w-5 h-5" /> Laporan Tersimpan
-                  </div>
                 )}
               </div>
 

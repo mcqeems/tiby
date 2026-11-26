@@ -240,7 +240,9 @@ export default function RiwayatView() {
                         <p className="text-xs font-medium text-tiby-ink truncate">
                           {item.medicationStatus === "SUDAH_MINUM"
                             ? `${item.pillsTakenCount} Butir (Sudah)`
-                            : "Belum Minum"}
+                            : item.medicationStatus === "TIDAK_PASTI"
+                              ? "Tidak Pasti"
+                              : "Belum Minum"}
                         </p>
                       </div>
 

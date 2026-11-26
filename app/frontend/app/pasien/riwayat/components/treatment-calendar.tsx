@@ -41,10 +41,11 @@ export default function TreatmentCalendar({
   firstDay = firstDay === 0 ? 6 : firstDay - 1;
 
   const checkInMap = new Map<string, CheckInHistoryItem>();
+  // Keep the first (newest) check-in per local date in DESC history arrays.
   checkIns.forEach((item) => {
     const d = new Date(item.submittedAt);
     const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    checkInMap.set(localDate, item);
+    if (!checkInMap.has(localDate)) checkInMap.set(localDate, item);
   });
 
   const getStatusForDay = (day: number) => {

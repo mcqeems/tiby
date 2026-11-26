@@ -12,8 +12,11 @@ import PublicLoading from "@/components/ui/public-loading";
 import { fadeUp } from "@/lib/motion";
 import { pmoApi } from "@/lib/api/pmo";
 import { notify } from "@/lib/toast";
-import { CheckCircle2 } from "lucide-react";
-import type { FallbackButtonsPayload } from "@/lib/types/check-in";
+import { CheckCircle2, RefreshCw } from "lucide-react";
+import {
+  formatTodayStatusLabel,
+  type FallbackButtonsPayload,
+} from "@/lib/types/check-in";
 
 interface PmoPatient {
   treatmentPlanId: string;
@@ -40,13 +43,19 @@ export default function CheckInView({
   const {
     state,
     isCheckingStatus,
+    todayPrevious,
     startRecording,
     stopRecording,
     submitVoice,
     submitFallback,
     goToFallback,
     goToRecord,
-  } = useCheckIn(selectedPatientId || undefined);
+    reset,
+  } = useCheckIn(
+    selectedPatientId || undefined,
+    role === "PASIEN" || Boolean(selectedPatientId),
+  );
+  const homeHref = role === "PMO" ? "/pmo/pasien" : "/pasien";
 
   useEffect(() => {
     let isMounted = true;
@@ -61,7 +70,10 @@ export default function CheckInView({
           setPatients(list as PmoPatient[]);
         })
         .catch(() =>
-          notify.error("Gagal Memuat", "Daftar pasien dampingan tidak dapat dimuat."),
+          notify.error(
+            "Gagal Memuat",
+            "Daftar pasien dampingan tidak dapat dimuat.",
+          ),
         )
         .finally(() => {
           if (isMounted) setLoadingPatients(false);
@@ -85,9 +97,7 @@ export default function CheckInView({
   }
 
   if (state.step === "loading") {
-    return inlineLoader(
-      "Pandu sedang memproses laporanmu... (Bisa memakan waktu hingga 40 detik)",
-    );
+    return inlineLoader("Pandu sedang memproses laporanmu...");
   }
 
   if (state.step === "locked") {
@@ -129,101 +139,130 @@ export default function CheckInView({
         }`}
       >
         {role === "PMO" && state.step === "record" && !urlPatientId && (
-        <div className="mb-6 p-5 bg-white border border-tiby-teal-100 rounded-2xl shadow-sm">
-          <label className="text-xs font-bold text-tiby-ink mb-2 block">
-            Pilih Pasien yang Didampingi:
-          </label>
-          <select
-            value={selectedPatientId}
-            onChange={(e) => setSelectedPatientId(e.target.value)}
-            className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 bg-gray-50"
-          >
-            <option value="">-- Pilih Pasien --</option>
-            {patients.map((p) => (
-              <option key={p.treatmentPlanId} value={p.treatmentPlanId}>
-                {p.patientName}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {role === "PMO" &&
-        urlPatientId &&
-        urlPatientName &&
-        state.step === "record" && (
-          <div className="mb-6 p-4 bg-tiby-teal-50 border border-tiby-teal-100 rounded-2xl flex items-center gap-3">
-            <div className="w-10 h-10 bg-tiby-teal-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-              {urlPatientName.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <p className="text-[10px] text-tiby-teal-700 font-semibold uppercase tracking-wider">
-                Check-in Mewakili:
-              </p>
-              <p className="text-sm font-bold text-tiby-ink">
-                {urlPatientName}
-              </p>
-            </div>
+          <div className="mb-6 p-5 bg-white border border-tiby-teal-100 rounded-2xl shadow-sm">
+            <label className="text-xs font-bold text-tiby-ink mb-2 block">
+              Pilih Pasien yang Didampingi:
+            </label>
+            <select
+              value={selectedPatientId}
+              onChange={(e) => setSelectedPatientId(e.target.value)}
+              className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm focus:ring-2 focus:ring-tiby-teal-600 bg-gray-50"
+            >
+              <option value="">-- Pilih Pasien --</option>
+              {patients.map((p) => (
+                <option key={p.treatmentPlanId} value={p.treatmentPlanId}>
+                  {p.patientName}
+                </option>
+              ))}
+            </select>
           </div>
         )}
 
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={
-            role === "PMO" && !selectedPatientId && state.step === "record"
-              ? "record-waiting"
-              : state.step
-          }
-          variants={fadeUp}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-        >
-          {role === "PMO" && !selectedPatientId && state.step === "record" ? (
-            <div className="text-center py-10 opacity-50">
-              <div className="w-36 h-36 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-4xl text-gray-300">🐼</span>
+        {role === "PMO" &&
+          urlPatientId &&
+          urlPatientName &&
+          state.step === "record" && (
+            <div className="mb-6 p-4 bg-tiby-teal-50 border border-tiby-teal-100 rounded-2xl flex items-center gap-3">
+              <div className="w-10 h-10 bg-tiby-teal-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                {urlPatientName.charAt(0).toUpperCase()}
               </div>
-              <p className="text-sm font-semibold text-gray-400">
-                Menunggu pasien dipilih...
-              </p>
+              <div>
+                <p className="text-[10px] text-tiby-teal-700 font-semibold uppercase tracking-wider">
+                  Check-in Mewakili:
+                </p>
+                <p className="text-sm font-bold text-tiby-ink">
+                  {urlPatientName}
+                </p>
+              </div>
             </div>
-          ) : (
-            <>
-              {state.step === "record" && (
-                <CheckInVoice
-                  onStart={() => startRecording(selectedPatientId || undefined)}
-                  onStop={stopRecording}
-                  onFallback={goToFallback}
-                />
-              )}
-
-              {state.step === "review" && (
-                <CheckInReview
-                  transcript={state.transcript}
-                  onSubmit={(text: string) =>
-                    submitVoice(text, selectedPatientId || undefined)
-                  }
-                  onRetry={goToRecord}
-                />
-              )}
-
-              {state.step === "fallback" && (
-                <CheckInFallback
-                  onBackToVoice={goToRecord}
-                  onSubmit={(data: FallbackButtonsPayload) =>
-                    submitFallback(data, selectedPatientId || undefined)
-                  }
-                />
-              )}
-
-              {state.step === "result" && state.verdict && (
-                <CheckInResult result={state.verdict} />
-              )}
-            </>
           )}
-        </motion.div>
-      </AnimatePresence>
+
+        {todayPrevious &&
+          (state.step === "record" ||
+            state.step === "review" ||
+            state.step === "fallback") &&
+          (role === "PASIEN" || Boolean(selectedPatientId)) && (
+            <div
+              role="status"
+              className="mb-5 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left"
+            >
+              <RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+              <div className="text-xs leading-relaxed text-amber-900">
+                <p className="font-semibold">
+                  Memperbarui check-in hari ini (status saat ini:{" "}
+                  {formatTodayStatusLabel(todayPrevious.verdict)})
+                </p>
+                <p className="mt-0.5 text-amber-800">
+                  Laporan baru akan menggantikan check-in hari ini yang
+                  sebelumnya tersimpan.
+                </p>
+              </div>
+            </div>
+          )}
+
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={
+              role === "PMO" && !selectedPatientId && state.step === "record"
+                ? "record-waiting"
+                : state.step
+            }
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            {role === "PMO" && !selectedPatientId && state.step === "record" ? (
+              <div className="text-center py-10 opacity-50">
+                <div className="w-36 h-36 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-4xl text-gray-300">🐼</span>
+                </div>
+                <p className="text-sm font-semibold text-gray-400">
+                  Menunggu pasien dipilih...
+                </p>
+              </div>
+            ) : (
+              <>
+                {state.step === "record" && (
+                  <CheckInVoice
+                    onStart={() =>
+                      startRecording(selectedPatientId || undefined)
+                    }
+                    onStop={stopRecording}
+                    onFallback={goToFallback}
+                  />
+                )}
+
+                {state.step === "review" && (
+                  <CheckInReview
+                    transcript={state.transcript}
+                    onSubmit={(text: string) =>
+                      submitVoice(text, selectedPatientId || undefined)
+                    }
+                    onRetry={goToRecord}
+                  />
+                )}
+
+                {state.step === "fallback" && (
+                  <CheckInFallback
+                    onBackToVoice={goToRecord}
+                    onSubmit={(data: FallbackButtonsPayload) =>
+                      submitFallback(data, selectedPatientId || undefined)
+                    }
+                  />
+                )}
+
+                {state.step === "result" && state.verdict && (
+                  <CheckInResult
+                    result={state.verdict}
+                    onReCheckIn={reset}
+                    homeHref={homeHref}
+                  />
+                )}
+              </>
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

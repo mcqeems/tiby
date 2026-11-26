@@ -332,4 +332,68 @@ describe("PatientsService Unit Tests", () => {
       );
     });
   });
+
+  describe("todayCheckInLocked & getPmoPatients lock semantics", () => {
+    it("marks patient unlocked when today's evaluation is PERLU_PERHATIAN even if dose fulfilled", async () => {
+      mockPmoRepo.find.mockResolvedValue([
+        {
+          treatmentPlan: {
+            id: "plan-1",
+            patientUser: { name: "Ahmad" },
+            currentStreak: 2,
+            phase: "INTENSIF",
+            consecutiveSilenceDays: 0,
+          },
+        },
+      ]);
+      mockCheckInRepo.findOne.mockResolvedValue({
+        id: "ci-1",
+        isDoseFulfilled: true,
+        attemptNumber: 1,
+      });
+      mockEvalRepo.findOneBy.mockResolvedValue({
+        checkInId: "ci-1",
+        verdict: "PERLU_PERHATIAN",
+      });
+
+      const res = await service.getPmoPatients("pmo-1");
+
+      expect(res[0]).toMatchObject({
+        treatmentPlanId: "plan-1",
+        todayVerdict: "PERLU_PERHATIAN",
+        isLockedToday: false,
+      });
+    });
+
+    it("marks patient locked only when today's evaluation is TERKENDALI", async () => {
+      mockPmoRepo.find.mockResolvedValue([
+        {
+          treatmentPlan: {
+            id: "plan-1",
+            patientUser: { name: "Ahmad" },
+            currentStreak: 3,
+            phase: "INTENSIF",
+            consecutiveSilenceDays: 0,
+          },
+        },
+      ]);
+      mockCheckInRepo.findOne.mockResolvedValue({
+        id: "ci-1",
+        isDoseFulfilled: true,
+        attemptNumber: 2,
+      });
+      mockEvalRepo.findOneBy.mockResolvedValue({
+        checkInId: "ci-1",
+        verdict: "TERKENDALI",
+      });
+
+      const res = await service.getPmoPatients("pmo-1");
+
+      expect(res[0]).toMatchObject({
+        treatmentPlanId: "plan-1",
+        todayVerdict: "TERKENDALI",
+        isLockedToday: true,
+      });
+    });
+  });
 });

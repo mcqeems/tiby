@@ -17,6 +17,7 @@ import {
   Loader2,
   MessageCircle,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -27,6 +28,7 @@ interface WhatsappConnectCardProps {
   title?: string;
   description?: string;
   onVerified?: () => void;
+  onClose?: () => void;
   /** Render only the controls, without the card chrome (for dialogs). */
   bare?: boolean;
 }
@@ -86,6 +88,7 @@ export default function WhatsappConnectCard({
   title = "WhatsApp",
   description = "Hubungkan nomor untuk menerima pengingat dan pemberitahuan dari Pandu.",
   onVerified,
+  onClose,
   bare = false,
 }: WhatsappConnectCardProps) {
   const isFamilyContact = Boolean(familyContactId);
@@ -270,16 +273,28 @@ export default function WhatsappConnectCard({
       }
     >
       {!bare && (
-        <header className="flex items-center gap-3 border-b border-gray-100 bg-linear-to-r from-tiby-teal-50/70 to-white px-6 py-4 sm:px-8">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-tiby-teal-700 shadow-sm ring-1 ring-tiby-teal-100">
-            <MessageCircle className="h-4.5 w-4.5" />
-          </span>
-          <div className="min-w-0">
-            <h3 className="font-heading text-base font-semibold leading-tight text-tiby-ink">
-              {title}
-            </h3>
-            <p className="mt-0.5 text-xs text-tiby-muted">{description}</p>
+        <header className="flex items-start justify-between gap-3 border-b border-gray-100 bg-linear-to-r from-tiby-teal-50/70 to-white px-6 py-4 sm:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-tiby-teal-700 shadow-sm ring-1 ring-tiby-teal-100">
+              <MessageCircle className="h-4.5 w-4.5" />
+            </span>
+            <div className="min-w-0">
+              <h3 className="font-heading text-base font-semibold leading-tight text-tiby-ink">
+                {title}
+              </h3>
+              <p className="mt-0.5 text-xs text-tiby-muted">{description}</p>
+            </div>
           </div>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Tutup"
+              className="shrink-0 rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-200 hover:text-tiby-ink"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          )}
         </header>
       )}
 

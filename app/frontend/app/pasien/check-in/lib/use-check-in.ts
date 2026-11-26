@@ -2,45 +2,72 @@ import { useState, useRef, useEffect } from "react";
 import { checkInsApi } from "@/lib/api/check-in";
 import { usePopup } from "@/components/ui/popup-provider";
 import { notify } from "@/lib/toast";
-import type {
-  CheckInState,
-  MedicationStatus,
-  SubmitCheckInDto,
-  FallbackButtonsPayload,
+import {
+  isCheckInLockedToday,
+  type CheckInState,
+  type MedicationStatus,
+  type SafetyVerdict,
+  type SubmitCheckInDto,
+  type FallbackButtonsPayload,
 } from "@/lib/types/check-in";
 
-export function useCheckIn(treatmentPlanId?: string) {
+export interface TodayPreviousSummary {
+  verdict: SafetyVerdict | null;
+  isDoseFulfilled: boolean;
+}
+
+const INITIAL_STATE: CheckInState = {
+  step: "record",
+  audioBlob: null,
+  transcript: "",
+  extractedData: null,
+  verdict: null,
+};
+
+export function useCheckIn(treatmentPlanId?: string, enabled = true) {
   const { confirm } = usePopup();
 
-  const [isCheckingStatus, setIsCheckingStatus] = useState(true);
+  const targetKey = enabled ? (treatmentPlanId ?? "self") : null;
+  const [checkedKey, setCheckedKey] = useState<string | null>(null);
+  const [todayPrevious, setTodayPrevious] =
+    useState<TodayPreviousSummary | null>(null);
 
-  const [state, setState] = useState<CheckInState>({
-    step: "record",
-    audioBlob: null,
-    transcript: "",
-    extractedData: null,
-    verdict: null,
-  });
+  const [state, setState] = useState<CheckInState>(INITIAL_STATE);
+  const isCheckingStatus = enabled && checkedKey !== targetKey;
 
   useEffect(() => {
+    if (!enabled || targetKey === null) return;
     let active = true;
+
     async function checkStatus() {
       try {
         const todayCheckIn = await checkInsApi.getTodayStatus(treatmentPlanId);
-        if (active && todayCheckIn) {
-          setState((s) => ({ ...s, step: "locked" }));
+        if (!active) return;
+
+        if (todayCheckIn && isCheckInLockedToday(todayCheckIn.verdict)) {
+          setTodayPrevious(null);
+          setState({ ...INITIAL_STATE, step: "locked" });
+        } else if (todayCheckIn) {
+          setTodayPrevious({
+            verdict: todayCheckIn.verdict,
+            isDoseFulfilled: todayCheckIn.isDoseFulfilled,
+          });
+          setState(INITIAL_STATE);
+        } else {
+          setTodayPrevious(null);
+          setState(INITIAL_STATE);
         }
       } catch (err) {
         console.error("Gagal mengecek status awal:", err);
       } finally {
-        if (active) setIsCheckingStatus(false);
+        if (active) setCheckedKey(targetKey);
       }
     }
     checkStatus();
     return () => {
       active = false;
     };
-  }, [treatmentPlanId]);
+  }, [treatmentPlanId, enabled, targetKey]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -130,10 +157,16 @@ export function useCheckIn(treatmentPlanId?: string) {
       };
 
       const verdict = await checkInsApi.submit(payload);
+      setTodayPrevious(
+        isCheckInLockedToday(verdict.verdict)
+          ? null
+          : { verdict: verdict.verdict, isDoseFulfilled: verdict.isDoseFulfilled },
+      );
       setState((s) => ({ ...s, verdict, step: "result" }));
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string };
       if (error.code === "CHECK_IN_ALREADY_LOCKED") {
+        setTodayPrevious(null);
         updateStep("locked");
       } else {
         notify.error(
@@ -170,10 +203,16 @@ export function useCheckIn(treatmentPlanId?: string) {
       };
 
       const verdict = await checkInsApi.submit(payload);
+      setTodayPrevious(
+        isCheckInLockedToday(verdict.verdict)
+          ? null
+          : { verdict: verdict.verdict, isDoseFulfilled: verdict.isDoseFulfilled },
+      );
       setState((s) => ({ ...s, verdict, step: "result" }));
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string };
       if (error.code === "CHECK_IN_ALREADY_LOCKED") {
+        setTodayPrevious(null);
         updateStep("locked");
       } else {
         notify.error(
@@ -188,19 +227,13 @@ export function useCheckIn(treatmentPlanId?: string) {
   return {
     state,
     isCheckingStatus,
+    todayPrevious,
     startRecording,
     stopRecording,
     submitVoice,
     submitFallback,
     goToFallback: () => updateStep("fallback"),
     goToRecord: () => updateStep("record"),
-    reset: () =>
-      setState({
-        step: "record",
-        audioBlob: null,
-        transcript: "",
-        extractedData: null,
-        verdict: null,
-      }),
+    reset: () => setState(INITIAL_STATE),
   };
 }

@@ -1,13 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { formatLongDateTime } from "@/lib/format";
-import { CheckCircle2, AlertTriangle, ShieldAlert, Flame } from "lucide-react";
+import {
+  CheckCircle2,
+  AlertTriangle,
+  ShieldAlert,
+  Flame,
+  RotateCcw,
+} from "lucide-react";
 import Mascot from "@/components/mascot";
-import type { CheckInVerdictResponse } from "@/lib/types/check-in";
+import {
+  isCheckInLockedToday,
+  type CheckInVerdictResponse,
+} from "@/lib/types/check-in";
 
 interface CheckInResultProps {
   result: CheckInVerdictResponse;
+  onReCheckIn?: () => void;
+  homeHref?: string;
 }
 
 const RULE_LABELS: Record<string, string> = {
@@ -230,10 +242,14 @@ function useCountUp(target: number, delay = 900, duration = 1000) {
   return value;
 }
 
-export default function CheckInResult({ result }: CheckInResultProps) {
+export default function CheckInResult({
+  result,
+  onReCheckIn,
+  homeHref = "/pasien",
+}: CheckInResultProps) {
   const verdict = result.verdict;
   const streak = result.currentStreak;
-  const isGood = verdict === "TERKENDALI";
+  const isGood = isCheckInLockedToday(verdict);
   const isWarn = verdict === "PERLU_PERHATIAN";
 
   const config = isGood
@@ -459,7 +475,7 @@ export default function CheckInResult({ result }: CheckInResultProps) {
             <p className="text-[10px] font-bold uppercase tracking-wider opacity-70">
               {isMilestone ? "Streak Spesial!" : "Streak Kamu"}
             </p>
-            <p
+              <p
               key={count === streak ? "done" : "counting"}
               className={`font-bold text-lg leading-none tabular-nums origin-left ${
                 count === streak ? "ci-count-done" : ""
@@ -470,6 +486,39 @@ export default function CheckInResult({ result }: CheckInResultProps) {
           </div>
         </div>
       )}
+
+      {/* Aksi setelah laporan */}
+      <div
+        style={cssVars({ "--d": "820ms" })}
+        className="ci-rise flex w-full max-w-sm flex-col gap-2.5 pt-1"
+      >
+        {!isGood && onReCheckIn && (
+          <>
+            <p className="text-xs leading-relaxed text-tiby-muted">
+              Status hari ini belum terkendali. Anda dapat check-in ulang kapan saja hari ini untuk mengganti laporan sebelumnya.
+            </p>
+            <button
+              type="button"
+              onClick={onReCheckIn}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-tiby-teal-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-tiby-teal-700"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Check-in Ulang
+            </button>
+          </>
+        )}
+
+        <Link
+          href={homeHref}
+          className={`flex h-11 w-full items-center justify-center rounded-xl px-5 text-sm font-semibold transition ${
+            isGood
+              ? "bg-tiby-teal-600 text-white shadow-sm hover:bg-tiby-teal-700"
+              : "border border-gray-200 bg-white text-tiby-ink hover:bg-gray-50"
+          }`}
+        >
+          Kembali ke Beranda
+        </Link>
+      </div>
     </div>
   );
 }

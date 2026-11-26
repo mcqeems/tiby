@@ -112,12 +112,33 @@ describe("CheckInService Unit Tests", () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it("throws ConflictException (CHECK_IN_ALREADY_LOCKED) if dose fulfilled today", async () => {
+    it("throws ConflictException (CHECK_IN_ALREADY_LOCKED) if dose fulfilled today (legacy row without evaluation)", async () => {
       mockCheckInRepo.findOne.mockResolvedValue({ id: "checkin-locked", isDoseFulfilled: true });
 
       await expect(
         service.checkIsLockedToday("plan-1", "2026-10-16"),
       ).rejects.toThrow(ConflictException);
+    });
+
+    it("throws ConflictException when today's evaluation verdict is TERKENDALI", async () => {
+      mockCheckInRepo.findOne.mockResolvedValue({ id: "checkin-1", isDoseFulfilled: true });
+      mockEvalRepo.findOneBy.mockResolvedValue({ checkInId: "checkin-1", verdict: "TERKENDALI" });
+
+      await expect(
+        service.checkIsLockedToday("plan-1", "2026-10-16"),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it("keeps today unlocked and returns snapshot for PERLU_PERHATIAN or SEGERA_KE_FASKES even when dose fulfilled", async () => {
+      for (const verdict of ["PERLU_PERHATIAN", "SEGERA_KE_FASKES"] as const) {
+        const existing = { id: "checkin-1", attemptNumber: 1, isDoseFulfilled: true };
+        const existingEval = { checkInId: "checkin-1", verdict };
+        mockCheckInRepo.findOne.mockResolvedValue(existing);
+        mockEvalRepo.findOneBy.mockResolvedValue(existingEval);
+
+        const res = await service.checkIsLockedToday("plan-1", "2026-10-16");
+        expect(res).toEqual({ checkIn: existing, evaluation: existingEval });
+      }
     });
   });
 
@@ -516,6 +537,277 @@ describe("CheckInService Unit Tests", () => {
           recipientRole: "PMO",
         }),
       );
+    });
+  });
+
+  describe("submitCheckIn - Replace Same-Day Non-TERKENDALI Check-In", () => {
+    it("replaces an incomplete check-in in-place with TERKENDALI and increments streak once", async () => {
+      const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+      const plan = {
+        id: "plan-1",
+        patientUserId: "user-1",
+        facilityId: "faskes-1",
+        dailyPillQuota: 4,
+        currentStreak: 2,
+        consecutiveSilenceDays: 0,
+        patientState: "AKTIF",
+        riskScore: 0,
+      };
+      const existingCheckIn = {
+        id: "checkin-existing",
+        treatmentPlanId: "plan-1",
+        attemptNumber: 1,
+        isDoseFulfilled: false,
+        medicationStatus: "BELUM_MINUM",
+        pillsTakenCount: 0,
+        submittedAt: new Date("2026-11-26T01:00:00Z"),
+      };
+      const existingEval = {
+        id: "eval-existing",
+        checkInId: "checkin-existing",
+        verdict: "PERLU_PERHATIAN",
+        isValidCompletion: false,
+      };
+
+      mockPlanRepo.findOne.mockResolvedValue(plan);
+      mockCheckInRepo.findOne
+        .mockResolvedValueOnce(existingCheckIn)
+        .mockResolvedValueOnce({ id: "prev-day", checkInDate: yesterday });
+      mockEvalRepo.findOneBy.mockResolvedValue(existingEval);
+      mockCheckInRepo.save.mockImplementation((entity: any) => Promise.resolve(entity));
+
+      mockRuleEngine.evaluate.mockReturnValue({
+        verdict: "TERKENDALI",
+        isDoseFulfilled: true,
+        redoRequiredToday: false,
+        matchedRuleCodes: ["RULE_DOSE_FULFILLED_NO_SYMPTOMS"],
+        failSafeTriggered: false,
+        failSafeReason: null,
+        responseMessage: "Luar biasa!",
+      });
+
+      const res = await service.submitCheckIn("user-1", "PASIEN", {
+        inputMode: "FALLBACK_BUTTONS",
+        fallbackButtons: {
+          medicationStatus: "SUDAH_MINUM",
+          pillsTakenCount: 4,
+          hasComplaints: false,
+          selectedComplaints: [],
+        },
+      });
+
+      expect(mockCheckInRepo.create).not.toHaveBeenCalled();
+      expect(mockEvalRepo.create).not.toHaveBeenCalled();
+      expect(res.checkInId).toBe("checkin-existing");
+      expect(existingCheckIn.attemptNumber).toBe(2);
+      expect(existingCheckIn.medicationStatus).toBe("SUDAH_MINUM");
+      expect(existingCheckIn.pillsTakenCount).toBe(4);
+      expect(existingCheckIn.isDoseFulfilled).toBe(true);
+      expect(existingEval.verdict).toBe("TERKENDALI");
+      expect(plan.currentStreak).toBe(3);
+      expect(mockHistoryRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ eventType: "CHECK_IN_LOCKED" }),
+      );
+    });
+
+    it("replaces fulfilled PERLU_PERHATIAN with TERKENDALI without double-incrementing streak", async () => {
+      const plan = {
+        id: "plan-1",
+        patientUserId: "user-1",
+        facilityId: "faskes-1",
+        dailyPillQuota: 4,
+        currentStreak: 3,
+        consecutiveSilenceDays: 0,
+        patientState: "AKTIF",
+        riskScore: 0,
+      };
+      const existingCheckIn = {
+        id: "checkin-existing",
+        treatmentPlanId: "plan-1",
+        attemptNumber: 1,
+        isDoseFulfilled: true,
+        medicationStatus: "SUDAH_MINUM",
+        pillsTakenCount: 4,
+        submittedAt: new Date(),
+      };
+      const existingEval = {
+        id: "eval-existing",
+        checkInId: "checkin-existing",
+        verdict: "PERLU_PERHATIAN",
+        isValidCompletion: true,
+      };
+
+      mockPlanRepo.findOne.mockResolvedValue(plan);
+      mockCheckInRepo.findOne.mockResolvedValueOnce(existingCheckIn);
+      mockEvalRepo.findOneBy.mockResolvedValue(existingEval);
+      mockCheckInRepo.save.mockImplementation((entity: any) => Promise.resolve(entity));
+
+      mockRuleEngine.evaluate.mockReturnValue({
+        verdict: "TERKENDALI",
+        isDoseFulfilled: true,
+        redoRequiredToday: false,
+        matchedRuleCodes: ["RULE_DOSE_FULFILLED_NO_SYMPTOMS"],
+        failSafeTriggered: false,
+        failSafeReason: null,
+        responseMessage: "Luar biasa!",
+      });
+
+      const res = await service.submitCheckIn("user-1", "PASIEN", {
+        inputMode: "FALLBACK_BUTTONS",
+        fallbackButtons: {
+          medicationStatus: "SUDAH_MINUM",
+          pillsTakenCount: 4,
+          hasComplaints: false,
+          selectedComplaints: [],
+        },
+      });
+
+      expect(res.currentStreak).toBe(3);
+      expect(plan.currentStreak).toBe(3);
+      expect(mockPlanRepo.save).not.toHaveBeenCalled();
+      expect(existingCheckIn.attemptNumber).toBe(2);
+      expect(existingEval.verdict).toBe("TERKENDALI");
+    });
+
+    it("reverts today's streak credit when fulfilled PERLU_PERHATIAN is replaced with BELUM_MINUM", async () => {
+      const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+      const plan = {
+        id: "plan-1",
+        patientUserId: "user-1",
+        facilityId: "faskes-1",
+        dailyPillQuota: 4,
+        currentStreak: 3,
+        consecutiveSilenceDays: 0,
+        patientState: "AKTIF",
+        riskScore: 0,
+      };
+      const existingCheckIn = {
+        id: "checkin-existing",
+        treatmentPlanId: "plan-1",
+        attemptNumber: 1,
+        isDoseFulfilled: true,
+        submittedAt: new Date(),
+      };
+      const existingEval = {
+        id: "eval-existing",
+        checkInId: "checkin-existing",
+        verdict: "PERLU_PERHATIAN",
+        isValidCompletion: true,
+      };
+
+      mockPlanRepo.findOne.mockResolvedValue(plan);
+      mockCheckInRepo.findOne
+        .mockResolvedValueOnce(existingCheckIn)
+        .mockResolvedValueOnce({ id: "yesterday-checkin", checkInDate: yesterday });
+      mockEvalRepo.findOneBy.mockResolvedValue(existingEval);
+      mockCheckInRepo.save.mockImplementation((entity: any) => Promise.resolve(entity));
+
+      mockRuleEngine.evaluate.mockReturnValue({
+        verdict: "PERLU_PERHATIAN",
+        isDoseFulfilled: false,
+        redoRequiredToday: true,
+        matchedRuleCodes: ["RULE_INCOMPLETE_DOSE_RETRY_REQUIRED"],
+        failSafeTriggered: false,
+        failSafeReason: null,
+        responseMessage: "Silakan minum obat.",
+      });
+
+      const res = await service.submitCheckIn("user-1", "PASIEN", {
+        inputMode: "FALLBACK_BUTTONS",
+        fallbackButtons: {
+          medicationStatus: "BELUM_MINUM",
+          pillsTakenCount: 0,
+          hasComplaints: false,
+          selectedComplaints: [],
+        },
+      });
+
+      expect(res.currentStreak).toBe(2);
+      expect(plan.currentStreak).toBe(2);
+      expect(mockPlanRepo.save).toHaveBeenCalledWith(plan);
+    });
+
+    it("avoids duplicate riskScore/tickets and preserves BERISIKO when SEGERA_KE_FASKES is retried or replaced by TERKENDALI", async () => {
+      const plan = {
+        id: "plan-1",
+        patientUserId: "user-1",
+        facilityId: "faskes-1",
+        dailyPillQuota: 4,
+        currentStreak: 4,
+        consecutiveSilenceDays: 0,
+        patientState: "BERISIKO",
+        riskScore: 25,
+      };
+      const existingCheckIn = {
+        id: "checkin-red",
+        treatmentPlanId: "plan-1",
+        attemptNumber: 1,
+        isDoseFulfilled: true,
+        submittedAt: new Date(),
+      };
+      const existingEval = {
+        id: "eval-red",
+        checkInId: "checkin-red",
+        verdict: "SEGERA_KE_FASKES",
+        isValidCompletion: true,
+      };
+
+      mockPlanRepo.findOne.mockResolvedValue(plan);
+      mockCheckInRepo.findOne.mockResolvedValueOnce(existingCheckIn);
+      mockEvalRepo.findOneBy.mockResolvedValue(existingEval);
+      mockCheckInRepo.save.mockImplementation((entity: any) => Promise.resolve(entity));
+
+      // First retry: still SEGERA_KE_FASKES
+      mockRuleEngine.evaluate.mockReturnValueOnce({
+        verdict: "SEGERA_KE_FASKES",
+        isDoseFulfilled: true,
+        redoRequiredToday: false,
+        matchedRuleCodes: ["RULE_CRITICAL_RED_FLAG"],
+        failSafeTriggered: false,
+        failSafeReason: null,
+        responseMessage: "Segera ke faskes.",
+      });
+
+      await service.submitCheckIn("user-1", "PASIEN", {
+        inputMode: "FALLBACK_BUTTONS",
+        fallbackButtons: {
+          medicationStatus: "SUDAH_MINUM",
+          pillsTakenCount: 4,
+          hasComplaints: true,
+          selectedComplaints: ["BATUK_DARAH"],
+        },
+      });
+
+      expect(plan.riskScore).toBe(25);
+      expect(mockTicketRepo.save).not.toHaveBeenCalled();
+
+      // Second retry: swapped to TERKENDALI (does NOT falsely clear BERISIKO or double-increment streak)
+      mockCheckInRepo.findOne.mockResolvedValueOnce(existingCheckIn);
+      mockEvalRepo.findOneBy.mockResolvedValue(existingEval);
+      mockRuleEngine.evaluate.mockReturnValueOnce({
+        verdict: "TERKENDALI",
+        isDoseFulfilled: true,
+        redoRequiredToday: false,
+        matchedRuleCodes: ["RULE_DOSE_FULFILLED_NO_SYMPTOMS"],
+        failSafeTriggered: false,
+        failSafeReason: null,
+        responseMessage: "Luar biasa!",
+      });
+
+      const res = await service.submitCheckIn("user-1", "PASIEN", {
+        inputMode: "FALLBACK_BUTTONS",
+        fallbackButtons: {
+          medicationStatus: "SUDAH_MINUM",
+          pillsTakenCount: 4,
+          hasComplaints: false,
+          selectedComplaints: [],
+        },
+      });
+
+      expect(res.verdict).toBe("TERKENDALI");
+      expect(plan.patientState).toBe("BERISIKO");
+      expect(plan.currentStreak).toBe(4);
+      expect(plan.riskScore).toBe(25);
     });
   });
 

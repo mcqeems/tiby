@@ -498,9 +498,16 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
     expect(res.body.currentStreak).toBe(1);
     expect(res.body.matchedRules).toContain("RULE_DOSE_FULFILLED_NO_SYMPTOMS");
 
-    // Verify TreatmentPlan has streak incremented to 1
+    // Verify TreatmentPlan has streak incremented to 1 and today's row was replaced in-place
     const plan = await dataSource.getRepository(TreatmentPlan).findOneBy({ id: plan1Id });
     expect(plan?.currentStreak).toBe(1);
+
+    const plan1Rows = await dataSource
+      .getRepository(DailyCheckIn)
+      .findBy({ treatmentPlanId: plan1Id });
+    expect(plan1Rows).toHaveLength(1);
+    expect(plan1Rows[0].attemptNumber).toBe(2);
+    expect(plan1Rows[0].isDoseFulfilled).toBe(true);
   });
 
   it("4b. Voice submit accepts a confirmed transcript without facts (backend extracts)", async () => {
@@ -605,6 +612,78 @@ describe("Phase 3: Check-Ins & Safety Rule Engine (e2e)", () => {
     expect(ticket?.priority).toBe("CRITICAL");
     expect(ticket?.status).toBe("OPEN");
     expect(ticket?.pmoNotes).toContain("BATUK_DARAH");
+  });
+
+  it("7b. Non-TERKENDALI check-ins allow unlimited same-day replacement without duplicate rows, streak double-count, or duplicate CRITICAL tickets", async () => {
+    // 1. Replace SEGERA_KE_FASKES with PERLU_PERHATIAN (minor symptom, full dose)
+    const mildRetry = await request(app.getHttpServer())
+      .post("/api/check-ins")
+      .set("Cookie", patient2Cookie)
+      .send({
+        inputMode: "FALLBACK_BUTTONS",
+        fallbackButtons: {
+          medicationStatus: "SUDAH_MINUM",
+          pillsTakenCount: 4,
+          hasComplaints: true,
+          selectedComplaints: ["MUAL_RINGAN"],
+        },
+      });
+
+    expect(mildRetry.status).toBe(201);
+    expect(mildRetry.body.verdict).toBe("PERLU_PERHATIAN");
+    expect(mildRetry.body.isDoseFulfilled).toBe(true);
+    expect(mildRetry.body.currentStreak).toBe(6);
+
+    // 2. Replace PERLU_PERHATIAN with TERKENDALI: replaces same row again, streak stays 6, locks day
+    const terkendaliRetry = await request(app.getHttpServer())
+      .post("/api/check-ins")
+      .set("Cookie", patient2Cookie)
+      .send({
+        inputMode: "FALLBACK_BUTTONS",
+        fallbackButtons: {
+          medicationStatus: "SUDAH_MINUM",
+          pillsTakenCount: 4,
+          hasComplaints: false,
+          selectedComplaints: [],
+        },
+      });
+
+    expect(terkendaliRetry.status).toBe(201);
+    expect(terkendaliRetry.body.verdict).toBe("TERKENDALI");
+    expect(terkendaliRetry.body.currentStreak).toBe(6);
+
+    const plan2Rows = await dataSource
+      .getRepository(DailyCheckIn)
+      .findBy({ treatmentPlanId: plan2Id });
+    expect(plan2Rows).toHaveLength(1);
+    expect(plan2Rows[0].attemptNumber).toBe(3);
+
+    const plan = await dataSource.getRepository(TreatmentPlan).findOneBy({ id: plan2Id });
+    expect(plan?.patientState).toBe("BERISIKO");
+    expect(plan?.riskScore).toBe(25);
+
+    const openTickets = await dataSource.getRepository(InterventionTicket).findBy({
+      treatmentPlanId: plan2Id,
+      triggerSource: "RED_FLAG",
+    });
+    expect(openTickets).toHaveLength(1);
+    expect(openTickets[0].status).toBe("OPEN");
+
+    // 3. Now that verdict is TERKENDALI, further check-ins today are locked
+    const lockedRes = await request(app.getHttpServer())
+      .post("/api/check-ins")
+      .set("Cookie", patient2Cookie)
+      .send({
+        inputMode: "FALLBACK_BUTTONS",
+        fallbackButtons: {
+          medicationStatus: "SUDAH_MINUM",
+          pillsTakenCount: 4,
+          hasComplaints: false,
+          selectedComplaints: [],
+        },
+      });
+    expect(lockedRes.status).toBe(409);
+    expect(lockedRes.body.code).toBe("CHECK_IN_ALREADY_LOCKED");
   });
 
   it("8. PASIEN lists only their own check-ins, never the transcript", async () => {

@@ -113,7 +113,15 @@ export default function PmoPatientsList() {
             let statusText = "Terkendali";
             let StatusIcon = ShieldCheck;
 
-            if (isSilence) {
+            if (patient.todayVerdict === "SEGERA_KE_FASKES") {
+              statusColor = "bg-red-50 text-red-700 border-red-200";
+              statusText = "Segera ke Faskes";
+              StatusIcon = AlertCircle;
+            } else if (patient.todayVerdict === "PERLU_PERHATIAN") {
+              statusColor = "bg-amber-50 text-amber-700 border-amber-200";
+              statusText = "Perlu Perhatian";
+              StatusIcon = AlertCircle;
+            } else if (isSilence) {
               statusColor = "bg-red-50 text-red-700 border-red-200";
               statusText = `Sunyi ${patient.consecutiveSilenceDays} Hari`;
               StatusIcon = AlertCircle;
@@ -171,13 +179,20 @@ export default function PmoPatientsList() {
 
                 {/* Action Buttons */}
                 <div className="space-y-2 mt-auto pt-4 border-t border-gray-100">
-                  <Link
-                    href={`/pmo/check-in?patientId=${patient.treatmentPlanId}&patientName=${encodeURIComponent(patient.patientName)}`}
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-tiby-teal-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-tiby-teal-700 transition"
-                  >
-                    <ClipboardCheck className="w-4 h-4" />
-                    Wakili Check-in
-                  </Link>
+                  {patient.isLockedToday ? (
+                    <div className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-xs font-semibold text-emerald-700">
+                      <ShieldCheck className="w-4 h-4" />
+                      Sudah Terkendali Hari Ini
+                    </div>
+                  ) : (
+                    <Link
+                      href={`/pmo/check-in?patientId=${patient.treatmentPlanId}&patientName=${encodeURIComponent(patient.patientName)}`}
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-tiby-teal-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-tiby-teal-700 transition"
+                    >
+                      <ClipboardCheck className="w-4 h-4" />
+                      {patient.todayVerdict ? "Check-in Ulang" : "Wakili Check-in"}
+                    </Link>
+                  )}
 
                   <button
                     onClick={() => setSelectedPatient(patient)}
