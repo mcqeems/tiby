@@ -383,7 +383,7 @@ export default function EducationManager({
 
                 <div>
                   <label className="block text-xs font-semibold text-tiby-ink mb-1.5">
-                    Isi Materi (Markdown)
+                    Isi Materi
                   </label>
                   <textarea
                     value={formData.contentMarkdown}
@@ -394,7 +394,7 @@ export default function EducationManager({
                       })
                     }
                     className="w-full h-40 rounded-xl border border-gray-200 p-3 text-sm font-mono focus:ring-2 focus:ring-tiby-teal-600 outline-none resize-none"
-                    placeholder="### Judul Materi&#10;Isi materi di sini...&#10;- Poin 1&#10;- Poin 2"
+                    placeholder="Isi materi di sini...&#10;- Poin 1&#10;- Poin 2"
                   />
                 </div>
 
